@@ -1,0 +1,13 @@
+{
+  "$GMScript":"",
+  "%Name":"GmlSpec",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlSpec",
+  "parent":{
+    "name":"GMLCompiler",
+    "path":"folders/_Libraries/GMLCompiler.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

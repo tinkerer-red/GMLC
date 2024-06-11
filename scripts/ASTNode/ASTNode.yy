@@ -1,0 +1,13 @@
+{
+  "$GMScript":"",
+  "%Name":"ASTNode",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"ASTNode",
+  "parent":{
+    "name":"GMLCompiler",
+    "path":"folders/_Libraries/GMLCompiler.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
