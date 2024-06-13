@@ -2196,7 +2196,7 @@ function GML_PreProcessor() constructor {
 			var lineString = currentToken.lineString;
 			
 			expectToken(__GMLC_TokenType.Keyword, "function");
-			var functionName = $"GMLC@{currentToken.value}";  // Parse the function identifier
+			var functionName = currentToken.value;  // Parse the function identifier
 			nextToken();  // Move past Identifier
 			
 			expectToken(__GMLC_TokenType.Punctuation, "(");
@@ -6046,8 +6046,8 @@ function GML_PreProcessor() constructor {
 	}
 	#endregion
 	#region Functions
-	function __executeIR(_argument0, _argument1, _argument2, _argument3, _argument4, _argument5, _argument6, _argument7, _argument8, _argument9, _argument10, _argument11, _argument12, _argument13, _argument14, _argument15) {
-		var _ir = self.IR;
+	function __executeIR( _ir = self.IR, _argument0, _argument1, _argument2, _argument3, _argument4, _argument5, _argument6, _argument7, _argument8, _argument9, _argument10, _argument11, _argument12, _argument13, _argument14) {
+		//var _ir = self.IR;
 		var _ip = 0; // the instruction pointer
 	    var _stack = [];
 		var _framePointer = 0; // To manage function calls and returns
@@ -6056,9 +6056,14 @@ function GML_PreProcessor() constructor {
 	    var _staticVar = self[$ "StaticVar"]; //to manage static variables
 	    var _localVar = {}; //to manage local variables
 	    
-		return __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.END, 0);
+		var _arguments = [];
+		var _i=1; repeat(argument_count) {
+			_arguments[_i-1] = argument[_i];
+		_i+=1;}//end repeat loop
+		
+		return __executeInstructionUntil(_ir, _arguments, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.END, 0);
 	}
-	function __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, _endByte, _depth) {
+	function __executeInstructionUntil(_ir, _arguments, _ip, _stack, _globalVar, _staticVar, _localVar, _endByte, _depth) {
 		gml_pragma("forceinline");
 		
 		var _preffix = string_repeat(" - ", (_depth+1)*2)
@@ -6070,8 +6075,9 @@ function GML_PreProcessor() constructor {
 			var _instr = _ir[_ip]; // the instruction
 				
 			log($"{_preffix}IP :: {_ip} :: {_instr}")
-			var _op = _instr.op
-		    switch (_op) {
+			
+			//statements and operations
+			switch (_instr.op) {
 	            
 				case ByteOp.OPERATOR: {
 					var right = array_pop(_stack);
@@ -6208,21 +6214,21 @@ function GML_PreProcessor() constructor {
 					if (is_instanceof(_func, __GMLC_Function)) {
 						switch(_instr.count) {
 							case 0:  _func.execute();
-							case 1:  _func.execute(_args[0]);
-							case 2:  _func.execute(_args[0], _args[1]);
-							case 3:  _func.execute(_args[0], _args[1], _args[2]);
-							case 4:  _func.execute(_args[0], _args[1], _args[2], _args[3]);
-							case 5:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4]);
-							case 6:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5]);
-							case 7:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6]);
-							case 8:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7]);
-							case 9:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8]);
-							case 10: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9]);
-							case 11: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10]);
-							case 12: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11]);
-							case 13: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12]);
-							case 14: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12], _args[13]);
-							case 15: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12], _args[13], _args[14]);
+							case 1:  _func.execute(_func.IR, _args[0]);
+							case 2:  _func.execute(_func.IR, _args[0], _args[1]);
+							case 3:  _func.execute(_func.IR, _args[0], _args[1], _args[2]);
+							case 4:  _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3]);
+							case 5:  _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4]);
+							case 6:  _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5]);
+							case 7:  _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6]);
+							case 8:  _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7]);
+							case 9:  _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8]);
+							case 10: _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9]);
+							case 11: _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10]);
+							case 12: _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11]);
+							case 13: _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12]);
+							case 14: _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12], _args[13]);
+							case 15: _func.execute(_func.IR, _args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12], _args[13], _args[14]);
 						}
 					}
 					else {
@@ -6340,20 +6346,20 @@ function GML_PreProcessor() constructor {
 								case "os_type":                  _val = os_type;                   break;
 								case "game_id":                  _val = game_id;                   break;
 								case "iap_data":                 _val = iap_data;                  break;
-								case "argument":                 _val = argument;                  break;
+								case "argument":                 _val = _arguments;                break;
 								case "fps_real":                 _val = fps_real;                  break;
 								case "room_last":                _val = room_last;                 break;
-								case "argument4":                _val = argument4;                 break;
-								case "argument2":                _val = argument2;                 break;
-								case "argument3":                _val = argument3;                 break;
-								case "argument9":                _val = argument9;                 break;
-								case "argument6":                _val = argument6;                 break;
-								case "argument1":                _val = argument1;                 break;
-								case "argument8":                _val = argument8;                 break;
+								case "argument4":                _val = _arguments[4];             break;
+								case "argument2":                _val = _arguments[2];             break;
+								case "argument3":                _val = _arguments[3];             break;
+								case "argument9":                _val = _arguments[9];             break;
+								case "argument6":                _val = _arguments[6];             break;
+								case "argument1":                _val = _arguments[1];             break;
+								case "argument8":                _val = _arguments[8];             break;
 								case "os_device":                _val = os_device;                 break;
-								case "argument0":                _val = argument0;                 break;
-								case "argument7":                _val = argument7;                 break;
-								case "argument5":                _val = argument5;                 break;
+								case "argument0":                _val = _arguments[0];             break;
+								case "argument7":                _val = _arguments[7];             break;
+								case "argument5":                _val = _arguments[5];             break;
 								case "delta_time":               _val = delta_time;                break;
 								case "show_lives":               _val = show_lives;                break;
 								case "path_index":               _val = path_index;                break;
@@ -6367,14 +6373,14 @@ function GML_PreProcessor() constructor {
 								case "view_wport":               _val = view_wport;                break;
 								case "os_browser":               _val = os_browser;                break;
 								case "os_version":               _val = os_version;                break;
-								case "argument10":               _val = argument10;                break;
-								case "argument11":               _val = argument11;                break;
-								case "argument12":               _val = argument12;                break;
-								case "argument14":               _val = argument14;                break;
-								case "argument15":               _val = argument15;                break;
+								case "argument10":               _val = _arguments[10];            break;
+								case "argument11":               _val = _arguments[11];            break;
+								case "argument12":               _val = _arguments[12];            break;
+								case "argument14":               _val = _arguments[14];            break;
+								case "argument15":               _val = _arguments[15];            break;
 								case "room_speed":               _val = room_speed;                break;
 								case "show_score":               _val = show_score;                break;
-								case "argument13":               _val = argument13;                break;
+								case "argument13":               _val = _arguments[13];            break;
 								case "error_last":               _val = error_last;                break;
 								case "display_aa":               _val = display_aa;                break;
 								case "async_load":               _val = async_load;                break;
@@ -6403,7 +6409,7 @@ function GML_PreProcessor() constructor {
 								case "cursor_sprite":            _val = cursor_sprite;             break;
 								case "caption_health":           _val = caption_health;            break;
 								case "instance_count":           _val = instance_count;            break;
-								case "argument_count":           _val = argument_count;            break;
+								case "argument_count":           _val = array_length(_arguments);  break;
 								case "error_occurred":           _val = error_occurred;            break;
 								case "current_minute":           _val = current_minute;            break;
 								case "current_second":           _val = current_second;            break;
@@ -6438,6 +6444,9 @@ function GML_PreProcessor() constructor {
 								case "rollback_confirmed_frame": _val = rollback_confirmed_frame;  break;
 								
 							}
+							
+							log($"UNIQUE VARIABLE LOADED :: {_instr.value} == {_val}")
+							
 							// Push to stack
 							array_push(_stack, _val);
 						break;}
@@ -6594,92 +6603,62 @@ function GML_PreProcessor() constructor {
 					}
 				break;}
 				case ByteOp.TRY_START:{
-					var _temp_ip = _ip
+					var _startLoc = _ip;
+					var _catchJump = _instr.catchJump;
+					var _finallyJump = _instr.finallyJump;
+					
 					try {
 						_ip++; // Move past the TRY_START
 						
 						//executeBlockUntil
-						_ip = __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.TRY_END, _depth+1);
+						_ip = __executeInstructionUntil(_ir, _arguments, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.TRY_END, _depth+1);
 						
 					}
 					catch(_err) {
-						//log($"{_preffix}Catch")
-						//push the err to the stack
-						array_push(_stack, _err);
-						
-						_instr = _ir[_ip]
-						if (_instr.op == ByteOp.RETURN)
-						|| (_instr.op == ByteOp.END) {
-							return _ip;
-						}
-						
-						//move forward until we find TRY_END
-						_instr = _ir[_ip]
-						while (_instr.op != ByteOp.TRY_END) {
-							_ip++;
+						if (_catchJump != undefined) {
+							_ip = _startLoc+_catchJump;
+							
+							//push the err to the stack
+							array_push(_stack, _err);
+							
+							_ip++; // Move past the CATCH_START
 							_instr = _ir[_ip];
+							
+							//executeBlockUntil
+							_ip = __executeInstructionUntil(_ir, _arguments, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.CATCH_END, _depth+1);
 						}
-						
-						_ip++; // Move past the TRY_END
-						_instr = _ir[_ip];
-						
-						//early out if no CATCH_START was defined
-						if (_instr.op != ByteOp.CATCH_START) return _ip;
-						
-						_ip++; // Move past the CATCH_START
-						_instr = _ir[_ip];
-						
-						//executeBlockUntil
-						_ip = __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.CATCH_END, _depth+1);
 					}
 					finally {
-						//log($"{_preffix}Finally :: {_instr}")
-						_ip = _temp_ip;
 						
+						//if the current instruction is an exit or a return we will queue this up and return it after the fact.
+						var _should_return = false;
+						var _return_index = _ip;
+						var _return_value = undefined;
 						_instr = _ir[_ip]
-						
-						if (_instr.op != ByteOp.RETURN)
-						&& (_instr.op != ByteOp.END) {
-							
-							_instr = _ir[_ip];
-							if (_instr.op != ByteOp.FINALLY_START) {
-								
-								
-								//move forward until we find TRY_END
-								_instr = _ir[_ip];
-								if (_instr.op == ByteOp.TRY_START) {
-									while (_instr.op != ByteOp.TRY_END) {
-										_ip++;
-										_instr = _ir[_ip];
-									}
-									
-									_ip++;
-								}
-						
-								//move forward until we find the CATCH_END
-								_instr = _ir[_ip];
-								if (_instr.op == ByteOp.CATCH_START) {
-									while (_instr.op != ByteOp.CATCH_END) {
-										_ip++;
-										_instr = _ir[_ip];
-									}
-									
-									_ip++;
-								}
-							}
-						
-							//early out if no FINALLY_START was defined
-							_instr = _ir[_ip];
-							if (_instr.op == ByteOp.FINALLY_START) {
-								_ip++; // Move past the FINALLY_START
-							
-								//executeBlockUntil
-								_ip = __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.FINALLY_END, _depth+1);
-								
-							}
+						if (_instr.op == ByteOp.RETURN) {
+							_should_return = true;
+							_return_value = _stack[array_length(_stack)-1]
+						}
+						if (_instr.op == ByteOp.END) {
+							_should_return = true;
 						}
 						
+						if (_finallyJump != undefined) {
+							_ip = _startLoc+_finallyJump;
+							
+							_ip++; // Move past the FINALLY_START
+							_instr = _ir[_ip];
+							
+							//executeBlockUntil
+							_ip = __executeInstructionUntil(_ir, _arguments, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.FINALLY_END, _depth+1);
+							
+						}
 						
+						if (_should_return) {
+							_ip = _return_index;
+							_instr = _ir[_ip];
+							array_push(_stack, _return_value);
+						}
 					}
 					
 				break;}
@@ -6694,7 +6673,8 @@ function GML_PreProcessor() constructor {
 				break;}
 		    }
 			
-			switch (_op) {
+			// return and exit
+			switch (_instr.op) {
 	            
 				case ByteOp.RETURN:{
 					// Pop the return value from the stack
@@ -6717,7 +6697,6 @@ function GML_PreProcessor() constructor {
 				break;}
 		    }
 				
-			log(["_instr", _instr])
 			_ip++;
 		}
 		
@@ -7089,7 +7068,14 @@ function GML_PreProcessor() constructor {
 				break;}
 				case __GMLC_NodeType.TryStatement:{
 					// Start of try block
-					array_push(ir, {op: ByteOp.TRY_START, line: node.line, lineString: node.lineString});
+					var _tryStart = {
+						op: ByteOp.TRY_START,
+						catchJump: undefined, //patch
+						finallyJump: undefined, //patch
+						line: node.line,
+						lineString: node.lineString
+					}
+					array_push(ir, _tryStart);
 					
 					// IR for try block
 					ir = array_concat(ir, node.tryBlock);
@@ -7099,6 +7085,10 @@ function GML_PreProcessor() constructor {
 					
 					// IR for catch block
 					if (node.catchBlock != undefined) {
+						
+						//patch the catch jump
+						_tryStart.catchJump = array_length(ir);
+						
 						array_push(ir, {op: ByteOp.CATCH_START, line: node.line, lineString: node.lineString});
 						// The VM will push the catch expression's value onto the stack.
 						array_push(ir, {op: ByteOp.STORE, scope: ScopeType.LOCAL, value: node.exceptionVar, line: node.line, lineString: node.lineString});
@@ -7111,6 +7101,10 @@ function GML_PreProcessor() constructor {
 					
 					// IR for finally block
 					if (node.finallyBlock != undefined) {
+						
+						//patch the finally jump
+						_tryStart.finallyJump = array_length(ir);
+						
 						array_push(ir, {op: ByteOp.FINALLY_START, line: node.line, lineString: node.lineString});
 						
 					    ir = array_concat(ir, node.finallyBlock);

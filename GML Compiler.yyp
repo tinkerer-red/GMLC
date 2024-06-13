@@ -12,6 +12,7 @@
   "Folders":[
     {"$GMFolder":"","%Name":"_Libraries","folderPath":"folders/_Libraries.yy","name":"_Libraries","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"GMLCompiler","folderPath":"folders/_Libraries/GMLCompiler.yy","name":"GMLCompiler","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"Modules","folderPath":"folders/_Libraries/GMLCompiler/Modules.yy","name":"Modules","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Catspeak GM Compiler","folderPath":"folders/Catspeak GM Compiler.yy","name":"Catspeak GM Compiler","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Rooms","folderPath":"folders/Rooms.yy","name":"Rooms","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
@@ -57,7 +58,10 @@
   "resources":[
     {"id":{"name":"obj_gml_compiler_new","path":"objects/obj_gml_compiler_new/obj_gml_compiler_new.yy",},},
     {"id":{"name":"obj_gml_compiler","path":"objects/obj_gml_compiler/obj_gml_compiler.yy",},},
+    {"id":{"name":"Object3","path":"objects/Object3/Object3.yy",},},
+    {"id":{"name":"Object4","path":"objects/Object4/Object4.yy",},},
     {"id":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
+    {"id":{"name":"Room2","path":"rooms/Room2/Room2.yy",},},
     {"id":{"name":"__DeprocatedFunctions","path":"scripts/__DeprocatedFunctions/__DeprocatedFunctions.yy",},},
     {"id":{"name":"ASTNode","path":"scripts/ASTNode/ASTNode.yy",},},
     {"id":{"name":"GM14Compatibility","path":"scripts/GM14Compatibility/GM14Compatibility.yy",},},
@@ -76,6 +80,7 @@
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
     {"roomId":{"name":"Room1","path":"rooms/Room1/Room1.yy",},},
+    {"roomId":{"name":"Room2","path":"rooms/Room2/Room2.yy",},},
   ],
   "templateType":"game",
   "TextureGroups":[

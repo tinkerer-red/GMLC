@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"ModuleStructure",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/_Libraries/GMLCompiler.yy",
+    "name":"Modules",
+    "path":"folders/_Libraries/GMLCompiler/Modules.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

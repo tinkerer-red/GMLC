@@ -1,21 +1,15 @@
 {
   "$GMObject":"",
-  "%Name":"obj_gml_compiler",
-  "eventList":[
-    {"$GMEvent":"","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
-    {"$GMEvent":"","%Name":"","collisionObjectId":null,"eventNum":32,"eventType":5,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
-  ],
+  "%Name":"Object3",
+  "eventList":[],
   "managed":true,
-  "name":"obj_gml_compiler",
+  "name":"Object3",
   "overriddenProperties":[],
   "parent":{
     "name":"GML Compiler",
     "path":"GML Compiler.yyp",
   },
-  "parentObjectId":{
-    "name":"Object4",
-    "path":"objects/Object4/Object4.yy",
-  },
+  "parentObjectId":null,
   "persistent":false,
   "physicsAngularDamping":0.1,
   "physicsDensity":0.5,

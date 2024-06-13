@@ -1,20 +1,17 @@
 {
   "$GMObject":"",
-  "%Name":"obj_gml_compiler",
-  "eventList":[
-    {"$GMEvent":"","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
-    {"$GMEvent":"","%Name":"","collisionObjectId":null,"eventNum":32,"eventType":5,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
-  ],
+  "%Name":"Object4",
+  "eventList":[],
   "managed":true,
-  "name":"obj_gml_compiler",
+  "name":"Object4",
   "overriddenProperties":[],
   "parent":{
     "name":"GML Compiler",
     "path":"GML Compiler.yyp",
   },
   "parentObjectId":{
-    "name":"Object4",
-    "path":"objects/Object4/Object4.yy",
+    "name":"Object3",
+    "path":"objects/Object3/Object3.yy",
   },
   "persistent":false,
   "physicsAngularDamping":0.1,
@@ -29,7 +26,9 @@
   "physicsShape":1,
   "physicsShapePoints":[],
   "physicsStartAwake":true,
-  "properties":[],
+  "properties":[
+    {"$GMObjectProperty":"v1","%Name":"variable_name","filters":[],"listItems":[],"multiselect":false,"name":"variable_name","rangeEnabled":false,"rangeMax":10.0,"rangeMin":0.0,"resourceType":"GMObjectProperty","resourceVersion":"2.0","value":"0","varType":0,},
+  ],
   "resourceType":"GMObject",
   "resourceVersion":"2.0",
   "solid":false,
