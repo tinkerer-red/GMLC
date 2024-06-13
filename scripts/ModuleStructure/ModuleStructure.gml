@@ -1,27 +1,5 @@
 #macro GMLC_RESOURCE_VERSION "1.0"
 
-function __GMLC_Module() constructor {
-	animcurves = {};
-	datafiles  = {};
-	extensions = {};
-	fonts      = {};
-	notes      = {};
-	objects    = {};
-	options    = {};
-	rooms      = {};
-	scripts    = {};
-	sequences  = {};
-	shaders    = {};
-	sounds     = {};
-	sprites    = {};
-	tilesets   = {};
-	
-	// Internally Used
-	MacroVar   = {};
-	EnumVar    = {};
-	GlobalVar  = {};
-}
-
 //Base Asset
 function GMLCAsset() constructor {
 	
@@ -53,7 +31,6 @@ function GMLCProject() : GMLCAsset() constructor {
 	RoomOrderNodes = [ /* {roomId: {name: "Room1", path: "rooms/Room1/Room1.yy"} }, */ ];
 	templateType = "game";
 	TextureGroups = [ /* GMLCTextureGroup */ ];
-	
 	
 	//the following does not get exported
 	Imports = []; /* {id: "Multiprocessing", namespace: "MP", loadGlobally: false, dependencies: ["Scribble"]} */
@@ -519,41 +496,351 @@ function GMLCScript() : GMLCAsset() constructor {
 	
 }
 
-
-function __GMLC_Module_Datafile() : __GMLC_Module() constructor {
+//Tileset
+function GMLCTileSet() : GMLCAsset() constructor {
+	self[$ "$GMLCTileSet"] = "";
+	self[$ "%Name"] = ""; //TileSet1
+	resourceType = "GMLCTileSet";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = ""; //TileSet1
+	
+	autoTileSets = [];
+	macroPageTiles = {
+		SerialiseHeight: 0,
+		SerialiseWidth: 0,
+		TileSerialiseData: [],
+	};
+	out_columns = 0;
+	out_tilehborder = 2;
+	out_tilevborder = 2;
+	spriteId = null;
+	spriteNoExport = false;
+	textureGroupId = {
+		name: "Default",
+		path: "texturegroups/Default",
+	};
+	tileAnimation = {
+		FrameData: [],
+		SerialiseFrameCount: 0,
+	};
+	tileAnimationFrames = [];
+	tileAnimationSpeed = 15.0;
+	tileHeight = 16;
+	tilehsep = 0;
+	tilevsep = 0;
+	tileWidth = 16;
+	tilexoff = 0;
+	tileyoff = 0;
+	tile_count = 0;
 	
 }
 
-function __GMLC_Module_Font() : __GMLC_Module() constructor {
+//Sprite
+function GMLCSprite() : GMLCAsset() constructor {
+	self[$ "$GMLCSprite"] = "";
+	self[$ "%Name"] = ""; //Sprite2
+	resourceType = "GMLCSprite";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	bboxMode = 2;
+	bbox_bottom = 63;
+	bbox_left = -64;
+	bbox_right = 63;
+	bbox_top = -64;
+	collisionKind = 2;
+	collisionTolerance = 0;
+	DynamicTexturePage = false;
+	edgeFiltering = false;
+	For3D = false;
+	frames = [ /* GMLCSpriteFrame */ ];
+	gridX = 0;
+	gridY = 0;
+	height = 64;
+	HTile = false;
+	layers = [ /* GMLCImageLayer */ ];
+	name = ""; //Sprite1
+	nineSlice = new GMLCNineSliceData();
+	origin = 0;
+	preMultiplyAlpha = false;
+	sequence = new GMLCSequence();
+	swatchColours = null;
+	swfPrecision = 2.525;
+	textureGroupId = {
+		name: "Default",
+		path: "texturegroups/Default",
+	};
+	type = 0;
+	VTile = false;
+	width = 64
+}
+function GMLCSpriteFrame() : GMLCAsset() constructor {
+	self[$ "$GMLCSpriteFrame"] = "";
+	self[$ "%Name"] = ""; //Script1
+	resourceType = "GMLCSpriteFrame";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	Name = "993f0b95-6cf9-429e-8839-74d842fbe984";
+	name = "993f0b95-6cf9-429e-8839-74d842fbe984";
 	
 }
-function __GMLC_Module_Note() : __GMLC_Module() constructor {
+function GMLCImageLayer() : GMLCAsset() constructor {
+	self[$ "$GMLCImageLayer"] = "";
+	self[$ "%Name"] = ""; //Script1
+	resourceType = "GMLCImageLayer";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	Name = "5d1733a2-fbe0-484c-ab83-793ae81a09d2";
+	name = "5d1733a2-fbe0-484c-ab83-793ae81a09d2";
+	blendMode = 0;
+	displayName = "default";
+	isLocked = false;
+	opacity = 100.0;
+	visible = true;
+	
+}
+function GMLCNineSliceData() : GMLCAsset() constructor {
+	self[$ "$GMLCNineSliceData"] = "";
+	self[$ "%Name"] = ""; //Script1
+	resourceType = "GMLCNineSliceData";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	enabled = false;
+	highlightColour = 1728023040;
+	highlightStyle = 0;
+	top = 0
+	left = 0;
+	bottom = 0;
+	right = 0;
+	guideColour = [
+		4294902015,
+		4294902015,
+		4294902015,
+		4294902015
+	];
+	tileMode = [
+		0,
+		0,
+		0,
+		0,
+		0
+	];
 	
 }
 
+//Sequence
+function GMLCSequence() : GMLCAsset() constructor {
+	self[$ "$GMLCSequence"] = "";
+	self[$ "%Name"] = ""; //Sequence1
+	resourceType = "GMLCSequence";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = ""; //Sequence1
+	autoRecord = true;
+	backdropHeight = 768;
+	backdropImageOpacity = 0.5;
+	backdropImagePath = "";
+	backdropWidth = 1366;
+	backdropXOffset = 0.0;
+	backdropYOffset = 0.0;
+	events = new GMLCKeyframeMessageEventKeyframe();
+	eventStubScript = null;
+	eventToFunction = {};
+	length = 60.0;
+	lockOrigin = false;
+	moments = {
+		//"$KeyframeStore<MomentsEventKeyfram> = "";
+		//Keyframes = [];
+		//resourceType = "KeyframeStore<MomentsEventKeyframe>";
+		//resourceVersion = "2.0";
+	};
+	playback = 0;
+	playbackSpeed = 60.0;
+	playbackSpeedType = 0;
+	showBackdrop = true;
+	showBackdropImage = false;
+	spriteId = null;
+	timeUnits = 1;
+	tracks = [];
+	visibleRange = null;
+	volume = 1.0;
+	xorigin = 0;
+	yorigin = 0;
+}
+function GMLCKeyframeMessageEventKeyframe() : GMLCAsset() constructor {
+	//this is the original name of the class
+	self[$ "$Keyframe<MessageEventKeyframe>"] = "";
+	
+	self[$ "$GMLCKeyframeMessageEventKeyframe"] = "";
+	self[$ "%Name"] = ""; //Sequence1
+	resourceType = "GMLCKeyframeMessageEventKeyframe";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	Channels = { /* "0": new GMLCMessageEventKeyframe() */ };
+	Disabled = false;
+	id = "2922f5f8-1e4e-4331-8d4e-4b094cae90f8";
+	IsCreationKey = false;
+	Key = 0.0;
+	Length = 1.0;
+	Stretch = false;
+	
+}
+function GMLCMessageEventKeyframe() : GMLCAsset() constructor {
+	self[$ "$GMLCMessageEventKeyframe"] = "";
+	self[$ "%Name"] = ""; //Sequence1
+	resourceType = "GMLCMessageEventKeyframe";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	Events = [ /* string */ ];
+}
+function GMLCKeyframeMomentsEventKeyframe() : GMLCAsset() constructor { ////////////////////////////////// no examples yet
+	////this is the original name of the class
+	//self[$ "$Keyframe<MomentsEventKeyframe>"] = "";
+	
+	//self[$ "$GMLCKeyframeMomentsEventKeyframe"] = "";
+	//self[$ "%Name"] = ""; //Sequence1
+	//resourceType = "GMLCKeyframeMomentsEventKeyframe";
+	//resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	//Channels = { /* "0": new MomentsEventKeyframe() */ };
+	//Disabled = false;
+	//id = "2922f5f8-1e4e-4331-8d4e-4b094cae90f8";
+	//IsCreationKey = false;
+	//Key = 0.0;
+	//Length = 1.0;
+	//Stretch = false;
+	
+}
+function GMLCMomentsEventKeyframe() : GMLCAsset() constructor { ////////////////////////////////// no examples yet
+	//self[$ "$GMLCMomentsEventKeyframe"] = "";
+	//self[$ "%Name"] = ""; //Sequence1
+	//resourceType = "GMLCMomentsEventKeyframe";
+	//resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	//Events = [ /* string */ ];
+}
+
+//Sound
+function GMLCSound() : GMLCAsset() constructor {
+	self[$ "$GMLCSound"] = "";
+	self[$ "%Name"] = ""; //Script1
+	resourceType = "GMLCSound";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = ""; //Sound1
+	audioGroupId = {
+		name: "audiogroup_default",
+		path: "audiogroups/audiogroup_default",
+	};
+	bitDepth = 1;
+	bitRate = 128;
+	compression = 0;
+	conversionMode = 0;
+	duration = 0.0;
+	preload = false;
+	sampleRate = 44100;
+	soundFile = "";
+	type = 0;
+	volume = 1.0;
+}
+
+//Timeline
+function GMLCTimeline() : GMLCAsset() constructor {
+	self[$ "$GMLCTimeline"] = "";
+	self[$ "%Name"] = ""; //Timeline
+	resourceType = "GMLCTimeline";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = "Timeline1";
+	momentList = [ /* GMLCMoment */ ];
+}
+function GMLCMoment() : GMLCAsset() constructor {
+	self[$ "$GMLCMoment"] = "";
+	self[$ "%Name"] = ""; //Timeline
+	resourceType = "GMLCMoment";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = "";
+	evnt = new GMLCEvent();
+	moment = 0;
+}
+function GMLCEvent() : GMLCAsset() constructor {
+	self[$ "$GMLCEvent"] = "";
+	self[$ "%Name"] = ""; //Timeline
+	resourceType = "GMLCEvent";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = "";
+	collisionObjectId = null;
+	eventNum = 0;
+	eventType = 0;
+	isDnD = false;
+}
+
+//Shader
+function GMLCShader() : GMLCAsset() constructor {
+	self[$ "$GMLCShader"] = "";
+	self[$ "%Name"] = ""; //Script1
+	resourceType = "GMLCShader";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = "Shader1";
+	type = 1;
+}
+
+//Note
+function GMLCNotes() : GMLCAsset() constructor {
+	self[$ "$GMLCNotes"] = "";
+	self[$ "%Name"] = ""; //Note1
+	resourceType = "GMLCNotes";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = ""; //Note1
+}
+
+//Font
+function GMLCFont() : GMLCAsset() constructor {
+	self[$ "$GMLCFont"] = "";
+	self[$ "%Name"] = ""; //Font1
+	resourceType = "GMLCFont";
+	resourceVersion = GMLC_RESOURCE_VERSION;
+	
+	name = ""; //Font1
+	AntiAlias = 1;
+	applyKerning = 0;
+	ascender = 0;
+	ascenderOffset = 0;
+	bold = false;
+	canGenerateBitmap = true;
+	charset = 0;
+	first = 0;
+	fontName = ""; //"Arial"
+	glyphOperations = 0;
+	glyphs = {};
+	hinting = 0;
+	includeTTF = false;
+	interpreter = 0;
+	italic = false;
+	kerningPairs = [];
+	last = 0;
+	lineHeight = 0;
+	maintainGms1Font = false;
+	pointRounding = 0;
+	ranges = [
+		{lower: 32,   upper: 127,},
+		{lower: 9647, upper: 9647,},
+	];
+	regenerateBitmap = false;
+	sampleText = "abcdef ABCDEF\n0123456789 .,<>\"'&!?\nthe quick brown fox jumps over the lazy dog\nTHE QUICK BROWN FOX JUMPS OVER THE LAZY DOG\nDefault character: ▯ (9647)";
+	sdfSpread = 8;
+	size = 12.0;
+	styleName = "Regular";
+	textureGroupId = {
+		name: "Default",
+		path: "texturegroups/Default",
+	};
+	TTFName = "";
+	usesSDF = false;
+}
 
 
-function __GMLC_Module_Option() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Room() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Script() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Sequence() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Shader() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Sound() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Sprite() : __GMLC_Module() constructor {
-	
-}
-function __GMLC_Module_Tileset() : __GMLC_Module() constructor {
-	
-}
