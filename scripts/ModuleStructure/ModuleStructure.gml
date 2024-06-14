@@ -1,27 +1,27 @@
-#macro GMLC_RESOURCE_VERSION "1.0"
+#macro GM_RESOURCE_VERSION "1.0"
 
 //Base Asset
-function GMLCAsset() constructor {
+function GMAsset() constructor {
 	
 }
 
 //Project
-function GMLCProject() : GMLCAsset() constructor {
-	self[$ "$GMLCProject"] = "";
+function GMProject() : GMAsset() constructor {
+	self[$ "$GMProject"] = "";
 	self[$ "%Name"] = ""; //GameName
-	resourceType = "GMLCProject";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMProject";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //GameName
 	
-	AudioGroups = [ /* GMLCAudioGroup */ ];
+	AudioGroups = [ /* GMAudioGroup */ ];
 	configs = {
 		children: [ /* {"children":[],"name":"NewConfig1",} */ ],
 		name: "Default",
 	};
 	defaultScriptType = 1;
-	Folders = [ /* GMLCFolder */ ];
-	IncludedFiles = [ /* GMLCIncludedFile */ ];
+	Folders = [ /* GMFolder */ ];
+	IncludedFiles = [ /* GMIncludedFile */ ];
 	isEcma = false;
 	LibraryEmitters = [];
 	MetaData = {
@@ -30,7 +30,7 @@ function GMLCProject() : GMLCAsset() constructor {
 	resources = [ /* {id: {name: "obj_gml_compiler_new", path: "objects/obj_gml_compiler_new/obj_gml_compiler_new.yy"} }, */ ];
 	RoomOrderNodes = [ /* {roomId: {name: "Room1", path: "rooms/Room1/Room1.yy"} }, */ ];
 	templateType = "game";
-	TextureGroups = [ /* GMLCTextureGroup */ ];
+	TextureGroups = [ /* GMTextureGroup */ ];
 	
 	//the following does not get exported
 	Imports = []; /* {id: "Multiprocessing", namespace: "MP", loadGlobally: false, dependencies: ["Scribble"]} */
@@ -38,20 +38,33 @@ function GMLCProject() : GMLCAsset() constructor {
 	MacroVar  = {};
 	EnumVar   = {};
 	
+	static importString = function(_file){
+		
+	}
+	static exportString = function(_file){
+		
+	}
+	static importAsset = function(_file){
+		
+	}
+	static exportAsset = function(_file){
+		
+	}
+	
 }
 
 //Anim Curves
-function GMLCAnimCurve(_name, _function=0, _channels=[]) : GMLCAsset() constructor {
-	resourceType = "GMLCAnimCurve";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMAnimCurve(_name, _function=0, _channels=[]) : GMAsset() constructor {
+	resourceType = "GMAnimCurve";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = "acAcceptDecline"; //name
 	channels = _channels; //array of channels
 	self[$ "function"] = _function; //the smoothing type
 }
-function GMLCAnimCurveChannel(_name, _colour=4290799884, _points=[], _visible=true) : GMLCAsset() constructor {
-	resourceType = "GMLCAnimCurveChannel";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMAnimCurveChannel(_name, _colour=4290799884, _points=[], _visible=true) : GMAsset() constructor {
+	resourceType = "GMAnimCurveChannel";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name    = _name;
 	colour  = _colour;
@@ -59,9 +72,9 @@ function GMLCAnimCurveChannel(_name, _colour=4290799884, _points=[], _visible=tr
 	visible = _visible;
   
 }
-function GMLCAnimCurveChannelPoint(_th0, _th1, _tv0, _tv1, _x, _y) : GMLCAsset() constructor {
-	resourceType = "GMLCAnimCurveChannelPoint";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMAnimCurveChannelPoint(_th0, _th1, _tv0, _tv1, _x, _y) : GMAsset() constructor {
+	resourceType = "GMAnimCurveChannelPoint";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	th0 = _th0;
 	th1 = _th1;
@@ -72,9 +85,9 @@ function GMLCAnimCurveChannelPoint(_th0, _th1, _tv0, _tv1, _x, _y) : GMLCAsset()
 }
 
 //Extensions
-function GMLCExtension() : GMLCAsset() constructor {
-	resourceType = "GMLCExtension";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMExtension() : GMAsset() constructor {
+	resourceType = "GMExtension";
+	resourceVersion = GM_RESOURCE_VERSION;
 	name = "";
 	androidactivityinject = "";
 	androidclassname = "";
@@ -92,7 +105,7 @@ function GMLCExtension() : GMLCAsset() constructor {
 	description = "";
 	exportToGame = true;
 	extensionVersion = "0.0.1";
-	files = [/* GMLCExtensionFile */];
+	files = [/* GMExtensionFile */];
 	gradleinject = "";
 	hasConvertedCodeInjection = true;
 	helpfile = "";
@@ -118,11 +131,11 @@ function GMLCExtension() : GMLCAsset() constructor {
 	productId = "";
 	sourcedir = "";
 	supportedTargets = -1;
-	tvosclassname = null;
+	tvosclassname = undefined;
 	tvosCocoaPodDependencies = "";
 	tvosCocoaPods = "";
 	tvoscodeinjection = "";
-	tvosdelegatename = null;
+	tvosdelegatename = undefined;
 	tvosmaccompilerflags = "";
 	tvosmaclinkerflags = "";
 	tvosplistinject = "";
@@ -130,15 +143,15 @@ function GMLCExtension() : GMLCAsset() constructor {
 	tvosSystemFrameworkEntries = [];
 	tvosThirdPartyFrameworkEntries = [];
 }
-function GMLCExtensionFile() : GMLCAsset() constructor {
-	resourceType = "GMLCExtensionFile";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMExtensionFile() : GMAsset() constructor {
+	resourceType = "GMExtensionFile";
+	resourceVersion = GM_RESOURCE_VERSION;
 	name = "";
 	constants = [];
 	copyToTargets = -1;
 	filename ="extWallet.js";
 	final = "";
-	functions =[ /* GMLCExtensionFunction */ ]
+	functions =[ /* GMExtensionFunction */ ]
 	init = "";
 	kind = 5;
 	order =[ /* {name ="funcName",path ="extensions/extensionName/extensionName.yy",}, */ ];
@@ -147,9 +160,9 @@ function GMLCExtensionFile() : GMLCAsset() constructor {
 	uncompress = false;
 	usesRunnerInterface = false;
 }
-function GMLCExtensionFunction() : GMLCAsset() constructor {
-	resourceType = "GMLCExtensionFunction";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMExtensionFunction() : GMAsset() constructor {
+	resourceType = "GMExtensionFunction";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //name of the function in editor
 	argCount = 0;
@@ -168,11 +181,11 @@ function GMLCExtensionFunction() : GMLCAsset() constructor {
 }
 
 //Objects
-function GMLCObject() : GMLCAsset() constructor {
+function GMObject() : GMAsset() constructor {
 	self[$ "$GMObject"] = "";
 	self[$ "%Name"] = "Object4";
-	resourceType = "GMLCObject";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMObject";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	eventList = [];
 	self[$ "mana"+"ged"] = true;
@@ -195,17 +208,17 @@ function GMLCObject() : GMLCAsset() constructor {
 	physicsShape = 1;
 	physicsShapePoints = [];
 	physicsStartAwake = true;
-	properties = [ /* GMLCObjectProperty */ ];
+	properties = [ /* GMObjectProperty */ ];
 	solid = false;
-	spriteId = null;
-	spriteMaskId = null;
+	spriteId = undefined;
+	spriteMaskId = undefined;
 	visible = true;
 }
-function GMLCObjectProperty() : GMLCAsset() constructor {
-	self[$ "$GMLCObjectProperty"] = "v1";
+function GMObjectProperty() : GMAsset() constructor {
+	self[$ "$GMObjectProperty"] = "v1";
 	self[$ "%Name"] = "variable_name"; //variable_name
-	resourceType = "GMLCObjectProperty";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMObjectProperty";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	filters = [];
 	listItems = [];
@@ -217,7 +230,7 @@ function GMLCObjectProperty() : GMLCAsset() constructor {
 	value = "0";
 	varType = 0;
 	
-	enum GMLCObjectProperty_VarType {
+	enum GMObjectProperty_VarType {
 		Real = 0,
 		Integer = 1,
 		String = 2,
@@ -231,11 +244,11 @@ function GMLCObjectProperty() : GMLCAsset() constructor {
 }
 
 //Particle Systems
-function GMLCParticleSystem() : GMLCAsset() constructor {
+function GMParticleSystem() : GMAsset() constructor {
 	self[$ "$GMParticleSystem"] = "";
 	self[$ "%Name"] = ""; //ParticleSystem1
-	resourceType = "GMLCParticleSystem";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMParticleSystem";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	backdropHeight = 768;
 	backdropImageOpacity = 0.5;
@@ -244,18 +257,18 @@ function GMLCParticleSystem() : GMLCAsset() constructor {
 	backdropXOffset = 0.0;
 	backdropYOffset = 0.0;
 	drawOrder = 0;
-	emitters = [ /* GMLCPSEmitter */ ];
+	emitters = [ /* GMPSEmitter */ ];
 	name = ""; //ParticleSystem1
 	showBackdrop = true;
 	showBackdropImage = false;
 	xorigin = 0;
 	yorigin = 0;
 }
-function GMLCPSEmitter() : GMLCAsset() constructor {
-	self[$ "$GMLCPSEmitter"] = "";
+function GMPSEmitter() : GMAsset() constructor {
+	self[$ "$GMPSEmitter"] = "";
 	self[$ "%Name"] = ""; //Emitter
-	resourceType = "GMLCPSEmitter";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMPSEmitter";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Emitter
 	additiveBlend = false;
@@ -275,13 +288,13 @@ function GMLCPSEmitter() : GMLCAsset() constructor {
 	emitIntervalUnits = 0;
 	enabled = true;
 	endColour = 4294967295;
-	GMPresetName = null;
+	GMPresetName = undefined;
 	gravityDirection = 270.0;
 	gravityForce = 0.0;
 	headPosition = 0.0;
 	lifetimeMax = 80.0;
 	lifetimeMin = 80.0;
-	linkedEmitter = null;
+	linkedEmitter = undefined;
 	locked = false;
 	midColour = 4294967295;
 	mode = 0;
@@ -302,17 +315,17 @@ function GMLCPSEmitter() : GMLCAsset() constructor {
 	sizeMin = 1.0;
 	sizeWiggle = 0.0;
 	spawnOnDeathCount = 1;
-	spawnOnDeathGMPreset = null;
-	spawnOnDeathId = null;
+	spawnOnDeathGMPreset = undefined;
+	spawnOnDeathId = undefined;
 	spawnOnUpdateCount = 1;
-	spawnOnUpdateGMPreset = null;
-	spawnOnUpdateId = null;
+	spawnOnUpdateGMPreset = undefined;
+	spawnOnUpdateId = undefined;
 	speedIncrease = 0.0;
 	speedMax = 5.0;
 	speedMin = 5.0;
 	speedWiggle = 0.0;
 	spriteAnimate = false;
-	spriteId = null;
+	spriteId = undefined;
 	spriteRandom = false;
 	spriteStretch = true;
 	startColour = 4294967295;
@@ -320,11 +333,11 @@ function GMLCPSEmitter() : GMLCAsset() constructor {
 }
 
 //Paths
-function GMLCPath() : GMLCAsset() constructor {
-	self[$ "$GMLCPath"] = "";
+function GMPath() : GMAsset() constructor {
+	self[$ "$GMPath"] = "";
 	self[$ "%Name"] = ""; //Path1
-	resourceType = "GMLCPath";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMPath";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Path1
 	closed = false;
@@ -334,11 +347,11 @@ function GMLCPath() : GMLCAsset() constructor {
 }
 
 //Rooms
-function GMLCRoom() : GMLCAsset() constructor {
-	self[$ "$GMLCRoom"] = "";
+function GMRoom() : GMAsset() constructor {
+	self[$ "$GMRoom"] = "";
 	self[$ "%Name"] = ""; //Room1
-	resourceType = "GMLCRoom";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRoom";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Room1
 	creationCodeFile = "";
@@ -347,8 +360,8 @@ function GMLCRoom() : GMLCAsset() constructor {
 	inheritLayers = false;
 	instanceCreationOrder = [];
 	isDnd = false;
-	layers = [ /* GMLCR* (room layers) */ ];
-	parentRoom = null;
+	layers = [ /* GMR* (room layers) */ ];
+	parentRoom = undefined;
 	physicsSettings = {
 		inheritPhysicsSettings : false,
 		PhysicsWorld : false,
@@ -362,7 +375,7 @@ function GMLCRoom() : GMLCAsset() constructor {
 		persistent : false,
 		Width : 1366,
 	};
-	sequenceId = null;
+	sequenceId = undefined;
 	views = [
 		{hborder: 32, hport: 768, hspeed: -1, hview: 768, inherit: false, objectId: null, vborder: 32, visible: false, vspeed: -1, wport: 1366, wview: 1366, xport: 0, xview: 0, yport: 0, yview: 0, },
 		{hborder: 32, hport: 768, hspeed: -1, hview: 768, inherit: false, objectId: null, vborder: 32, visible: false, vspeed: -1, wport: 1366, wview: 1366, xport: 0, xview: 0, yport: 0, yview: 0, },
@@ -382,15 +395,15 @@ function GMLCRoom() : GMLCAsset() constructor {
 	volume = 1.0;
 }
 //Room Layers
-function GMLCRLayer() : GMLCAsset() constructor {
-	self[$ "$GMLCRLayer"] = "";
+function GMRLayer() : GMAsset() constructor {
+	self[$ "$GMRLayer"] = "";
 	self[$ "%Name"] = ""; //Folder_1
-	resourceType = "GMLCRLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Folder_1
 	effectEnabled = true;
-	effectType = null;
+	effectType = undefined;
 	gridX = 32;
 	gridY = 32;
 	hierarchyFrozen = false;
@@ -404,41 +417,41 @@ function GMLCRLayer() : GMLCAsset() constructor {
 	visible = true;
 	
 };
-function GMLCREffectLayer() : GMLCRLayer() constructor {
-	self[$ "$GMLCREffectLayer"] = "";
+function GMREffectLayer() : GMRLayer() constructor {
+	self[$ "$GMREffectLayer"] = "";
 	self[$ "%Name"] = ""; //Effect_1
-	resourceType = "GMLCREffectLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMREffectLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Effect_1
 	
 };
-function GMLCRAssetLayer() : GMLCRLayer() constructor {
-	self[$ "$GMLCRAssetLayer"] = "";
+function GMRAssetLayer() : GMRLayer() constructor {
+	self[$ "$GMRAssetLayer"] = "";
 	self[$ "%Name"] = ""; //Assets_1
-	resourceType = "GMLCRAssetLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRAssetLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; // Assets_1
 	assets = [];
 	
 };
-function GMLCRPathLayer() : GMLCRLayer() constructor {
-	self[$ "$GMLCRPathLayer"] = "";
+function GMRPathLayer() : GMRLayer() constructor {
+	self[$ "$GMRPathLayer"] = "";
 	self[$ "%Name"] = ""; //Path1
-	resourceType = "GMLCRPathLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRPathLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Path_1
 	colour = 4278190335;
-	pathId = null;
+	pathId = undefined;
 	
 };	
-function GMLCRTileLayer() : GMLCRLayer() constructor { /////////////////////////// check `tiles`
-	self[$ "$GMLCRTileLayer"] = "";
+function GMRTileLayer() : GMRLayer() constructor { /////////////////////////// check `tiles`
+	self[$ "$GMRTileLayer"] = "";
 	self[$ "%Name"] = ""; //Path1
-	resourceType = "GMLCRTileLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRTileLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Tiles_1
 	tiles = {
@@ -446,26 +459,26 @@ function GMLCRTileLayer() : GMLCRLayer() constructor { /////////////////////////
 		SerialiseWidth : 0,
 		TileSerialiseData : [],
 	};
-	tilesetId = null;
+	tilesetId = undefined;
 	x = 0;
 	y = 0;
 	
 };
-function GMLCRInstanceLayer() : GMLCRLayer() constructor {
-	self[$ "$GMLCRInstanceLayer"] = "";
+function GMRInstanceLayer() : GMRLayer() constructor {
+	self[$ "$GMRInstanceLayer"] = "";
 	self[$ "%Name"] = ""; //Instances
-	resourceType = "GMLCRInstanceLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRInstanceLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = "Instances";
 	instances = [];
 	
 };
-function GMLCRBackgroundLayer() : GMLCRLayer() constructor {
-	self[$ "$GMLCRBackgroundLayer"] = "";
+function GMRBackgroundLayer() : GMRLayer() constructor {
+	self[$ "$GMRBackgroundLayer"] = "";
 	self[$ "%Name"] = ""; //Background
-	resourceType = "GMLCRBackgroundLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMRBackgroundLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Background
 	animationFPS = 15.0;
@@ -473,7 +486,7 @@ function GMLCRBackgroundLayer() : GMLCRLayer() constructor {
 	colour = 4278190080;
 	hspeed = 0.0;
 	htiled = false;
-	spriteId = null;
+	spriteId = undefined;
 	stretch = false;
 	userdefinedAnimFPS = false;
 	vspeed = 0.0;
@@ -484,11 +497,11 @@ function GMLCRBackgroundLayer() : GMLCRLayer() constructor {
 };
 
 //Scripts
-function GMLCScript() : GMLCAsset() constructor {
-	self[$ "$GMLCScript"] = "";
+function GMScript() : GMAsset() constructor {
+	self[$ "$GMScript"] = "";
 	self[$ "%Name"] = ""; //Script1
-	resourceType = "GMLCScript";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMScript";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Script1
 	isCompatibility = false;
@@ -497,11 +510,11 @@ function GMLCScript() : GMLCAsset() constructor {
 }
 
 //Tileset
-function GMLCTileSet() : GMLCAsset() constructor {
-	self[$ "$GMLCTileSet"] = "";
+function GMTileSet() : GMAsset() constructor {
+	self[$ "$GMTileSet"] = "";
 	self[$ "%Name"] = ""; //TileSet1
-	resourceType = "GMLCTileSet";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMTileSet";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //TileSet1
 	
@@ -514,7 +527,7 @@ function GMLCTileSet() : GMLCAsset() constructor {
 	out_columns = 0;
 	out_tilehborder = 2;
 	out_tilevborder = 2;
-	spriteId = null;
+	spriteId = undefined;
 	spriteNoExport = false;
 	textureGroupId = {
 		name: "Default",
@@ -537,34 +550,32 @@ function GMLCTileSet() : GMLCAsset() constructor {
 }
 
 //Sprite
-function GMLCSprite() : GMLCAsset() constructor {
-	self[$ "$GMLCSprite"] = "";
-	self[$ "%Name"] = ""; //Sprite2
-	resourceType = "GMLCSprite";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+function GMSprite() : GMAsset() constructor {
+	resourceType = "GMSprite";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
-	bboxMode = 2;
+	bboxMode = 2; // bboxmode_automatic || bboxmode_fullimage || bboxmode_manual
 	bbox_bottom = 63;
-	bbox_left = -64;
-	bbox_right = 63;
-	bbox_top = -64;
-	collisionKind = 2;
-	collisionTolerance = 0;
+	bbox_left   = -64;
+	bbox_right  = 63;
+	bbox_top    = -64;
+	collisionKind = 2; // bboxkind_rectangular || bboxkind_ellipse || bboxkind_diamond || bboxkind_precise
+	collisionTolerance = 0; // 0 <-> 255
 	DynamicTexturePage = false;
 	edgeFiltering = false;
 	For3D = false;
-	frames = [ /* GMLCSpriteFrame */ ];
+	frames = [ /* GMSpriteFrame */ ];
 	gridX = 0;
 	gridY = 0;
 	height = 64;
 	HTile = false;
-	layers = [ /* GMLCImageLayer */ ];
+	layers = [ /* GMImageLayer */ ];
 	name = ""; //Sprite1
-	nineSlice = new GMLCNineSliceData();
+	nineSlice = new GMNineSliceData();
 	origin = 0;
 	preMultiplyAlpha = false;
-	sequence = new GMLCSequence();
-	swatchColours = null;
+	sequence = new GMSequence();
+	swatchColours = undefined;
 	swfPrecision = 2.525;
 	textureGroupId = {
 		name: "Default",
@@ -572,23 +583,202 @@ function GMLCSprite() : GMLCAsset() constructor {
 	};
 	type = 0;
 	VTile = false;
-	width = 64
+	width = 64;
+	
+	static importString = function(_string){
+		var _struct = json_parse(_string);
+		
+		if (_struct.resourceType != resourceType) {
+			throw $"\nImported string is not a valid {resourceType} json!\nType was :: {_struct.resourceType} ::"
+		}
+		
+		__import(_struct);
+		
+	}
+	static exportString = function(){
+		//cache our old 
+		var _struct = __export();
+		
+		var _str = json_stringify(_struct, true);
+		
+		return _str;
+	}
+	static __import = function(_struct){
+		bboxMode = _struct.bboxModel;
+		bbox_bottom = _struct.bbox_bottom;
+		bbox_left = _struct.bbox_left;
+		bbox_right = _struct.bbox_right;
+		bbox_top = _struct.bbox_top;
+		collisionKind = _struct.collisionKind;
+		collisionTolerance = _struct.collisionTolerance;
+		DynamicTexturePage = _struct.DynamicTexturePage;
+		edgeFiltering = _struct.edgeFiltering;
+		For3D = _struct.For3D;
+		frames = _struct.frames;
+		gridX = _struct.gridX;
+		gridY = _struct.gridY;
+		height = _struct.height;
+		HTile = _struct.HTile;
+		layers = _struct.layers;
+		name = _struct.name;
+		origin = _struct.origin;
+		preMultiplyAlpha = _struct.preMultiplyAlpha;
+		swatchColours = _struct.swatchColours;
+		swfPrecision = _struct.swfPrecision;
+		
+		textureGroupId.name = _struct.textureGroupId.name;
+		textureGroupId.path = _struct.textureGroupId.path;
+		
+		type = _struct.type;
+		VTile = _struct.VTile;
+		width = _struct.width;
+		
+		nineSlice.__import(_struct.nineSlice);
+		sequence.__import(_struct.sequence);
+	}
+	static __export = function(){
+		var _struct = {};
+		
+		_struct.bboxMode = bboxModel;
+		_struct.bbox_bottom = bbox_bottom;
+		_struct.bbox_left = bbox_left;
+		_struct.bbox_right = bbox_right;
+		_struct.bbox_top = bbox_top;
+		_struct.collisionKind = collisionKind;
+		_struct.collisionTolerance = collisionTolerance;
+		_struct.DynamicTexturePage = DynamicTexturePage;
+		_struct.edgeFiltering = edgeFiltering;
+		_struct.For3D = For3D;
+		_struct.frames = frames;
+		_struct.gridX = gridX;
+		_struct.gridY = gridY;
+		_struct.height = height;
+		_struct.HTile = HTile;
+		_struct.layers = layers;
+		_struct.name = name;
+		_struct.origin = origin;
+		_struct.preMultiplyAlpha = preMultiplyAlpha;
+		_struct.swatchColours = swatchColours;
+		_struct.swfPrecision = swfPrecision;
+		
+		_struct.textureGroupId.name = textureGroupId.name;
+		_struct.textureGroupId.path = textureGroupId.path;
+		
+		_struct.type = type;
+		_struct.VTile = VTile;
+		_struct.width = width;
+		
+		_struct.nineSlice = nineSlice.__export();
+		_struct.sequence  = sequence.__export();
+		
+		return _struct;
+	}
+	static importAsset = function(_sprite){
+		var _struct = sprite_get_info(_sprite)
+		
+		bboxMode = sprite_get_bbox_mode(_sprite); // bboxmode_automatic || bboxmode_fullimage || bboxmode_manual
+		bbox_bottom = _struct.bbox_bottom;
+		bbox_left   = _struct.bbox_left;
+		bbox_right  = _struct.bbox_right;
+		bbox_top    = _struct.bbox_top;
+		edgeFiltering = _struct.smooth;
+		type = _struct.type;
+		width = _struct.width;
+		height = _struct.height;
+		
+		sequence.xorigin = _struct.xoffset;
+		sequence.yorigin = _struct.yoffset;
+		sequence.playbackSpeed     = _struct.frame_speed;
+		sequence.playbackSpeedType = _struct.frame_type;
+		
+		var _arr = _struct.messages;
+		var _keyframe_arr = sequence.events.Keyframes;
+		
+		array_resize(_keyframe_arr, array_length(_arr))
+		var _i=0; repeat(array_length(_arr)) {
+			
+			var _keyframe = new GMKeyframe();
+			var _message = new GMMessageEventKeyframe();
+			
+			_message.Events[0] = _arr[_i].message;
+			_keyframe.Channels[$ _i] = _message
+			
+			_keyframe_arr[_i] = _keyframe
+			
+		_i+=1};
+		
+		array_resize(frames, _struct.num_subimages);
+		nineSlice.__import(_struct.nineslice);
+		
+		myAsset = _sprite;
+		
+		#region things which can not be found at runtime
+		//collisionKind = 2; // bboxkind_rectangular || bboxkind_ellipse || bboxkind_diamond || bboxkind_precise
+		//collisionTolerance = 0; // 0 <-> 255
+		//DynamicTexturePage = false;
+		//For3D = false;
+		//frames = [ /* GMSpriteFrame */ ];
+		//gridX = 0;
+		//gridY = 0;
+		//HTile = false;
+		//layers = [ /* GMImageLayer */ ];
+		//name = ""; //Sprite1
+		//nineSlice = new GMNineSliceData();
+		//origin = 0;
+		//preMultiplyAlpha = false;
+		//swatchColours = undefined;
+		//swfPrecision = 2.525;
+		//textureGroupId = {
+		//	name: "Default",
+		//	path: "texturegroups/Default",
+		//};
+		//VTile = false;
+		#endregion
+	}
+	static exportAsset = function(){
+		if (myAsset != undefined) {
+			cleanUp();
+		}
+		
+		var _frameCount = array_length(frames);
+		
+		//add first image
+		var _spr = sprite_add(frames[0].name, _frameCount, false, edgeFiltering, sequence.xorigin, sequence.yorigin);
+		
+		//add sub images
+		var _i=1 repeat(_frameCount-1) {
+			var _temp_spr = sprite_add(frames[_i].name, _frameCount, false, edgeFiltering, sequence.xorigin, sequence.yorigin)
+			sprite_merge(_spr, _temp_spr);
+			sprite_delete(_temp_spr);
+		_i+=1;} //end repeat loop
+		
+		//sprite_merge()
+		sprite_collision_mask(_spr, false, bboxMode, bbox_left, bbox_top, bbox_right, bbox_bottom, collisionKind, collisionTolerance)
+		sprite_set_speed(_spr, sequence.playbackSpeed, sequence.playbackSpeedType)
+		sprite_set_nineslice(_spr, nineSlice.exportAsset())
+		
+		//cache it
+		myAsset = _spr;
+		
+		return _spr;
+	}
+	
 }
-function GMLCSpriteFrame() : GMLCAsset() constructor {
-	self[$ "$GMLCSpriteFrame"] = "";
+function GMSpriteFrame() : GMAsset() constructor {
+	self[$ "$GMSpriteFrame"] = "";
 	self[$ "%Name"] = ""; //Script1
-	resourceType = "GMLCSpriteFrame";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMSpriteFrame";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	Name = "993f0b95-6cf9-429e-8839-74d842fbe984";
 	name = "993f0b95-6cf9-429e-8839-74d842fbe984";
 	
 }
-function GMLCImageLayer() : GMLCAsset() constructor {
-	self[$ "$GMLCImageLayer"] = "";
+function GMImageLayer() : GMAsset() constructor {
+	self[$ "$GMImageLayer"] = "";
 	self[$ "%Name"] = ""; //Script1
-	resourceType = "GMLCImageLayer";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMImageLayer";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	Name = "5d1733a2-fbe0-484c-ab83-793ae81a09d2";
 	name = "5d1733a2-fbe0-484c-ab83-793ae81a09d2";
@@ -599,41 +789,66 @@ function GMLCImageLayer() : GMLCAsset() constructor {
 	visible = true;
 	
 }
-function GMLCNineSliceData() : GMLCAsset() constructor {
-	self[$ "$GMLCNineSliceData"] = "";
+function GMNineSliceData() : GMAsset() constructor {
+	self[$ "$GMNineSliceData"] = "";
 	self[$ "%Name"] = ""; //Script1
-	resourceType = "GMLCNineSliceData";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMNineSliceData";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
+	// RUNTIME
 	enabled = false;
-	highlightColour = 1728023040;
-	highlightStyle = 0;
 	top = 0
 	left = 0;
 	bottom = 0;
 	right = 0;
+	tileMode = [ //https://manual.gamemaker.io/monthly/en/#t=GameMaker_Language%2FGML_Reference%2FAsset_Management%2FSprites%2FNine_Slice_Struct.htm
+		0, 
+		0, 
+		0, 
+		0, 
+		0  
+	];
+	
+	//IDE ONLY
+	highlightColour = 1728023040;
+	highlightStyle = 0;
 	guideColour = [
 		4294902015,
 		4294902015,
 		4294902015,
 		4294902015
 	];
-	tileMode = [
-		0,
-		0,
-		0,
-		0,
-		0
-	];
 	
+	
+	static importString = function(_string){
+		var _struct = json_parse(_string);
+		
+		if (_struct.resourceType != resourceType) {
+			throw $"\nImported string is not a valid {instanceof(self)} project json file!\nType was :: {_struct.resourceType} ::"
+		}
+		
+		
+	}
+	static exportString = function(){
+		
+	}
+	static importAsset = function(_sprite){
+		
+	}
+	static exportAsset = function(){
+		
+		return _spr;
+	}
+	
+	//sprite_nineslice_create()
 }
 
 //Sequence
-function GMLCSequence() : GMLCAsset() constructor {
-	self[$ "$GMLCSequence"] = "";
+function GMSequence() : GMAsset() constructor {
+	self[$ "$GMSequence"] = "";
 	self[$ "%Name"] = ""; //Sequence1
-	resourceType = "GMLCSequence";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMSequence";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Sequence1
 	autoRecord = true;
@@ -643,89 +858,83 @@ function GMLCSequence() : GMLCAsset() constructor {
 	backdropWidth = 1366;
 	backdropXOffset = 0.0;
 	backdropYOffset = 0.0;
-	events = new GMLCKeyframeMessageEventKeyframe();
-	eventStubScript = null;
+	events = new GMKeyframeStore();
+	eventStubScript = undefined;
 	eventToFunction = {};
 	length = 60.0;
 	lockOrigin = false;
-	moments = {
-		//"$KeyframeStore<MomentsEventKeyfram> = "";
-		//Keyframes = [];
-		//resourceType = "KeyframeStore<MomentsEventKeyframe>";
-		//resourceVersion = "2.0";
-	};
+	moments = new GMKeyframeStore();
 	playback = 0;
 	playbackSpeed = 60.0;
 	playbackSpeedType = 0;
 	showBackdrop = true;
 	showBackdropImage = false;
-	spriteId = null;
+	spriteId = undefined;
 	timeUnits = 1;
 	tracks = [];
-	visibleRange = null;
+	visibleRange = undefined;
 	volume = 1.0;
 	xorigin = 0;
 	yorigin = 0;
 }
-function GMLCKeyframeMessageEventKeyframe() : GMLCAsset() constructor {
+function GMKeyframeStore() : GMAsset() constructor {
 	//this is the original name of the class
-	self[$ "$Keyframe<MessageEventKeyframe>"] = "";
+	self[$ "$KeyframeStore<MessageEventKeyframe>"] = "";
+	self[$ "$KeyframeStore<MessageEventKeyframe>"] = "";
 	
-	self[$ "$GMLCKeyframeMessageEventKeyframe"] = "";
+	self[$ "$GMKeyframeStore"] = "";
 	self[$ "%Name"] = ""; //Sequence1
-	resourceType = "GMLCKeyframeMessageEventKeyframe";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMKeyframeStore";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
-	Channels = { /* "0": new GMLCMessageEventKeyframe() */ };
+	
+	Keyframes = [ /* GMKeyframe */ ];
+	
+}
+function GMKeyframe() : GMAsset() constructor {
+	//this is the original name of the class
+	self[$ "$GMKeyframe<MessageEventKeyframe>"] = "";
+	self[$ "$GMKeyframe<MomentEventKeyframe>"] = "";
+	
+	self[$ "$GMKeyframe"] = "";
+	self[$ "%Name"] = ""; //Sequence1
+	resourceType = "GMKeyframe";
+	resourceVersion = GM_RESOURCE_VERSION;
+	
+	Channels = { /* GMMessageEventKeyframe || GMMomentsEventKeyframe */ }
 	Disabled = false;
-	id = "2922f5f8-1e4e-4331-8d4e-4b094cae90f8";
+	id = "806a87cb-3589-4221-9f8d-e54f3698fef5"; ///idk a random id i guess?
 	IsCreationKey = false;
 	Key = 0.0;
 	Length = 1.0;
+	resourceType = "Keyframe<SpriteFrameKeyframe>";
+	resourceVersion = "2.0";
 	Stretch = false;
 	
 }
-function GMLCMessageEventKeyframe() : GMLCAsset() constructor {
-	self[$ "$GMLCMessageEventKeyframe"] = "";
+function GMMessageEventKeyframe() : GMAsset() constructor {
+	self[$ "$GMMessageEventKeyframe"] = "";
 	self[$ "%Name"] = ""; //Sequence1
-	resourceType = "GMLCMessageEventKeyframe";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMMessageEventKeyframe";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	Events = [ /* string */ ];
 }
-function GMLCKeyframeMomentsEventKeyframe() : GMLCAsset() constructor { ////////////////////////////////// no examples yet
-	////this is the original name of the class
-	//self[$ "$Keyframe<MomentsEventKeyframe>"] = "";
+function GMMomentsEventKeyframe() : GMAsset() constructor {
+	self[$ "$GMMomentsEventKeyframe"] = "";
+	self[$ "%Name"] = ""; //Sequence1
+	resourceType = "GMMomentsEventKeyframe";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
-	//self[$ "$GMLCKeyframeMomentsEventKeyframe"] = "";
-	//self[$ "%Name"] = ""; //Sequence1
-	//resourceType = "GMLCKeyframeMomentsEventKeyframe";
-	//resourceVersion = GMLC_RESOURCE_VERSION;
-	
-	//Channels = { /* "0": new MomentsEventKeyframe() */ };
-	//Disabled = false;
-	//id = "2922f5f8-1e4e-4331-8d4e-4b094cae90f8";
-	//IsCreationKey = false;
-	//Key = 0.0;
-	//Length = 1.0;
-	//Stretch = false;
-	
-}
-function GMLCMomentsEventKeyframe() : GMLCAsset() constructor { ////////////////////////////////// no examples yet
-	//self[$ "$GMLCMomentsEventKeyframe"] = "";
-	//self[$ "%Name"] = ""; //Sequence1
-	//resourceType = "GMLCMomentsEventKeyframe";
-	//resourceVersion = GMLC_RESOURCE_VERSION;
-	
-	//Events = [ /* string */ ];
+	Events = [ /* string of a script file */ ];
 }
 
 //Sound
-function GMLCSound() : GMLCAsset() constructor {
-	self[$ "$GMLCSound"] = "";
+function GMSound() : GMAsset() constructor {
+	self[$ "$GMSound"] = "";
 	self[$ "%Name"] = ""; //Script1
-	resourceType = "GMLCSound";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMSound";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Sound1
 	audioGroupId = {
@@ -745,65 +954,65 @@ function GMLCSound() : GMLCAsset() constructor {
 }
 
 //Timeline
-function GMLCTimeline() : GMLCAsset() constructor {
-	self[$ "$GMLCTimeline"] = "";
+function GMTimeline() : GMAsset() constructor {
+	self[$ "$GMTimeline"] = "";
 	self[$ "%Name"] = ""; //Timeline
-	resourceType = "GMLCTimeline";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMTimeline";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = "Timeline1";
-	momentList = [ /* GMLCMoment */ ];
+	momentList = [ /* GMMoment */ ];
 }
-function GMLCMoment() : GMLCAsset() constructor {
-	self[$ "$GMLCMoment"] = "";
+function GMMoment() : GMAsset() constructor {
+	self[$ "$GMMoment"] = "";
 	self[$ "%Name"] = ""; //Timeline
-	resourceType = "GMLCMoment";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMMoment";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = "";
-	evnt = new GMLCEvent();
+	evnt = new GMEvent();
 	moment = 0;
 }
-function GMLCEvent() : GMLCAsset() constructor {
-	self[$ "$GMLCEvent"] = "";
+function GMEvent() : GMAsset() constructor {
+	self[$ "$GMEvent"] = "";
 	self[$ "%Name"] = ""; //Timeline
-	resourceType = "GMLCEvent";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMEvent";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = "";
-	collisionObjectId = null;
+	collisionObjectId = undefined;
 	eventNum = 0;
 	eventType = 0;
 	isDnD = false;
 }
 
 //Shader
-function GMLCShader() : GMLCAsset() constructor {
-	self[$ "$GMLCShader"] = "";
+function GMShader() : GMAsset() constructor {
+	self[$ "$GMShader"] = "";
 	self[$ "%Name"] = ""; //Script1
-	resourceType = "GMLCShader";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMShader";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = "Shader1";
 	type = 1;
 }
 
 //Note
-function GMLCNotes() : GMLCAsset() constructor {
-	self[$ "$GMLCNotes"] = "";
+function GMNotes() : GMAsset() constructor {
+	self[$ "$GMNotes"] = "";
 	self[$ "%Name"] = ""; //Note1
-	resourceType = "GMLCNotes";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMNotes";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Note1
 }
 
 //Font
-function GMLCFont() : GMLCAsset() constructor {
-	self[$ "$GMLCFont"] = "";
+function GMFont() : GMAsset() constructor {
+	self[$ "$GMFont"] = "";
 	self[$ "%Name"] = ""; //Font1
-	resourceType = "GMLCFont";
-	resourceVersion = GMLC_RESOURCE_VERSION;
+	resourceType = "GMFont";
+	resourceVersion = GM_RESOURCE_VERSION;
 	
 	name = ""; //Font1
 	AntiAlias = 1;
