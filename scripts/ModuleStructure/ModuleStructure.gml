@@ -72,34 +72,197 @@ function GMProject() : GMAsset() constructor {
 }
 
 //Anim Curves
-function GMAnimCurve(_name, _function=0, _channels=[]) : GMAsset() constructor {
+function GMAnimCurve() : GMAsset() constructor {
 	resourceType = "GMAnimCurve";
 	resourceVersion = GM_RESOURCE_VERSION;
 	
-	name = "acAcceptDecline"; //name
-	channels = _channels; //array of channels
-	self[$ "function"] = _function; //the smoothing type
+	name = "AnimationCurve1"; //name
+	channels = []; //array of channels
+	self[$ "function"] = animcurvetype_linear; //the smoothing type
+	
+	static __import = function(_struct){
+		
+		name = _struct.name;
+		self[$ "function"] = _struct[$ "function"];
+		
+		array_resize(channels, array_length(_struct.channels));
+		var _i=0; repeat(array_length(channels)) {
+			var _channel = channels[_i] ?? new GMAnimCurveChannel();
+			
+			_channel.__import(_struct.channels[_i]);
+			
+			channels[_i] = _channel;
+			
+		_i+=1;}//end repeat loop
+		
+	}
+	static __export = function(){
+		var _struct = {};
+		
+		_struct.name = name;
+		_struct[$ "function"] = self[$ "function"];
+		
+		_struct.channels = array_create(array_length(channels), undefined);
+		var _i=0; repeat(array_length(channels)) {
+			
+			_struct.channels[_i] = channels[_i].__export();
+			
+		_i+=1;}//end repeat loop
+		
+		return _struct;
+	}
+	static importAsset = function(_asset){
+		var _struct = animcurve_get(_asset);
+		
+		name = _struct.name;
+		self[$ "function"] = _struct.channels[0].type;
+		
+		array_resize(channels, array_length(_struct.channels));
+		var _i=0; repeat(array_length(channels)) {
+			var _channel = channels[_i] ?? new GMAnimCurveChannel();
+			_channel.importAsset(_struct.channels[_i]);
+			channels[_i] = _channel;
+		_i+=1;}//end repeat loop
+	}
+	static exportAsset = function(){
+		if (myAsset != undefined) {
+			cleanUp();
+		}
+		
+		var _ac = animcurve_create();
+		_ac.name = name;
+		
+		array_resize(_ac.channels, array_length(channels));
+		var _i=0; repeat(array_length(channels)) {
+			_ac.channels[_i] = channels[_i].exportAsset();
+			_ac.channels[_i].type = self[$ "function"];
+			//_ac.channels[_i].iterations = 16; //this is not a value saved in the project directory so we'll default to 16, a newly created anim curve defaults to 8 though.
+		_i+=1;}//end repeat loop
+		
+		myAsset = _ac;
+		
+		return _ac;
+	}
 }
-function GMAnimCurveChannel(_name, _colour=4290799884, _points=[], _visible=true) : GMAsset() constructor {
+function GMAnimCurveChannel() : GMAsset() constructor {
 	resourceType = "GMAnimCurveChannel";
 	resourceVersion = GM_RESOURCE_VERSION;
 	
-	name    = _name;
-	colour  = _colour;
-	points  = _points;
-	visible = _visible;
-  
+	name    = "curve1";
+	colour  = 4290799884;
+	points  = [];
+	visible = true;
+	
+	static __import = function(_struct){
+		
+		name = _struct.name;
+		colour = _struct.colour;
+		visible = _struct.visible;
+		
+		array_resize(points, array_length(_struct.points));
+		var _i=0; repeat(array_length(points)) {
+			var _point = points[_i] ?? new GMAnimCurveChannelPoint();
+			
+			_point.__import(_struct.points[_i]);
+			
+		_i+=1;}//end repeat loop
+		
+	}
+	static __export = function(){
+		var _struct = {};
+		
+		_struct.name = name;
+		_struct.colour = colour;
+		_struct.visible = visible;
+		
+		_struct.points = array_create(array_length(points), undefined);
+		var _i=0; repeat(array_length(channels)) {
+			
+			_struct.points[_i] = points[_i].__export();
+			
+		_i+=1;}//end repeat loop
+		
+		return _struct;
+	}
+	static importAsset = function(_asset){
+		var _struct = animcurve_get(_asset);
+		
+		name = _struct.name;
+		
+		array_resize(points, array_length(_struct.points));
+		var _i=0; repeat(array_length(points)) {
+			var _point = points[_i] ?? new GMAnimCurveChannelPoint();
+			_point.importAsset(_struct.points[_i]);
+			points[_i] = _point;
+		_i+=1;}//end repeat loop
+	}
+	static exportAsset = function(){
+		var _channel = animcurve_channel_new();
+		_channel.name = name;
+		_channel.type = animcurvetype_linear; // this actually gets set by GMAnimCurve because thats where the smoothing function is stored, we just default to linear.
+		_channel.iterations = 16; //this is not a value saved in the project directory so we'll default to 16, a newly created anim curve defaults to 8 though.
+		
+		array_resize(_channel.points, array_length(points))
+		var _i=0; repeat(array_length(points)) {
+			_channel.points[_i] = points[_i].exportAsset();
+			
+		_i+=1;}//end repeat loop
+		
+	}
 }
-function GMAnimCurveChannelPoint(_th0, _th1, _tv0, _tv1, _x, _y) : GMAsset() constructor {
+function GMAnimCurveChannelPoint() : GMAsset() constructor {
 	resourceType = "GMAnimCurveChannelPoint";
 	resourceVersion = GM_RESOURCE_VERSION;
 	
-	th0 = _th0;
-	th1 = _th1;
-	tv0 = _tv0;
-	tv1 = _tv1;
-	x = _x;
-	y = _y;
+	th0 = 0;
+	th1 = 0;
+	tv0 = 0;
+	tv1 = 0;
+	x = 0;
+	y = 0;
+	
+	static __import = function(_struct){
+		
+		th0 = _struct.th0;
+		th1 = _struct.th1;
+		tv0 = _struct.tv0;
+		tv1 = _struct.tv1;
+		x = _struct.x;
+		y = _struct.y;
+		
+	}
+	static __export = function(){
+		var _struct = {};
+		
+		_struct.th0 = th0;
+		_struct.th1 = th1;
+		_struct.tv0 = tv0;
+		_struct.tv1 = tv1;
+		_struct.x = x;
+		_struct.y = y;
+		
+		return _struct;
+	}
+	static importAsset = function(_asset){
+		
+		x = _asset.posx;
+		y = _asset.value;
+		
+	}
+	static exportAsset = function(){
+		var _point = animcurve_point_new();
+		
+		_point.posx  = x;
+		_point.value = y;
+		
+		//these dont acctually appear to be needed
+		_point.th0 = th0;
+		_point.th1 = th1;
+		_point.tv0 = tv0;
+		_point.tv1 = tv1;
+		
+		return _point;
+	}
 }
 
 //Extensions
