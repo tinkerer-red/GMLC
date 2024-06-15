@@ -3,6 +3,24 @@
 //Base Asset
 function GMAsset() constructor {
 	
+	static importString = function(_string){
+		var _struct = json_parse(_string);
+		
+		if (_struct.resourceType != resourceType) {
+			throw $"\nImported string is not a valid {resourceType} json!\nType was :: {_struct.resourceType} ::"
+		}
+		
+		__import(_struct);
+		
+	}
+	static exportString = function(){
+		//cache our old 
+		var _struct = __export();
+		
+		var _str = json_stringify(_struct, true);
+		
+		return _str;
+	}
 }
 
 //Project
@@ -585,24 +603,6 @@ function GMSprite() : GMAsset() constructor {
 	VTile = false;
 	width = 64;
 	
-	static importString = function(_string){
-		var _struct = json_parse(_string);
-		
-		if (_struct.resourceType != resourceType) {
-			throw $"\nImported string is not a valid {resourceType} json!\nType was :: {_struct.resourceType} ::"
-		}
-		
-		__import(_struct);
-		
-	}
-	static exportString = function(){
-		//cache our old 
-		var _struct = __export();
-		
-		var _str = json_stringify(_struct, true);
-		
-		return _str;
-	}
 	static __import = function(_struct){
 		bboxMode = _struct.bboxModel;
 		bbox_bottom = _struct.bbox_bottom;
@@ -633,6 +633,20 @@ function GMSprite() : GMAsset() constructor {
 		VTile = _struct.VTile;
 		width = _struct.width;
 		
+		//import frames
+		array_resize(frames, array_length(_struct.frames));
+		var _i=0; repeat(array_length(frames)) {
+			var _frame = frames[_i];
+			
+			if (_frame == undefined) {
+				_frame = new GMSpriteFrame();
+			}
+			
+			_frame.__import(_struct.frames[_i]);
+			
+			frames[_i] = _frame;
+		_i+=1};
+		
 		nineSlice.__import(_struct.nineSlice);
 		sequence.__import(_struct.sequence);
 	}
@@ -649,7 +663,6 @@ function GMSprite() : GMAsset() constructor {
 		_struct.DynamicTexturePage = DynamicTexturePage;
 		_struct.edgeFiltering = edgeFiltering;
 		_struct.For3D = For3D;
-		_struct.frames = frames;
 		_struct.gridX = gridX;
 		_struct.gridY = gridY;
 		_struct.height = height;
@@ -667,6 +680,12 @@ function GMSprite() : GMAsset() constructor {
 		_struct.type = type;
 		_struct.VTile = VTile;
 		_struct.width = width;
+		
+		_struct.frames = array_create(array_length(frames), undefined);
+		var _i=0; repeat(array_length(frames)) {
+			_struct.frames[_i] = frames[_i].__export();
+			
+		_i+=1};
 		
 		_struct.nineSlice = nineSlice.__export();
 		_struct.sequence  = sequence.__export();
@@ -708,6 +727,19 @@ function GMSprite() : GMAsset() constructor {
 		_i+=1};
 		
 		array_resize(frames, _struct.num_subimages);
+		var _i=0; repeat(array_length(frames)) {
+			var _frame = frames[_i];
+			if (_frame == undefined) {
+				_frame = new GMSpriteFrame()
+			}
+			
+			_frame.importAsset(_sprite, _i);
+			
+			frames[_i] = _frame;
+			
+		_i+=1};
+		
+		
 		nineSlice.__import(_struct.nineslice);
 		
 		myAsset = _sprite;
@@ -743,11 +775,11 @@ function GMSprite() : GMAsset() constructor {
 		var _frameCount = array_length(frames);
 		
 		//add first image
-		var _spr = sprite_add(frames[0].name, _frameCount, false, edgeFiltering, sequence.xorigin, sequence.yorigin);
+		var _spr = sprite_add(frames[0].name+".png", _frameCount, false, edgeFiltering, sequence.xorigin, sequence.yorigin);
 		
 		//add sub images
 		var _i=1 repeat(_frameCount-1) {
-			var _temp_spr = sprite_add(frames[_i].name, _frameCount, false, edgeFiltering, sequence.xorigin, sequence.yorigin)
+			var _temp_spr = sprite_add(frames[_i].name+".png", _frameCount, false, edgeFiltering, sequence.xorigin, sequence.yorigin)
 			sprite_merge(_spr, _temp_spr);
 			sprite_delete(_temp_spr);
 		_i+=1;} //end repeat loop
@@ -773,6 +805,90 @@ function GMSpriteFrame() : GMAsset() constructor {
 	Name = "993f0b95-6cf9-429e-8839-74d842fbe984";
 	name = "993f0b95-6cf9-429e-8839-74d842fbe984";
 	
+	static __import = function(_struct){
+		Name = _struct.Name;
+		name = _struct.name;
+	}
+	static __export = function(){
+		var _struct = {};
+		
+		_struct.bboxMode = bboxModel;
+		_struct.bbox_bottom = bbox_bottom;
+		_struct.bbox_left = bbox_left;
+		_struct.bbox_right = bbox_right;
+		_struct.bbox_top = bbox_top;
+		_struct.collisionKind = collisionKind;
+		_struct.collisionTolerance = collisionTolerance;
+		_struct.DynamicTexturePage = DynamicTexturePage;
+		_struct.edgeFiltering = edgeFiltering;
+		_struct.For3D = For3D;
+		_struct.frames = frames;
+		_struct.gridX = gridX;
+		_struct.gridY = gridY;
+		_struct.height = height;
+		_struct.HTile = HTile;
+		_struct.layers = layers;
+		_struct.name = name;
+		_struct.origin = origin;
+		_struct.preMultiplyAlpha = preMultiplyAlpha;
+		_struct.swatchColours = swatchColours;
+		_struct.swfPrecision = swfPrecision;
+		
+		_struct.textureGroupId.name = textureGroupId.name;
+		_struct.textureGroupId.path = textureGroupId.path;
+		
+		_struct.type = type;
+		_struct.VTile = VTile;
+		_struct.width = width;
+		
+		_struct.nineSlice = nineSlice.__export();
+		_struct.sequence  = sequence.__export();
+		
+		return _struct;
+	}
+	static importAsset = function(_sprite, _img_num) {
+		var _struct = sprite_get_info(_sprite)
+		
+		var _x = sprite_get_xoffset(_sprite);
+		var _y = sprite_get_yoffset(_sprite);
+		var _w = sprite_get_width(_sprite);
+		var _h = sprite_get_height(_sprite);
+		
+		//save the sprite frame as it's own sprite
+		var _surf = surface_create(_w, _h);
+		surface_set_target(_surf);
+		draw_clear_alpha(c_black, 0);
+		draw_sprite(_sprite, _img_num, _x, _y);
+		surface_reset_target();
+		var _spr = sprite_create_from_surface(_surf, 0, 0, _w, _h, false, false, _x, _y);
+		
+		myAsset = _spr;
+		
+		//generate a uuid for the file
+		if (name == undefined) && (Name != undefined) {
+			name = Name;
+		}
+		else if (Name == undefined) && (name != undefined) {
+			Name = name;
+		}
+		else if (Name == undefined) && (name == undefined) {
+			//generate new ID for this image
+		}
+	}
+	static exportAsset = function() {
+		throw $"This exportAsset method should not be manually called.\nGMSpriteFrame will be properly exported by GMSprite";
+		
+		//if (myAsset != undefined) {
+		//	cleanUp();
+		//}
+		
+		//var _spr = sprite_add(frames[0].name+".png", 1, false, false, 0, 0);
+		
+		////cache it
+		//myAsset = _spr;
+		
+		//return _spr;
+	}
 }
 function GMImageLayer() : GMAsset() constructor {
 	self[$ "$GMImageLayer"] = "";
@@ -787,6 +903,43 @@ function GMImageLayer() : GMAsset() constructor {
 	isLocked = false;
 	opacity = 100.0;
 	visible = true;
+	
+	static __import = function(_struct){
+		
+		Name = _struct.Name;
+		name = _struct.name;
+		blendMode = _struct.blendMode;
+		displayName = _struct.displayName;
+		isLocked = _struct.isLocked;
+		opacity = _struct.opacity;
+		visible = _struct.visible;
+		
+	}
+	static __export = function(){
+		var _struct = {};
+		
+		_struct.Name = Name;
+		_struct.name = name;
+		_struct.blendMode = blendMode;
+		_struct.displayName = displayName;
+		_struct.isLocked = isLocked;
+		_struct.opacity = opacity;
+		_struct.visible = visible;
+		
+		return _struct;
+	}
+	static importAsset = function(_sprite){
+		
+	}
+	static exportAsset = function(){
+		throw $"This exportAsset method should not be manually called.\nGMImageLayer will be properly exported by GMSprite";
+		
+		if (myAsset != undefined) {
+			cleanUp();
+		}
+		
+		
+	}
 	
 }
 function GMNineSliceData() : GMAsset() constructor {
@@ -820,27 +973,66 @@ function GMNineSliceData() : GMAsset() constructor {
 	];
 	
 	
-	static importString = function(_string){
-		var _struct = json_parse(_string);
+	static __import = function(_struct){
 		
-		if (_struct.resourceType != resourceType) {
-			throw $"\nImported string is not a valid {instanceof(self)} project json file!\nType was :: {_struct.resourceType} ::"
-		}
-		
+		enabled = _struct.enabled;
+		top = _struct.top;
+		left = _struct.left;
+		bottom = _struct.bottom;
+		right = _struct.right;
+		tileMode[0] = _struct.tileMode[0];
+		tileMode[1] = _struct.tileMode[1];
+		tileMode[2] = _struct.tileMode[2];
+		tileMode[3] = _struct.tileMode[3];
+		tileMode[4] = _struct.tileMode[4];
+		highlightColour = _struct.highlightColour;
+		highlightStyle = _struct.highlightStyle;
+		guideColour[0] = _struct.guideColour[0];
+		guideColour[1] = _struct.guideColour[1];
+		guideColour[2] = _struct.guideColour[2];
+		guideColour[3] = _struct.guideColour[3];
 		
 	}
-	static exportString = function(){
+	static __export = function(){
+		var _struct = {};
 		
+		_struct.enabled = enabled;
+		_struct.top = top;
+		_struct.left = left;
+		_struct.bottom = bottom;
+		_struct.right = right;
+		_struct.tileMode = variable_clone(tileMode);
+		_struct.highlightColour = highlightColour;
+		_struct.highlightStyle = highlightStyle;
+		_struct.guideColour = variable_clone(guideColour);
+		
+		return _struct;
 	}
 	static importAsset = function(_sprite){
-		
+		var _9slice = sprite_get_nineslice(_sprite);
+		enabled  = _9slice.enabled 
+		top      = _9slice.top;
+		left     = _9slice.left;
+		bottom   = _9slice.bottom;
+		right    = _9slice.right;
+		tileMode[0] = _9slice.tileMode[0];
+		tileMode[1] = _9slice.tileMode[1];
+		tileMode[2] = _9slice.tileMode[2];
+		tileMode[3] = _9slice.tileMode[3];
+		tileMode[4] = _9slice.tileMode[4];
 	}
 	static exportAsset = function(){
+		var _struct = {};
 		
-		return _spr;
+		_struct.enabled = enabled;
+		_struct.top = top;
+		_struct.left = left;
+		_struct.bottom = bottom;
+		_struct.right = right;
+		_struct.tileMode = variable_clone(tileMode);
+		
+		return _struct;
 	}
-	
-	//sprite_nineslice_create()
 }
 
 //Sequence
