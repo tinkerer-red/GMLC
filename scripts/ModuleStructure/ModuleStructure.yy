@@ -1,12 +1,12 @@
 {
-  "$GMScript":"",
+  "$GMScript":"v1",
   "%Name":"ModuleStructure",
   "isCompatibility":false,
   "isDnD":false,
   "name":"ModuleStructure",
   "parent":{
-    "name":"Modules",
-    "path":"folders/_Libraries/GMLCompiler/Modules.yy",
+    "name":"group1",
+    "path":"folders/GMLCompiler/group1.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

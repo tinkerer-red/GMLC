@@ -1,12 +1,12 @@
 {
-  "$GMScript":"",
-  "%Name":"Script13",
+  "$GMScript":"v1",
+  "%Name":"compile_inline",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Script13",
+  "name":"compile_inline",
   "parent":{
     "name":"GMLCompiler",
-    "path":"folders/_Libraries/GMLCompiler.yy",
+    "path":"folders/GMLCompiler.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -2,6 +2,7 @@
 /// @feather ignore all
 
 
+
 #macro GML_COMPILER_GM1_4 false
 /* allows for
 // #define
@@ -240,7 +241,6 @@ function GML_Tokenizer() constructor {
 	finished = false;
 	
 	keywords = ["globalvar", "var", "if", "then", "else", "begin", "end", "for", "while", "do", "until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return", "global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor", "static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw"];
-	language_struct = loadLanguageFromCSV("english.csv");
 	
 	// Initialize tokenizer with source code
 	static initialize = function(_sourceCode) {
@@ -314,7 +314,7 @@ function GML_Tokenizer() constructor {
 				return _token;
 			}
 			
-			if (__char_is_whitespace(currentCharCode) || currentCharCode == ord(";")) {
+			if (__char_is_whitespace(currentCharCode)) {
 				__nextUTF8();
 			}
 			else {
@@ -1751,8 +1751,6 @@ function GML_PreProcessor() constructor {
 		
 		lastFiveTokens = array_create(5, undefined);
 		
-		language_struct = loadLanguageFromCSV("english.csv");
-		
 		static initialize = function(_program) {
 			finished = false;
 			
@@ -1800,9 +1798,11 @@ function GML_PreProcessor() constructor {
 		
 		static parseNext = function() {
 			if (currentToken != undefined) {
+				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
 				var statement = parseStatement();
 				if (statement) {
-					array_push(scriptAST.statements, statement);
+					array_push(scriptAST.statements.statements, statement);
 				}
 				
 				if (GML_COMPILER_DEBUG) {
@@ -1932,6 +1932,10 @@ function GML_PreProcessor() constructor {
 				while (currentToken != undefined && currentToken.value != "}") {
 					var _statement = parseStatement();
 					array_push(_statements, _statement);
+					
+					//consume optional `;`
+					optionalToken(__GMLC_TokenType.Punctuation, ";")
+					
 					// Parse each statement until '}' is found
 					// Optional: Handle error checking for unexpected end of file
 				}
@@ -2196,7 +2200,7 @@ function GML_PreProcessor() constructor {
 			var lineString = currentToken.lineString;
 			
 			expectToken(__GMLC_TokenType.Keyword, "function");
-			var functionName = $"GMLC@{currentToken.value}";  // Parse the function identifier
+			var functionName = currentToken.value;  // Parse the function identifier
 			nextToken();  // Move past Identifier
 			
 			expectToken(__GMLC_TokenType.Punctuation, "(");
@@ -2214,7 +2218,7 @@ function GML_PreProcessor() constructor {
 					expr = new ASTLiteral(undefined, line, lineString);
 				}
 				
-				array_push(parameters, new ASTFunctionVariableDeclaration(identifier, expr, line, lineString));
+				array_push(parameters, new ASTArgument(identifier, expr, array_length(_local_var_names), line, lineString));
 				array_push(_local_var_names, identifier);
 				
 			    if (currentToken.value == ",") {
@@ -2226,7 +2230,7 @@ function GML_PreProcessor() constructor {
 			// Register function as a global variable and move its body to GlobalVar
 			var globalFunctionNode = new ASTFunctionDeclaration(
 											functionName,
-											new ASTFunctionVariableDeclarationList(parameters, line, lineString),
+											new ASTArgumentList(parameters, line, lineString),
 											_local_var_names,
 											undefined, //will be set after body is parsed
 											line,
@@ -2239,7 +2243,7 @@ function GML_PreProcessor() constructor {
 			currentFunction = globalFunctionNode;
 			
 			// Parse the function body
-			globalFunctionNode.body = parseBlock();
+			globalFunctionNode.statements = parseBlock();
 			
 			//reset the current function
 			currentFunction = _old_function;
@@ -2274,7 +2278,7 @@ function GML_PreProcessor() constructor {
 					expr = new ASTLiteral(undefined, line, lineString);
 				}
 				
-				array_push(parameters, new ASTFunctionVariableDeclaration(identifier, expr, line, lineString));
+				array_push(parameters, new ASTArgument(identifier, expr, array_length(_local_var_names), line, lineString));
 				array_push(_local_var_names, identifier);
 				
 			    if (currentToken.value == ",") {
@@ -2288,7 +2292,7 @@ function GML_PreProcessor() constructor {
 			// Register function as a global variable and move its body to GlobalVar
 			var globalFunctionNode = new ASTFunctionDeclaration(
 											functionName,
-											new ASTFunctionVariableDeclarationList(parameters, line, lineString),
+											new ASTArgumentList(parameters, line, lineString),
 											_local_var_names,
 											undefined, //will be set after body is parsed
 											line,
@@ -2395,12 +2399,6 @@ function GML_PreProcessor() constructor {
 		        var identifier = currentToken.value;
 		        nextToken();
 				
-				var expr = undefined;
-				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
-					expr = parseConditionalExpression();
-				}
-				
-				
 				//mark the variable tables
 				if (currentFunction == undefined) {
 					//script scrope
@@ -2408,15 +2406,9 @@ function GML_PreProcessor() constructor {
 						//case "let":{
 						//	//dont to nuttin`!
 						//break;}
-						case ScopeType.LOCAL:{
-							array_push(scriptAST.LocalVarNames, identifier);
-						break;}
-						case ScopeType.STATIC:{
-							throw $"\nScript: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function";
-						break;}
-						case ScopeType.GLOBAL:{
-							array_push(scriptAST.GlobalVarNames, identifier);
-						break;}
+						case ScopeType.LOCAL: array_push(scriptAST.LocalVarNames, identifier); break;
+						case ScopeType.STATIC: throw $"\nScript: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"; break;
+						case ScopeType.GLOBAL: array_push(scriptAST.GlobalVarNames, identifier); break;
 						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
 					}
 					
@@ -2427,42 +2419,50 @@ function GML_PreProcessor() constructor {
 						//case "let":{
 						//	//dont to nuttin`!
 						//break;}
-						case ScopeType.LOCAL:{
-							array_push(currentFunction.LocalVarNames, identifier);
-						break;}
-						case ScopeType.STATIC:{
-							array_push(currentFunction.StaticVarNames, identifier);
-							//if this is a static function assignment, assign the static identifier's name to the function's name
-							if (expr.type == "Identifier")
-							&& (expr.scope == ScopeType.GLOBAL) {
-								var _possibleFunc = scriptAST.GlobalVar[$ expr.identifier]
-								if (_possibleFunc.type == "FunctionDeclaration") {
-									var _newFuncName = $"GMLC@{identifier}@{string_replace(_possibleFunc.functionName, "GMLC@", "")}"
-									
-									//change the global look up
-									struct_remove(scriptAST.GlobalVar, _possibleFunc.functionName);
-									scriptAST.GlobalVar[$ _newFuncName] = _possibleFunc;
-									var _arr_index = array_get_index(scriptAST.GlobalVarNames, _possibleFunc.functionName);
-									array_delete(scriptAST.GlobalVarNames, _arr_index, 1);
-									array_push(scriptAST.GlobalVarNames, _newFuncName);
-									
-									//change the function's name
-									_possibleFunc.functionName = _newFuncName;
-									
-									//change the identifier
-									expr.identifier = _newFuncName;
-								}
-							}
-						break;}
-						case ScopeType.GLOBAL:{
-							array_push(scriptAST.GlobalVarNames, identifier);
-						break;}
+						case ScopeType.LOCAL: array_push(currentFunction.LocalVarNames, identifier); break;
+						case ScopeType.STATIC: array_push(currentFunction.StaticVarNames, identifier); break;
+						case ScopeType.GLOBAL: array_push(scriptAST.GlobalVarNames, identifier); break;
 						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
 					}
 				}
 				
-		        array_push(declarations, new ASTVariableDeclaration(identifier, expr, _scope, varLine, varLineString));
+				//fetch expression
+				var expr = undefined;
+				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
+					expr = parseConditionalExpression();
+					
+					// a uniqu check to apply static function's names
+					if (_scope == ScopeType.STATIC) {
+						//if this is a static function assignment, assign the static identifier's name to the function's name
+						if (expr.type == "Identifier")
+						&& (expr.scope == ScopeType.GLOBAL) {
+							var _possibleFunc = scriptAST.GlobalVar[$ expr.identifier]
+							if (_possibleFunc.type == "FunctionDeclaration") {
+								var _newFuncName = $"GMLC@{identifier}@{string_replace(_possibleFunc.functionName, "GMLC@", "")}"
+									
+								//change the global look up
+								struct_remove(scriptAST.GlobalVar, _possibleFunc.functionName);
+								scriptAST.GlobalVar[$ _newFuncName] = _possibleFunc;
+								var _arr_index = array_get_index(scriptAST.GlobalVarNames, _possibleFunc.functionName);
+								array_delete(scriptAST.GlobalVarNames, _arr_index, 1);
+								array_push(scriptAST.GlobalVarNames, _newFuncName);
+									
+								//change the function's name
+								_possibleFunc.functionName = _newFuncName;
+									
+								//change the identifier
+								expr.identifier = _newFuncName;
+							}
+						}
+					}
+					
+					array_push(declarations, new ASTVariableDeclaration(identifier, expr, _scope, varLine, varLineString));
+				}
 				
+				
+				if (optionalToken(__GMLC_TokenType.Punctuation, ";")) {
+					break
+				}
 		        if (currentToken == undefined || currentToken.value != ",") {
 		            break; // End of declaration list
 		        }
@@ -2545,7 +2545,8 @@ function GML_PreProcessor() constructor {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
-				var operator = currentToken.value;
+				var operator = (currentToken.value == "=") ? "==" : currentToken.value;
+				
 				nextToken();
 				var right = parseLogicalOrExpression();
 				expr = new ASTBinaryExpression(operator, expr, right, line, lineString);
@@ -2757,7 +2758,7 @@ function GML_PreProcessor() constructor {
 				nextToken();
 				var expr = parseUnaryExpression(); // Right-associative
 				if (operator == "++" || operator == "--") {
-					new ASTUpdateExpression(operator, expr, true, line, lineString);
+					return new ASTUpdateExpression(operator, expr, true, line, lineString);
 				}
 				return new ASTUnaryExpression(operator, expr, line, lineString);
 			}
@@ -2899,7 +2900,7 @@ function GML_PreProcessor() constructor {
 					if (currentToken.value == "{") {
 						return parseStructCreation();
 					}
-				
+					
 				break;}
 				case __GMLC_TokenType.UniqueVariable: {
 					
@@ -2955,7 +2956,7 @@ function GML_PreProcessor() constructor {
 					var value = parseExpression();
 				}
 				else if (key.type == __GMLC_TokenType.Identifier) {
-					var value = new ASTIdentifier(key.value, undefined, key.line, key.lineString);
+					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), key.line, key.lineString);
 				}
 				else {
 					throw $"\nObject: {Object1} Event: {Create} at line {line} : got {key.type} '{key.value}' expected id"
@@ -2963,6 +2964,7 @@ function GML_PreProcessor() constructor {
 		        
 				//this is a literal because it's technically an argument for a struct creation.
 				array_push(_keys, new ASTLiteral(key.value, key.line, key.lineString));
+				
 				array_push(_exprs, value);
 				
 		        if (currentToken.value == ",") {
@@ -3494,8 +3496,8 @@ function GML_PreProcessor() constructor {
 			if (node.type == "AssignmentExpression") {
 				if (node.left.type == "Identifier") {
 					if (node.left.value == "background_color") || (node.left.value == "background_colour") {
-						return new ASTNode("FunctionCall", {
-							callee: new ASTNode("Function", {value: __background_set_colour, name: "__background_set_colour"}),
+						return new ASTNodes("FunctionCall", {
+							callee: new ASTNodes("Function", {value: __background_set_colour, name: "__background_set_colour"}),
 							arguments: [ node.right ]
 						});
 					}
@@ -3506,16 +3508,16 @@ function GML_PreProcessor() constructor {
 				switch (node.value) {
 					case "background_color":
 					case "background_colour":{
-						return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get_colour, name: "__background_get_colour"}),
+						return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get_colour, name: "__background_get_colour"}),
 								arguments: []
 							});
 					break;}
 					
 					case "background_showcolor":
 					case "background_showcolour":{
-						return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get_showcolour, name: "__background_get_showcolour"}),
+						return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get_showcolour, name: "__background_get_showcolour"}),
 								arguments: []
 							});
 					break;}
@@ -3524,13 +3526,13 @@ function GML_PreProcessor() constructor {
 			}
 			
 			//background_visible
-			return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: background_visible, name: "background_visible"}),
+			return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: background_visible, name: "background_visible"}),
 								arguments: []
 							});
 			//background_showcolor
-			return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: background_showcolor, name: "background_showcolor"}),
+			return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: background_showcolor, name: "background_showcolor"}),
 								arguments: []
 							});
 							
@@ -3544,8 +3546,8 @@ function GML_PreProcessor() constructor {
 			if (node.type == "AssignmentExpression") {
 				if (node.left.type == "Identifier") {
 					if (node.left.value == "background_color") || (node.left.value == "background_colour") {
-						return new ASTNode("FunctionCall", {
-							callee: new ASTNode("Function", {value: __background_set_colour, name: "__background_set_colour"}),
+						return new ASTNodes("FunctionCall", {
+							callee: new ASTNodes("Function", {value: __background_set_colour, name: "__background_set_colour"}),
 							arguments: [ node.right ]
 						});
 					}
@@ -3557,150 +3559,150 @@ function GML_PreProcessor() constructor {
 					var ind_node = arguments[0]
 					if (ind_node.type == "Identifier") {
 						if (ind_node.value == "background_visible") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Visible, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Visible, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_foreground") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Foreground, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Foreground, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_index") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Index, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Index, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_x") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.X, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.X, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_y") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Y, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Y, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_width") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Width, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Width, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_height") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Height, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Height, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_htiled") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.HTiled, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.HTiled, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_vtiled") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.VTiled, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.VTiled, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_xscale") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.XScale, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.XScale, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_yscale") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.YScale, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.YScale, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_hspeed") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.HSpeed, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.HSpeed, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_vspeed") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.VSpeed, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.VSpeed, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_blend") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Blend, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Blend, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_alpha") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_get, name: "__background_get"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_get, name: "__background_get"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Alpha, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Alpha, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
@@ -3751,150 +3753,150 @@ function GML_PreProcessor() constructor {
 					var ind_node = arguments[0]
 					if (ind_node.type == "Identifier") {
 						if (ind_node.value == "background_visible") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Visible, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Visible, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_foreground") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Foreground, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Foreground, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_index") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Index, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Index, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_x") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.X, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.X, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_y") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Y, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Y, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_width") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Width, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Width, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_height") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Height, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Height, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_htiled") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.HTiled, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.HTiled, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_vtiled") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.VTiled, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.VTiled, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_xscale") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.XScale, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.XScale, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_yscale") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.YScale, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.YScale, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_hspeed") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.HSpeed, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.HSpeed, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_vspeed") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.VSpeed, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.VSpeed, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_blend") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Blend, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Blend, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
 							
 						}
 						if (ind_node.value == "background_alpha") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: __background_set, name: "__background_set"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: __background_set, name: "__background_set"}),
 								arguments: [
-									new ASTNode("Literal", {value: e__BG.Alpha, scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: e__BG.Alpha, scope: ScopeType.CONST}),
 									node.right
 								]
 							});
@@ -3908,13 +3910,13 @@ function GML_PreProcessor() constructor {
 			
 			
 			//background_visible
-			return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: background_visible, name: "background_visible"}),
+			return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: background_visible, name: "background_visible"}),
 								arguments: []
 							});
 			//background_showcolor
-			return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: background_showcolor, name: "background_showcolor"}),
+			return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: background_showcolor, name: "background_showcolor"}),
 								arguments: []
 							});
 							
@@ -4037,6 +4039,12 @@ function GML_PreProcessor() constructor {
 		
 		static Process = function(node) {
 			
+			//attempt to repopulate all scopes which pass through
+			if (struct_exists(node, "scope")) {
+				var _scopeType = __determineScopeType(node)
+				node.scope = _scopeType;
+			}
+			//log($"\n{json_stringify(_node, true)}\n")
 			switch (node.type) {
 			    case __GMLC_NodeType.Script:{
 					
@@ -4044,10 +4052,10 @@ function GML_PreProcessor() constructor {
 				case __GMLC_NodeType.FunctionDeclaration:{
 					
 				break;}
-				case __GMLC_NodeType.FunctionVariableDeclarationList:{
+				case __GMLC_NodeType.ArgumentList:{
 					
 				break;}
-				case __GMLC_NodeType.FunctionVariableDeclaration:{
+				case __GMLC_NodeType.Argument:{
 					
 				break;}
 				
@@ -4116,7 +4124,9 @@ function GML_PreProcessor() constructor {
 					
 				break;}
 				case __GMLC_NodeType.AssignmentExpression:{
+					
 					if (node.left.type == __GMLC_NodeType.AccessorExpression) {
+						
 						var getterFunc, setterFunc, rightExpr;
 						
 						// Determine the getter and setter functions based on the accessor type
@@ -4147,10 +4157,10 @@ function GML_PreProcessor() constructor {
 							break;}
 							default: throw $"\nUnsupported accessor type: {node.left.accessorType}";
 						}
-
+						
 						var getterArgs = [node.left.expr];
 						var setterArgs = [node.left.expr];
-
+						
 						// Add arguments for array and grid accessors
 						array_push(getterArgs, node.left.val1);
 						array_push(setterArgs, node.left.val1);
@@ -4181,6 +4191,9 @@ function GML_PreProcessor() constructor {
 						node = new ASTCallExpression(setterFunc, setterArgs, node.line, node.lineString)
 						
 						
+					}
+					else if (node.left.type == __GMLC_NodeType.Identifier) {
+						node.left.scope = __determineScopeType(node.left)
 					}
 				break;}
 				case __GMLC_NodeType.BinaryExpression:{
@@ -4302,6 +4315,9 @@ function GML_PreProcessor() constructor {
 						}
 						
 					}
+					else if (node.expr.type == __GMLC_NodeType.Identifier) {
+						node.expr.scope = __determineScopeType(node.expr);
+					}
 					
 					return node;
 				break;}
@@ -4316,7 +4332,9 @@ function GML_PreProcessor() constructor {
 					
 				break;}
 				case __GMLC_NodeType.StructPattern:{
-					
+					//loop through all children and post process them aswell
+					//log($"STRUCT :: \n{json_stringify(node, true)}\n")
+					//throw "why havent we stopped"
 				break;}
 				case __GMLC_NodeType.Literal:{
 				    
@@ -4415,7 +4433,7 @@ function GML_PreProcessor() constructor {
 					
 					var expr = parseLogicalOrExpression();
 					array_push(_new_args, expr);
-					return new ASTNode("FunctionCall", {callee: _setterFunc, arguments: _new_args});
+					return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
 				}
 				else if (array_contains(__op_arr, _op)) {
 					nextToken(); // Consume the operator
@@ -4426,16 +4444,16 @@ function GML_PreProcessor() constructor {
 						case "^=": case "&=": case "|=":
 						    right = parseLogicalOrExpression(); break;
 						case "++": case "--":
-						    right = new ASTNode("Literal", {value: 1, scope: ScopeType.CONST}); break;
+						    right = new ASTNodes("Literal", {value: 1, scope: ScopeType.CONST}); break;
 					}
 					
 					// Create binary expression node
 					var adjustedOperator = string_copy(_op, 1, 1); // Remove '=' or adjust for '++'/'--'
-					var expr = new ASTNode("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
+					var expr = new ASTNodes("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
 					array_push(_new_args, expr);
 					
 					// Return the setter function call with updated arguments
-					return new ASTNode("FunctionCall", {callee: _setterFunc, arguments: _new_args});
+					return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
 				}
 				else {
 					return _get_expr; // For unsupported operators or when no assignment is detected
@@ -4569,61 +4587,61 @@ function GML_PreProcessor() constructor {
 					    // Both nodes are literals, perform constant folding
 					    switch (node.operator) {
 							case "|":{
-								return new ASTNode("Literal", {value: node.left.value | node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value | node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "^":{
-								return new ASTNode("Literal", {value: node.left.value ^ node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value ^ node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "&":{
-								return new ASTNode("Literal", {value: node.left.value & node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value & node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "==":{
-								return new ASTNode("Literal", {value: node.left.value == node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value == node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "!=":{
-								return new ASTNode("Literal", {value: node.left.value != node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value != node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "<":{
-								return new ASTNode("Literal", {value: node.left.value < node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value < node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "<=":{
-								return new ASTNode("Literal", {value: node.left.value <= node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value <= node.right.value, scope: ScopeType.CONST});
 							break;}
 							case ">":{
-								return new ASTNode("Literal", {value: node.left.value > node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value > node.right.value, scope: ScopeType.CONST});
 							break;}
 							case ">=":{
-								return new ASTNode("Literal", {value: node.left.value >= node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value >= node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "<<":{
-								return new ASTNode("Literal", {value: node.left.value << node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value << node.right.value, scope: ScopeType.CONST});
 							break;}
 							case ">>":{
-								return new ASTNode("Literal", {value: node.left.value >> node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value >> node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "+":{
-								return new ASTNode("Literal", {value: node.left.value + node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value + node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "-":{
-								return new ASTNode("Literal", {value: node.left.value - node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value - node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "*":{
-								return new ASTNode("Literal", {value: node.left.value * node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value * node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "/":{
-								return new ASTNode("Literal", {value: node.left.value / node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value / node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "mod":{
 								if (node.right.value == 0) {
 									throw $"\nDoMod :: Divide by zero"
 								}
-								return new ASTNode("Literal", {value: node.left.value mod node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value mod node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "div":{
 								if (node.right.value == 0) {
 									throw $"\nDoRem :: Divide by zero"
 								}
-								return new ASTNode("Literal", {value: node.left.value div node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value div node.right.value, scope: ScopeType.CONST});
 							break;}
 						}
 					}
@@ -4632,25 +4650,25 @@ function GML_PreProcessor() constructor {
 					if (node.left.type == "Literal" && node.right.type == "Literal") {
 					    switch (node.operator) {
 							case "||":{
-								return new ASTNode("Literal", {value: node.left.value || node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value || node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "&&":{
-								return new ASTNode("Literal", {value: node.left.value && node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value && node.right.value, scope: ScopeType.CONST});
 							break;}
 							case "^^":{
-								return new ASTNode("Literal", {value: node.left.value ^^ node.right.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.left.value ^^ node.right.value, scope: ScopeType.CONST});
 							break;}
 					    }
 					}
 					else if (node.left.type == "Literal" || node.right.type == "Literal") {
 					    switch (node.operator) {
 							case "||":{
-								if (node.left.type  == "Literal" && node.left.value ) return new ASTNode("Literal", {value: true, scope: ScopeType.CONST});
-								if (node.right.type == "Literal" && node.right.value) return new ASTNode("Literal", {value: true, scope: ScopeType.CONST});
+								if (node.left.type  == "Literal" && node.left.value ) return new ASTNodes("Literal", {value: true, scope: ScopeType.CONST});
+								if (node.right.type == "Literal" && node.right.value) return new ASTNodes("Literal", {value: true, scope: ScopeType.CONST});
 							break;}
 							case "&&":{
-								if (node.left.type  == "Literal" && !node.left.value ) return new ASTNode("Literal", {value: false, scope: ScopeType.CONST});
-								if (node.right.type == "Literal" && !node.right.value) return new ASTNode("Literal", {value: false, scope: ScopeType.CONST});
+								if (node.left.type  == "Literal" && !node.left.value ) return new ASTNodes("Literal", {value: false, scope: ScopeType.CONST});
+								if (node.right.type == "Literal" && !node.right.value) return new ASTNodes("Literal", {value: false, scope: ScopeType.CONST});
 							break;}
 					    }
 					}
@@ -4664,22 +4682,22 @@ function GML_PreProcessor() constructor {
 					if (node.expr.type == "Literal") {
 					    switch (node.operator) {
 							case "!":{
-								return new ASTNode("Literal", {value: !node.expr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: !node.expr.value, scope: ScopeType.CONST});
 							break;}
 							case "+":{
-								return new ASTNode("Literal", {value: +node.expr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: +node.expr.value, scope: ScopeType.CONST});
 							break;}
 							case "-":{
-								return new ASTNode("Literal", {value: -node.expr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: -node.expr.value, scope: ScopeType.CONST});
 							break;}
 							case "~":{
-								return new ASTNode("Literal", {value: ~node.expr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: ~node.expr.value, scope: ScopeType.CONST});
 							break;}
 							case "++":{
-								return new ASTNode("Literal", {value: ++node.expr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: ++node.expr.value, scope: ScopeType.CONST});
 							break;}
 							case "--":{
-								return new ASTNode("Literal", {value: --node.expr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: --node.expr.value, scope: ScopeType.CONST});
 							break;}
 					    }
 					}
@@ -4689,12 +4707,12 @@ function GML_PreProcessor() constructor {
 					    // If the condition is a literal, determine which branch to take
 						if (node.condition.value) {
 							if (node.trueExpr.type == "Literal") {
-								return new ASTNode("Literal", {value: node.trueExpr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.trueExpr.value, scope: ScopeType.CONST});
 							}
 						}
 						else {
 							if (node.falseExpr.type == "Literal") {
-								return new ASTNode("Literal", {value: node.falseExpr.value, scope: ScopeType.CONST});
+								return new ASTNodes("Literal", {value: node.falseExpr.value, scope: ScopeType.CONST});
 							}
 						}
 					}
@@ -4702,7 +4720,7 @@ function GML_PreProcessor() constructor {
 				case "ExpressionStatement":{
 					if (node.expr.type == "Literal") {
 					    // If the condition is a literal, determine which branch to take
-						return new ASTNode("Literal", {value: node.expr.value, scope: ScopeType.CONST});
+						return new ASTNodes("Literal", {value: node.expr.value, scope: ScopeType.CONST});
 					}
 				break;}
 				case "FunctionCall":{
@@ -5204,12 +5222,6 @@ function GML_PreProcessor() constructor {
 							}
 							return __build_literal_from_function_call_constant_folding(tan, node);
 						break;}
-						case variable_get_hash:{
-							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for variable_get_hash is incorrect!\nArgument Count : {array_length(node.arguments)}"
-							}
-							return __build_literal_from_function_call_constant_folding(variable_get_hash, node);
-						break;}
 						
 						//organize these later....
 						
@@ -5525,7 +5537,7 @@ function GML_PreProcessor() constructor {
 								_i+=1;}//end repeat loop
 								
 								if (_changed) {
-									return new ASTNode("FunctionCall", {callee: node.callee, arguments: _arr});
+									return new ASTNodes("FunctionCall", {callee: node.callee, arguments: _arr});
 								}
 							}
 							
@@ -5589,7 +5601,7 @@ function GML_PreProcessor() constructor {
 								return node.alternate;
 							}
 							else {
-								return new ASTBlockStatement([], node.line, node.lineString)
+								return new ASTNodes("BlockStatement", {statements: []})
 							}
 						}
 					}
@@ -5597,35 +5609,35 @@ function GML_PreProcessor() constructor {
 				case "ForStatement":{
 					if (node.condition.type == "Literal") {
 						if (!node.condition.value) {
-							return new ASTBlockStatement([], node.line, node.lineString)
+							return new ASTNodes("BlockStatement", {statements: []})
 						}
 					}
 				break;}
 				case "WhileStatement":{
 					if (node.condition.type == "Literal") {
 						if (!node.condition.value) {
-							return new ASTBlockStatement([], node.line, node.lineString)
+							return new ASTNodes("BlockStatement", {statements: []})
 						}
 					}
 				break;}
 				case "RepeatStatement":{
 					if (node.condition.type == "Literal") {
 						if (!node.condition.value) {
-							return new ASTBlockStatement([], node.line, node.lineString)
+							return new ASTNodes("BlockStatement", {statements: []})
 						}
 					}
 				break;}
 				case "DoUntillStatement":{
 					if (node.condition.type == "Literal") {
 						if (!node.condition.value) {
-							return new ASTBlockStatement([], node.line, node.lineString)
+							return new ASTNodes("BlockStatement", {statements: []})
 						}
 					}
 				break;}
 				case "WithStatement":{
 					if (node.condition.type == "Literal") {
 						if (node.condition.value == noone) {
-							return new ASTBlockStatement([], node.line, node.lineString)
+							return new ASTNodes("BlockStatement", {statements: []})
 						}
 					}
 				break;}
@@ -5643,7 +5655,7 @@ function GML_PreProcessor() constructor {
 							|| (_case.type == "CaseDefault") {
 								_found_case = true;
 								var _statements = []
-								_return = new ASTBlockStatement([], node.line, node.lineString)
+								_return = new ASTNodes("BlockStatement", {statements: _statements});
 								break;
 							}
 							
@@ -5701,11 +5713,11 @@ function GML_PreProcessor() constructor {
 						var _arg = node.arguments[1];
 						if (_arg.type == "Literal") 
 						&& (typeof(_arg.value) == "string") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: struct_get_from_hash, name: "struct_get_from_hash"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: struct_get_from_hash, name: "struct_get_from_hash"}),
 								arguments: [
 									node.arguments[0],
-									new ASTNode("Literal", {value: variable_get_hash(_arg.value), scope: ScopeType.CONST})
+									new ASTNodes("Literal", {value: variable_get_hash(_arg.value), scope: ScopeType.CONST})
 								]
 							});
 						}
@@ -5717,11 +5729,11 @@ function GML_PreProcessor() constructor {
 						var _arg = node.arguments[1];
 						if (_arg.type == "Literal") 
 						&& (typeof(_arg.value) == "string") {
-							return new ASTNode("FunctionCall", {
-								callee: new ASTNode("Function", {value: struct_set_from_hash, name: "struct_set_from_hash"}),
+							return new ASTNodes("FunctionCall", {
+								callee: new ASTNodes("Function", {value: struct_set_from_hash, name: "struct_set_from_hash"}),
 								arguments: [
 									node.arguments[0],
-									new ASTNode("Literal", {value: variable_get_hash(_arg.value), scope: ScopeType.CONST}),
+									new ASTNodes("Literal", {value: variable_get_hash(_arg.value), scope: ScopeType.CONST}),
 									node.arguments[2]
 								]
 							});
@@ -5733,8 +5745,8 @@ function GML_PreProcessor() constructor {
 						if (array_length(node.arguments) == 1) {
 							var _arg = node.arguments[0]
 							if (_arg.type != "Literal") {
-								return new ASTNode("FunctionCall", {
-									callee: new ASTNode("Function", {value: string_concat, name: "string_concat"}),
+								return new ASTNodes("FunctionCall", {
+									callee: new ASTNodes("Function", {value: string_concat, name: "string_concat"}),
 									arguments: node.arguments
 								});
 							}
@@ -5833,7 +5845,7 @@ function GML_PreProcessor() constructor {
 					
 					var expr = parseLogicalOrExpression();
 					array_push(_new_args, expr);
-					return new ASTNode("FunctionCall", {callee: _setterFunc, arguments: _new_args});
+					return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
 				}
 				else if (array_contains(__op_arr, _op)) {
 					nextToken(); // Consume the operator
@@ -5844,16 +5856,16 @@ function GML_PreProcessor() constructor {
 						case "^=": case "&=": case "|=":
 						    right = parseLogicalOrExpression(); break;
 						case "++": case "--":
-						    right = new ASTNode("Literal", {value: 1, scope: ScopeType.CONST}); break;
+						    right = new ASTNodes("Literal", {value: 1, scope: ScopeType.CONST}); break;
 					}
 					
 					// Create binary expression node
 					var adjustedOperator = string_copy(_op, 1, 1); // Remove '=' or adjust for '++'/'--'
-					var expr = new ASTNode("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
+					var expr = new ASTNodes("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
 					array_push(_new_args, expr);
 					
 					// Return the setter function call with updated arguments
-					return new ASTNode("FunctionCall", {callee: _setterFunc, arguments: _new_args});
+					return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
 				}
 				else {
 					return _get_expr; // For unsupported operators or when no assignment is detected
@@ -5866,1715 +5878,159 @@ function GML_PreProcessor() constructor {
 	}
 #endregion
 
-#region Interpreter.gml
-	
-	#region 4. Interpreter Module
-	/*
-	Purpose: To traverse the AST and execute the program.
-	
-	Methods:
-	
-	interpret(ast): Traverse the AST and execute commands.
-	evaluateExpression(node): Evaluate an expression AST node.
-	executeStatement(node): Execute a statement AST node.
-	*/
-	#endregion
-	#region ByteOp Enum
-	// add or remove a slash here to toggle between enums and string lookups
-	/*
-	enum ByteOp {
-		OPERATOR, //any mathmatical or logical operation
-		CALL, // function call
-		INC, // Increment
-		DEC, // Decrement
-		JUMP, // Jump
-		JUMP_IF_TRUE, // Jump if true
-		JUMP_IF_FALSE, // Jump if false
-		RETURN, // Return a value
-		DUP, // Duplicate the top of the stack
-		POP, // Pop the top of the stack
+#region ByteOp Enum
+// add or remove a slash here to toggle between enums and string lookups
+/*
+enum ByteOp {
+	OPERATOR, //any mathmatical or logical operation
+	CALL, // function call
+	INC, // Increment
+	DEC, // Decrement
+	JUMP, // Jump
+	JUMP_IF_TRUE, // Jump if true
+	JUMP_IF_FALSE, // Jump if false
+	RETURN, // Return a value
+	DUP, // Duplicate the top of the stack
+	POP, // Pop the top of the stack
 		
 		
-		// Loading from a variable location
-		LOAD,
-		STORE,
+	// Loading from a variable location
+	LOAD,
+	STORE,
 		
-		// try-catch-finally specific ops
-		TRY_START,
-		TRY_END,
-		CATCH_START,
-		CATCH_END,
-		FINALLY_START,
-		FINALLY_END,
+	// try-catch-finally specific ops
+	TRY_START,
+	TRY_END,
+	CATCH_START,
+	CATCH_END,
+	FINALLY_START,
+	FINALLY_END,
 		
-		END, // end of file OR Exit statement
+	END, // end of file OR Exit statement
 		
-		__SIZE__,
-	}
-	enum ScopeType {
-		GLOBAL,
-		LOCAL,
-		STATIC,
-		INSTANCE,
-		CONST,
-		UNIQUE,
+	__SIZE__,
+}
+enum ScopeType {
+	GLOBAL,
+	LOCAL,
+	STATIC,
+	INSTANCE,
+	CONST,
+	UNIQUE,
 		
-		__SIZE__
-	}
-	enum OpCode {
-		REMAINDER,    // The remainder `%` operator.
-	    MULTIPLY,    // The `*` operator.
-	    DIVIDE,    // The `/` operator.
-	    DIVIDE_INT,    // The integer division `//` operator.
-	    SUBTRACT,    // The `-` operator.
-	    PLUS,    // The `+` operator.
-	    EQUAL,    // The `==` operator.
-	    NOT_EQUAL,    // The `!=` operator.
-	    GREATER,    // The `>` operator.
-	    GREATER_EQUAL,    // The `>=` operator.
-	    LESS,    // The `<` operator.
-	    LESS_EQUAL,    // The `<=` operator.
-	    NOT,    // The logical negation `!` operator.
-	    BITWISE_NOT,    // The bitwise negation `~` operator.
-	    SHIFT_RIGHT,    // The bitwise right shift `>>` operator.
-	    SHIFT_LEFT,    // The bitwise left shift `<<` operator.
-	    BITWISE_AND,    // The bitwise AND `&` operator.
-	    BITWISE_XOR,    // The bitwise XOR `^` operator.
-	    BITWISE_OR,    // The bitwise OR `|` operator.
-		OR,    // The logical OR operator.
-		AND,    // The logical AND operator.
-	    XOR,    // The logical XOR operator.
-		NEGATE,    // The negation prefix.
-		INC,    // increment.
-		DEC,    // decrement.
+	__SIZE__
+}
+enum OpCode {
+	REMAINDER,    // The remainder `%` operator.
+	MULTIPLY,    // The `*` operator.
+	DIVIDE,    // The `/` operator.
+	DIVIDE_INT,    // The integer division `//` operator.
+	SUBTRACT,    // The `-` operator.
+	PLUS,    // The `+` operator.
+	EQUAL,    // The `==` operator.
+	NOT_EQUAL,    // The `!=` operator.
+	GREATER,    // The `>` operator.
+	GREATER_EQUAL,    // The `>=` operator.
+	LESS,    // The `<` operator.
+	LESS_EQUAL,    // The `<=` operator.
+	NOT,    // The logical negation `!` operator.
+	BITWISE_NOT,    // The bitwise negation `~` operator.
+	SHIFT_RIGHT,    // The bitwise right shift `>>` operator.
+	SHIFT_LEFT,    // The bitwise left shift `<<` operator.
+	BITWISE_AND,    // The bitwise AND `&` operator.
+	BITWISE_XOR,    // The bitwise XOR `^` operator.
+	BITWISE_OR,    // The bitwise OR `|` operator.
+	OR,    // The logical OR operator.
+	AND,    // The logical AND operator.
+	XOR,    // The logical XOR operator.
+	NEGATE,    // The negation prefix.
+	INC,    // increment.
+	DEC,    // decrement.
 		
-		__SIZE__
-	}
-	/*/
-	function ByteOp() {
-		static OPERATOR = "ByteOp.OPERATOR";
-		static CALL = "ByteOp.CALL";
-		static JUMP = "ByteOp.JUMP";
-		static JUMP_IF_TRUE = "ByteOp.JUMP_IF_TRUE";
-		static JUMP_IF_FALSE = "ByteOp.JUMP_IF_FALSE";
-		static RETURN = "ByteOp.RETURN";
-		static DUP = "ByteOp.DUP";
-		static POP = "ByteOp.POP";
+	__SIZE__
+}
+/*/
+function ByteOp() {
+	static OPERATOR = "ByteOp.OPERATOR";
+	static CALL = "ByteOp.CALL";
+	static INC = "ByteOp.INC";
+	static DEC = "ByteOp.DEC";
+	static JUMP = "ByteOp.JUMP";
+	static JUMP_IF_TRUE = "ByteOp.JUMP_IF_TRUE";
+	static JUMP_IF_FALSE = "ByteOp.JUMP_IF_FALSE";
+	static RETURN = "ByteOp.RETURN";
+	static DUP = "ByteOp.DUP";
+	static POP = "ByteOp.POP";
 		
-		static JUMP_EXPECT = "ByteOp.JUMP_EXPECT"
+	static JUMP_EXPECT = "ByteOp.JUMP_EXPECT"
 		
-				// Loading from a variable location
-		static LOAD = "ByteOp.LOAD";
-		static STORE = "ByteOp.STORE";
+			// Loading from a variable location
+	static LOAD = "ByteOp.LOAD";
+	static STORE = "ByteOp.STORE";
 		
-				// try-catch-finally specific ops
-		static TRY_START = "ByteOp.TRY_START";
-		static TRY_END = "ByteOp.TRY_END";
-		static CATCH_START = "ByteOp.CATCH_START";
-		static CATCH_END = "ByteOp.CATCH_END";
-		static FINALLY_START = "ByteOp.FINALLY_START";
-		static FINALLY_END = "ByteOp.FINALLY_END";
+			// try-catch-finally specific ops
+	static TRY_START = "ByteOp.TRY_START";
+	static TRY_END = "ByteOp.TRY_END";
+	static CATCH_START = "ByteOp.CATCH_START";
+	static CATCH_END = "ByteOp.CATCH_END";
+	static FINALLY_START = "ByteOp.FINALLY_START";
+	static FINALLY_END = "ByteOp.FINALLY_END";
 		
-		static WITH_START = "ByteOp.WITH_START";
-		static WITH_END =   "ByteOp.WITH_END";
+	static WITH_START = "ByteOp.WITH_START";
+	static WITH_END =   "ByteOp.WITH_END";
 		
-		static END = "ByteOp.END";
+	static END = "ByteOp.END";
 		
-		static THROW = "ByteOp.THROW";
+	static THROW = "ByteOp.THROW";
 		
-		static __SIZE__ = "__SIZE__";
-	}
-	function ScopeType() {
-		static MACRO = "ScopeType.MACRO";
-		static GLOBAL = "ScopeType.GLOBAL";
-		static ENUM = "ScopeType.ENUM";
-		static UNIQUE = "ScopeType.UNIQUE";
-		static LOCAL = "ScopeType.LOCAL";
-		static STATIC = "ScopeType.STATIC";
-		static INSTANCE = "ScopeType.INSTANCE";
-		static CONST = "ScopeType.CONST";
+	static __SIZE__ = "__SIZE__";
+}
+function ScopeType() {
+	static MACRO = "ScopeType.MACRO";
+	static GLOBAL = "ScopeType.GLOBAL";
+	static ENUM = "ScopeType.ENUM";
+	static UNIQUE = "ScopeType.UNIQUE";
+	static LOCAL = "ScopeType.LOCAL";
+	static STATIC = "ScopeType.STATIC";
+	static INSTANCE = "ScopeType.INSTANCE";
+	static CONST = "ScopeType.CONST";
 		
-		static __SIZE__ = "__SIZE__";
-	}
-	function OpCode() {
-		static REMAINDER = "OpCode.REMAINDER";
-		static MULTIPLY = "OpCode.MULTIPLY";
-		static DIVIDE = "OpCode.DIVIDE";
-		static DIVIDE_INT = "OpCode.DIVIDE_INT";
-		static SUBTRACT = "OpCode.SUBTRACT";
-		static PLUS = "OpCode.PLUS";
-		static EQUAL = "OpCode.EQUAL";
-		static NOT_EQUAL = "OpCode.NOT_EQUAL";
-		static GREATER = "OpCode.GREATER";
-		static GREATER_EQUAL = "OpCode.GREATER_EQUAL";
-		static LESS = "OpCode.LESS";
-		static LESS_EQUAL = "OpCode.LESS_EQUAL";
-		static NOT = "OpCode.NOT";
-		static BITWISE_NOT = "OpCode.BITWISE_NOT";
-		static SHIFT_RIGHT = "OpCode.SHIFT_RIGHT";
-		static SHIFT_LEFT = "OpCode.SHIFT_LEFT";
-		static BITWISE_AND = "OpCode.BITWISE_AND";
-		static BITWISE_XOR = "OpCode.BITWISE_XOR";
-		static BITWISE_OR = "OpCode.BITWISE_OR";
-		static OR = "OpCode.OR";
-		static AND = "OpCode.AND";
-		static XOR = "OpCode.XOR";
-		static NEGATE = "OpCode.NEGATE";
-		static INC = "OpCode.INC";
-		static DEC = "OpCode.DEC";
-		static NULLISH = "OpCode.NULLISH";
+	static __SIZE__ = "__SIZE__";
+}
+function OpCode() {
+	static REMAINDER = "OpCode.REMAINDER";
+	static MULTIPLY = "OpCode.MULTIPLY";
+	static DIVIDE = "OpCode.DIVIDE";
+	static DIVIDE_INT = "OpCode.DIVIDE_INT";
+	static SUBTRACT = "OpCode.SUBTRACT";
+	static PLUS = "OpCode.PLUS";
+	static EQUAL = "OpCode.EQUAL";
+	static NOT_EQUAL = "OpCode.NOT_EQUAL";
+	static GREATER = "OpCode.GREATER";
+	static GREATER_EQUAL = "OpCode.GREATER_EQUAL";
+	static LESS = "OpCode.LESS";
+	static LESS_EQUAL = "OpCode.LESS_EQUAL";
+	static NOT = "OpCode.NOT";
+	static BITWISE_NOT = "OpCode.BITWISE_NOT";
+	static SHIFT_RIGHT = "OpCode.SHIFT_RIGHT";
+	static SHIFT_LEFT = "OpCode.SHIFT_LEFT";
+	static BITWISE_AND = "OpCode.BITWISE_AND";
+	static BITWISE_XOR = "OpCode.BITWISE_XOR";
+	static BITWISE_OR = "OpCode.BITWISE_OR";
+	static OR = "OpCode.OR";
+	static AND = "OpCode.AND";
+	static XOR = "OpCode.XOR";
+	static NEGATE = "OpCode.NEGATE";
+	static INC = "OpCode.INC";
+	static DEC = "OpCode.DEC";
+	static NULLISH = "OpCode.NULLISH";
 		
-		static __SIZE__ = "__SIZE__";
-	}
-	ByteOp()
-	ScopeType()
-	OpCode()
-	//*/
-	#endregion
-	#region Classes
-	function __GMLC_Script() constructor {
-		GlobalVar = {};
-		IR = [];
-		
-		static execute = __executeIR
-	}
-	function __GMLC_Function() constructor {
-		StaticVar = {};
-		IR = [];
-		
-		static execute = __executeIR
-	}
-	#endregion
-	#region Functions
-	function __executeIR(_argument0, _argument1, _argument2, _argument3, _argument4, _argument5, _argument6, _argument7, _argument8, _argument9, _argument10, _argument11, _argument12, _argument13, _argument14, _argument15) {
-		var _ir = self.IR;
-		var _ip = 0; // the instruction pointer
-	    var _stack = [];
-		var _framePointer = 0; // To manage function calls and returns
-		
-	    var _globalVar = self[$ "GlobalVar"]; //to manage global variables
-	    var _staticVar = self[$ "StaticVar"]; //to manage static variables
-	    var _localVar = {}; //to manage local variables
-	    
-		return __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.END, 0);
-	}
-	function __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, _endByte, _depth) {
-		gml_pragma("forceinline");
-		
-		var _preffix = string_repeat(" - ", _depth)
-		log($"{_preffix}Entered :: {_ip} :: __executeInstructionUntil :: {_endByte}")
-		
-		var _ir_length = array_length(_ir);
-		while (_ip < _ir_length) {
-			var _instr = _ir[_ip]; // the instruction
-				
-			log($"{_preffix}IP :: {_ip} :: {_instr}")
-			
-		    switch (_instr.op) {
-	            
-		        // Handle other operations
-				
-				case ByteOp.OPERATOR: {
-					var right = array_pop(_stack);
-					var left, result;
-					
-					switch(_instr.operator) {
-						case OpCode.REMAINDER:{
-							left = array_pop(_stack);
-							result = left % right;
-						break;}
-						case OpCode.MULTIPLY:{
-							left = array_pop(_stack);
-							result = left * right;
-						break;}
-						case OpCode.DIVIDE:{
-							left = array_pop(_stack);
-							result = left / right;
-						break;}
-						case OpCode.DIVIDE_INT:{
-							left = array_pop(_stack);
-							result = left div right;
-						break;}
-						case OpCode.SUBTRACT:{
-							left = array_pop(_stack);
-							result = left - right;
-						break;}
-						case OpCode.PLUS:{
-							left = array_pop(_stack);
-							result = left + right;
-						break;}
-						case OpCode.EQUAL:{
-							left = array_pop(_stack);
-							result = (left == right);
-						break;}
-						case OpCode.NOT_EQUAL:{
-							left = array_pop(_stack);
-							result = (left != right);
-						break;}
-						case OpCode.GREATER:{
-							left = array_pop(_stack);
-							result = (left > right);
-						break;}
-						case OpCode.GREATER_EQUAL:{
-							left = array_pop(_stack);
-							result = (left >= right);
-						break;}
-						case OpCode.LESS:{
-							left = array_pop(_stack);
-							result = (left < right);
-						break;}
-						case OpCode.LESS_EQUAL:{
-							left = array_pop(_stack);
-							result = (left <= right);
-						break;}
-						case OpCode.NOT:{
-							result = !right;
-						break;}
-						case OpCode.BITWISE_NOT:{
-							result = ~right;
-						break;}
-						case OpCode.SHIFT_RIGHT:{
-							left = array_pop(_stack);
-							result = left >> right;
-						break;}
-						case OpCode.SHIFT_LEFT:{
-							left = array_pop(_stack);
-							result = left << right;
-						break;}
-						case OpCode.BITWISE_AND:{
-							left = array_pop(_stack);
-							result = left & right;
-						break;}
-						case OpCode.BITWISE_XOR:{
-							left = array_pop(_stack);
-							result = left ^ right;
-						break;}
-						case OpCode.BITWISE_OR:{
-							left = array_pop(_stack);
-							result = left | right;
-						break;}
-						case OpCode.OR:{
-							left = array_pop(_stack);
-							result = left || right;
-						break;}
-						case OpCode.AND:{
-							left = array_pop(_stack);
-							result = left && right;
-						break;}
-						case OpCode.XOR:{
-							left = array_pop(_stack);
-							result = (left ^^ right);
-						break;}
-						case OpCode.NEGATE:{
-							result = -right;
-						break;}
-						case OpCode.INC:{
-							result = right + 1;
-						break;}
-						case OpCode.DEC:{
-							result = right - 1;
-						break;}
-						case OpCode.NULLISH:{
-							left = array_pop(_stack);
-							result = left ?? right;
-						break;}
-						
-					}
-					
-					array_push(_stack, result);
-					
-				break;}
-				
-				case ByteOp.CALL:{
-					var _result;
-					
-					// Retrieve arguments for the function. `_instr.count` tells us how many arguments are passed.
-					var _args = [];
-					var _stack_length = array_length(_stack);
-					var _i=0; repeat(_instr.count) {
-						array_push(_args, _stack[_stack_length - _instr.count + _i]); // Reverse order since stack is LIFO
-					_i+=1;}//end repeat loop
-					
-					//resize stack
-					array_resize(_stack, _stack_length - _instr.count)
-					
-					//execute depending on if it's a gml global script, or a module we're simply pointing to
-					//var _func;
-					//if (is_instanceof(_instr.value, __GMLC_Script)) _func = _instr.value.execute;
-					//else if (is_instanceof(_instr.value, __GMLC_Function)) _func = _instr.value.execute;
-					//else _func = _instr.value;
-					var _func = array_pop(_stack);
-					
-					//excute
-					if (is_instanceof(_func, __GMLC_Function)) {
-						switch(_instr.count) {
-							case 0:  _func.execute();
-							case 1:  _func.execute(_args[0]);
-							case 2:  _func.execute(_args[0], _args[1]);
-							case 3:  _func.execute(_args[0], _args[1], _args[2]);
-							case 4:  _func.execute(_args[0], _args[1], _args[2], _args[3]);
-							case 5:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4]);
-							case 6:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5]);
-							case 7:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6]);
-							case 8:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7]);
-							case 9:  _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8]);
-							case 10: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9]);
-							case 11: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10]);
-							case 12: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11]);
-							case 13: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12]);
-							case 14: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12], _args[13]);
-							case 15: _func.execute(_args[0], _args[1], _args[2], _args[3], _args[4], _args[5], _args[6], _args[7], _args[8], _args[9], _args[10], _args[11], _args[12], _args[13], _args[14]);
-						}
-					}
-					else {
-						//log(["_func", _func, script_get_name(_func)])
-						//log(["_args", _args])
-						_result = script_execute_ext(_func, _args);
-					}
-					
-					// Push the result of the function call onto the stack
-					array_push(_stack, _result);
-					
-					
-					// Manage stack frame when we impliment that if necessary
-					// Here handle more complex frame operations when we maintain a call stack
-					// For example:
-					// _framePointer = array_length(_stack); // Update frame pointer to new frame
-					// _localVar = {}; // Reset local variables for the new frame
-				break;}
-				case ByteOp.JUMP:{
-					// Adjust the instruction pointer based on offset
-					_ip += _instr.offset;
-					
-					if (GML_COMPILER_DEBUG)
-					&& (_ir[_ip].op != ByteOp.JUMP_EXPECT) {
-						log("IR :: "+json_stringify(self, true))
-						throw $"\nJumped to unexpected location\nJump instruction :: {_instr}\nCurrent Instruction :: {_ir[_ip]}\nIP :: {_ip}"
-					}
-					
-					continue; //skip the _ip inc
-				break;}
-				case ByteOp.JUMP_IF_TRUE:{
-					// Jump if true
-					if (array_pop(_stack)) {
-						_ip += _instr.offset;
-						
-						if (GML_COMPILER_DEBUG)
-						&& (_ir[_ip].op != ByteOp.JUMP_EXPECT) {
-							log("IR :: "+json_stringify(self, true))
-							throw $"\nJumped to unexpected location\nJump instruction :: {_instr}\nCurrent Instruction :: {_ir[_ip]}\nIP :: {_ip}"
-						}
-						
-						continue; //skip the _ip inc
-					}
-				break;}
-				case ByteOp.JUMP_IF_FALSE:{
-					// Jump if false
-					if (!array_pop(_stack)) {
-						_ip += _instr.offset;
-						
-						if (GML_COMPILER_DEBUG)
-						&& (_ir[_ip].op != ByteOp.JUMP_EXPECT) {
-							log("IR :: "+json_stringify(self, true))
-							throw $"\nJumped to unexpected location\nJump instruction :: {_instr}\nCurrent Instruction :: {_ir[_ip]}\nIP :: {_ip}"
-						}
-						
-						continue; //skip the _ip inc
-					}
-				break;}
-				
-				case ByteOp.RETURN:{
-					// Pop the return value from the stack
-					if (_depth == 0) {
-						var _ret = array_pop(_stack);
-						//log($"{_preffix}Returning :: {_ret} :: depth :: {_depth} :: __executeInstructionUntil :: {_endByte}\n{_stack}")
-						return _ret;
-					}
-					//log($"{_preffix}Leaving :: {_ip} :: __executeInstructionUntil :: {_endByte}")
-					return _ip;
-				break;}
-				case ByteOp.DUP:{
-					// Duplicate the last element on the stack
-					_stack[array_length(_stack)] = _stack[array_length(_stack)-1];
-				break;}
-				case ByteOp.POP:{
-					//Clear the last element from the stack (used for internal clean ups of repeat loops)
-					array_pop(_stack)
-				break;}
-				case ByteOp.LOAD:{
-					//
-					switch (_instr.scope) {
-						case ScopeType.GLOBAL:{
-							//
-							array_push(_stack, __struct_get_with_error(_globalVar, _instr.value));
-						break;}
-						case ScopeType.LOCAL:{
-							//
-							array_push(_stack, __struct_get_with_error(_localVar, _instr.value));
-						break;}
-						case ScopeType.STATIC:{
-							//
-							array_push(_stack, __struct_get_with_error(_staticVar, _instr.value));
-						break;}
-						case ScopeType.INSTANCE:{
-							//
-							if (is_instanceof(self, __GMLC_Script)) {
-								/// NOTE: this is only a partch to continue testing, in the long run we should already know the scope.
-								array_push(_stack, __struct_get_with_error(_globalVar, _instr.value));
-							}
-							else {
-								array_push(_stack, __struct_get_with_error(self, _instr.value));
-							}
-						break;}
-						case ScopeType.CONST:{
-							// Load a constant value
-							array_push(_stack, _instr.value);
-						break;}
-						case ScopeType.UNIQUE:{
-							// Find the constant to load
-							var _val;
-							switch (_instr.value) {
-								case "self":                     _val = self;                        break;
-								case "other":                    _val = other;                       break;
-								case "all":                      _val = all;                         break;
-								case "noone":                    _val = noone;                       break;
-								
-								case "fps":                      _val = fps;                       break;
-								case "room":                     _val = room;                      break;
-								case "lives":                    _val = lives;                     break;
-								case "score":                    _val = score;                     break;
-								case "health":                   _val = health;                    break;
-								case "mouse_x":                  _val = mouse_x;                   break;
-								case "visible":                  _val = visible;                   break;
-								case "managed":                  _val = managed;                   break;
-								case "mouse_y":                  _val = mouse_y;                   break;
-								case "os_type":                  _val = os_type;                   break;
-								case "game_id":                  _val = game_id;                   break;
-								case "iap_data":                 _val = iap_data;                  break;
-								case "argument":                 _val = argument;                  break;
-								case "fps_real":                 _val = fps_real;                  break;
-								case "room_last":                _val = room_last;                 break;
-								case "argument4":                _val = argument4;                 break;
-								case "argument2":                _val = argument2;                 break;
-								case "argument3":                _val = argument3;                 break;
-								case "argument9":                _val = argument9;                 break;
-								case "argument6":                _val = argument6;                 break;
-								case "argument1":                _val = argument1;                 break;
-								case "argument8":                _val = argument8;                 break;
-								case "os_device":                _val = os_device;                 break;
-								case "argument0":                _val = argument0;                 break;
-								case "argument7":                _val = argument7;                 break;
-								case "argument5":                _val = argument5;                 break;
-								case "delta_time":               _val = delta_time;                break;
-								case "show_lives":               _val = show_lives;                break;
-								case "path_index":               _val = path_index;                break;
-								case "room_first":               _val = room_first;                break;
-								case "room_width":               _val = room_width;                break;
-								case "view_hport":               _val = view_hport;                break;
-								case "view_xport":               _val = view_xport;                break;
-								case "view_yport":               _val = view_yport;                break;
-								case "debug_mode":               _val = debug_mode;                break;
-								case "event_data":               _val = event_data;                break;
-								case "view_wport":               _val = view_wport;                break;
-								case "os_browser":               _val = os_browser;                break;
-								case "os_version":               _val = os_version;                break;
-								case "argument10":               _val = argument10;                break;
-								case "argument11":               _val = argument11;                break;
-								case "argument12":               _val = argument12;                break;
-								case "argument14":               _val = argument14;                break;
-								case "argument15":               _val = argument15;                break;
-								case "room_speed":               _val = room_speed;                break;
-								case "show_score":               _val = show_score;                break;
-								case "argument13":               _val = argument13;                break;
-								case "error_last":               _val = error_last;                break;
-								case "display_aa":               _val = display_aa;                break;
-								case "async_load":               _val = async_load;                break;
-								case "instance_id":              _val = instance_id;               break;
-								case "current_day":              _val = current_day;               break;
-								case "view_camera":              _val = view_camera;               break;
-								case "room_height":              _val = room_height;               break;
-								case "show_health":              _val = show_health;               break;
-								case "mouse_button":             _val = mouse_button;              break;
-								case "keyboard_key":             _val = keyboard_key;              break;
-								case "view_visible":             _val = view_visible;              break;
-								case "game_save_id":             _val = game_save_id;              break;
-								case "current_hour":             _val = current_hour;              break;
-								case "room_caption":             _val = room_caption;              break;
-								case "view_enabled":             _val = view_enabled;              break;
-								case "event_action":             _val = event_action;              break;
-								case "view_current":             _val = view_current;              break;
-								case "current_time":             _val = current_time;              break;
-								case "current_year":             _val = current_year;              break;
-								case "browser_width":            _val = browser_width;             break;
-								case "webgl_enabled":            _val = webgl_enabled;             break;
-								case "current_month":            _val = current_month;             break;
-								case "caption_score":            _val = caption_score;             break;
-								case "caption_lives":            _val = caption_lives;             break;
-								case "gamemaker_pro":            _val = gamemaker_pro;             break;
-								case "cursor_sprite":            _val = cursor_sprite;             break;
-								case "caption_health":           _val = caption_health;            break;
-								case "instance_count":           _val = instance_count;            break;
-								case "argument_count":           _val = argument_count;            break;
-								case "error_occurred":           _val = error_occurred;            break;
-								case "current_minute":           _val = current_minute;            break;
-								case "current_second":           _val = current_second;            break;
-								case "temp_directory":           _val = temp_directory;            break;
-								case "browser_height":           _val = browser_height;            break;
-								case "view_surface_id":          _val = view_surface_id;           break;
-								case "room_persistent":          _val = room_persistent;           break;
-								case "current_weekday":          _val = current_weekday;           break;
-								case "keyboard_string":          _val = keyboard_string;           break;
-								case "cache_directory":          _val = cache_directory;           break;
-								case "mouse_lastbutton":         _val = mouse_lastbutton;          break;
-								case "keyboard_lastkey":         _val = keyboard_lastkey;          break;
-								case "wallpaper_config":         _val = wallpaper_config;          break;
-								case "background_color":         _val = background_color;          break;
-								case "program_directory":        _val = program_directory;         break;
-								case "game_project_name":        _val = game_project_name;         break;
-								case "game_display_name":        _val = game_display_name;         break;
-								case "argument_relative":        _val = argument_relative;         break;
-								case "keyboard_lastchar":        _val = keyboard_lastchar;         break;
-								case "working_directory":        _val = working_directory;         break;
-								case "rollback_event_id":        _val = rollback_event_id;         break;
-								case "background_colour":        _val = background_colour;         break;
-								case "font_texture_page_size":   _val = font_texture_page_size;    break;
-								case "application_surface":      _val = application_surface;       break;
-								case "rollback_api_server":      _val = rollback_api_server;       break;
-								case "gamemaker_registered":     _val = gamemaker_registered;      break;
-								case "background_showcolor":     _val = background_showcolor;      break;
-								case "rollback_event_param":     _val = rollback_event_param;      break;
-								case "background_showcolour":    _val = background_showcolour;     break;
-								case "rollback_game_running":    _val = rollback_game_running;     break;
-								case "rollback_current_frame":   _val = rollback_current_frame;    break;
-								case "rollback_confirmed_frame": _val = rollback_confirmed_frame;  break;
-								
-							}
-							// Push to stack
-							array_push(_stack, _val);
-						break;}
-					}
-				break;}
-				case ByteOp.STORE:{
-					//
-					var _result = array_pop(_stack);
-					
-					switch (_instr.scope) {
-						case ScopeType.GLOBAL:{
-							//
-							struct_set(_globalVar, _instr.value, _result);
-						break;}
-						case ScopeType.LOCAL:{
-							//
-							struct_set(_localVar, _instr.value, _result);
-						break;}
-						case ScopeType.STATIC:{
-							//
-							struct_set(_staticVar, _instr.value, _result);
-						break;}
-						case ScopeType.INSTANCE:{
-							//
-							if (is_instanceof(self, __GMLC_Script)) {
-								/// NOTE: this is only a partch to continue testing, in the long run we should already know the scope.
-								struct_set(_globalVar, _instr.value, _result);
-							}
-							else {
-								struct_set(self, _instr.value, _result);
-							}
-							
-						break;}
-						case ScopeType.CONST:{
-							throw $"\nCan't ByteOp.STORE a ScopeType.CONST";
-						break;}
-						case ScopeType.UNIQUE:{
-							// Find the constant to load
-							var _val;
-							switch (_instr.value) {
-								//case "fps":                      fps                       = _val; break;
-								case "room":                     room                      = _val; break;
-								case "lives":                    lives                     = _val; break;
-								case "score":                    score                     = _val; break;
-								case "health":                   health                    = _val; break;
-								//case "mouse_x":                  mouse_x                   = _val; break;
-								case "visible":                  visible                   = _val; break;
-								//case "managed":                  managed                   = _val; break;
-								//case "mouse_y":                  mouse_y                   = _val; break;
-								//case "os_type":                  os_type                   = _val; break;
-								//case "game_id":                  game_id                   = _val; break;
-								//case "iap_data":                 iap_data                  = _val; break;
-								case "argument":                 argument                  = _val; break;
-								//case "fps_real":                 fps_real                  = _val; break;
-								//case "room_last":                room_last                 = _val; break;
-								case "argument4":                argument4                 = _val; break;
-								case "argument2":                argument2                 = _val; break;
-								case "argument3":                argument3                 = _val; break;
-								case "argument9":                argument9                 = _val; break;
-								case "argument6":                argument6                 = _val; break;
-								case "argument1":                argument1                 = _val; break;
-								case "argument8":                argument8                 = _val; break;
-								//case "os_device":                os_device                 = _val; break;
-								case "argument0":                argument0                 = _val; break;
-								case "argument7":                argument7                 = _val; break;
-								case "argument5":                argument5                 = _val; break;
-								case "delta_time":               delta_time                = _val; break;
-								case "show_lives":               show_lives                = _val; break;
-								//case "path_index":               path_index                = _val; break;
-								//case "room_first":               room_first                = _val; break;
-								case "room_width":               room_width                = _val; break;
-								case "view_hport":               view_hport                = _val; break;
-								case "view_xport":               view_xport                = _val; break;
-								case "view_yport":               view_yport                = _val; break;
-								//case "debug_mode":               debug_mode                = _val; break;
-								//case "event_data":               event_data                = _val; break;
-								case "view_wport":               view_wport                = _val; break;
-								//case "os_browser":               os_browser                = _val; break;
-								//case "os_version":               os_version                = _val; break;
-								case "argument10":               argument10                = _val; break;
-								case "argument11":               argument11                = _val; break;
-								case "argument12":               argument12                = _val; break;
-								case "argument14":               argument14                = _val; break;
-								case "argument15":               argument15                = _val; break;
-								case "room_speed":               room_speed                = _val; break;
-								case "show_score":               show_score                = _val; break;
-								case "argument13":               argument13                = _val; break;
-								case "error_last":               error_last                = _val; break;
-								//case "display_aa":               display_aa                = _val; break;
-								//case "async_load":               async_load                = _val; break;
-								//case "instance_id":              instance_id               = _val; break;
-								//case "current_day":              current_day               = _val; break;
-								case "view_camera":              view_camera               = _val; break;
-								case "room_height":              room_height               = _val; break;
-								case "show_health":              show_health               = _val; break;
-								case "mouse_button":             mouse_button              = _val; break;
-								case "keyboard_key":             keyboard_key              = _val; break;
-								case "view_visible":             view_visible              = _val; break;
-								//case "game_save_id":             game_save_id              = _val; break;
-								//case "current_hour":             current_hour              = _val; break;
-								case "room_caption":             room_caption              = _val; break;
-								case "view_enabled":             view_enabled              = _val; break;
-								//case "event_action":             event_action              = _val; break;
-								//case "view_current":             view_current              = _val; break;
-								//case "current_time":             current_time              = _val; break;
-								//case "current_year":             current_year              = _val; break;
-								//case "browser_width":            browser_width             = _val; break;
-								//case "webgl_enabled":            webgl_enabled             = _val; break;
-								//case "current_month":            current_month             = _val; break;
-								case "caption_score":            caption_score             = _val; break;
-								case "caption_lives":            caption_lives             = _val; break;
-								//case "gamemaker_pro":            gamemaker_pro             = _val; break;
-								case "cursor_sprite":            cursor_sprite             = _val; break;
-								case "caption_health":           caption_health            = _val; break;
-								//case "instance_count":           instance_count            = _val; break;
-								//case "argument_count":           argument_count            = _val; break;
-								case "error_occurred":           error_occurred            = _val; break;
-								//case "current_minute":           current_minute            = _val; break;
-								//case "current_second":           current_second            = _val; break;
-								//case "temp_directory":           temp_directory            = _val; break;
-								//case "browser_height":           browser_height            = _val; break;
-								case "view_surface_id":          view_surface_id           = _val; break;
-								case "room_persistent":          room_persistent           = _val; break;
-								//case "current_weekday":          current_weekday           = _val; break;
-								case "keyboard_string":          keyboard_string           = _val; break;
-								//case "cache_directory":          cache_directory           = _val; break;
-								case "mouse_lastbutton":         mouse_lastbutton          = _val; break;
-								case "keyboard_lastkey":         keyboard_lastkey          = _val; break;
-								//case "wallpaper_config":         wallpaper_config          = _val; break;
-								case "background_color":         background_color          = _val; break;
-								//case "program_directory":        program_directory         = _val; break;
-								//case "game_project_name":        game_project_name         = _val; break;
-								//case "game_display_name":        game_display_name         = _val; break;
-								//case "argument_relative":        argument_relative         = _val; break;
-								case "keyboard_lastchar":        keyboard_lastchar         = _val; break;
-								//case "working_directory":        working_directory         = _val; break;
-								//case "rollback_event_id":        rollback_event_id         = _val; break;
-								case "background_colour":        background_colour         = _val; break;
-								case "font_texture_page_size":   font_texture_page_size    = _val; break;
-								//case "application_surface":      application_surface       = _val; break;
-								//case "rollback_api_server":      rollback_api_server       = _val; break;
-								//case "gamemaker_registered":     gamemaker_registered      = _val; break;
-								case "background_showcolor":     background_showcolor      = _val; break;
-								//case "rollback_event_param":     rollback_event_param      = _val; break;
-								case "background_showcolour":    background_showcolour     = _val; break;
-								//case "rollback_game_running":    rollback_game_running     = _val; break;
-								//case "rollback_current_frame":   rollback_current_frame    = _val; break;
-								//case "rollback_confirmed_frame": rollback_confirmed_frame  = _val; break;
-								
-							}
-							// Push to stack
-							array_push(_stack, _val);
-						break;}
-					}
-				break;}
-				case ByteOp.TRY_START:{
-					var _temp_ip = _ip
-					try {
-						_ip++; // Move past the TRY_START
-						
-						//executeBlockUntil
-						_ip = __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.TRY_END, _depth+1);
-						
-					}
-					catch(_err) {
-						//log($"{_preffix}Catch")
-						//push the err to the stack
-						array_push(_stack, _err);
-						
-						_instr = _ir[_ip]
-						if (_instr.op == ByteOp.RETURN)
-						|| (_instr.op == ByteOp.END) {
-							return _ip;
-						}
-						
-						//move forward until we find TRY_END
-						_instr = _ir[_ip]
-						while (_instr.op != ByteOp.TRY_END) {
-							_ip++;
-							_instr = _ir[_ip];
-						}
-						
-						_ip++; // Move past the TRY_END
-						_instr = _ir[_ip];
-						
-						//early out if no CATCH_START was defined
-						if (_instr.op != ByteOp.CATCH_START) return _ip;
-						
-						_ip++; // Move past the CATCH_START
-						_instr = _ir[_ip];
-						
-						//executeBlockUntil
-						_ip = __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.CATCH_END, _depth+1);
-					}
-					finally {
-						//log($"{_preffix}Finally :: {_instr}")
-						_ip = _temp_ip;
-						
-						_instr = _ir[_ip]
-						
-						if (_instr.op != ByteOp.RETURN)
-						&& (_instr.op != ByteOp.END) {
-							
-							_instr = _ir[_ip];
-							if (_instr.op != ByteOp.FINALLY_START) {
-								
-								
-								//move forward until we find TRY_END
-								_instr = _ir[_ip];
-								if (_instr.op == ByteOp.TRY_START) {
-									while (_instr.op != ByteOp.TRY_END) {
-										_ip++;
-										_instr = _ir[_ip];
-									}
-									
-									_ip++;
-								}
-						
-								//move forward until we find the CATCH_END
-								_instr = _ir[_ip];
-								if (_instr.op == ByteOp.CATCH_START) {
-									while (_instr.op != ByteOp.CATCH_END) {
-										_ip++;
-										_instr = _ir[_ip];
-									}
-									
-									_ip++;
-								}
-							}
-						
-							//early out if no FINALLY_START was defined
-							_instr = _ir[_ip];
-							if (_instr.op == ByteOp.FINALLY_START) {
-								_ip++; // Move past the FINALLY_START
-							
-								//executeBlockUntil
-								_ip = __executeInstructionUntil(_ir, _ip, _stack, _globalVar, _staticVar, _localVar, ByteOp.FINALLY_END, _depth+1);
-								
-							}
-						}
-						
-						
-					}
-					
-				break;}
-				
-				case ByteOp.END:{
-					// Terminate the execution
-					if (_depth == 0) {
-						return undefined;
-					}
-					return _ip
-				break;}
-				
-				case ByteOp.THROW:{
-					// Terminate the execution
-					throw array_pop(_stack);
-				break;}
-				
-				case ByteOp.__SIZE__:{
-					//
-				break;}
-		    }
-				
-			_ip++;
-		}
-		
-		return _ip;
-	}
-	#endregion
-	function GML_Interpreter() constructor {
-		origScript = undefined;
-		currentScript = undefined;
-		currentFunction = undefined;
-		nodeStack = undefined;
-		finished = false;
-		
-		//counter IDs
-		__SwitchStatementCounterID = 0;
-		__RepeatStatementCounterID = 0;
-		
-		static initialize = function(_ast) {
-			origScript = new __GMLC_Script();
-			currentScript = _ast;
-			currentFunction = undefined;
-			nodeStack = [];
-			
-			//apply the variable names and token streams from program to ast
-			//origScript.MacroVar      = _ast.MacroVar;
-			//origScript.MacroVarNames = _ast.MacroVarNames;
-			//
-			//origScript.EnumVar      = _ast.EnumVar;
-			//origScript.EnumVarNames = _ast.EnumVarNames;
-			//
-			//origScript.GlobalVar      = _ast.GlobalVar;
-			//origScript.GlobalVarNames = _ast.GlobalVarNames;
-			
-			// The last thing to be parsed will be the Script it's self
-			array_push(nodeStack, {node: _ast, parent: undefined, key: undefined, index: undefined})
-			
-			// Parse the Global Functions
-			struct_foreach(_ast.GlobalVar, function(_name, _value){
-				array_push(nodeStack, {node: _value, parent: currentScript.GlobalVar, key: _name, index: undefined})
-			})
-			
-			finished = !array_length(nodeStack);
-		};
-		
-		static cleanup = function() {
-			
-		}
-		
-		static parseAll = function() {
-			while (!finished) {
-				nextNode();
-			}
-			
-			var _i=0; repeat(array_length(origScript.IR)) {
-				var _val = origScript.IR[_i];
-				if (is_instanceof(_val, ASTNode) || is_array(_val)) {
-					throw $"\nThere was an unconverted node!\n{_val}"
-				}
-				
-			_i+=1;}//end repeat loop
-			
-			return origScript;
-		}
-		
-		static nextNode = function() {
-			if (!array_length(nodeStack)) {
-				finished = true;
-				return;
-			}
-			
-		    // Get current node from the stack
-			var currentNode = array_pop(nodeStack);
-			
-			// Process children first (post-order traversal)
-			if (currentNode.node.visited == false) {
-				currentNode.node.visited = true;
-				
-				if (currentNode.node.type == __GMLC_NodeType.FunctionDeclaration) {
-					currentFunction = currentNode.node
-				}
-				
-				// Push current node back onto stack to process after children
-				array_push(nodeStack, currentNode);
-				
-				// Push current node back onto stack to process after children
-				currentNode.node.push_children_to_node_stack(nodeStack);
-			}
-			else {
-				if (currentNode.node.type == __GMLC_NodeType.FunctionDeclaration) {
-					currentFunction = undefined;
-				}
-				
-				// Process the current node as all children have been processed
-				var _ir = generateIR(currentNode.node);
-				
-				if (currentNode.parent == undefined) {
-					//the entire tree has been generated and we are at the top most "Program" node
-					
-					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldn't be finished"
-					}
-					
-					finished = true;
-				}
-				else {
-					//reset the visit so the next module can make use of it
-					if (currentNode.index != undefined) {
-						currentNode.parent[$ currentNode.key][currentNode.index] = _ir;
-					}
-					else {
-						currentNode.parent[$ currentNode.key] = _ir;
-					}
-				}
-				
-			}
-		};
-		
-		static generateIR = function(node) {
-			var ir = [];
-			
-			switch (node.type) {
-			    case __GMLC_NodeType.Script:{
-					//array concat all statements into a single IR stream and apply to module's IR
-					
-					switch (array_length(node.statements)) {
-						case 0:                                                          break;
-						case 1:  ir = node.statements[0];                                break;
-						default: ir = script_execute_ext(array_concat, node.statements); break;
-					}
-					
-					array_push(ir, {op: ByteOp.END, line: node.line, lineString: node.lineString});
-					
-					origScript.IR = array_concat(origScript.IR, ir);
-					
-					
-					//push the global functions and constructors
-					var _names = struct_get_names(node.GlobalVar)
-					var _i=0; repeat(array_length(_names)) {
-						
-						//overwrite the globals in the module with the provided ones
-						origScript.GlobalVar[$ _names[_i]] = node.GlobalVar[$ _names[_i]];
-						
-					_i+=1;}//end repeat loop
-					
-					currentScript = origScript;
-					
-					return undefined;
-				break;}
-				case __GMLC_NodeType.FunctionDeclaration:{
-					var _defFunc = new __GMLC_Function();
-					
-					// Handle parameters and body
-					_defFunc.IR = array_concat(_defFunc.IR, node.parameters, node.body);
-					array_push(_defFunc.IR, {op: ByteOp.END, line: node.line, lineString: node.lineString})
-					
-					//return the function module to be placed in the
-					currentScript.GlobalVar[$ node.name] = _defFunc;
-					currentFunction = undefined;
-					
-					return _defFunc;
-				break;}
-				case __GMLC_NodeType.FunctionVariableDeclarationList:{
-					// currentNode.statements
-					ir = array_concat(ir, node.statements)
-					
-				break;}
-				case __GMLC_NodeType.FunctionVariableDeclaration:{
-					array_push(ir, { op: ByteOp.LOAD, scope: ScopeType.UNIQUE, value: $"argument{node.argument_index}" , line: node.line, lineString: node.lineString});
-					
-					//push the default expression
-					ir = array_concat(ir, node.expr);
-					
-					array_push(ir, { op: ByteOp.OPERATOR, operator: OpCode.NULLISH , line: node.line, lineString: node.lineString});
-					array_push(ir, { op : ByteOp.STORE, scope : ScopeType.LOCAL, value : node.identifier });
-				break;}
-				
-				case __GMLC_NodeType.BlockStatement:{
-					// currentNode.statements
-					
-					//compress into a single array
-					switch (array_length(node.statements)) {
-						case 0:                                                          break;
-						case 1:  ir = node.statements[0];                                break;
-						default: ir = script_execute_ext(array_concat, node.statements); break;
-					}
-				break;}
-				case __GMLC_NodeType.IfStatement:{
-					// Generate IR for the condition
-				    ir = array_concat(ir, node.condition);
-					
-				    // Conditional jump to skip 'then' block if condition is false
-				    var ifFalseJumpIndex = array_length(ir);
-				    ir[ifFalseJumpIndex] = {op: ByteOp.JUMP_IF_FALSE, offset: undefined};  // offset patched la, line: node.line, lineString: node.lineStringter
-					
-				    // Generate IR for the 'then' block
-				    ir = array_concat(ir, node.consequent);
-					
-				    // Jump after then block to skip 'else' block
-				    if (node.alternate != undefined) {
-						var jmpToEndIndex = array_length(ir);
-				        ir[jmpToEndIndex] = {op: ByteOp.JUMP, offset: undefined};  // offset patched la, line: node.line, lineString: node.lineStringter
-				    }
-					
-				    // Patch the jump-if-false to next instruction
-				    ir[ifFalseJumpIndex].offset = array_length(ir)-ifFalseJumpIndex;
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-				    // Generate IR for the 'else' block if present
-				    if (node.alternate != undefined) {
-				        ir = array_concat(ir, node.alternate);
-
-				        // Patch the unconditional jump to next instruction
-				        ir[jmpToEndIndex].offset = array_length(ir)-jmpToEndIndex;
-						if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-				    }
-				break;}
-				case __GMLC_NodeType.ForStatement:{
-				    // Initialization
-				    ir = array_concat(ir, node.initialization);
-					
-					// Jump to the following instruction
-					var startLoopIndex = array_length(ir);
-				    
-					// Condition
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-				    ir = array_concat(ir, node.condition);
-					
-				    // Conditional jump to end if false
-					var exitJumpIndex = array_length(ir);
-				    ir[exitJumpIndex] = {op: ByteOp.JUMP_IF_FALSE, offset: undefined}; // offset will be patched la, line: node.line, lineString: node.lineStringter
-				    
-				    // Body of the loop
-					ir = array_concat(ir, node.codeBlock);
-					
-					// Adapt the continue statements to this position
-					__handleContinues(ir);
-					
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					// Increment
-					ir = array_concat(ir, node.increment);
-					
-				    // Jump back to start
-				    array_push(ir, {op: ByteOp.JUMP, offset: startLoopIndex-array_length(ir)}); // negative relative direct, line: node.line, lineString: node.lineStringion
-					
-					
-				    // Patch the exit jump
-				    ir[exitJumpIndex].offset = array_length(ir)-exitJumpIndex; // possitive relative direction
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					//adapt the break statements to this position
-					__handleBreaks(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-			    break;}
-				case __GMLC_NodeType.WhileStatement:{
-					var startLoopIndex = array_length(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-				    
-					// Generate IR for the condition
-				    ir = array_concat(ir, node.condition);
-					
-				    // Conditional jump to end if false
-					var exitJumpIndex = array_length(ir);
-				    ir[exitJumpIndex] = {op: ByteOp.JUMP_IF_FALSE, offset: undefined};  // offset patched la, line: node.line, lineString: node.lineStringter
-					
-				    // Generate IR for the loop body
-				    ir = array_concat(ir, node.codeBlock);
-					
-					//adapt the continue statements to this position
-					__handleContinues(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-				    // Jump back to condition
-				    array_push(ir, {op: ByteOp.JUMP, offset: startLoopIndex - array_length(ir), line: node.line, lineString: node.lineString});
-					
-				    // Patch the exit jump to jump here
-				    ir[exitJumpIndex].offset = array_length(ir) - exitJumpIndex;
-					
-					//adapt the break statements to this position
-					__handleBreaks(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-				break;}
-				case __GMLC_NodeType.RepeatStatement:{
-					var _ref_str = $"__@@RepeatStatementCounterID{__RepeatStatementCounterID++}@@";
-					
-					// Push the initial loop count (from node.condition)
-					ir = array_concat(ir, node.condition)
-					
-					// Duplicate the top of the stack for decrementing while keeping the original count
-					array_push(ir, {op: ByteOp.STORE, scope: ScopeType.LOCAL, value: _ref_str, line: node.line, lineString: node.lineString});
-					
-					// Loop restarts here
-					var loopStartIndex = array_length(ir);
-					
-					// Load the ref
-					array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.LOCAL, value: _ref_str, line: node.line, lineString: node.lineString});
-					
-					// Loop setup
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					var exitJumpIndex = array_length(ir);
-					ir[exitJumpIndex] = {op: ByteOp.JUMP_IF_FALSE, offset: undefined};  // Will be patc, line: node.line, lineString: node.lineStringhed
-					
-					// Generate IR for the loop body
-					ir = array_concat(ir, node.codeBlock);
-					
-					//adapt the continue statements to this position
-					__handleContinues(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					// Reload the reference
-					array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.LOCAL, value: _ref_str, line: node.line, lineString: node.lineString});
-					
-					// Decrement the loop counter
-					array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.DEC, line: node.line, lineString: node.lineString});
-					
-					// Duplicate the loop counter for the next iteration check
-					array_push(ir, {op: ByteOp.STORE, scope: ScopeType.LOCAL, value: _ref_str, line: node.line, lineString: node.lineString});
-					
-					// Jump back to start
-					array_push(ir, {op: ByteOp.JUMP, offset: loopStartIndex - array_length(ir), line: node.line, lineString: node.lineString});
-					
-					// Patch the exit jump to exit the loop
-					ir[exitJumpIndex].offset = array_length(ir) - exitJumpIndex;
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					//adapt the break statements to this position
-					__handleBreaks(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-				break;}
-				case __GMLC_NodeType.DoUntillStatement:{
-					// currentNode.condition
-					// currentNode.codeBlock
-					var startLoopIndex = array_length(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					// Generate IR for the loop body first since it executes before the condition check
-					ir = array_concat(ir, node.codeBlock);
-					
-					//adapt the continue statements to this position
-					__handleContinues(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					// Generate IR for the condition
-					ir = array_concat(ir, node.condition);
-					
-					// Jump back to the start of the loop body if condition is false
-					array_push(ir, {op: ByteOp.JUMP_IF_FALSE, offset: startLoopIndex - array_length(ir)});  // To be patched to jump back if fa, line: node.line, lineString: node.lineStringlse
-					
-					//adapt the break statements to this position
-					__handleBreaks(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-				break;}
-				case __GMLC_NodeType.WithStatement:{
-					// currentNode.condition
-					// currentNode.codeBlock
-					// Load the condition
-					ir = array_concat(ir, node.condition);
-					
-					// Start of try block
-					array_push(ir, {op: ByteOp.WITH_START, line: node.line, lineString: node.lineString});
-					
-					// IR for try block
-					ir = array_concat(ir, node.codeBlock);
-					
-					// End of try block, start of catch
-					array_push(ir, {op: ByteOp.WITH_END, line: node.line, lineString: node.lineString});
-					
-				break;}
-				case __GMLC_NodeType.TryStatement:{
-					// Start of try block
-					array_push(ir, {op: ByteOp.TRY_START, line: node.line, lineString: node.lineString});
-					
-					// IR for try block
-					ir = array_concat(ir, node.tryBlock);
-					
-					// End of try block, start of catch
-					array_push(ir, {op: ByteOp.TRY_END, line: node.line, lineString: node.lineString});
-					
-					// IR for catch block
-					if (node.catchBlock != undefined) {
-						array_push(ir, {op: ByteOp.CATCH_START, line: node.line, lineString: node.lineString});
-						// The VM will push the catch expression's value onto the stack.
-						array_push(ir, {op: ByteOp.STORE, scope: ScopeType.LOCAL, value: node.exceptionVar, line: node.line, lineString: node.lineString});
-						
-					    ir = array_concat(ir, node.catchBlock);
-						
-						// End of catch block
-						array_push(ir, {op: ByteOp.CATCH_END, line: node.line, lineString: node.lineString});
-					}
-					
-					// IR for finally block
-					if (node.finallyBlock != undefined) {
-						array_push(ir, {op: ByteOp.FINALLY_START, line: node.line, lineString: node.lineString});
-						
-					    ir = array_concat(ir, node.finallyBlock);
-						
-						// End of finally block
-						array_push(ir, {op: ByteOp.FINALLY_END, line: node.line, lineString: node.lineString});
-					}
-					
-				break;}
-				case __GMLC_NodeType.SwitchStatement:{
-					var _ref_str = $"__@@SwitchStatementCounterID{__SwitchStatementCounterID++}@@";
-					
-					// Evaluate the switch expression
-					ir = array_concat(ir, node.switchExpression);
-					
-					// Store the reference
-					array_push(ir, {op: ByteOp.STORE, scope: ScopeType.LOCAL, value: _ref_str, line: node.line, lineString: node.lineString});
-					
-					var caseJumps = [];
-					var _caseDefautLoc = undefined;
-					
-					// Prepare to compare and jump
-					for (var i = 0; i < array_length(node.cases); i++) {
-						
-					    var caseNode = node.cases[i];
-						if (caseNode.type == __GMLC_NodeType.CaseExpression) {
-					        // Reload the reference
-							array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.LOCAL, value: _ref_str, line: node.line, lineString: node.lineString});
-							
-							// Compare switch expression to case label
-					        ir = array_concat(ir, caseNode.label);
-					        array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.EQUAL, line: node.line, lineString: node.lineString});
-
-					        // Jump to case start if true
-							var jumpIndex = array_length(ir);
-					        ir[jumpIndex] = {op: ByteOp.JUMP_IF_TRUE, offset: undefined}; // To be patc, line: node.line, lineString: node.lineStringhed
-					        array_push(caseJumps, jumpIndex);
-					    }
-					}
-					
-					// Jump to default case or out of switch if no match
-					var defaultJumpIndex = array_length(ir);
-					ir[defaultJumpIndex] = {op: ByteOp.JUMP, offset: undefined}; // To be patc, line: node.line, lineString: node.lineStringhed
-					
-					// Generate case blocks
-					for (var i = 0; i < array_length(node.cases); i++) {
-					    var caseNode = node.cases[i];
-					    // Patch the jump to this case
-						switch(caseNode.type) {
-							case __GMLC_NodeType.CaseExpression:{
-								ir[caseJumps[i]].offset = array_length(ir) - caseJumps[i];
-								if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-								
-								// Generate case block IR
-								ir = array_concat(ir, caseNode.codeBlock);
-							break;}
-							case __GMLC_NodeType.CaseDefault:{
-								_caseDefautLoc = i
-							break;}
-						}
-					}
-					
-					//patch the default/exit location
-					ir[defaultJumpIndex].offset = array_length(ir) - defaultJumpIndex;
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-					
-					// Generate default case if exists
-					if (_caseDefautLoc != undefined) {
-						ir = array_concat(ir, node.cases[_caseDefautLoc].codeBlock);
-					}
-					
-					//adapt the break statements to this position
-					__handleBreaks(ir);
-					if GML_COMPILER_DEBUG array_push(ir, {op: ByteOp.JUMP_EXPEC, line: node.line, lineString: node.lineStringT})
-				break;}
-				case __GMLC_NodeType.CaseExpression:
-				case __GMLC_NodeType.CaseDefault:{
-					// handled by parent
-					// the child nodes should already have been added into the nodeStack so they will already be compiled
-					return node;
-				break;}
-				
-				case __GMLC_NodeType.ThrowStatement: {
-					ir = array_concat(ir, node.error);
-					array_push(ir, {op: ByteOp.THROW, line: node.line, lineString: node.lineString});
-				break;}
-				
-				case __GMLC_NodeType.BreakStatement:
-				case __GMLC_NodeType.ContinueStatement:{
-					// SKIP, this is handled by parent statements
-					array_push(ir, node)
-				break;}
-				case __GMLC_NodeType.ExitStatement:{
-					// Simply append an END operation to indicate termination of execution
-					array_push(ir, {op: ByteOp.END, line: node.line, lineString: node.lineString})
-				break;}
-				case __GMLC_NodeType.ReturnStatement:{
-					// If there is an expression associated with the return, evaluate it
-					if (node.expr != undefined) {
-					    ir = array_concat(ir, node.expr);
-						// Push the result of the expression onto the stack (if any)
-						array_push(ir, {op: ByteOp.RETURN, line: node.line, lineString: node.lineString});
-					}
-					else {
-						array_push(ir, {op: ByteOp.END, line: node.line, lineString: node.lineString});
-					}
-					
-				break;}
-				
-				case __GMLC_NodeType.VariableDeclarationList:{
-					ir = array_concat(ir, node.statements);
-				break;}
-				case __GMLC_NodeType.VariableDeclaration:{
-					// Check if there is an initializing expression
-					if (node.expr != undefined) {
-						// Evaluate the initializing expression
-						ir = array_concat(ir, node.expr);
-					} else {
-						// Push a default value like `undefined` for uninitialized variables
-					    array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: undefined, line: node.line, lineString: node.lineString});
-					}
-
-					// Determine the storage operation based on scope
-					var _scopeType;
-					switch (node.scope) {
-						case ScopeType.GLOBAL:{
-							_scopeType = ScopeType.GLOBAL;
-						break;}
-						case ScopeType.STATIC:{
-							_scopeType = ScopeType.STATIC;
-						break;}
-						case ScopeType.LOCAL:{
-							_scopeType = ScopeType.LOCAL;
-						break;}
-						case ScopeType.CONST:{
-							_scopeType = ScopeType.CONST;
-						break;}
-						default:{
-							_scopeType = ScopeType.INSTANCE;
-						break;}
-					}
-					
-					// Store the result of the expression into the variable based on scope
-					array_push(ir, {op: ByteOp.STORE, scope: _scopeType, value: node.identifier, line: node.line, lineString: node.lineString});
-					break;
-				break;}
-				
-				case __GMLC_NodeType.CallExpression:{
-					//push the function onto the stack
-					ir = array_concat(ir, node.callee);
-					
-					//push the arguments onto the stack
-					var _arg_ir;
-					switch (array_length(node.arguments)) {
-						case 0:  _arg_ir = undefined                                         break;
-						case 1:  _arg_ir = node.arguments[0];                                break;
-						default: _arg_ir = script_execute_ext(array_concat, node.arguments); break;
-					}
-					
-					if (_arg_ir != undefined) {
-						ir = array_concat(ir, _arg_ir);
-					}
-					
-					array_push(ir, {op: ByteOp.CALL, count: array_length(node.arguments), line: node.line, lineString: node.lineString});
-					
-				break;}
-				case __GMLC_NodeType.NewExpression:{
-					
-				break;}
-				
-				case __GMLC_NodeType.ExpressionStatement:{
-					ir = array_concat(ir, node.expr);
-				break;}
-				case __GMLC_NodeType.AssignmentExpression:{
-					
-					// Determine the load operation based on the scope of the left-hand side
-					if (array_length(node.left) > 1) {
-						throw $"\nThere is a more unique assignment expression going on here, what is it?\n{json_stringify(node, true)}"
-					}
-					
-					var _scopeType = __determineScopeType(node.left);
-					
-					// Load existing value for compound assignments
-					if (node.operator != "=") {
-						array_push(ir, {op: ByteOp.LOAD, scope: _scopeType, value: node.left.value, line: node.line, lineString: node.lineString});
-					}
-					
-					// Evaluate the right-hand side expression
-					ir = array_concat(ir, node.right);
-					
-					// Determine the operation to apply
-					var operator;
-					switch (node.operator) {
-						case "+=": operator = OpCode.PLUS;        break;
-						case "-=": operator = OpCode.SUBTRACT;    break;
-						case "*=": operator = OpCode.MULTIPLY;    break;
-						case "/=": operator = OpCode.DIVIDE;      break;
-						case "^=": operator = OpCode.BITWISE_XOR; break;
-						case "&=": operator = OpCode.BITWISE_AND; break;
-						case "|=": operator = OpCode.BITWISE_OR;  break;
-						case "=":  operator = undefined;          break; // Direct assignment doesn't need an operator
-						default: throw $"\nUnsupported assignment operator: {node.operator}";
-					}
-					
-					if (node.operator != "=") {
-						array_push(ir, {op: ByteOp.OPERATOR, operator: operator, line: node.line, lineString: node.lineString});
-					}
-					
-					// Store the computed value back
-					array_push(ir, {op: ByteOp.STORE, scope: _scopeType, value: node.left.value, line: node.line, lineString: node.lineString});
-				break;}
-				case __GMLC_NodeType.BinaryExpression:{
-					// Load the operands
-					ir = array_concat(ir, node.left);
-					ir = array_concat(ir, node.right);
-					
-					var _opCode;
-					switch (node.operator) {
-						case "=":   //
-						case "==":  _opCode = OpCode.EQUAL         break;
-						case "|":   _opCode = OpCode.BITWISE_OR;   break;
-						case "^":   _opCode = OpCode.BITWISE_XOR;  break;
-						case "&":   _opCode = OpCode.BITWISE_AND;  break;
-						case "!=":  _opCode = OpCode.NOT_EQUAL     break;
-						case "<":   _opCode = OpCode.LESS          break;
-						case "<=":  _opCode = OpCode.LESS_EQUAL    break;
-						case ">":   _opCode = OpCode.GREATER       break;
-						case ">=":  _opCode = OpCode.GREATER_EQUAL break;
-						case "<<":  _opCode = OpCode.SHIFT_LEFT    break;
-						case ">>":  _opCode = OpCode.SHIFT_RIGHT   break;
-						case "+":   _opCode = OpCode.PLUS          break;
-						case "-":   _opCode = OpCode.SUBTRACT      break;
-						case "*":   _opCode = OpCode.MULTIPLY      break;
-						case "/":   _opCode = OpCode.DIVIDE        break;
-						case "mod": _opCode = OpCode.REMAINDER     break;
-						case "div": _opCode = OpCode.DIVIDE_INT    break;
-					}
-					// Apply the operation
-					array_push(ir, {op: ByteOp.OPERATOR, operator: _opCode, line: node.line, lineString: node.lineString});
-				break;}
-				case __GMLC_NodeType.LogicalExpression:{
-					// Load the operands
-					ir = array_concat(ir, node.left);
-					ir = array_concat(ir, node.right);
-					
-					switch (node.operator) {
-						case "||": _opCode = OpCode.OR  break;
-						case "&&": _opCode = OpCode.AND break;
-						case "^^": _opCode = OpCode.XOR break;
-					}
-
-					
-					// Apply the operation
-					array_push(ir, {op: ByteOp.OPERATOR, operator: _opCode, line: node.line, lineString: node.lineString});
-				break;}
-				case __GMLC_NodeType.NullishExpression:{
-					// Load the operands
-					ir = array_concat(ir, node.left);
-					ir = array_concat(ir, node.right);
-					
-					// Apply the operation
-					array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.NULLISH, line: node.line, lineString: node.lineString});
-				break;}
-				case __GMLC_NodeType.UnaryExpression:{
-					// Determine the load operation based on the scope of the expression
-					var _scopeType = node.expr[0].scope;
-					
-					//push the identifier onto the stack
-					ir = array_concat(ir, node.expr);
-					
-					switch (node.operator) {
-						case "!":{
-							array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.NOT, line: node.line, lineString: node.lineString});
-						break;}
-						case "+":{
-							//nothing is needed here
-						break;}
-						case "-":{
-							array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.NEGATE, line: node.line, lineString: node.lineString});
-						break;}
-						case "~":{
-							array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.BITWISE_NOT, line: node.line, lineString: node.lineString});
-						break;}
-						case "++":{
-							array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.INC, line: node.line, lineString: node.lineString});
-							array_push(ir, {op: ByteOp.DUP, line: node.line, lineString: node.lineString});
-							array_push(ir, {op: ByteOp.STORE, scope: _scopeType, value: node.expr[0].value, line: node.line, lineString: node.lineString});
-							
-						break;}
-						case "--":{
-							array_push(ir, {op: ByteOp.OPERATOR, operator: OpCode.DEC, line: node.line, lineString: node.lineString});
-							array_push(ir, {op: ByteOp.DUP, line: node.line, lineString: node.lineString});
-							array_push(ir, {op: ByteOp.STORE, scope: _scopeType, value: node.expr[0].value, line: node.line, lineString: node.lineString});
-							
-						break;}
-					}
-				break;}
-				case __GMLC_NodeType.UpdateExpression:{
-					// Determine the load operation based on the scope of the expression
-					var _scopeType = __determineScopeType(node.expr);
-					
-					// Load and modify the value
-					array_push(ir, {op: ByteOp.LOAD, scope: _scopeType, value: node.expr.value, line: node.line, lineString: node.lineString});
-					array_push(ir, {op: ByteOp.DUP, line: node.line, lineString: node.lineString});
-					var opCode = (node.operator == "++" ? OpCode.INC : OpCode.DEC);
-					array_push(ir, {op: ByteOp.OPERATOR, operator: opCode, line: node.line, lineString: node.lineString});
-					
-					array_push(ir, {op: ByteOp.STORE, scope: _scopeType, value: node.expr.value, line: node.line, lineString: node.lineString});
-				break;}
-				
-				case __GMLC_NodeType.ConditionalExpression:{
-					// Evaluate the condition
-					ir = array_concat(ir, node.condition);
-					
-					// Conditional jump to the false expression
-					var falseExprJumpIndex = array_length(ir);
-					array_push(ir, {op: ByteOp.JUMP_IF_FALSE, offset: undefined});  // offset patched la, line: node.line, lineString: node.lineStringter
-					
-					// Generate IR for the true expression
-					ir = array_concat(ir, node.trueExpr);
-					
-					// Unconditional jump to skip the false expression
-					var endExprJumpIndex = array_length(ir);
-					array_push(ir, {op: ByteOp.JUMP, offset: undefined});  // offset patched la, line: node.line, lineString: node.lineStringter
-					
-					// Set the jump offset for the false expression
-					var falseExprStartIndex = array_length(ir);
-					ir[falseExprJumpIndex].offset = falseExprStartIndex - falseExprJumpIndex;
-					
-					// Generate IR for the false expression
-					ir = array_concat(ir, node.falseExpr);
-					
-					// Patch the unconditional jump to go past the false expression
-					var endExprIndex = array_length(ir);
-					ir[endExprJumpIndex].offset = endExprIndex - endExprJumpIndex;
-					
-					// The result of the true or false expression is now on top of the stack
-				break;}
-				
-				case __GMLC_NodeType.ArrayPattern:{
-					
-					//push the function
-					array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: __NewGMLArray, name: "__NewGMLArray", line: node.line, lineString: node.lineString})
-					
-					//push the arguments
-					var _arg_ir;
-					switch (array_length(node.elements)) {
-						case 0:  _arg_ir = undefined                                        break;
-						case 1:  _arg_ir = node.elements[0];                                break;
-						default: _arg_ir = script_execute_ext(array_concat, node.elements); break;
-					}
-					if (_arg_ir != undefined) ir = array_concat(ir, _arg_ir);
-					
-					//push the call op
-					array_push(ir, {op: ByteOp.CALL, count: node.length, line: node.line, lineString: node.lineString, foo: "bar"});
-					
-				break;}
-				case __GMLC_NodeType.StructPattern:{
-					//push the function
-					array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: __NewGMLStruct, name: "__NewGMLStruct", line: node.line, lineString: node.lineString})
-					
-					//push the arguments
-					ir = array_concat(ir, node.arguments)
-					
-					//push the call op
-					array_push(ir, {op: ByteOp.CALL, count: node.length, line: node.line, lineString: node.lineString, foo: "bar"});
-					
-				break;}
-				case __GMLC_NodeType.Literal:{
-					array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: node.value, line: node.line, lineString: node.lineString});
-			    break;}
-				case __GMLC_NodeType.Identifier:{
-					var _scope = __determineScopeType(node);
-					array_push(ir, {op: ByteOp.LOAD, scope: _scope, value: node.value, line: node.line, lineString: node.lineString});
-					//nothing to see here
-				break;}
-				
-				case __GMLC_NodeType.UniqueIdentifier:{
-					array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.UNIQUE, value: node.value, line: node.line, lineString: node.lineString});
-					//nothing to see here
-				break;}
-				
-				case __GMLC_NodeType.AccessorExpression:{
-					
-					// load the getter function
-					switch (node.accessorType) {
-						case __GMLC_AccessorType.Array:  array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: array_get,               name: "array_get"              , line: node.line, lineString: node.lineString}) break;
-						case __GMLC_AccessorType.Grid:   array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: ds_grid_get,             name: "ds_grid_get"            , line: node.line, lineString: node.lineString}) break;
-						case __GMLC_AccessorType.List:   array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: ds_list_find_value,      name: "ds_list_find_value"     , line: node.line, lineString: node.lineString}) break;
-						case __GMLC_AccessorType.Map:    array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: ds_map_find_value,       name: "ds_map_find_value"      , line: node.line, lineString: node.lineString}) break;
-						case __GMLC_AccessorType.Struct: array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: struct_get,              name: "struct_get"             , line: node.line, lineString: node.lineString}) break;
-						case __GMLC_AccessorType.Dot:    array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: __struct_get_with_error, name: "__struct_get_with_error", line: node.line, lineString: node.lineString}) break;
-						default: throw $"\nUnsupported accessor type: {node.accessorType}\n{node}";
-					}
-					
-					// push the array expression and index argument
-					ir = array_concat(ir, node.expr, node.val1)
-					
-					//if grid push the second argument
-					var _count = 2;
-					if (node.accessorType == __GMLC_AccessorType.Grid) {
-						ir = array_concat(ir, node.val2)
-						_count = 3;
-					}
-					
-					
-					array_push(ir, {op: ByteOp.CALL, count: _count, line: node.line, lineString: node.lineString});
-					
-				break;}
-				
-				case __GMLC_NodeType.Function:{
-					if (node.value != undefined) {
-						array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.CONST, value: node.value, name: script_get_name(node.value), line: node.line, lineString: node.lineString});
-					}
-					else {
-						array_push(ir, {op: ByteOp.LOAD, scope: ScopeType.GLOBAL, value: node.name, line: node.line, lineString: node.lineString});
-					}
-				break;}
-				/*
-				case __GMLC_NodeType.PropertyAccessor:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
-				break;}
-				case __GMLC_NodeType.AccessorExpression:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
-				break;}
-				case __GMLC_NodeType.ConstructorFunction:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
-				break;}
-				case __GMLC_NodeType.MethodVariableConstructor:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
-				break;}
-				case __GMLC_NodeType.MethodVariableFunction:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
-				break;}
-				//*/
-				default: throw $"\nCurrent Node does not have a valid type for the optimizer,\ntype: {node.type}\ncurrentNode: {node}"
-				
-				// Add cases for other types of nodes
-			}
-			
-			return ir;
-		}
-		
-		#region Helper Functions
-		static __handleBreaks = function(ir, offset=0) {
-			//breaks will automatically calculate to the end of their IR array, the offset will add to that jump position
-			var _length = array_length(ir);
-			var _i=0; repeat(_length) {
-				var node = ir[_i]
-				if (struct_exists(node, "type"))
-				&& (node.type == __GMLC_NodeType.BreakStatement) {
-					ir[_i] = {op: ByteOp.JUMP, offset: _length-_i+offset, line: node.line, lineString: node.lineString}
-				}
-			_i+=1;}//end repeat loop
-		}
-		static __handleContinues = function(ir, offset=0) {
-			//breaks will automatically calculate to the end of their IR array, the offset will add to that jump position
-			var _length = array_length(ir);
-			var _i=0; repeat(_length) {
-				var node = ir[_i]
-				if (struct_exists(node, "type"))
-				&& (node.type == __GMLC_NodeType.ContinueStatement) {
-					ir[_i] = {op: ByteOp.JUMP, offset: _length-_i+offset, line: node.line, lineString: node.lineString}
-				}
-			_i+=1;}//end repeat loop
-		}
-		#endregion
-	}
-	
+	static __SIZE__ = "__SIZE__";
+}
+ByteOp()
+ScopeType()
+OpCode()
+//*/
 #endregion
 
 #region GML Emulated functions
@@ -7716,7 +6172,8 @@ function __char_is_punctuation(char) {
 	|| (char == ord(","))
 	|| (char == ord("["))
 	|| (char == ord("]"))
-	|| (char == ord(":"));
+	|| (char == ord(":"))
+	|| (char == ord(";"));
 }
 
 /// @ignore
@@ -7729,17 +6186,12 @@ function __char_is_whitespace(char) {
 function __determineScopeType(_node) {
 	gml_pragma("forceinline");
 	
-	if (_node[$ "scope"] != undefined) {
-		return _node[$ "scope"];
-	}
-	
-	return __find_ScopeType_from_string(_node.value);
+	return _node[$ "scope"] ?? __find_ScopeType_from_string(_node[$ "value"]);
 	
 }
 /// @ignore
 function __find_ScopeType_from_string(_string) {
 	gml_pragma("forceinline");
-	
 	// Ordered in priority
 	
 	//ScopeType.MACRO;

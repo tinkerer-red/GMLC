@@ -1,12 +1,12 @@
 {
-  "$GMScript":"",
+  "$GMScript":"v1",
   "%Name":"GM14Compatibility",
   "isCompatibility":false,
   "isDnD":false,
   "name":"GM14Compatibility",
   "parent":{
     "name":"GMLCompiler",
-    "path":"folders/_Libraries/GMLCompiler.yy",
+    "path":"folders/GMLCompiler.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

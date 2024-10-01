@@ -104,8 +104,8 @@
 		static ForStatement = "__GMLC_NodeType.ForStatement"
 		static Function = "__GMLC_NodeType.Function"
 		static FunctionDeclaration = "__GMLC_NodeType.FunctionDeclaration"
-		static FunctionVariableDeclarationList = "__GMLC_NodeType.FunctionVariableDeclarationList"
-		static FunctionVariableDeclaration = "__GMLC_NodeType.FunctionVariableDeclaration"
+		static ArgumentList = "__GMLC_NodeType.ArgumentList"
+		static Argument = "__GMLC_NodeType.Argument"
 		static Identifier = "__GMLC_NodeType.Identifier"
 		static IfStatement = "__GMLC_NodeType.IfStatement"
 		static ImportDeclaration = "__GMLC_NodeType.ImportDeclaration"
@@ -175,6 +175,7 @@ function ASTNode(_line, _lineString) constructor {
 	visited = false; //used by the post processor
 	line = _line; //used for debugging
 	lineString = _lineString; //used for debugging
+	//creationCallstack = debug_get_callstack()
 	
 	static get_children = function() {
 		var _arr = [];
@@ -237,15 +238,11 @@ function ASTScript(_line, _lineString) : ASTNode(_line, _lineString) constructor
 	LocalVarNames = [];
 	//////////////////////////////////
 	
-	statements = [];
+	//use a blank argument array for consistancy sake
+	arguments = new ASTArgumentList([], _line, _lineString)
 	
-	static push_children_to_node_stack = function(_nodestack) {
-		var parent = self;
-		var _i=0; repeat(array_length(statements)) {
-			var node = statements[_i];
-			array_push(_nodestack, {node, parent, key: "statements", index: _i});
-		_i+=1;}//end repeat loop
-	}
+	statements = new ASTBlockStatement([], _line, _lineString);
+	
 }
 
 function ASTObject(_line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -273,9 +270,8 @@ function ASTObject(_line, _lineString) : ASTNode(_line, _lineString) constructor
 	}
 }
 
-function ASTFunctionDeclaration(_name, _params, _local_var_names, _body, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	StaticVar = {};
-	StaticVarNames = [];
 	GlobalVar = {};
 	
 	// temporarily used during parser
@@ -284,15 +280,16 @@ function ASTFunctionDeclaration(_name, _params, _local_var_names, _body, _line, 
 	MacroVarNames = [];
 	EnumVar = {};
 	EnumVarNames   = {}; //structure is {HEADER1: [TAIL1, TAIL2, TAIL3], HEADER2: [TAIL1, TAIL2, TAIL3]}
+	StaticVarNames = [];
 	LocalVarNames = _local_var_names;
 	//////////////////////////////////
 	
 	type = __GMLC_NodeType.FunctionDeclaration;
 	name = _name;
-	parameters = _params //is_instanceof(_params, ASTBlockStatement) ? _params : new ASTBlockStatement(_params, _line, _lineString);
+	arguments = _arguments
 	
-	if (_body != undefined) { //extremely common to create the function prior to parsing the body
-		body = is_instanceof(_body, ASTBlockStatement) ? _body : new ASTBlockStatement(_body, _line, _lineString);
+	if (_statements != undefined) { //extremely common to create the function prior to parsing the body
+		statements = is_instanceof(_statements, ASTBlockStatement) ? _statements : new ASTBlockStatement(_statements, _line, _lineString);
 	}
 	
 	static push_children_to_node_stack = function(_nodestack) {
@@ -308,20 +305,19 @@ function ASTFunctionDeclaration(_name, _params, _local_var_names, _body, _line, 
 		_i+=1;}//end repeat loop
 	}
 }
-function ASTFunctionVariableDeclarationList(_statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.FunctionVariableDeclarationList;
-	statements = new ASTBlockStatement(_statements, _line, _lineString);
-	
+function ASTArgumentList(_statements, _line, _lineString) : ASTBlockStatement(_statements, _line, _lineString) constructor {
+	type = __GMLC_NodeType.ArgumentList;
+	statements = _statements;
 }
-function ASTFunctionVariableDeclaration(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.FunctionVariableDeclaration;
+function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+	type = __GMLC_NodeType.Argument;
 	identifier = _identifier;
 	expr = _expr;
 	argument_index = _arg_index
 	scope = ScopeType.LOCAL;
 }
 
-function ASTConstructorDeclaration(_name, _parentName, _parameters, _local_var_names, _body_block, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTConstructorDeclaration(_name, _parentName, _parameters, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
     type = __GMLC_NodeType.ConstructorDeclaration;
     StaticVar = {};
 	StaticVarNames = [];
@@ -341,7 +337,7 @@ function ASTConstructorDeclaration(_name, _parentName, _parameters, _local_var_n
 	parentName = _parentName;
 	parameters = _parameters;
 	
-	body = _body_block; //will be set after body is parsed
+	statements = _statements; //will be set after body is parsed
 }
 
 //used for better modding support, not actually native gml
@@ -389,20 +385,10 @@ function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : AST
 	type = __GMLC_NodeType.SwitchStatement;
 	switchExpression = _switchExpression;
 	cases = _cases;
-	
-	static push_children_to_node_stack = function(_nodestack) {
-		var parent = self;
-		array_push(_nodestack, {node: switchExpression, parent, key: "switchExpression", index: undefined});
-		var _i=0; repeat(array_length(cases)) {
-			var _case = cases[_i];
-			
-			array_push(_nodestack, {node: _case, parent, key: "cases", index: _i});
-			
-		_i+=1;}//end repeat loop
-	}
 }
 function ASTCaseDefault(_codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.CaseDefault;
+	label = undefined;
 	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
 }
 function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -510,6 +496,7 @@ function ASTAssignmentExpression(_operator, _left, _right, _line, _lineString) :
 	static push_children_to_node_stack = function(_nodestack) {
 		var parent = self;
 		
+		array_push(_nodestack, {node: left, parent, key: "left", index: undefined})
 		array_push(_nodestack, {node: right, parent, key: "right", index: undefined})
 		
 	}
@@ -551,7 +538,7 @@ function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lin
 
 function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	//   thing++    thing--    ++thing    or    --thing
-    type = __GMLC_NodeType.UpdateExpression;
+	type = __GMLC_NodeType.UpdateExpression;
     operator = _operator;
     expr = _expr;
     prefix = _prefix;
@@ -589,6 +576,7 @@ function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_l
 function ASTIdentifier(_value, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.Identifier;
 	value = _value;
+	name  = _value;
 	scope = _scope;
 }
 function ASTLiteral(_value, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -645,6 +633,7 @@ function ASTStructPattern(_keys, _exprs, _line, _lineString) : ASTNode(_line, _l
 	_i+=1;}//end repeat loop
 	arguments = new ASTBlockStatement(_arr, _line, _lineString)
 	length = array_length(_arr);
+	
 }
 
 #endregion

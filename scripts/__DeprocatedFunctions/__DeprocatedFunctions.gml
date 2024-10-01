@@ -1,3 +1,5 @@
+//These functions exist for the purpose of linking a string directly to a variable or enum.
+
 function __DeprocatedFunctions() {
 	static __struct = {
 	"achievement_available": achievement_available,

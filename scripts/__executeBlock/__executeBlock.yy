@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GmlSpec",
+  "%Name":"__executeBlock",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GmlSpec",
+  "name":"__executeBlock",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"internal",
+    "path":"folders/GMLCompiler/internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

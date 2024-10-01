@@ -1,15 +1,45 @@
+//t = 0
+//var _i=1; repeat(1024) {
+//    str = "function __gmlc_execute_block_"+string_replace_all(string_format(_i, 4, 0), " ", "0")+"__() {"
+    
+//    var w = ceil(sqrt(_i))
+//    var h = floor(sqrt(_i))
+//    var total = 0
+//    var should_break = false;
+    
+//    var _j=0; repeat (h) {
+//        str += "\n"+"    "
+//        t+=1
+//        repeat(w) {
+//            str += "__func" + string_replace_all( string_format(_j, 4, 0), " ", 0)+"(); "
+//            total += 1
+//            if (total == _i) {
+//                should_break = true;
+//                break
+//            }
+//        _j++}
+//    }
+    
+//    str += "\n"+"}"
+//    t+=1
+//    show_debug_message(str)
+    
+//_i++}
+
 function __compare_results(desc, result, expected) {
 	if (is_array(expected)) && (!__array_equals(result, expected)) {
 		show_debug_message($"!!!   Array Value Mismatch   !!!")
 		show_debug_message($"expected != result")
 		show_debug_message($"{expected} != {result}")
 		show_debug_message("Got :: " + json_stringify(result, true));
+		return false;
 	}
 	else if (is_struct(expected)) && (!__struct_equals(result, expected)) {
 		show_debug_message($"!!!   Struct Value Mismatch   !!!")
 		show_debug_message($"expected != result")
 		show_debug_message($"{expected} != {result}")
 		show_debug_message("Got :: " + json_stringify(result, true));
+		return false;
 	}
 	else if (!is_array(expected) && !is_struct(expected)) && (expected != result) {
 		//show_debug_message("Test Failed: " + description);
@@ -17,6 +47,7 @@ function __compare_results(desc, result, expected) {
 		show_debug_message($"expected != result")
 		show_debug_message($"{expected} != {result}")
 		show_debug_message("Got :: " + json_stringify(result, true));
+		return false;
 	}
 	else if (typeof(expected) != typeof(result)) {
 		//show_debug_message("Test Failed: " + description);
@@ -24,13 +55,13 @@ function __compare_results(desc, result, expected) {
 		show_debug_message($"expected != result")
 		show_debug_message($"{typeof(expected)} != {typeof(result)}")
 		show_debug_message("Got :: " + json_stringify(result, true));
+		return false;
 	}
 	else {
-        show_debug_message("Test Passed: " + desc);
+        show_debug_message("		Test Passed: " + desc);
         //show_debug_message($"Return :: {result}");
-		return true
+		return true;
     }
-	return false
 }
 function __string_token_arr(_arr) {
 	var _str = "[\n";
@@ -8622,64 +8653,462 @@ function run_interpreter_test(description, input, expectedModule=undefined, expe
 	postprocessor.initialize(ast);
 	var ast = postprocessor.parseAll();
 	
-	log(json_stringify(ast, true))
+	//log(["AST :: ", json_stringify(ast, true)])
+	//var interpreter = new GML_Interpreter();
+	//interpreter.initialize(ast);
+	//var outputModule = interpreter.parseAll();
 	
-	var interpreter = new GML_Interpreter();
-	interpreter.initialize(ast);
-	var outputModule = interpreter.parseAll();
-	
-	var outputReturn = outputModule.execute();
+	//var outputReturn = outputModule.execute();
+	var _program = undefined;
+	//try {
+		var _program = compileInLineProgram(ast);
+		var outputReturn = executeInLineProgram(_program)
+	//}catch(e) {
+	//	log($"AST ::\n{json_stringify(ast, true)}\n")
+	//	//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+	//	log(e)
+	//	return;
+	//}
 	
 	expectedReturn = (is_callable(expectedReturn)) ? expectedReturn() : expectedReturn;
 	
-	if (expectedModule != undefined) __compare_results(description, outputModule, expectedModule);
+	//if (expectedModule != undefined) __compare_results(description, outputModule, expectedModule);
 	//log(json_stringify(outputReturn, true))
 	//log(json_stringify(expectedReturn, true))
-	var _success = __compare_results(description, outputReturn, expectedReturn);
-	if (!_success) {
-		log($"IR:\n{json_stringify(outputModule, true)}\n");
-		
+	var _same = __compare_results(description, outputReturn, expectedReturn);
+	if (!_same) {
+		//log($"AST ::\n{json_stringify(ast, true)}\n")
+		log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
 	}
 }
 function run_all_interpreter_tests() {
 log("~~~~~ Interpreter Unit Tests ~~~~~\n");
 
-#region Factorial Test
-run_interpreter_test("Factorial Test",
-@'// compute the factorial of n
-function factorial(n) {
-  if (n <= 1) {
-	return 1;
-  }
-  return n * factorial(n - 1)
-}
+#region HIDE
 
-factorial(1) // result: 1
-factorial(2) // result: 2
-factorial(3) // result: 6
-factorial(4) // result: 24
-factorial(5) // result: 120
-return factorial(6) // result: 720',
+//*
+run_interpreter_test("Boop",
+@'
+			-- compute the factorial of n
+			factorial = funtion(n) {
+			  if (n <= 1) {
+			    return 1;
+			  }
+			  return n * factorial(n - 1)
+			}
+			
+			factorial(1) -- result: 1
+			factorial(2) -- result: 2
+			factorial(3) -- result: 6
+			factorial(4) -- result: 24
+			factorial(5) -- result: 120
+			factorial(6) -- result: 720',
 undefined,
 function(){
-	// compute the factorial of n
-	factorial = function (n) {
-	  if (n <= 1) {
-		return 1;
-	  }
-	  return n * factorial(n - 1)
+	return "abcdefg";
+}
+);
+
+#region complex expression evaluation
+run_interpreter_test("complex expression evaluation", 
+@'x = 2;
+y = 4;
+var result = ((x + y) * (x - y)) / 2;
+return result',
+undefined,
+function(){
+	x = 2;
+	y = 4;
+	var result = ((x + y) * (x - y)) / 2;
+	return result	
+}
+)
+#endregion
+#region Accessors <Array, Grid, List, Map, Struct>
+run_interpreter_test("Array access and modification",
+@'var arr = [0, 1, 2];
+arr[0] = 1;
+var test = arr[2];
+return string(arr);',
+undefined,
+function(){
+	var arr = [0, 1, 2];
+	arr[0] = 1;
+	var test = arr[2];
+	return string(arr);
+}
+);
+
+run_interpreter_test("List access and modification",
+@'var list = ds_list_create();
+list[| 0] = 1;
+list[| 1] = 2;
+ds_list_set(list, 2, 3);
+var test = list[| 2];
+var _return = test;
+ds_list_destroy(list);
+return _return;',
+undefined,
+function(){
+	var list = ds_list_create();
+	list[| 0] = 1;
+	list[| 1] = 2;
+	ds_list_set(list, 2, 3);
+	var test = list[| 2];
+	var _return = test;
+	ds_list_destroy(list);
+	return _return;
+}
+);
+
+run_interpreter_test("Grid access and modification",
+@'var grid = ds_grid_create(5, 5);
+ds_grid_set_region(grid, 0,0, 4, 4, "example");
+grid[# 0, 1] = 2;
+var test = grid[# 3, 4];
+var _return = test;
+ds_grid_destroy(grid);
+return _return;',
+undefined,
+function(){
+	var grid = ds_grid_create(5, 5);
+	ds_grid_set_region(grid, 0,0, 4, 4, "example");
+	grid[# 0, 1] = 2;
+	var test = grid[# 3, 4];
+	var _return = test;
+	ds_grid_destroy(grid);
+	return _return;
+}
+);
+
+run_interpreter_test("Map access and modification",
+@'var map = ds_map_create();
+map[? "zero"] = 1;
+ds_map_set(map, "zero", 2);
+map[? "two"] = 3;
+var test = map[? "two"];
+var _return = test;
+ds_map_destroy(map);
+return _return;',
+undefined,
+function(){
+	var map = ds_map_create();
+	map[? "zero"] = 1;
+	ds_map_set(map, "zero", 2);
+	map[? "two"] = 3;
+	var test = map[? "two"];
+	var _return = test;
+	ds_map_destroy(map);
+	return _return;
+}
+);
+
+run_interpreter_test("Struct access and modification with error handling",
+@'var struct = {zero: 0, one: 1, two: 2 };
+struct[$ "zero"] = 1;
+var test = struct[$ "two"];
+return string(struct)',
+undefined,
+function() {
+	var struct = {zero: 0, one: 1, two: 2 };
+	struct[$ "zero"] = 1;
+	var test = struct[$ "two"];
+	return string(struct)
+}
+);
+
+run_interpreter_test("Basic Struct hash setting",
+@'var struct = {one: 1};
+struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
+return string(struct)',
+undefined,
+function(){
+	var struct = {one: 1};
+	struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
+	return string(struct)
+}
+);
+
+
+run_interpreter_test("Struct Advance accessing and modification with error handling",
+@'var two = 2
+var struct = {one: 1, two};
+struct.zero = 0;
+struct[$ "zero"] = "ZERO";
+struct_set(struct, "one", "ONE")
+struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
+var _test1 = struct.two;
+var _test2 = struct[$ "two"];
+var _test3 = struct_get(struct, "two");
+var _test4 = struct_get_from_hash(struct, variable_get_hash("two"));
+return string(struct)',
+undefined,
+function(){
+	var two = 2
+	var struct = {one: 1, two};
+	struct.zero = 0;
+	struct[$ "zero"] = "ZERO";
+	struct_set(struct, "one", "ONE")
+	struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
+	var _test1 = struct.two;
+	var _test2 = struct[$ "two"];
+	var _test3 = struct_get(struct, "two");
+	var _test4 = struct_get_from_hash(struct, variable_get_hash("two"));
+	return string(struct)
+}
+);
+#endregion
+#region Repeat Statement Basic
+
+#region Basic Repeat Loop Test
+run_interpreter_test("Basic Repeat Loop Test",
+@'var i = 0;
+repeat (5) {
+	i++;
+}
+return i;',
+undefined,
+function(){
+	var i = 0;
+	repeat (5) {
+		i++;
 	}
-	
-	factorial(1) // result: 1
-	factorial(2) // result: 2
-	factorial(3) // result: 6
-	factorial(4) // result: 24
-	factorial(5) // result: 120
-	return factorial(6) // result: 720
+	return i;
+})
+#endregion
+#region Repeat with Break Test
+run_interpreter_test("Repeat with Break Test",
+@'var count = 0;
+repeat (10) {
+	count++;
+	if (count == 5) break;
+}
+return count;',
+undefined,
+function(){
+	var count = 0;
+	repeat (10) {
+		count++;
+		if (count == 5) break;
+	}
+	return count;
+})
+#endregion
+#region Repeat with Continue Test
+run_interpreter_test("Repeat with Continue Test",
+@'var sum = 0;
+repeat (10) {
+	sum++;
+	if (sum mod 2 == 0) continue;
+}
+return sum;',
+undefined,
+function(){
+	var sum = 0;
+	repeat (10) {
+		sum++;
+		if (sum mod 2 == 0) continue;
+	}
+	return sum;
+})
+#endregion
+#region Repeat Nested Loops
+run_interpreter_test("Repeat Nested Loops",
+@'var outer = 0;
+repeat (3) {
+	var inner = 0;
+	repeat (2) {
+		inner++;
+	}
+	outer += inner;
+}
+return outer;',
+undefined,
+function(){
+	var outer = 0;
+	repeat (3) {
+		var inner = 0;
+		repeat (2) {
+			inner++;
+		}
+		outer += inner;
+	}
+	return outer;
+})
+#endregion
+#region Repeat with Return Inside Loop
+run_interpreter_test("Repeat with Return Inside Loop",
+@'repeat (5) {
+	return "Exited";
+}
+return "Not Exited";',
+undefined,
+function(){
+	repeat (5) {
+		return "Exited";
+	}
+	return "Not Exited";
+})
+#endregion
+#region Empty Repeat Loop
+run_interpreter_test("Empty Repeat Loop",
+@'repeat (5) {}
+return "Done";',
+undefined,
+function(){
+	repeat (5) {}
+	return "Done";
 })
 #endregion
 
+#endregion
+#region Repeat Statement Advanced
 
+#region Complex Repeat with Nested If and Continue
+run_interpreter_test("Complex Repeat with Nested If and Continue",
+@'var count = 0;
+repeat (10) {
+	count++;
+	if (count % 2 == 0) {
+		if (count == 6) continue;
+		count += 10;
+	}
+}
+return count;',
+undefined,
+function(){
+	var count = 0;
+	repeat (10) {
+		count++;
+		if (count % 2 == 0) {
+			if (count == 6) continue;
+			count += 10;
+		}
+	}
+	return count;
+})
+#endregion
+#region Repeat with Nested Breaks
+run_interpreter_test("Repeat with Nested Breaks",
+@'var i = 0;
+repeat (5) {
+	repeat (5) {
+		i++;
+		if (i == 10) break;
+	}
+	if (i == 10) break;
+}
+return i;',
+undefined,
+function(){
+	var i = 0;
+	repeat (5) {
+		repeat (5) {
+			i++;
+			if (i == 10) break;
+		}
+		if (i == 10) break;
+	}
+	return i;
+})
+#endregion
+#region Repeat with Conditional Continues and Breaks
+run_interpreter_test("Repeat with Conditional Continues and Breaks",
+@'var total = 0;
+repeat (10) {
+	if (total == 5) continue;
+	total++;
+	if (total == 8) break;
+}
+return total;',
+undefined,
+function(){
+	var total = 0;
+	repeat (10) {
+		if (total == 5) continue;
+		total++;
+		if (total == 8) break;
+	}
+	return total;
+})
+#endregion
+#region Repeat with External Modification and Check
+run_interpreter_test("Repeat with External Modification and Check",
+@'var flag = true;
+var counter = 0;
+repeat (10) {
+	if (flag) {
+		counter++;
+		if (counter == 5) flag = false;
+	}
+}
+return counter;',
+undefined,
+function(){
+	var flag = true;
+	var counter = 0;
+	repeat (10) {
+		if (flag) {
+			counter++;
+			if (counter == 5) flag = false;
+		}
+	}
+	return counter;
+})
+#endregion
+#region Deeply Nested Repeat Loops
+run_interpreter_test("Deeply Nested Repeat Loops",
+@'var _depth = 0;
+repeat (3) {
+	repeat (3) {
+		repeat (3) {
+			_depth++;
+		}
+	}
+}
+return _depth;',
+undefined,
+function(){
+	var _depth = 0;
+	repeat (3) {
+		repeat (3) {
+			repeat (3) {
+				_depth++;
+			}
+		}
+	}
+	return _depth;
+})
+#endregion
+#region Repeat with Error Handling
+run_interpreter_test("Repeat with Error Handling",
+@'var count = 0;
+try {
+	repeat (5) {
+		count++;
+		if (count == 3) throw "Error at 3";
+	}
+} catch (error) {
+	return error;
+}
+return count;',
+undefined,
+function(){
+	var count = 0;
+	try {
+		repeat (5) {
+			count++;
+			if (count == 3) throw "Error at 3";
+		}
+	} catch (error) {
+		return error;
+	}
+	return count;
+})
+
+#endregion
+
+#endregion
 #region Varriable Apply With Postfix
 run_interpreter_test("Varriable Apply With Postfix", 
 @'x=1;
@@ -8736,21 +9165,6 @@ undefined,
 function(){
 	x = 1+1
 	return x
-}
-)
-#endregion
-#region complex expression evaluation
-run_interpreter_test("complex expression evaluation", 
-@'x = 2;
-y = 4;
-var result = ((x + y) * (x - y)) / 2;
-return result',
-undefined,
-function(){
-	x = 2;
-	y = 4;
-	var result = ((x + y) * (x - y)) / 2;
-	return result	
 }
 )
 #endregion
@@ -9056,127 +9470,6 @@ function(){
 }
 )
 #endregion
-#endregion
-#region Accessors <Array, Grid, List, Map, Struct>
-run_interpreter_test("Array access and modification",
-@'var arr = [0, 1, 2];
-arr[0] = 1;
-var test = arr[2];
-return string(arr);',
-undefined,
-function(){
-	var arr = [0, 1, 2];
-	arr[0] = 1;
-	var test = arr[2];
-	return string(arr);
-}
-);
-
-run_interpreter_test("List access and modification",
-@'var list = ds_list_create();
-list[| 0] = 1;
-list[| 1] = 2;
-ds_list_set(list, 2, 3);
-var test = list[| 2];
-var _return = test;
-ds_list_destroy(list);
-return _return;',
-undefined,
-function(){
-	var list = ds_list_create();
-	list[| 0] = 1;
-	list[| 1] = 2;
-	ds_list_set(list, 2, 3);
-	var test = list[| 2];
-	var _return = test;
-	ds_list_destroy(list);
-	return _return;
-}
-);
-
-run_interpreter_test("Grid access and modification",
-@'var grid = ds_grid_create(5, 5);
-ds_grid_set_region(grid, 0,0, 4, 4, "example");
-grid[# 0, 1] = 2;
-var test = grid[# 3, 4];
-var _return = test;
-ds_grid_destroy(grid);
-return _return;',
-undefined,
-function(){
-	var grid = ds_grid_create(5, 5);
-	ds_grid_set_region(grid, 0,0, 4, 4, "example");
-	grid[# 0, 1] = 2;
-	var test = grid[# 3, 4];
-	var _return = test;
-	ds_grid_destroy(grid);
-	return _return;
-}
-);
-
-run_interpreter_test("Map access and modification",
-@'var map = ds_map_create();
-map[? "zero"] = 1;
-ds_map_set(map, "zero", 2);
-map[? "two"] = 3;
-var test = map[? "two"];
-var _return = test;
-ds_map_destroy(map);
-return _return;',
-undefined,
-function(){
-	var map = ds_map_create();
-	map[? "zero"] = 1;
-	ds_map_set(map, "zero", 2);
-	map[? "two"] = 3;
-	var test = map[? "two"];
-	var _return = test;
-	ds_map_destroy(map);
-	return _return;
-}
-);
-
-run_interpreter_test("Struct access and modification with error handling",
-@'var struct = {zero: 0, one: 1, two: 2 };
-struct[$ "zero"] = 1;
-var test = struct[$ "two"];
-return string(struct)',
-undefined,
-function() {
-	var struct = {zero: 0, one: 1, two: 2 };
-	struct[$ "zero"] = 1;
-	var test = struct[$ "two"];
-	return string(struct)
-}
-);
-
-run_interpreter_test("Struct Advance accessing and modification with error handling",
-@'var two = 2
-var struct = {one: 1, two};
-struct.zero = 0;
-struct[$ "zero"] = "ZERO";
-struct_set(struct, "one", "ONE")
-struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
-var _test1 = struct.two;
-var _test2 = struct[$ "two"];
-var _test3 = struct_get(struct, "two");
-var _test4 = struct_get_from_hash(struct, variable_get_hash("two"));
-return string(struct)',
-undefined,
-function(){
-	var two = 2
-	var struct = {one: 1, two};
-	struct.zero = 0;
-	struct[$ "zero"] = "ZERO";
-	struct_set(struct, "one", "ONE")
-	struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
-	var _test1 = struct.two;
-	var _test2 = struct[$ "two"];
-	var _test3 = struct_get(struct, "two");
-	var _test4 = struct_get_from_hash(struct, variable_get_hash("two"));
-	return string(struct)
-}
-);
 #endregion
 
 #region Jump Instruction Tests
@@ -10410,252 +10703,299 @@ function(){
 
 #endregion
 
-#region Repeat Statement Basic
+#region With Statement Basic
 
-#region Basic Repeat Loop Test
-run_interpreter_test("Basic Repeat Loop Test",
-@'var i = 0;
-repeat (5) {
-	i++;
+#region With Statement with self
+run_interpreter_test("With Statement with self",
+@'with (self) {
+	return 1;
 }
-return i;',
+return 0;',
 undefined,
 function(){
-	var i = 0;
-	repeat (5) {
-		i++;
+	with (self) {
+		return 1;
 	}
-	return i;
+	return 0;
 })
-#endregion
-#region Repeat with Break Test
-run_interpreter_test("Repeat with Break Test",
-@'var count = 0;
-repeat (10) {
-	count++;
-	if (count == 5) break;
-}
-return count;',
-undefined,
-function(){
-	var count = 0;
-	repeat (10) {
-		count++;
-		if (count == 5) break;
-	}
-	return count;
-})
-#endregion
-#region Repeat with Continue Test
-run_interpreter_test("Repeat with Continue Test",
-@'var sum = 0;
-repeat (10) {
-	sum++;
-	if (sum % 2 == 0) continue;
-}
-return sum;',
-undefined,
-function(){
-	var sum = 0;
-	repeat (10) {
-		sum++;
-		if (sum % 2 == 0) continue;
-	}
-	return sum;
-})
-#endregion
-#region Repeat Nested Loops
-run_interpreter_test("Repeat Nested Loops",
-@'var outer = 0;
-repeat (3) {
-	var inner = 0;
-	repeat (2) {
-		inner++;
-	}
-	outer += inner;
-}
-return outer;',
-undefined,
-function(){
-	var outer = 0;
-	repeat (3) {
-		var inner = 0;
-		repeat (2) {
-			inner++;
-		}
-		outer += inner;
-	}
-	return outer;
-})
-#endregion
-#region Repeat with Return Inside Loop
-run_interpreter_test("Repeat with Return Inside Loop",
-@'repeat (5) {
-	return "Exited";
-}
-return "Not Exited";',
-undefined,
-function(){
-	repeat (5) {
-		return "Exited";
-	}
-	return "Not Exited";
-})
-#endregion
-#region Empty Repeat Loop
-run_interpreter_test("Empty Repeat Loop",
-@'repeat (5) {}
-return "Done";',
-undefined,
-function(){
-	repeat (5) {}
-	return "Done";
-})
-#endregion
 
 #endregion
-#region Repeat Statement Advanced
+#region With Statement with other
+run_interpreter_test("With Statement with other",
+@'with (other) {
+	return 1;
+}
+return 0;',
+undefined,
+function(){
+	with (other) {
+		return 1;
+	}
+	return 0;
+})
 
-#region Complex Repeat with Nested If and Continue
-run_interpreter_test("Complex Repeat with Nested If and Continue",
-@'var count = 0;
-repeat (10) {
-	count++;
-	if (count % 2 == 0) {
-		if (count == 6) continue;
-		count += 10;
-	}
+#endregion
+#region With Statement with all
+run_interpreter_test("With Statement with all",
+@'with (all) {
+	return 1;
 }
-return count;',
+return 0;',
 undefined,
 function(){
-	var count = 0;
-	repeat (10) {
-		count++;
-		if (count % 2 == 0) {
-			if (count == 6) continue;
-			count += 10;
+	with (all) {
+		return 1;
+	}
+	return 0;
+})
+
+#endregion
+#region With Statement with struct
+run_interpreter_test("With Statement with struct",
+@'var myStruct = {id: 100};
+with (myStruct) {
+	return id;
+}',
+undefined,
+function(){
+	var myStruct = {id: 100};
+	with (myStruct) {
+		return id;
+	}
+})
+
+#endregion
+#region With Statement Multiple Commands
+run_interpreter_test("With Statement Multiple Commands",
+@'with (self) {
+	var xx = 10;
+	return xx;
+}
+return 0;',
+undefined,
+function(){
+	with (self) {
+		var xx = 10;
+		return xx;
+	}
+	return 0;
+})
+
+#endregion
+#region With Statement Nested
+run_interpreter_test("With Statement Nested",
+@'with (self) {
+	with (other) {
+		return 1;
+	}
+	return 0;
+}',
+undefined,
+function(){
+	with (self) {
+		with (other) {
+			return 1;
+		}
+		return 0;
+	}
+})
+
+#endregion
+#region With Statement Conditional
+run_interpreter_test("With Statement Conditional",
+@'with (self) {
+	if (true) return 1;
+	return 0;
+}',
+undefined,
+function(){
+	with (self) {
+		if (true) return 1;
+		return 0;
+	}
+})
+
+#endregion
+
+#endregion
+#region With Statement Advanced
+
+#region With Statement with Double Nested
+run_interpreter_test("With Statement with Double Nested",
+@'with (self) {
+	with (other) {
+		var xx = 10;
+		return xx;
+	}
+	return 0;
+}',
+undefined,
+function(){
+	with (self) {
+		with (other) {
+			var xx = 10;
+			return xx;
+		}
+		return 0;
+	}
+})
+
+#endregion
+#region With Statement with Noone
+run_interpreter_test("With Statement with Noone",
+@'with (noone) {
+	return 1;
+}
+return 0;',
+undefined,
+function(){
+	with (noone) {
+		return 1;
+	}
+	return 0;
+})
+
+#endregion
+#region With Statement with Continue in Loop
+run_interpreter_test("With Statement with Continue in Loop",
+@'for (var i = 0; i < 5; i++) {
+	with (self) {
+		if (i == 2) continue;
+		return i;
+	}
+}
+return 5;',
+undefined,
+function(){
+	for (var i = 0; i < 5; i++) {
+		with (self) {
+			if (i == 2) continue;
+			return i;
 		}
 	}
-	return count;
+	return 5;
 })
+
 #endregion
-#region Repeat with Nested Breaks
-run_interpreter_test("Repeat with Nested Breaks",
-@'var i = 0;
-repeat (5) {
-	repeat (5) {
-		i++;
-		if (i == 10) break;
-	}
-	if (i == 10) break;
-}
-return i;',
-undefined,
-function(){
-	var i = 0;
-	repeat (5) {
-		repeat (5) {
-			i++;
-			if (i == 10) break;
-		}
-		if (i == 10) break;
-	}
-	return i;
-})
-#endregion
-#region Repeat with Conditional Continues and Breaks
-run_interpreter_test("Repeat with Conditional Continues and Breaks",
-@'var total = 0;
-repeat (10) {
-	if (total == 5) continue;
-	total++;
-	if (total == 8) break;
-}
-return total;',
-undefined,
-function(){
-	var total = 0;
-	repeat (10) {
-		if (total == 5) continue;
-		total++;
-		if (total == 8) break;
-	}
-	return total;
-})
-#endregion
-#region Repeat with External Modification and Check
-run_interpreter_test("Repeat with External Modification and Check",
-@'var flag = true;
-var counter = 0;
-repeat (10) {
-	if (flag) {
-		counter++;
-		if (counter == 5) flag = false;
+#region With Statement with Break in Loop
+run_interpreter_test("With Statement with Break in Loop",
+@'for (var i = 0; i < 5; i++) {
+	with (self) {
+		if (i == 2) break;
+		return i;
 	}
 }
-return counter;',
+return 5;',
 undefined,
 function(){
-	var flag = true;
-	var counter = 0;
-	repeat (10) {
-		if (flag) {
-			counter++;
-			if (counter == 5) flag = false;
+	for (var i = 0; i < 5; i++) {
+		with (self) {
+			if (i == 2) break;
+			return i;
 		}
 	}
-	return counter;
+	return 5;
 })
+
 #endregion
-#region Deeply Nested Repeat Loops
-run_interpreter_test("Deeply Nested Repeat Loops",
-@'var _depth = 0;
-repeat (3) {
-	repeat (3) {
-		repeat (3) {
-			_depth++;
-		}
+#region With Statement Nested with All
+run_interpreter_test("With Statement Nested with All",
+@'with (all) {
+	with (self) {
+		return 1;
 	}
-}
-return _depth;',
+	return 0;
+}',
 undefined,
 function(){
-	var _depth = 0;
-	repeat (3) {
-		repeat (3) {
-			repeat (3) {
-				_depth++;
+	with (all) {
+		with (self) {
+			return 1;
+		}
+		return 0;
+	}
+})
+
+#endregion
+#region With Statement with Logical Conditions
+run_interpreter_test("With Statement with Logical Conditions",
+@'with (self) {
+	if (true && false) return 0;
+	else return 1;
+}',
+undefined,
+function(){
+	with (self) {
+		if (true && false) return 0;
+		else return 1;
+	}
+})
+
+#endregion
+#region With Statement with Multiple Controls
+run_interpreter_test("With Statement with Multiple Controls",
+@'with (self) {
+	for (var i = 0; i < 3; i++) {
+		if (i == 1) continue;
+		else if (i == 2) break;
+		return i;
+	}
+	return 3;
+}',
+undefined,
+function(){
+	with (self) {
+		for (var i = 0; i < 3; i++) {
+			if (i == 1) continue;
+			else if (i == 2) break;
+			return i;
+		}
+		return 3;
+	}
+})
+
+#endregion
+#region With Statement with Return Early Out
+run_interpreter_test("With Statement with Return Early Out",
+@'with (self) {
+	return 1;
+	return 2; // This should never execute
+}',
+undefined,
+function(){
+	with (self) {
+		return 1;
+		return 2; // This should never execute
+	}
+})
+
+#endregion
+#region With Statement Complex Logic
+run_interpreter_test("With Statement Complex Logic",
+@'with (self) {
+	var xx = 0, yy = 0;
+	while (xx < 5) {
+		xx++;
+		with (other) {
+			yy += xx;
+			if (yy > 10) break;
+		}
+	}
+	return yy;
+}',
+undefined,
+function(){
+	with (self) {
+		var xx = 0, yy = 0;
+		while (xx < 5) {
+			xx++;
+			with (other) {
+				yy += xx;
+				if (yy > 10) break;
 			}
 		}
+		return yy;
 	}
-	return _depth;
-})
-#endregion
-#region Repeat with Error Handling
-run_interpreter_test("Repeat with Error Handling",
-@'var count = 0;
-try {
-	repeat (5) {
-		count++;
-		if (count == 3) throw "Error at 3";
-	}
-} catch (error) {
-	return error;
-}
-return count;',
-undefined,
-function(){
-	var count = 0;
-	try {
-		repeat (5) {
-			count++;
-			if (count == 3) throw "Error at 3";
-		}
-	} catch (error) {
-		return error;
-	}
-	return count;
 })
 
 #endregion
@@ -10889,7 +11229,7 @@ run_interpreter_test("Switch Multiple Breaks",
 	case 2: break;
 	default: break;
 }
-return 10;',
+return 10',
 undefined,
 function(){
 	switch (1) {
@@ -10909,8 +11249,7 @@ run_interpreter_test("Switch with Continue in Loop",
 		case 1: return 1;
 		default: continue;
 	}
-}
-return 2',
+}',
 undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
@@ -10932,8 +11271,7 @@ run_interpreter_test("Switch Nested with Breaks",
 		   }
 		   break;
 	case 2: return 2;
-}
-return 3',
+}',
 undefined,
 function(){
 	switch (2) {
@@ -10953,8 +11291,7 @@ run_interpreter_test("Switch with Complex Conditions",
 switch (xx) {
 	case 1 + 1: return 10;  // Matches x
 	case 2 * 2: return 20;
-}
-return 0;',
+}',
 undefined,
 function(){
 	var xx = 2;
@@ -11661,329 +11998,55 @@ function(){
 
 #endregion
 
-#region With Statement Basic
-/*
-#region With Statement with self
-run_interpreter_test("With Statement with self",
-@'with (self) {
-	return 1;
-}
-return 0;',
-undefined,
-function(){
-	with (self) {
-		return 1;
-	}
-	return 0;
-})
+#endregion
 
-#endregion
-#region With Statement with other
-run_interpreter_test("With Statement with other",
-@'with (other) {
-	return 1;
-}
-return 0;',
-undefined,
-function(){
-	with (other) {
-		return 1;
-	}
-	return 0;
-})
-
-#endregion
-#region With Statement with all
-run_interpreter_test("With Statement with all",
-@'with (all) {
-	return 1;
-}
-return 0;',
-undefined,
-function(){
-	with (all) {
-		return 1;
-	}
-	return 0;
-})
-
-#endregion
-#region With Statement with struct
-run_interpreter_test("With Statement with struct",
-@'var myStruct = {id: 100};
-with (myStruct) {
-	return id;
-}',
-undefined,
-function(){
-	var myStruct = {id: 100};
-	with (myStruct) {
-		return id;
-	}
-})
-
-#endregion
-#region With Statement Multiple Commands
-run_interpreter_test("With Statement Multiple Commands",
-@'with (self) {
-	var xx = 10;
-	return xx;
-}
-return 0;',
-undefined,
-function(){
-	with (self) {
-		var xx = 10;
-		return xx;
-	}
-	return 0;
-})
-
-#endregion
-#region With Statement Nested
-run_interpreter_test("With Statement Nested",
-@'with (self) {
-	with (other) {
-		return 1;
-	}
-	return 0;
-}',
-undefined,
-function(){
-	with (self) {
-		with (other) {
-			return 1;
-		}
-		return 0;
-	}
-})
-
-#endregion
-#region With Statement Conditional
-run_interpreter_test("With Statement Conditional",
-@'with (self) {
-	if (true) return 1;
-	return 0;
-}',
-undefined,
-function(){
-	with (self) {
-		if (true) return 1;
-		return 0;
-	}
-})
-
-#endregion
-//*/
-#endregion
-#region With Statement Advanced
-/*
-#region With Statement with Double Nested
-run_interpreter_test("With Statement with Double Nested",
-@'with (self) {
-	with (other) {
-		var xx = 10;
-		return xx;
-	}
-	return 0;
-}',
-undefined,
-function(){
-	with (self) {
-		with (other) {
-			var xx = 10;
-			return xx;
-		}
-		return 0;
-	}
-})
-
-#endregion
-#region With Statement with Noone
-run_interpreter_test("With Statement with Noone",
-@'with (noone) {
-	return 1;
-}
-return 0;',
-undefined,
-function(){
-	with (noone) {
-		return 1;
-	}
-	return 0;
-})
-
-#endregion
-#region With Statement with Continue in Loop
-run_interpreter_test("With Statement with Continue in Loop",
-@'for (var i = 0; i < 5; i++) {
-	with (self) {
-		if (i == 2) continue;
-		return i;
-	}
-}
-return 5;',
-undefined,
-function(){
-	for (var i = 0; i < 5; i++) {
-		with (self) {
-			if (i == 2) continue;
-			return i;
-		}
-	}
-	return 5;
-})
-
-#endregion
-#region With Statement with Break in Loop
-run_interpreter_test("With Statement with Break in Loop",
-@'for (var i = 0; i < 5; i++) {
-	with (self) {
-		if (i == 2) break;
-		return i;
-	}
-}
-return 5;',
-undefined,
-function(){
-	for (var i = 0; i < 5; i++) {
-		with (self) {
-			if (i == 2) break;
-			return i;
-		}
-	}
-	return 5;
-})
-
-#endregion
-#region With Statement Nested with All
-run_interpreter_test("With Statement Nested with All",
-@'with (all) {
-	with (self) {
-		return 1;
-	}
-	return 0;
-}',
-undefined,
-function(){
-	with (all) {
-		with (self) {
-			return 1;
-		}
-		return 0;
-	}
-})
-
-#endregion
-#region With Statement with Logical Conditions
-run_interpreter_test("With Statement with Logical Conditions",
-@'with (self) {
-	if (true && false) return 0;
-	else return 1;
-}',
-undefined,
-function(){
-	with (self) {
-		if (true && false) return 0;
-		else return 1;
-	}
-})
-
-#endregion
-#region With Statement with Multiple Controls
-run_interpreter_test("With Statement with Multiple Controls",
-@'with (self) {
-	for (var i = 0; i < 3; i++) {
-		if (i == 1) continue;
-		else if (i == 2) break;
-		return i;
-	}
-	return 3;
-}',
-undefined,
-function(){
-	with (self) {
-		for (var i = 0; i < 3; i++) {
-			if (i == 1) continue;
-			else if (i == 2) break;
-			return i;
-		}
-		return 3;
-	}
-})
-
-#endregion
-#region With Statement with Return Early Out
-run_interpreter_test("With Statement with Return Early Out",
-@'with (self) {
-	return 1;
-	return 2; // This should never execute
-}',
-undefined,
-function(){
-	with (self) {
-		return 1;
-		return 2; // This should never execute
-	}
-})
-
-#endregion
-#region With Statement Complex Logic
-run_interpreter_test("With Statement Complex Logic",
-@'with (self) {
-	var xx = 0, yy = 0;
-	while (xx < 5) {
-		xx++;
-		with (other) {
-			xy += xx;
-			if (yy > 10) break;
-		}
-	}
-	return yy;
-}',
-undefined,
-function(){
-	with (self) {
-		var xx = 0, yy = 0;
-		while (xx < 5) {
-			xx++;
-			with (other) {
-				yy += xx;
-				if (yy > 10) break;
-			}
-		}
-		return yy;
-	}
-})
-
-#endregion
 //*/
 #endregion
 
+
+//*
+#region Factorial Test
+run_interpreter_test("Factorial Test",
+@'// compute the factorial of n
+function factorial(n) {
+  if (n <= 1) {
+	return 1;
+  }
+  return n * factorial(n - 1)
+}
+
+factorial(1) // result: 1
+factorial(2) // result: 2
+factorial(3) // result: 6
+factorial(4) // result: 24
+factorial(5) // result: 120
+return factorial(6) // result: 720',
+undefined,
+function(){
+	// compute the factorial of n
+	factorial = function (n) {
+	  if (n <= 1) {
+		return 1;
+	  }
+	  return n * factorial(n - 1)
+	}
+	
+	factorial(1) // result: 1
+	factorial(2) // result: 2
+	factorial(3) // result: 6
+	factorial(4) // result: 24
+	factorial(5) // result: 120
+	return factorial(6) // result: 720
+})
 #endregion
 
 
-
-#region parsePreffixExpression /////////////////////////////////////////////////////////// Toggled off
+#region parsePreffixExpression
 run_interpreter_test("parsePreffixExpression", 
 @'var _x=0;
 --_x;
 return --_x;',
-{IR:[
-{op: ByteOp.LOAD, value:0.0, scope: ScopeType.CONST},
-{op: ByteOp.STORE, value:"_x", scope: ScopeType.LOCAL},
-{op: ByteOp.LOAD, value:"_x", scope: ScopeType.LOCAL},
-{op: ByteOp.OPERATOR, operator: OpCode.DEC},
-{op: ByteOp.DUP},
-{op: ByteOp.STORE, value:"_x", scope: ScopeType.LOCAL},
-{op: ByteOp.LOAD, value:"_x", scope: ScopeType.LOCAL},
-{op: ByteOp.OPERATOR, operator: OpCode.DEC},
-{op: ByteOp.DUP},
-{op: ByteOp.STORE, value:"_x", scope: ScopeType.LOCAL},
-{op: ByteOp.RETURN},
-{ op: ByteOp.END }
-],
-GlobalVar:{}},
+undefined,
 function(){
 	var _x=0;
 	--_x;
@@ -11991,399 +12054,373 @@ function(){
 }
 )
 #endregion
-#region Jump Test Recursive If Test	 /////////////////////////////////////////////////////////////////
-//run_interpreter_test("Jump Test Recursive If Test",
-//@'xx = 0;
-//function recursiveTest() {
-//	log(["2 xx", xx])
-//	if (xx < 3) {
-//		log(["3 xx", xx])
-//		xx += 1;
-//		log(["4 xx", xx])
-//		recursiveTest();
-//	}
-//	return xx;
-//}
-//
-//return recursiveTest();',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	xx = 0;
-//	function recursiveTest() {
-//		if (xx < 3) {
-//			xx += 1;
-//			recursiveTest();
-//		}
-//		return xx;
-//	}
-//	return recursiveTest();
-//
-//})
+#region Jump Test Recursive If Test
+run_interpreter_test("Jump Test Recursive If Test",
+@'xx = 0;
+function recursiveTest() {
+	if (xx < 3) {
+		xx += 1;
+		recursiveTest();
+	}
+	return xx;
+}
+
+return recursiveTest();',
+undefined,
+function(){
+	xx = 0;
+	function recursiveTest() {
+		if (xx < 3) {
+			xx += 1;
+			recursiveTest();
+		}
+		return xx;
+	}
+	return recursiveTest();
+
+})
 #endregion
-#region Nested If with Functions   /////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Nested If with Functions",
-//@'function check(a) {
-//	if (a > 5) {
-//		if (a < 10) return a * 2;
-//	} else if (a == 5) return a + 2;
-//	return a;
-//}
-//return check(7);
-//',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	function check(a) {
-//		if (a > 5) {
-//			if (a < 10) return a * 2;
-//		} else if (a == 5) return a + 2;
-//		return a;
-//	}
-//	return check(7);
-//})
+#region Nested If with Functions
+run_interpreter_test("Nested If with Functions",
+@'function check(a) {
+	if (a > 5) {
+		if (a < 10) return a * 2;
+	} else if (a == 5) return a + 2;
+	return a;
+}
+return check(7);
+',
+undefined,
+function(){
+	function check(a) {
+		if (a > 5) {
+			if (a < 10) return a * 2;
+		} else if (a == 5) return a + 2;
+		return a;
+	}
+	return check(7);
+})
 #endregion
-#region For Loop with Function Calls and Break   ////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("For Loop with Function Calls and Break",
-//@'function checkBreak(x) { return x == 4; }
-//var i;
-//for (i = 0; i < 10; i++) {
-//	if (checkBreak(i)) break;
-//}
-//return i;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	function checkBreak(x) { return x == 4; }
-//	var i;
-//	for (i = 0; i < 10; i++) {
-//		if (checkBreak(i)) break;
-//	}
-//	return i;
-//})
+#region For Loop with Function Calls and Break
+run_interpreter_test("For Loop with Function Calls and Break",
+@'function checkBreak(_x) { return _x == 4; }
+var i;
+for (i = 0; i < 10; i++) {
+	if (checkBreak(i)) break;
+}
+return i;',
+undefined,
+function(){
+	function checkBreak(_x) { return _x == 4; }
+	var i;
+	for (i = 0; i < 10; i++) {
+		if (checkBreak(i)) break;
+	}
+	return i;
+})
 #endregion
-#region While Loop with External Function Call   ////////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("While Loop with External Function Call",
-//@'function checkCondition(x) { return x < 5; }
-//var i = 0;
-//while (checkCondition(i)) {
-//	i++;
-//}
-//return i;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	function checkCondition(x) { return x < 5; }
-//	var i = 0;
-//	while (checkCondition(i)) {
-//		i++;
-//	}
-//	return i;
-//})
+#region While Loop with External Function Call
+run_interpreter_test("While Loop with External Function Call",
+@'function checkCondition(x) { return x < 5; }
+var i = 0;
+while (checkCondition(i)) {
+	i++;
+}
+return i;',
+undefined,
+function(){
+	function checkCondition(x) { return x < 5; }
+	var i = 0;
+	while (checkCondition(i)) {
+		i++;
+	}
+	return i;
+})
 #endregion
-#region While Loop with Recursion   /////////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("While Loop with Recursion",
-//@'function recursiveFunction(xx) {
-//	while (xx < 5) {
-//		xx = recursiveFunction(xx + 1);
-//	}
-//	return xx;
-//}
-//return recursiveFunction(0);',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	function recursiveFunction(xx) {
-//		while (xx < 5) {
-//			xx = recursiveFunction(xx + 1);
-//		}
-//		return xx;
-//	}
-//	return recursiveFunction(0);
-//})
+#region While Loop with Recursion
+run_interpreter_test("While Loop with Recursion",
+@'function recursiveFunction(xx) {
+	while (xx < 5) {
+		xx = recursiveFunction(xx + 1);
+	}
+	return xx;
+}
+return recursiveFunction(0);',
+undefined,
+function(){
+	function recursiveFunction(xx) {
+		while (xx < 5) {
+			xx = recursiveFunction(xx + 1);
+		}
+		return xx;
+	}
+	return recursiveFunction(0);
+})
 #endregion
-#region Advanced Try with Nested Try Catch Finally and Returns   //////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Advanced Try with Nested Try Catch Finally and Returns",
-//@'try {
-//	try {
-//		throw "Error";
-//	} catch (e) {
-//		try {
-//			return 1;
-//		} finally {
-//			//return 2;
-//		}
-//		return 2;
-//	} finally {
-//		//return 3;
-//	}
-//	return 3;
-//} catch (e) {
-//	return 4;
-//} finally {
-//	//return 5;
-//}
-//return 6;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	try {
-//		try {
-//			throw "Error";
-//		} catch (e) {
-//			try {
-//				return 1;
-//			} finally {
-//				//return 2;
-//			}
-//			return 2;
-//		} finally {
-//			//return 3;
-//		}
-//		return 3;
-//	} catch (e) {
-//		return 4;
-//	} finally {
-//		//return 5;
-//	}
-//	return 6;
-//})
+#region Advanced Try with Nested Try Catch Finally and Returns
+//*
+run_interpreter_test("Advanced Try with Nested Try Catch Finally and Returns",
+@'try {
+	try {
+		throw "Error";
+	} catch (e) {
+		try {
+			return 1;
+		} finally {
+			//return 2;
+		}
+		return 2;
+	} finally {
+		//return 3;
+	}
+	return 3;
+} catch (d) {
+	return 4;
+} finally {
+	//return 5;
+}
+return 6;',
+undefined,
+function(){
+	try {
+		try {
+			throw "Error";
+		}
+		catch (e) {
+			try {
+				return 1;
+			} finally {
+				//return 2;
+			}
+			return 2;
+		}
+		finally {
+			//return 3;
+		}
+		return 3;
+	} catch (d) {
+		return 4;
+	} finally {
+		//return 5;
+	}
+	return 6;
+})
+//*/
+#endregion
+#region Advanced Try Catch with Nested Try Finally
+run_interpreter_test("Advanced Try Catch with Nested Try Finally",
+@'try {
+	throw "Error";
+} catch (e) {
+	try {
+		return 1;
+	} finally {
+		a = 1
+		//return 2;
+	}
+	return 2;
+} finally {
+	a = 2
+	//return 3;
+}
+return 4;',
+undefined,
+function(){
+	try {
+		throw "Error";
+	} catch (e) {
+		try {
+			return 1;
+		} finally {
+			//return 2;
+		}
+		return 2;
+	} finally {
+		//return 3;
+	}
+	return 4;
+})
 
 #endregion
-#region Advanced Try Catch with Nested Try Finally   //////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Advanced Try Catch with Nested Try Finally",
-//@'try {
-//	throw "Error";
-//} catch (e) {
-//	try {
-//		return 1;
-//	} finally {
-//		a = 1
-//		//return 2;
-//	}
-//	return 2;
-//} finally {
-//	a = 2
-//	//return 3;
-//}
-//return 4;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	try {
-//		throw "Error";
-//	} catch (e) {
-//		try {
-//			return 1;
-//		} finally {
-//			//return 2;
-//		}
-//		return 2;
-//	} finally {
-//		//return 3;
-//	}
-//	return 4;
-//})
+#region Advanced Nested Try Catch Finally
+run_interpreter_test("Advanced Nested Try Catch Finally",
+@'try {
+	try {
+		throw "Error";
+	} catch (e) {
+		try {
+			return 1;
+		} finally {
+			//return 2;
+		}
+		return 2;
+	} finally {
+		//return 3;
+	}
+	return 3;
+} catch (e) {
+	return 4;
+} finally {
+	//return 5;
+}
+return 6;',
+undefined,
+function(){
+	try {
+		try {
+			throw "Error";
+		} catch (e) {
+			try {
+				return 1;
+			} finally {
+				//return 2;
+			}
+			return 2;
+		} finally {
+			//return 3;
+		}
+		return 3;
+	} catch (e) {
+		return 4;
+	} finally {
+		//return 5;
+	}
+	return 6;
+})
 
 #endregion
-#region Advanced Nested Try Catch Finally   //////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Advanced Nested Try Catch Finally",
-//@'try {
-//	try {
-//		throw "Error";
-//	} catch (e) {
-//		try {
-//			return 1;
-//		} finally {
-//			//return 2;
-//		}
-//		return 2;
-//	} finally {
-//		//return 3;
-//	}
-//	return 3;
-//} catch (e) {
-//	return 4;
-//} finally {
-//	//return 5;
-//}
-//return 6;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	try {
-//		try {
-//			throw "Error";
-//		} catch (e) {
-//			try {
-//				return 1;
-//			} finally {
-//				//return 2;
-//			}
-//			return 2;
-//		} finally {
-//			//return 3;
-//		}
-//		return 3;
-//	} catch (e) {
-//		return 4;
-//	} finally {
-//		//return 5;
-//	}
-//	return 6;
-//})
+#region With Statement Recursive Double With
+run_interpreter_test("With Statement Recursive Double With",
+@'xx = 0;
+function recursiveWith() {
+	with (self) {
+		with (other) {
+			if (xx < 3) {
+				xx += 1;
+				recursiveWith();
+			}
+		}
+	}
+	return xx;
+}
+return recursiveWith();',
+undefined,
+function(){
+	xx = 0;
+	function recursiveWith() {
+		with (self) {
+			with (other) {
+				if (xx < 3) {
+					xx += 1;
+					recursiveWith();
+				}
+			}
+		}
+		return xx;
+	}
+	return recursiveWith();
+})
 
 #endregion
-#region With Statement Recursive Double With   ///////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("With Statement Recursive Double With",
-//@'var xx = 0;
-//function recursiveWith() {
-//	with (self) {
-//		with (other) {
-//			if (xx < 3) {
-//				xx += 1;
-//				recursiveWith();
-//			}
-//		}
-//	}
-//	return xx;
-//}
-//return recursiveWith();',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	var xx = 0;
-//	function recursiveWith() {
-//		with (self) {
-//			with (other) {
-//				if (xx < 3) {
-//					xx += 1;
-//					recursiveWith();
-//				}
-//			}
-//		}
-//		return xx;
-//	}
-//	return recursiveWith();
-//})
-
+#region Do/Until Loop with Recursive Call
+run_interpreter_test("Do/Until Loop with Recursive Call",
+@'xx = 0;
+function increment() {
+	do {
+		xx++;
+		if (xx < 9) increment();
+	} until (xx == 10);
+}
+increment();
+return xx;',
+undefined,
+function(){
+	xx = 0;
+	function increment() {
+		do {
+			xx++;
+			if (xx < 9) increment();
+		} until (xx == 10);
+	}
+	increment();
+	return xx;
+})
 #endregion
-#region Do/Until Loop with Recursive Call   //////////////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Do/Until Loop with Recursive Call",
-//@'var xx = 0;
-//function increment() {
-//	do {
-//		xx++;
-//		if (xx < 9) increment();
-//	} until (xx == 10);
-//}
-//increment();
-//return xx;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	var xx = 0;
-//	function increment() {
-//		do {
-//			xx++;
-//			if (xx < 9) increment();
-//		} until (xx == 10);
-//	}
-//	increment();
-//	return xx;
-//})
+#region Do/Until with Nested Functions and Recursion
+run_interpreter_test("Do/Until with Nested Functions and Recursion",
+@'depth = 0;
+function increaseDepth() {
+	do {
+		depth++;
+		if (depth < 5) increaseDepth();
+	} until (depth >= 10);
+}
+increaseDepth();
+return depth;',
+undefined,
+function(){
+	depth = 0;
+	function increaseDepth() {
+		do {
+			depth++;
+			if (depth < 5) increaseDepth();
+		} until (depth >= 10);
+	}
+	increaseDepth();
+	return depth;
+})
 #endregion
-#region Do/Until with Nested Functions and Recursion   ////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Do/Until with Nested Functions and Recursion",
-//@'var _depth = 0;
-//function increaseDepth() {
-//	do {
-//		_depth++;
-//		if (_depth < 5) increaseDepth();
-//	} until (_depth >= 10);
-//}
-//increaseDepth();
-//return _depth;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	var _depth = 0;
-//	function increaseDepth() {
-//		do {
-//			_depth++;
-//			if (_depth < 5) increaseDepth();
-//		} until (_depth >= 10);
-//	}
-//	increaseDepth();
-//	return _depth;
-//})
+#region Do/Until with External Function Calls and Modifications
+run_interpreter_test("Do/Until with External Function Calls and Modifications",
+@'counter = 0;
+function modifyCounter() {
+	counter += 5;
+}
+do {
+	modifyCounter();
+	if (counter >= 25) break;
+} until (false);
+return counter;',
+undefined,
+function(){
+	counter = 0;
+	function modifyCounter() {
+		counter += 5;
+	}
+	do {
+		modifyCounter();
+		if (counter >= 25) break;
+	} until (false);
+	return counter;
+})
 #endregion
-#region Do/Until with External Function Calls and Modifications   ///////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Do/Until with External Function Calls and Modifications",
-//@'var counter = 0;
-//function modifyCounter() {
-//	counter += 5;
-//}
-//do {
-//	modifyCounter();
-//	if (counter >= 25) break;
-//} until (false);
-//return counter;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	var counter = 0;
-//	function modifyCounter() {
-//		counter += 5;
-//	}
-//	do {
-//		modifyCounter();
-//		if (counter >= 25) break;
-//	} until (false);
-//	return counter;
-//})
+#region Do/Until with Error Handling and Recovery
+run_interpreter_test("Do/Until with Error Handling and Recovery",
+@'var attempts = 0;
+do {
+	try {
+		attempts++;
+		if (attempts == 3) throw "Fail at Three";
+	} catch (error) {
+		if (attempts < 5) continue;
+	}
+} until (attempts > 5);
+return attempts;',
+undefined,
+function(){
+	var attempts = 0;
+	do {
+		try {
+			attempts++;
+			if (attempts == 3) throw "Fail at Three";
+		} catch (error) {
+			if (attempts < 5) continue;
+		}
+	} until (attempts > 5);
+	return attempts;
+})
 #endregion
-#region Do/Until with Error Handling and Recovery   ///////////////////////////////////////////////////////////////////////////////////////////
-//run_interpreter_test("Do/Until with Error Handling and Recovery",
-//@'var attempts = 0;
-//do {
-//	try {
-//		attempts++;
-//		if (attempts == 3) throw "Fail at Three";
-//	} catch (error) {
-//		if (attempts < 5) continue;
-//	}
-//} until (attempts > 5);
-//return attempts;',
-//{ IR:[ ],
-//	GlobalVar:{},
-//},
-//function(){
-//	var attempts = 0;
-//	do {
-//		try {
-//			attempts++;
-//			if (attempts == 3) throw "Fail at Three";
-//		} catch (error) {
-//			if (attempts < 5) continue;
-//		}
-//	} until (attempts > 5);
-//	return attempts;
-//})
-#endregion
-
+//*/
 }
 run_all_interpreter_tests();
 #endregion

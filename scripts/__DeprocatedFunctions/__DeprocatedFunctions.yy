@@ -1,12 +1,12 @@
 {
-  "$GMScript":"",
+  "$GMScript":"v1",
   "%Name":"__DeprocatedFunctions",
   "isCompatibility":false,
   "isDnD":false,
   "name":"__DeprocatedFunctions",
   "parent":{
     "name":"GMLCompiler",
-    "path":"folders/_Libraries/GMLCompiler.yy",
+    "path":"folders/GMLCompiler.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
