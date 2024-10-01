@@ -1,0 +1,16 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BasicMathTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BasicMathTestSuite",
+  "parent":{
+    "name":"TestSuites",
+    "path":"folders/xUnit/Tests/TestSuites.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+  "tags":[
+    "runtime_tests",
+  ],
+}

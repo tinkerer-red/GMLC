@@ -1,0 +1,16 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BasicDataStructuresStackTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BasicDataStructuresStackTestSuite",
+  "parent":{
+    "name":"TestSuites",
+    "path":"folders/xUnit/Tests/TestSuites.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+  "tags":[
+    "runtime_tests",
+  ],
+}

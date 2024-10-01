@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"Assert",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"Assert",
+  "parent":{
+    "name":"Internal",
+    "path":"folders/xUnit/Modules/AssertModule/Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

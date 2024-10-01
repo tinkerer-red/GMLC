@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"Task",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"Task",
+  "parent":{
+    "name":"Internal",
+    "path":"folders/xUnit/Modules/TestModule/Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

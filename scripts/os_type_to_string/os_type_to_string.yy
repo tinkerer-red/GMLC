@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"os_type_to_string",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"os_type_to_string",
+  "parent":{
+    "name":"Utils",
+    "path":"folders/xUnit/Modules/TestModule/Utils.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

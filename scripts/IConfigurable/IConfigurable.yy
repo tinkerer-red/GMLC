@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"IConfigurable",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"IConfigurable",
+  "parent":{
+    "name":"Interfaces",
+    "path":"folders/xUnit/Modules/PropertyModule/Interfaces.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

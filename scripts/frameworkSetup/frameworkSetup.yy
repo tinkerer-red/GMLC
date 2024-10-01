@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"frameworkSetup",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"frameworkSetup",
+  "parent":{
+    "name":"xUnit",
+    "path":"folders/xUnit.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

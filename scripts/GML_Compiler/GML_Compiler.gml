@@ -7,7 +7,7 @@
 /* allows for
 // #define
 // multiline strings with out @ accessor
-// single quote strings 'example'
+// single quote strings example
 // hashtags in strings represent newlines
 // array 2d `arr[x, y]`
 */
@@ -119,7 +119,7 @@ enum tok {
 	eEqual, // =
 	eFinally, // finally keyword
 	eFor, // for keyworf
-	eFunction, // function; as in just a function it's self
+	eFunction, // function; as in just a function its self
 	eFunctionDecl, // `function` keyword
 	eGreater, // >
 	eGreaterEqual, // >=
@@ -147,7 +147,7 @@ enum tok {
 	eSepArgument, // ,
 	eSepStatement, // ;
 	eStatic, // static keyword
-	eString, // any string literal @"example", @'example', "example"
+	eString, // any string literal @"example", @example, "example"
 	eStructArrayOpen, // [$
 	eSwitch, // switch keyword
 	eTemplateString, // the mark of a template string
@@ -293,7 +293,7 @@ function GML_Tokenizer() constructor {
 				static __lastString = ""
 				var _str = string(charPos/sourceCodeCharLength/10)
 				if (__lastString != _str) {
-					show_debug_message($"{real(_str)*1000}% Finished")
+					do_trace($"{real(_str)*1000}% Finished")
 					__lastString = _str;
 				}
 			}
@@ -373,7 +373,7 @@ function GML_Tokenizer() constructor {
 		else if (__char_is_alphabetic(_char)) {
 			return tokenizeIdentifier();
 		}
-		else if (_char == ord("@") && (_next_char == ord("'") || _next_char == ord(@'"'))) {
+		else if (_char == ord("@") && (_next_char == ord("") || _next_char == ord(@'"'))) {
 			return tokenizeRawStringLiteral();
 		}
 		else if (__char_is_operator(_char)) {
@@ -436,7 +436,7 @@ function GML_Tokenizer() constructor {
 			var _raw_string = "0x"
 		}
 		else {
-			throw $"\nEntered 'tokenizeHexNumber' with a non-valid entry string : {chr(_char)}"
+			throw $"\nEntered tokenizeHexNumber with a non-valid entry string : {chr(_char)}"
 		}
 		
 		var _len = 0;
@@ -491,7 +491,7 @@ function GML_Tokenizer() constructor {
 			var _raw_string = "0b";
 		}
 		else {
-			throw $"\nEntered 'tokenizeBinaryNumber' with a non-valid entry string : {chr(_char)}"
+			throw $"\nEntered tokenizeBinaryNumber with a non-valid entry string : {chr(_char)}"
 		}
 		
 		var _len = 0;
@@ -940,7 +940,7 @@ function GML_Tokenizer() constructor {
 				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 			break;};
 			default: {
-				throw $"\nEntered 'tokenizeOperator' with a non-valid entry string : {chr(currentCharCode)}"
+				throw $"\nEntered tokenizeOperator with a non-valid entry string : {chr(currentCharCode)}"
 			break;}
 		}
 		
@@ -1157,7 +1157,7 @@ function GML_Tokenizer() constructor {
 	//	var _orig_line = line;
 	//	var _orig_column = column;
 			
-	//	charPos += 6; // Skip the '#macro' keyword itself, assuming '#macro' was already detected
+	//	charPos += 6; // Skip the #macro keyword itself, assuming #macro was already detected
 	//	column += 6;
 		
 	//	var _name = string_copy(sourceCode, start, charPos - start);
@@ -1170,7 +1170,7 @@ function GML_Tokenizer() constructor {
 	//	var _orig_line = line;
 	//	var _orig_column = column;
 			
-	//	charPos += 4; // Skip the 'enum' keyword itself, assuming 'enum' was already detected
+	//	charPos += 4; // Skip the enum keyword itself, assuming enum was already detected
 	//	column += 4;
 		
 	//	var _name = string_copy(sourceCode, start, charPos - start);
@@ -1216,7 +1216,7 @@ function GML_Tokenizer() constructor {
 	//	var _orig_line = line;
 	//	var _orig_column = column;
 			
-	//	charPos += 7; // Skip the '#macro' keyword itself, assuming '#macro' was already detected
+	//	charPos += 7; // Skip the #macro keyword itself, assuming #macro was already detected
 	//	column += 7;
 		
 	//	var _name = string_copy(sourceCode, start, charPos - start);
@@ -1313,7 +1313,7 @@ function __expectUTF8(_ord) {
 	}
 		
 	if (currentCharCode != _ord) {
-		throw $"\n\nExpected '{_ord} ({chr(_ord)})', got '{currentCharCode} ({chr(currentCharCode)})'";
+		throw $"\n\nExpected {_ord} ({chr(_ord)}), got {currentCharCode} ({chr(currentCharCode)})";
 	}
 		
 	__nextUTF8();
@@ -1440,7 +1440,7 @@ function GML_PreProcessor() constructor {
 				static __lastString = ""
 				var _str = string((currentTokenIndex+passCount*array_length(tokens))/(array_length(tokens)*(passState.SIZE))/10)
 				if (__lastString != _str) {
-					show_debug_message($"{real(_str)*1000}% Finished")
+					do_trace($"{real(_str)*1000}% Finished")
 					__lastString = _str;
 				}
 			}
@@ -1525,7 +1525,7 @@ function GML_PreProcessor() constructor {
 	static expectToken = function(expectedType, expectedValue=undefined) {
 		if (currentToken.type != expectedType)
 		|| (expectedValue != undefined && currentToken.value != expectedValue) {
-			throw $"\n\nExpected '{expectedValue}', got '{currentToken}'";
+			throw $"\n\nExpected {expectedValue}, got {currentToken}";
 		}
 		nextToken();
 	};
@@ -1553,7 +1553,7 @@ function GML_PreProcessor() constructor {
 		var enumMembers = [];
 		var defaultValue = 0;  // Default start value for enum members
 		
-		// Ensure the current token is 'enum'
+		// Ensure the current token is enum
 		expectToken(__GMLC_TokenType.Keyword, "enum")
 		
 		if (currentToken.type != __GMLC_TokenType.Identifier) {
@@ -1565,7 +1565,7 @@ function GML_PreProcessor() constructor {
 		
 		nextToken(); // skip enum name
 		skipWhitespaces() // such as optional line breaks
-		expectToken(__GMLC_TokenType.Punctuation, "{") // Expecting a '{' to start the enum block
+		expectToken(__GMLC_TokenType.Punctuation, "{") // Expecting a { to start the enum block
 		
 		optionalToken(__GMLC_TokenType.Whitespace, "\n");
 		
@@ -1581,9 +1581,9 @@ function GML_PreProcessor() constructor {
 			array_push(enumMembers, memberName)
 			nextToken(); // Move past the member name
 			
-			// Check for '=' to see if a value is assigned
+			// Check for = to see if a value is assigned
 			if (currentToken.value == "=") {
-				nextToken(); // Move past '='
+				nextToken(); // Move past =
 				_expr = [];
 				while (currentTokenIndex < _length) {
 					if (currentToken.value != "," && currentToken.value != "}" && currentToken.value != "\n") {
@@ -1614,7 +1614,7 @@ function GML_PreProcessor() constructor {
 			skipWhitespaces();
 			
 		}
-		nextToken(); // Move past '}'
+		nextToken(); // Move past }
 		
 		program.EnumVar[$ enumName] = _enum_struct;
 		program.EnumVarNames[$ enumName] = enumMembers;
@@ -1770,7 +1770,7 @@ function GML_PreProcessor() constructor {
 			scriptAST.GlobalVar      = program.GlobalVar;
 			scriptAST.GlobalVarNames = program.GlobalVarNames;
 			
-			// Note this function isn't actually async, so if there is a module with tons of lines of code its possible for this to cause lag.
+			// Note this function isnt actually async, so if there is a module with tons of lines of code its possible for this to cause lag.
 			// For development i just said fuck it though.
 			replaceAllMacrosAndEnums(_program.tokens);
 			
@@ -1809,7 +1809,7 @@ function GML_PreProcessor() constructor {
 					static __lastString = ""
 					var _str = string(currentTokenIndex/array_length(tokens)/10)
 					if (__lastString != _str) {
-						show_debug_message($"{real(_str)*1000}% Finished")
+						do_trace($"{real(_str)*1000}% Finished")
 						__lastString = _str;
 					}
 				}
@@ -1927,7 +1927,7 @@ function GML_PreProcessor() constructor {
 			var lineString = currentToken.lineString;
 			
 			if (currentToken.value == "{") {
-				nextToken(); // Consume the '{'
+				nextToken(); // Consume the {
 				var _statements = [];
 				while (currentToken != undefined && currentToken.value != "}") {
 					var _statement = parseStatement();
@@ -1936,14 +1936,14 @@ function GML_PreProcessor() constructor {
 					//consume optional `;`
 					optionalToken(__GMLC_TokenType.Punctuation, ";")
 					
-					// Parse each statement until '}' is found
+					// Parse each statement until } is found
 					// Optional: Handle error checking for unexpected end of file
 				}
-				nextToken(); // Consume the '}'
+				nextToken(); // Consume the }
 				return new ASTBlockStatement(_statements, line, lineString); // Return a block statement containing all parsed statements
 			}
 			else {
-				// If no '{', it's a single statement block
+				// If no {, its a single statement block
 				var singleStatement = parseStatement();
 				return new ASTBlockStatement([singleStatement], line, lineString);
 			}
@@ -1956,8 +1956,8 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			// Assume currentToken is 'if'
-			nextToken(); // Move past 'if'
+			// Assume currentToken is if
+			nextToken(); // Move past if
 			var _condition = parseConditionalExpression();
 			optionalToken(__GMLC_TokenType.Keyword, "then")
 			var _codeBlock = parseBlock();
@@ -1967,7 +1967,7 @@ function GML_PreProcessor() constructor {
 			
 			if (currentToken != undefined)
 			&& (currentToken.value == "else") {
-				nextToken(); // Consume 'else'
+				nextToken(); // Consume else
 				_elseBlock = parseBlock();
 			}
 			return new ASTIfStatement(_condition, _codeBlock, _elseBlock, line, lineString);
@@ -1977,7 +1977,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Move past 'for'
+			nextToken(); // Move past for
 			expectToken(__GMLC_TokenType.Punctuation, "(");
 			
 			if (currentToken.value == "var") {
@@ -1999,8 +1999,8 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			// Assume currentToken is 'while'
-			nextToken(); // Move past 'while'
+			// Assume currentToken is while
+			nextToken(); // Move past while
 			var _condition = parseConditionalExpression();
 			var _codeBlock = parseBlock();
 			return new ASTWhileStatement(_condition, _codeBlock, line, lineString);
@@ -2010,8 +2010,8 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			// Assume currentToken is 'repeat'
-			nextToken(); // Move past 'repeat'
+			// Assume currentToken is repeat
+			nextToken(); // Move past repeat
 			var _condition = parseExpression();
 			var _codeBlock = parseBlock();
 			return new ASTRepeatStatement(_condition, _codeBlock, line, lineString);
@@ -2021,8 +2021,8 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			// Assume currentToken is 'do'
-			nextToken(); // Move past 'do'
+			// Assume currentToken is do
+			nextToken(); // Move past do
 			var _codeBlock = parseBlock();
 			expectToken(__GMLC_TokenType.Keyword, "until");
 			var _condition = parseConditionalExpression();
@@ -2033,10 +2033,10 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-		    nextToken(); // Move past 'switch'
+		    nextToken(); // Move past switch
 		    var switchExpression = parseExpression(); // Parse the switch expression
 		    
-			expectToken(__GMLC_TokenType.Punctuation, "{"); // Ensure '{' and consume it
+			expectToken(__GMLC_TokenType.Punctuation, "{"); // Ensure { and consume it
 			
 			var cases = [];
 		    var statements = undefined;
@@ -2052,10 +2052,10 @@ function GML_PreProcessor() constructor {
 						var caseLine = currentToken.line;
 						var caseLineString = currentToken.lineString;
 						
-						expectToken(__GMLC_TokenType.Keyword, "case"); //consume 'case'
+						expectToken(__GMLC_TokenType.Keyword, "case"); //consume case
 						var _label = parseExpression();
 						
-						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure ':' and consume it
+						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure : and consume it
 						_expectClosingCurly = optionalToken(__GMLC_TokenType.Punctuation, "{")
 						
 						statements = [];
@@ -2069,9 +2069,9 @@ function GML_PreProcessor() constructor {
 						var caseLine = currentToken.line;
 						var caseLineString = currentToken.lineString;
 						
-						nextToken(); //consume 'default'
+						nextToken(); //consume default
 						
-						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure ':' and consume it
+						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure : and consume it
 						_expectClosingCurly = optionalToken(__GMLC_TokenType.Punctuation, "{")
 						
 						statements = [];
@@ -2092,7 +2092,7 @@ function GML_PreProcessor() constructor {
 				}
 		    }
 
-		    expectToken(__GMLC_TokenType.Punctuation, "}"); // Ensure '}' and consume it
+		    expectToken(__GMLC_TokenType.Punctuation, "}"); // Ensure } and consume it
 
 		    return new ASTSwitchStatement(switchExpression, cases, line, lineString);
 		};
@@ -2101,8 +2101,8 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			// Assume currentToken is 'with'
-			nextToken(); // Move past 'with'
+			// Assume currentToken is with
+			nextToken(); // Move past with
 			var _condition = parseExpression();
 			var _codeBlock = parseBlock();
 			return new ASTWithStatement(_condition, _codeBlock, line, lineString);
@@ -2112,14 +2112,14 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Keyword, "try");  // Expect the 'try' keyword
-			var _tryBlock = parseBlock();  // Parse the block of statements under 'try'
+			expectToken(__GMLC_TokenType.Keyword, "try");  // Expect the try keyword
+			var _tryBlock = parseBlock();  // Parse the block of statements under try
 			
 			var _catchBlock = undefined;
 			var _exceptionVar = undefined;
 			if (currentToken != undefined)
 			&& (currentToken.value == "catch") {
-				nextToken();  // Move past 'catch'
+				nextToken();  // Move past catch
 				expectToken(__GMLC_TokenType.Punctuation, "(");
 				
 				//parse and identify the exception variable as a local variable.
@@ -2128,14 +2128,14 @@ function GML_PreProcessor() constructor {
 				
 				nextToken();  // Move past Identifier
 				expectToken(__GMLC_TokenType.Punctuation, ")");
-				_catchBlock = parseBlock();  // Parse the block of statements under 'catch'
+				_catchBlock = parseBlock();  // Parse the block of statements under catch
 			}
 			
 			var _finallyBlock = undefined;
 			if (currentToken != undefined)
 			&& (currentToken.value == "finally") {
-				nextToken();  // Move past 'finally'
-				_finallyBlock = parseBlock();  // Parse the block of statements under 'finally'
+				nextToken();  // Move past finally
+				_finallyBlock = parseBlock();  // Parse the block of statements under finally
 			}
 			
 			return new ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, line, lineString);
@@ -2145,8 +2145,8 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the 'try' keyword
-			var _err_message = parseExpressionStatement();  // Parse the block of statements under 'try'
+			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the try keyword
+			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
 			return new ASTThrowStatement(_err_message, line, lineString);
 		};
@@ -2157,7 +2157,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume 'break'
+			nextToken(); // Consume break
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTContinueStatement(line, lineString);
 		};
@@ -2166,7 +2166,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume 'break'
+			nextToken(); // Consume break
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTBreakStatement(line, lineString);
 		};
@@ -2175,7 +2175,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume 'exit'
+			nextToken(); // Consume exit
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTExitStatement(line, lineString);
 		};
@@ -2184,7 +2184,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume 'return'
+			nextToken(); // Consume return
 			var expr = undefined;
 			if (currentToken.value != ";" && currentToken.type != __GMLC_TokenType.Punctuation) {
 				expr = parseExpression(); // Parse the return expression if any
@@ -2336,18 +2336,18 @@ function GML_PreProcessor() constructor {
 			while (currentToken != undefined && currentToken.value != "#define") {
 				var _statement = parseStatement();
 				array_push(_body, _statement);
-				// Parse each statement until '}' is found
+				// Parse each statement until } is found
 				// Optional: Handle error checking for unexpected end of file
 				if (GML_COMPILER_DEBUG) {
 					static __lastString = ""
 					var _str = string(currentTokenIndex/array_length(tokens))
 					if (__lastString != _str) {
-						show_debug_message($"{real(_str)*100}% Finished")
+						do_trace($"{real(_str)*100}% Finished")
 						__lastString = _str;
 					}
 				}
 			}
-			if (currentToken != undefined) nextToken(); // Consume the '}'
+			if (currentToken != undefined) nextToken(); // Consume the }
 			globalFunctionNode.body = new ASTBlockStatement(_body, line, lineString); // Return a block statement containing all parsed statements;
 			
 			//reset the current function
@@ -2365,7 +2365,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			var type = currentToken.value;  // 'var', 'globalvar', or 'static'
+			var type = currentToken.value;  // var, globalvar, or static
 			
 			var _scope = undefined;
 			switch (type) {
@@ -2387,6 +2387,7 @@ function GML_PreProcessor() constructor {
 			nextToken();
 			
 			var declarations = [];
+			
 		    while (true) {
 				// optionally skip redeclarations
 				var varLine = currentToken.line;
@@ -2431,9 +2432,9 @@ function GML_PreProcessor() constructor {
 				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
 					expr = parseConditionalExpression();
 					
-					// a uniqu check to apply static function's names
+					// a uniqu check to apply static functions names
 					if (_scope == ScopeType.STATIC) {
-						//if this is a static function assignment, assign the static identifier's name to the function's name
+						//if this is a static function assignment, assign the static identifiers name to the functions name
 						if (expr.type == "Identifier")
 						&& (expr.scope == ScopeType.GLOBAL) {
 							var _possibleFunc = scriptAST.GlobalVar[$ expr.identifier]
@@ -2447,7 +2448,7 @@ function GML_PreProcessor() constructor {
 								array_delete(scriptAST.GlobalVarNames, _arr_index, 1);
 								array_push(scriptAST.GlobalVarNames, _newFuncName);
 									
-								//change the function's name
+								//change the functions name
 								_possibleFunc.functionName = _newFuncName;
 									
 								//change the identifier
@@ -2467,11 +2468,10 @@ function GML_PreProcessor() constructor {
 		            break; // End of declaration list
 		        }
 				
-		        nextToken(); // Consume ',' and move to the next identifier
+		        nextToken(); // Consume , and move to the next identifier
 		    }
 			
-			
-			return new ASTVariableDeclarationList(declarations, line, lineString);
+			return new ASTVariableDeclarationList(declarations, _scope, line, lineString);
 		};
 		
 		#endregion
@@ -2481,7 +2481,7 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Keyword, "new");  // Expect the 'new' keyword
+			expectToken(__GMLC_TokenType.Keyword, "new");  // Expect the new keyword
 			
 			var _constructorName = parseIdentifier();  // Parse the constructor function name
 			// Optionally, ensure that the constructorName refers to a valid constructor
@@ -2574,9 +2574,9 @@ function GML_PreProcessor() constructor {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
-				expectToken(__GMLC_TokenType.Operator, "?"); // Consume '?'
+				expectToken(__GMLC_TokenType.Operator, "?"); // Consume ?
 				var trueExpr = parseExpression(); // Parse the true branch
-				expectToken(__GMLC_TokenType.Punctuation, ":"); // Consume ':'
+				expectToken(__GMLC_TokenType.Punctuation, ":"); // Consume :
 				var falseExpr = parseExpression(); // Parse the false branch
 				expr = new ASTConditionalExpression(expr, trueExpr, falseExpr, line, lineString);
 			}
@@ -2887,7 +2887,7 @@ function GML_PreProcessor() constructor {
 					
 					if (currentToken.value == "(") {
 						// Handle expressions wrapped in parentheses
-						nextToken(); // Consume '('
+						nextToken(); // Consume (
 						var expr = parseExpression();
 						expectToken(__GMLC_TokenType.Punctuation, ")");
 						return expr;
@@ -2959,10 +2959,10 @@ function GML_PreProcessor() constructor {
 					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), key.line, key.lineString);
 				}
 				else {
-					throw $"\nObject: {Object1} Event: {Create} at line {line} : got {key.type} '{key.value}' expected id"
+					throw $"\nObject: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id"
 				}
 		        
-				//this is a literal because it's technically an argument for a struct creation.
+				//this is a literal because its technically an argument for a struct creation.
 				array_push(_keys, new ASTLiteral(key.value, key.line, key.lineString));
 				
 				array_push(_exprs, value);
@@ -2983,19 +2983,19 @@ function GML_PreProcessor() constructor {
 			var lineString = currentToken.lineString;
 			
 			var args = [];
-			expectToken(__GMLC_TokenType.Punctuation, "("); // Ensure '(' and consume it
+			expectToken(__GMLC_TokenType.Punctuation, "("); // Ensure ( and consume it
 
 			if (currentToken != undefined && currentToken.value != ")") {
 				while (currentToken != undefined && currentToken.value != ")") {
 					array_push(args, parseExpression()); // Parse each argument
 					if (currentToken != undefined && currentToken.value == ",") {
-						nextToken(); // Consume ',' to move to the next argument
+						nextToken(); // Consume , to move to the next argument
 					}
 				} 
 			}
 			
 			
-			expectToken(__GMLC_TokenType.Punctuation, ")"); // Ensure ')' and consume it
+			expectToken(__GMLC_TokenType.Punctuation, ")"); // Ensure ) and consume it
 			return new ASTCallExpression(callee, args, line, lineString);
 		};
 		
@@ -3003,9 +3003,9 @@ function GML_PreProcessor() constructor {
 		    var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume '.'
+			nextToken(); // Consume .
 		    if (currentToken.type != __GMLC_TokenType.Identifier) {
-		        throw "Expected identifier after '.'";
+		        throw "Expected identifier after .";
 		    }
 			
 			var _expr = new ASTAccessorExpression(
@@ -3026,29 +3026,29 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume '['
+			nextToken(); // Consume [
 			var accessorType = __GMLC_AccessorType.Array; // Default to array accessor
 			
 			switch (currentToken.value) {
 				case "|":{
 					accessorType = __GMLC_AccessorType.List;
-					nextToken(); // Consume '|'
+					nextToken(); // Consume |
 				break;}
 				case "?":{
 					accessorType = __GMLC_AccessorType.Map;
-					nextToken(); // Consume '?'
+					nextToken(); // Consume ?
 				break;}
 				case "#":{
 					accessorType = __GMLC_AccessorType.Grid;
-					nextToken(); // Consume '#'
+					nextToken(); // Consume #
 				break;}
 				case "$":{
 					accessorType = __GMLC_AccessorType.Struct;
-					nextToken(); // Consume '$'
+					nextToken(); // Consume $
 				break;}
 				case "@":{
 					accessorType = __GMLC_AccessorType.Array;
-					nextToken(); // Consume '@'
+					nextToken(); // Consume @
 				break;}
 			}
 			
@@ -3061,7 +3061,7 @@ function GML_PreProcessor() constructor {
 				var _val2 = parseExpression();
 			}
 			
-			expectToken(__GMLC_TokenType.Punctuation, "]"); // Consume ']'
+			expectToken(__GMLC_TokenType.Punctuation, "]"); // Consume ]
 			
 			return new ASTAccessorExpression(
 				object,
@@ -3080,10 +3080,10 @@ function GML_PreProcessor() constructor {
 		
 		static expectToken = function(expectedType, expectedValue) {
 			if (currentToken == undefined) {
-				throw $"\n\nUnexpected end of input. Expected '{expectedValue}' but found EOF.";
+				throw $"\n\nUnexpected end of input. Expected {expectedValue} but found EOF.";
 			}
 			if (currentToken.type != expectedType || currentToken.value != expectedValue) {
-				throw $"\n\nSyntax Error: Expected '{expectedValue}' at line {currentToken.line}, column {currentToken.column}, but found '{currentToken}'\nLast five tokens:\n{lastFiveTokens}.";
+				throw $"\n\nSyntax Error: Expected {expectedValue} at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.";
 			}
 			nextToken();
 		};
@@ -3171,7 +3171,7 @@ function GML_PreProcessor() constructor {
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldn't be finished"
+						throw $"\nWe still have nodes in the nodeStack, we shouldnt be finished"
 					}
 					
 					finished = true;
@@ -4018,7 +4018,7 @@ function GML_PreProcessor() constructor {
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldn't be finished"
+						throw $"\nWe still have nodes in the nodeStack, we shouldnt be finished"
 					}
 					
 					finished = true;
@@ -4179,8 +4179,8 @@ function GML_PreProcessor() constructor {
 							case "&=": rightExpr = new ASTBinaryExpression(OpCode.BITWISE_AND, new ASTCallExpression(getterFunc, getterArgs, node.line, node.lineString), node.right, node.line, node.lineString);
 							case "|=": rightExpr = new ASTBinaryExpression(OpCode.BITWISE_OR,  new ASTCallExpression(getterFunc, getterArgs, node.line, node.lineString), node.right, node.line, node.lineString);
 							case "=": {
-								rightExpr = node.right; // Direct assignment doesn't need an operator
-							break;} // Direct assignment doesn't need an operator
+								rightExpr = node.right; // Direct assignment doesnt need an operator
+							break;} // Direct assignment doesnt need an operator
 							default: throw $"\nUnsupported assignment operator: {node.operator}";
 						}
 						
@@ -4448,7 +4448,7 @@ function GML_PreProcessor() constructor {
 					}
 					
 					// Create binary expression node
-					var adjustedOperator = string_copy(_op, 1, 1); // Remove '=' or adjust for '++'/'--'
+					var adjustedOperator = string_copy(_op, 1, 1); // Remove = or adjust for ++/--
 					var expr = new ASTNodes("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
 					array_push(_new_args, expr);
 					
@@ -4530,7 +4530,7 @@ function GML_PreProcessor() constructor {
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldn't be finished"
+						throw $"\nWe still have nodes in the nodeStack, we shouldnt be finished"
 					}
 					
 					finished = true;
@@ -5860,7 +5860,7 @@ function GML_PreProcessor() constructor {
 					}
 					
 					// Create binary expression node
-					var adjustedOperator = string_copy(_op, 1, 1); // Remove '=' or adjust for '++'/'--'
+					var adjustedOperator = string_copy(_op, 1, 1); // Remove = or adjust for ++/--
 					var expr = new ASTNodes("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
 					array_push(_new_args, expr);
 					

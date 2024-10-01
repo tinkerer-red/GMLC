@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"PropertyHolder",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"PropertyHolder",
+  "parent":{
+    "name":"PropertyModule",
+    "path":"folders/xUnit/Modules/PropertyModule.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"handle_testScript",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"handle_testScript",
+  "parent":{
+    "name":"handles",
+    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

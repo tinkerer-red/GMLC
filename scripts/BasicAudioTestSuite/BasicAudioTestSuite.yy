@@ -1,0 +1,16 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BasicAudioTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BasicAudioTestSuite",
+  "parent":{
+    "name":"TestSuites",
+    "path":"folders/xUnit/Tests/TestSuites.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+  "tags":[
+    "runtime_tests",
+  ],
+}

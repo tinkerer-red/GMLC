@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"struct_from_entries",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"struct_from_entries",
+  "parent":{
+    "name":"Utils",
+    "path":"folders/xUnit/Modules/LoggerModule/Utils.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

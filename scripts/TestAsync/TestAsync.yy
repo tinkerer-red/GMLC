@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"TestAsync",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"TestAsync",
+  "parent":{
+    "name":"Tests",
+    "path":"folders/xUnit/Modules/TestModule/Tests.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

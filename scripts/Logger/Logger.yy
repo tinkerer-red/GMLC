@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"Logger",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"Logger",
+  "parent":{
+    "name":"Internal",
+    "path":"folders/xUnit/Modules/LoggerModule/Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

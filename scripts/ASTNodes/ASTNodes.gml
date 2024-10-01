@@ -271,7 +271,6 @@ function ASTObject(_line, _lineString) : ASTNode(_line, _lineString) constructor
 }
 
 function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	StaticVar = {};
 	GlobalVar = {};
 	
 	// temporarily used during parser
@@ -317,13 +316,12 @@ function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNo
 	scope = ScopeType.LOCAL;
 }
 
-function ASTConstructorDeclaration(_name, _parentName, _parameters, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTConstructorDeclaration(_name, _parentName, _arguments, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
     type = __GMLC_NodeType.ConstructorDeclaration;
-    StaticVar = {};
-	StaticVarNames = [];
-	GlobalVar = {};
+    GlobalVar = {};
 	
 	// temporarily used during parser
+	StaticVarNames = [];
 	GlobalVarNames = [];
 	MacroVar = {};
 	MacroVarNames = [];
@@ -335,7 +333,7 @@ function ASTConstructorDeclaration(_name, _parentName, _parameters, _local_var_n
 	type = __GMLC_NodeType.FunctionDeclaration;
 	name = _name;
 	parentName = _parentName;
-	parameters = _parameters;
+	arguments = _arguments;
 	
 	statements = _statements; //will be set after body is parsed
 }
@@ -449,10 +447,10 @@ function ASTThrowStatement(_error, _line, _lineString) : ASTNode(_line, _lineStr
 	error = _error;
 }
 
-function ASTVariableDeclarationList(_statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.VariableDeclarationList;
 	statements = new ASTBlockStatement(_statements, _line, _lineString);
-	
+	scope = _scope;
 }
 function ASTVariableDeclaration(_identifier, _expr, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.VariableDeclaration;

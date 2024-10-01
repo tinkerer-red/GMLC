@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"int32",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"int32",
+  "parent":{
+    "name":"Utils",
+    "path":"folders/xUnit/Tests/Utils.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,12 @@
+{
+  "$GMTimeline":"",
+  "%Name":"handle_testTimeline",
+  "momentList":[],
+  "name":"handle_testTimeline",
+  "parent":{
+    "name":"handles",
+    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+  },
+  "resourceType":"GMTimeline",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"IPublisher",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"IPublisher",
+  "parent":{
+    "name":"Interfaces",
+    "path":"folders/xUnit/Modules/PublisherModule/Interfaces.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

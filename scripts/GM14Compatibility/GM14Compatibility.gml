@@ -53,7 +53,7 @@ background_color = $FFFFBD -> __background_set_colour( $FFFFBD )
 */
 
 //-------------------------------------------------------------------------------------------------------\\
-//     __     It looks like you're looking for advice on initialization,
+//     __     It looks like youre looking for advice on initialization,
 //    /  \  /   Would you like help with that?
 //    |  |
 //    @  @    Tinkerer_Red has removed all of the gml_pragma( "global", *);
@@ -459,8 +459,8 @@ function background_create_gradient(argument0, argument1, argument2, argument3, 
 			case 2:
 			{
 				// Rectangular gradient			
-				// Can't just use four rectangles due to triangulation artifacts
-				// Also can't use a triangle fan because they aren't supported on all platforms			
+				// Cant just use four rectangles due to triangulation artifacts
+				// Also cant use a triangle fan because they arent supported on all platforms			
 				draw_primitive_begin(pr_trianglelist);
 			
 				draw_vertex_colour(__halfw, __halfh, __col1, 1);
@@ -788,7 +788,7 @@ function __background_get_colour() {
 
 
 function __background_get_colour_element() {
-	// NOTE: this script will only work properly if you're using the standard depth range (-16000 to 16000)
+	// NOTE: this script will only work properly if youre using the standard depth range (-16000 to 16000)
 	var __nearestdepth = -15000;
 	var __farthestdepth = 15999;
 	var __depthinc = 100;
@@ -1055,7 +1055,7 @@ function __background_set_colour_pp(argument0) {
 
 
 function __background_set_element(argument0, argument1, argument2, argument3, argument4, argument5, argument6, argument7, argument8, argument9, argument10, argument11, argument12, argument13, argument14) {
-	// NOTE: this script will only work properly if you're using the standard depth range (-16000 to 16000)
+	// NOTE: this script will only work properly if youre using the standard depth range (-16000 to 16000)
 	var __bind = argument0;
 	var __vis = argument1;
 	var __fore = argument2;
@@ -1116,7 +1116,7 @@ function __background_set_element(argument0, argument1, argument2, argument3, ar
 		
 			__isforeground[__slot] = true;
 		
-			// Could check the contents of this layer to see if it has a single background element on it but that's probably overkill		
+			// Could check the contents of this layer to see if it has a single background element on it but thats probably overkill		
 		}
 		else if (string_pos(__bgstring, __layername) > 0)
 		{
@@ -1129,7 +1129,7 @@ function __background_set_element(argument0, argument1, argument2, argument3, ar
 		
 			__isforeground[__slot] = false;
 		
-			// Could check the contents of this layer to see if it has a single background element on it but that's probably overkill		
+			// Could check the contents of this layer to see if it has a single background element on it but thats probably overkill		
 		}
 		else if (string_pos(__colstring, __layername) > 0)
 		{
@@ -2713,7 +2713,7 @@ function d3d_model_load(argument0, argument1) {
 	var __i;
 	while(__currthing < __numthings)
 	{
-		// Every entry is 11 values - 1 'command' and 10 parameters
+		// Every entry is 11 values - 1 command and 10 parameters
 		var __kind = round(file_text_read_real(__file));
 		var __args;
 		for(__i = 0; __i < 10; __i++)
@@ -2794,7 +2794,7 @@ function d3d_model_save(argument0, argument1) {
 	
 	var __vertexsize = 36;		// combined size of position, normal, colour and uv
 	
-	// Count up the number of 'things' we have in the model
+	// Count up the number of things we have in the model
 	var __numthings = 0;
 	var __numpointverts = 0;
 	var __numlineverts = 0;
@@ -3285,7 +3285,7 @@ function d3d_model_wall(argument0, argument1, argument2, argument3, argument4, a
 function d3d_primitive_begin(argument0) {
 
 	if (global.__d3dPrimKind != -1) {
-		show_debug_message( "ERROR : cannot begin a primitive before end called on previous")
+		do_trace( "ERROR : cannot begin a primitive before end called on previous")
 	}
 
 	global.__d3dPrimKind = argument0;
@@ -3303,7 +3303,7 @@ function d3d_primitive_begin(argument0) {
 function d3d_primitive_begin_texture(argument0, argument1) {
 
 	if (global.__d3dPrimKind != -1) {
-		show_debug_message( "ERROR : cannot begin a primitive before end called on previous")
+		do_trace( "ERROR : cannot begin a primitive before end called on previous")
 	}
 
 	global.__d3dPrimKind = argument0;
@@ -3331,7 +3331,7 @@ function d3d_primitive_end() {
 		// mark this as finished
 		global.__d3dPrimKind = -1;
 	} else {
-		show_debug_message( "d3d_primitive_end :: with no d3d_primitive_begin ");
+		do_trace( "d3d_primitive_end :: with no d3d_primitive_begin ");
 	}
 
 
@@ -3408,7 +3408,7 @@ function d3d_set_perspective(argument0) {
 		__persp = false;
 	
 	// Now find all cameras everywhere - the default camera, all the views in the current room and all the cameras in every other room
-	// NOTE: this currently won't handle rooms that are created in code (using room_add())
+	// NOTE: this currently wont handle rooms that are created in code (using room_add())
 
 	// The default camera is automatically updated by the runner so we just need to give it a hint of whether it is ortho or perspective
 	var __mat = camera_get_proj_mat(camera_get_default());
@@ -3465,11 +3465,11 @@ function d3d_set_perspective(argument0) {
 	
 		if (__ispersp != __persp)
 		{
-			// Okay, I'm going to assume that, if this is an imported project, all the cameras that have been set up are view-based
+			// Okay, Im going to assume that, if this is an imported project, all the cameras that have been set up are view-based
 			// This means that they should have valid view parameters
 			if (camera_get_view_width(__cam) > 0.0)
 			{
-				// okay, we'll assume this is a camera that has been previously set up with a view
+				// okay, well assume this is a camera that has been previously set up with a view
 				var __width = camera_get_view_width(__cam);
 				var __height = camera_get_view_height(__cam);			
 			
@@ -3613,7 +3613,7 @@ function d3d_set_projection_perspective(argument0, argument1, argument2, argumen
 function d3d_set_shading() {
 
 	if (!global.__d3dDeprecatedMessage[0]) {
-		show_debug_message( "d3d_set_shading is deprecated as it needs to be done in the shader now" );
+		do_trace( "d3d_set_shading is deprecated as it needs to be done in the shader now" );
 		global.__d3dDeprecatedMessage[0] = true;
 	} 
 
@@ -4949,7 +4949,7 @@ function action_bounce(argument0, argument1) {
 
 /// @description  @description action_cd_pause - deprecated function
 function action_cd_pause() {
-	show_debug_message( "action_cd_pause is a deprecated function" );
+	do_trace( "action_cd_pause is a deprecated function" );
 	return 0;
 
 
@@ -4959,7 +4959,7 @@ function action_cd_pause() {
 
 /// @description  @description action_cd_play - deprecated function
 function action_cd_play() {
-	show_debug_message( "action_cd_play is a deprecated function" );
+	do_trace( "action_cd_play is a deprecated function" );
 	return 0;
 
 
@@ -4969,7 +4969,7 @@ function action_cd_play() {
 
 /// @description  @description action_cd_playing - deprecated function
 function action_cd_playing() {
-	show_debug_message( "action_cd_playing is a deprecated function" );
+	do_trace( "action_cd_playing is a deprecated function" );
 	return 0;
 
 
@@ -4979,7 +4979,7 @@ function action_cd_playing() {
 
 /// @description  @description action_cd_present - deprecated function
 function action_cd_present() {
-	show_debug_message( "action_cd_present is a deprecated function" );
+	do_trace( "action_cd_present is a deprecated function" );
 	return 0;
 
 
@@ -4989,7 +4989,7 @@ function action_cd_present() {
 
 /// @description  @description action_cd_resume - deprecated function
 function action_cd_resume() {
-	show_debug_message( "action_cd_resume is a deprecated function" );
+	do_trace( "action_cd_resume is a deprecated function" );
 	return 0;
 
 
@@ -4999,7 +4999,7 @@ function action_cd_resume() {
 
 /// @description  @description action_cd_stop - deprecated function
 function action_cd_stop() {
-	show_debug_message( "action_cd_stop is a deprecated function" );
+	do_trace( "action_cd_stop is a deprecated function" );
 	return 0;
 
 
@@ -5010,7 +5010,7 @@ function action_cd_stop() {
 /// @description  @description (Old DnD) - Changes the calling instance to an instance of a different object
 /// @param Old DnD
 /// @param objInd The new object the calling object will change into.
-/// @param performEvents Whether to perform that new object's create and destroy events (true) or not (false).
+/// @param performEvents Whether to perform that new objects create and destroy events (true) or not (false).
 function action_change_object(argument0, argument1) {
 	instance_change( argument0, argument1 );
 
@@ -5236,7 +5236,7 @@ function action_draw_ellipse_gradient(argument0, argument1, argument2, argument3
 /// @description  @description (Old DnD) - deprecated
 /// @param Old DnD
 function action_draw_font() {
-	show_debug_message( "action_draw_font deprecated");
+	do_trace( "action_draw_font deprecated");
 
 
 
@@ -5246,7 +5246,7 @@ function action_draw_font() {
 /// @description  @description (Old DnD) - deprecated
 /// @param Old DnD
 function action_draw_font_old() {
-	show_debug_message( "action_draw_font_old deprecated");
+	do_trace( "action_draw_font_old deprecated");
 
 
 
@@ -5661,7 +5661,7 @@ function action_execute_script() {
 /// @description  @description (Old DnD) - fill color
 /// @param Old DnD
 function action_fill_color() {
-	show_debug_message( "action_fill_color is deprecated");
+	do_trace( "action_fill_color is deprecated");
 
 
 
@@ -5671,7 +5671,7 @@ function action_fill_color() {
 /// @description  @description (Old DnD) - fill colour
 /// @param Old DnD
 function action_fill_colour() {
-	show_debug_message( "action_fill_colour is deprecated");
+	do_trace( "action_fill_colour is deprecated");
 
 
 
@@ -5715,7 +5715,7 @@ function action_fullscreen(argument0) {
 /// @description  @description (Old DnD) - highscore (deprecated)
 /// @param Old DnD
 function action_highscore() {
-	show_debug_message( "action_highscore is deprecated");
+	do_trace( "action_highscore is deprecated");
 
 
 
@@ -6005,7 +6005,7 @@ function action_if_sound(argument0) {
 /// @param Old DnD
 /// @param val1  value to check against
 /// @param val2  value2 to check against
-/// @param type	type of check (1=='<', 2=='>', 3=='<=', 4=='>='anything else is ==)
+/// @param type	type of check (1==<, 2==>, 3==<=, 4==>=anything else is ==)
 function action_if_variable(argument0, argument1, argument2) {
 	var ret = false;
 	switch( argument2 )
@@ -6087,7 +6087,7 @@ function action_linear_step(argument0, argument1, argument2, argument3) {
 /// @description  @description (Old DnD) - line color
 /// @param Old DnD
 function action_line_color() {
-	show_debug_message( "action_line_color is deprecated");
+	do_trace( "action_line_color is deprecated");
 
 
 
@@ -6097,7 +6097,7 @@ function action_line_color() {
 /// @description  @description (Old DnD) - line colour
 /// @param Old DnD
 function action_line_colour() {
-	show_debug_message( "action_line_colour is deprecated");
+	do_trace( "action_line_colour is deprecated");
 
 
 
@@ -6129,7 +6129,7 @@ function action_message(argument0) {
 
 /// @description  @description (Old DnD) - move the current instance in a direction
 /// @param Old DnD
-/// @param dir string of 0's and 1's that indicates a valid direction
+/// @param dir string of 0s and 1s that indicates a valid direction
 /// @param speed speed to move
 function action_move(argument0, argument1) {
 	if (argument0 == "000000000") return;
@@ -6605,7 +6605,7 @@ function action_path_end() {
 /// @description  @description (Old DnD) - path old
 /// @param Old DnD
 function action_path_old() {
-	show_debug_message( "action_path_old is deprecated");
+	do_trace( "action_path_old is deprecated");
 
 
 
@@ -6689,7 +6689,7 @@ function action_replace_background(argument0, argument1) {
 /// @param index sound index
 /// @param filename filename to replace
 function action_replace_sound() {
-	show_debug_message( "action_replace_sound is deprecated")
+	do_trace( "action_replace_sound is deprecated")
 
 
 
@@ -7066,7 +7066,7 @@ function action_sound(argument0, argument1) {
 /// @description  @description (Old DnD) - action splash web (deprecated)
 /// @param Old DnD
 function action_splash_web() {
-	show_debug_message( "action_splash_web is deprecated");
+	do_trace( "action_splash_web is deprecated");
 
 
 
@@ -7481,7 +7481,7 @@ function draw_set_colour_write_enable(argument0, argument1, argument2, argument3
 #region Room
 /// @description  @description Sets a background and its related attributes of a given room.
 /// @param ind The index of the room to set the background of.
-/// @param bind The index of the background 'slot' to set (between 0 and 7).
+/// @param bind The index of the background slot to set (between 0 and 7).
 /// @param vis Whether the new background is visible (true) or not (false).
 /// @param fore Whether the background is actually a foreground (true) or a background (false).
 /// @param back The index of the new background.
@@ -7495,7 +7495,7 @@ function draw_set_colour_write_enable(argument0, argument1, argument2, argument3
 /// @returns 
 function room_set_background(argument0, argument1, argument2, argument3, argument4, argument5, argument6, argument7, argument8, argument9, argument10, argument11) {
 
-	// NOTE: this script will only work properly if you're using the standard depth range (-16000 to 16000)
+	// NOTE: this script will only work properly if youre using the standard depth range (-16000 to 16000)
 
 	var __ind = argument0;
 	var __bind = argument1;
@@ -7532,7 +7532,7 @@ function room_set_background(argument0, argument1, argument2, argument3, argumen
 
 /// @description  @description Sets a view and its related attributes of a given room.
 /// @param ind The index of the room to set the view of.
-/// @param vind The view 'slot' to set, between 0 and 7.
+/// @param vind The view slot to set, between 0 and 7.
 /// @param vis Whether the view is visible (true) or not (false).
 /// @param xview The x position of the left of the area the view captures.
 /// @param yview The y position of the top of the area the view captures.
@@ -7568,13 +7568,13 @@ function room_set_view(argument0, argument1, argument2, argument3, argument4, ar
 
 	if (!room_exists(__ind))
 	{
-		show_debug_message("room_set_view: room " + string(__ind) + " does not exist");
+		do_trace("room_set_view: room " + string(__ind) + " does not exist");
 		return -1;
 	}
 
 	if ((__vind < 0) || (__vind > 7))
 	{
-		show_debug_message("room_set_view: view index out of range");
+		do_trace("room_set_view: view index out of range");
 		return -1;
 	}
 
@@ -7585,7 +7585,7 @@ function room_set_view(argument0, argument1, argument2, argument3, argument4, ar
 	var __currcam = room_get_camera(__ind, __vind);
 	if (__currcam != -1)
 	{
-		// destroy it so we don't leave it in limbo
+		// destroy it so we dont leave it in limbo
 		camera_destroy(__currcam);
 	}
 
@@ -7643,7 +7643,7 @@ function room_tile_add(argument0, argument1, argument2, argument3, argument4, ar
 	{
 		if (layer_get_depth(__layers[__i]) == __depth)
 		{
-			// Don't bother checking names - we'll just add tiles to whatever layer is handy
+			// Dont bother checking names - well just add tiles to whatever layer is handy
 			__layertouse = __layers[__i];
 			break;		
 		}
@@ -7651,7 +7651,7 @@ function room_tile_add(argument0, argument1, argument2, argument3, argument4, ar
 
 	if (__layertouse == -1)
 	{
-		// didn't find a layer of the correct depth, so create one
+		// didnt find a layer of the correct depth, so create one
 		__layertouse = layer_create(__depth);
 	}
 
@@ -7717,7 +7717,7 @@ function room_tile_add_ext(argument0, argument1, argument2, argument3, argument4
 	{
 		if (layer_get_depth(__layers[__i]) == __depth)
 		{
-			// Don't bother checking names - we'll just add tiles to whatever layer is handy
+			// Dont bother checking names - well just add tiles to whatever layer is handy
 			__layertouse = __layers[__i];
 			break;		
 		}
@@ -7725,7 +7725,7 @@ function room_tile_add_ext(argument0, argument1, argument2, argument3, argument4
 
 	if (__layertouse == -1)
 	{
-		// didn't find a layer of the correct depth, so create one
+		// didnt find a layer of the correct depth, so create one
 		__layertouse = layer_create(__depth);
 	}
 
@@ -7799,7 +7799,7 @@ function room_tile_clear(argument0) {
 /// @param kind		The kind of sound it should be added as (legacy Feature) 0=normal, 1=background, 2=3D, 3=multimedia player, for things like MP3s).
 /// @param preload	Whether the sound should preload into memory immediately (true) or not (false) (legacy Feature) .
 function sound_add() {
-	show_debug_message( "sound_add is not supported");
+	do_trace( "sound_add is not supported");
 	return -1;
 
 
@@ -7821,7 +7821,7 @@ function sound_delete(argument0) {
 /// @description  @description sound_discard - deprecated function
 /// @param index	sound index
 function sound_discard() {
-	show_debug_message( "sound_discard is a deprecated function" );
+	do_trace( "sound_discard is a deprecated function" );
 	return 0;
 
 
@@ -7856,7 +7856,7 @@ function sound_fade(argument0, argument1, argument2) {
 /// @description  @description sound_get_kind - deprecated function
 /// @param index	sound index
 function sound_get_kind() {
-	show_debug_message( "sound_get_kind - deprecated function");
+	do_trace( "sound_get_kind - deprecated function");
 	return 0;
 
 
@@ -7878,7 +7878,7 @@ function sound_get_name(argument0) {
 /// @description  @description sound_get_preload - deprecated function
 /// @param index	sound index
 function sound_get_preload() {
-	show_debug_message( "sound_get_preload - deprecated function");
+	do_trace( "sound_get_preload - deprecated function");
 	return 0;
 
 
@@ -7949,7 +7949,7 @@ function sound_play(argument0) {
 /// @param kind		The kind of sound it should be added as (legacy Feature) 0=normal, 1=background, 2=3D, 3=multimedia player, for things like MP3s).
 /// @param preload	Whether the sound should preload into memory immediately (true) or not (false) (legacy Feature) .
 function sound_replace() {
-	show_debug_message( "sound_replace is not supported");
+	do_trace( "sound_replace is not supported");
 	return false;
 
 
@@ -7960,7 +7960,7 @@ function sound_replace() {
 /// @description  @description sound_restore - deprecated function
 /// @param index	sound index
 function sound_restore() {
-	show_debug_message( "sound_restore is a deprecated function" );
+	do_trace( "sound_restore is a deprecated function" );
 	return 0;
 
 
@@ -8006,7 +8006,7 @@ function sound_volume(argument0, argument1) {
 function texture_set_blending(argument0) {
 	var __dummy = argument0;
 
-	show_debug_message("texture_set_blending() currently not supported");
+	do_trace("texture_set_blending() currently not supported");
 
 
 
@@ -8048,7 +8048,7 @@ function texture_set_repeat_ext(argument0, argument1) {
 #region Tile
 /// @description  @description Adds a new tile to the room, allowing customisation of its attributes, and returning its index.
 /// @param background The background asset from which the new tile will be extracted.
-/// @param left The x coordinate of the left of the new tile, relative to the background asset's top left corner.
+/// @param left The x coordinate of the left of the new tile, relative to the background assets top left corner.
 /// @param top The y coordinate of the top of the new tile, relative to the background assets top left corner.
 /// @param width The width of the tile.
 /// @param height The height of the tile.
@@ -8077,7 +8077,7 @@ function tile_add(argument0, argument1, argument2, argument3, argument4, argumen
 	{
 		if (layer_get_depth(__layers[__i]) == __depth)
 		{
-			// Don't bother checking names - we'll just add tiles to whatever layer is handy
+			// Dont bother checking names - well just add tiles to whatever layer is handy
 			__layertouse = __layers[__i];
 			break;		
 		}
@@ -8085,7 +8085,7 @@ function tile_add(argument0, argument1, argument2, argument3, argument4, argumen
 
 	if (__layertouse == -1)
 	{
-		// didn't find a layer of the correct depth, so create one
+		// didnt find a layer of the correct depth, so create one
 		__layertouse = layer_create(__depth);
 	}
 
@@ -8572,7 +8572,7 @@ function tile_layer_depth(argument0, argument1) {
 		}	
 		else if (layer_get_depth(__layers[__i]) == __newdepth)
 		{
-			// Don't bother checking names - we'll just add tiles to whatever layer is handy
+			// Dont bother checking names - well just add tiles to whatever layer is handy
 			__layertouse = __layers[__i];
 			break;		
 		}
@@ -8580,7 +8580,7 @@ function tile_layer_depth(argument0, argument1) {
 
 	if (__layertouse == -1)
 	{
-		// didn't find a layer of the correct depth, so create one
+		// didnt find a layer of the correct depth, so create one
 		__layertouse = layer_create(__newdepth);
 	}
 
@@ -8825,7 +8825,7 @@ function tile_layer_show(argument0) {
 }
 
 
-/// @description  @description Sets a tile's alpha (transparency).
+/// @description  @description Sets a tiles alpha (transparency).
 /// @param transparency
 /// @param index The index of the tile.
 /// @param alpha The transparency of the tile.
@@ -8858,7 +8858,7 @@ function tile_set_background(argument0, argument1) {
 }
 
 
-/// @description  @description Sets a tile's blending.
+/// @description  @description Sets a tiles blending.
 /// @param index The index of the tile.
 /// @param colour The colour to blend the tile with.
 /// @returns 
@@ -8874,7 +8874,7 @@ function tile_set_blend(argument0, argument1) {
 }
 
 
-/// @description  @description Sets a tile's depth.
+/// @description  @description Sets a tiles depth.
 /// @param index The index of the tile to set.
 /// @param depth The depth of the tile.
 /// @returns
@@ -8902,7 +8902,7 @@ function tile_set_depth(argument0, argument1) {
 	{
 		if (layer_get_depth(__layers[__i]) == __depth)
 		{
-			// Don't bother checking names - we'll just add tiles to whatever layer is handy
+			// Dont bother checking names - well just add tiles to whatever layer is handy
 			__layertouse = __layers[__i];
 			break;		
 		}
@@ -8910,11 +8910,11 @@ function tile_set_depth(argument0, argument1) {
 
 	if (__layertouse == -1)
 	{
-		// didn't find a layer of the correct depth, so create one
+		// didnt find a layer of the correct depth, so create one
 		__layertouse = layer_create(__depth);
 	}
 
-	// Now move the tile from it's old layer to the new one
+	// Now move the tile from its old layer to the new one
 	layer_element_move(__index, __layertouse);
 
 	return layer_get_depth(__layerid);
@@ -8926,8 +8926,8 @@ function tile_set_depth(argument0, argument1) {
 
 /// @description  @description Sets the position of a given tile.
 /// @param index The index of the tile.
-/// @param x The tile's new x position.
-/// @param y The tile's new y position.
+/// @param x The tiles new x position.
+/// @param y The tiles new y position.
 /// @returns 
 function tile_set_position(argument0, argument1, argument2) {
 
@@ -8945,10 +8945,10 @@ function tile_set_position(argument0, argument1, argument2) {
 
 /// @description  @description Sets the region of its background a tile is taken from.
 /// @param index The index of the tile.
-/// @param left The tile's left position relative to the background's top left corner.
-/// @param top The tile's top position relative to the background's top left corner.
-/// @param width The tile's width.
-/// @param height The tile's height.
+/// @param left The tiles left position relative to the backgrounds top left corner.
+/// @param top The tiles top position relative to the backgrounds top left corner.
+/// @param width The tiles width.
+/// @param height The tiles height.
 /// @returns 
 function tile_set_region(argument0, argument1, argument2, argument3, argument4) {
 
@@ -8965,10 +8965,10 @@ function tile_set_region(argument0, argument1, argument2, argument3, argument4) 
 }
 
 
-/// @description  @description Sets a tile's horizontal and vertical scaling.
+/// @description  @description Sets a tiles horizontal and vertical scaling.
 /// @param index The index of the tile.
-/// @param xscale The tile's horizontal scale.
-/// @param yscale The tile's vertical scale.
+/// @param xscale The tiles horizontal scale.
+/// @param yscale The tiles vertical scale.
 /// @returns 
 function tile_set_scale(argument0, argument1, argument2) {
 
@@ -8984,7 +8984,7 @@ function tile_set_scale(argument0, argument1, argument2) {
 }
 
 
-/// @description  @description Sets a tile's visibility.
+/// @description  @description Sets a tiles visibility.
 /// @param index The index of the tile.
 /// @param visible The visibility of the tile. true=visible, false=invisible.
 /// @returns 

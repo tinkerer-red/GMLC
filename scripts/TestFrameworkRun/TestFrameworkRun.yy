@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"TestFrameworkRun",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"TestFrameworkRun",
+  "parent":{
+    "name":"Collections",
+    "path":"folders/xUnit/Modules/TestModule/Collections.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

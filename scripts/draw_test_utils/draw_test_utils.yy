@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"draw_test_utils",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"draw_test_utils",
+  "parent":{
+    "name":"Utils",
+    "path":"folders/xUnit/Modules/TestModule/Utils.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

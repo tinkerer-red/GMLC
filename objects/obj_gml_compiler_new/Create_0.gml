@@ -22,44 +22,65 @@
     
 //    str += "\n"+"}"
 //    t+=1
-//    show_debug_message(str)
+//    do_trace(str)
     
 //_i++}
 
+function compile_and_execute(_string) {
+	static tokenizer = new GML_Tokenizer();
+	tokenizer.initialize(_string);
+	var tokens = tokenizer.parseAll();
+	
+	static preprocessor = new GML_PreProcessor();
+	preprocessor.initialize(tokens);
+	var preprocessedTokens = preprocessor.parseAll();
+	
+	static parser = new GML_Parser();
+	parser.initialize(preprocessedTokens);
+	var ast = parser.parseAll();
+	
+	static postprocessor = new GML_PostProcessor();
+	postprocessor.initialize(ast);
+	var ast = postprocessor.parseAll();
+	
+	var _program = compileProgram(ast);
+	return executeProgram(_program);
+}
+
 function __compare_results(desc, result, expected) {
 	if (is_array(expected)) && (!__array_equals(result, expected)) {
-		show_debug_message($"!!!   Array Value Mismatch   !!!")
-		show_debug_message($"expected != result")
-		show_debug_message($"{expected} != {result}")
-		show_debug_message("Got :: " + json_stringify(result, true));
+		do_trace($"!!!   Array Value Mismatch   !!!")
+		do_trace($"expected != result")
+		do_trace($"{expected} != {result}")
+		do_trace("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (is_struct(expected)) && (!__struct_equals(result, expected)) {
-		show_debug_message($"!!!   Struct Value Mismatch   !!!")
-		show_debug_message($"expected != result")
-		show_debug_message($"{expected} != {result}")
-		show_debug_message("Got :: " + json_stringify(result, true));
+		do_trace($"!!!   Struct Value Mismatch   !!!")
+		do_trace($"expected != result")
+		do_trace($"{expected} != {result}")
+		do_trace("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (!is_array(expected) && !is_struct(expected)) && (expected != result) {
-		//show_debug_message("Test Failed: " + description);
-		show_debug_message($"!!!   Literal Value Mismatch   !!!")
-		show_debug_message($"expected != result")
-		show_debug_message($"{expected} != {result}")
-		show_debug_message("Got :: " + json_stringify(result, true));
+		//do_trace("Test Failed: " + description);
+		do_trace($"!!!   Literal Value Mismatch   !!!")
+		do_trace($"expected != result")
+		do_trace($"{expected} != {result}")
+		do_trace("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (typeof(expected) != typeof(result)) {
-		//show_debug_message("Test Failed: " + description);
-		show_debug_message($"!!!   Type Mismatch   !!!")
-		show_debug_message($"expected != result")
-		show_debug_message($"{typeof(expected)} != {typeof(result)}")
-		show_debug_message("Got :: " + json_stringify(result, true));
+		//do_trace("Test Failed: " + description);
+		do_trace($"!!!   Type Mismatch   !!!")
+		do_trace($"expected != result")
+		do_trace($"{typeof(expected)} != {typeof(result)}")
+		do_trace("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else {
-        show_debug_message("		Test Passed: " + desc);
-        //show_debug_message($"Return :: {result}");
+        do_trace("		Test Passed: " + desc);
+        //do_trace($"Return :: {result}");
 		return true;
     }
 }
@@ -83,32 +104,32 @@ function __struct_equals(_recieved, _expected) {
 		var _expected_value = _expected[$ _name];
 		
 		if !struct_exists(_recieved, _name) {
-			show_debug_message($"Recieved struct is missing the expected key '{_name}'")
+			do_trace($"Recieved struct is missing the expected key {_name}")
 		}
 		
 		if (typeof(_expected_value) != typeof(_recieved[$ _name])) {
-			show_debug_message($"Recieved struct's key ({_name}) is mismatched typeof() with the expected '{_name}'")
-			show_debug_message($"Recieved '{typeof(_recieved[$ _name])}'\nExpected '{typeof(_expected_value)}'")
-			show_debug_message($"Recieved '{_recieved[$ _name]}'\nExpected '{_expected_value}'")
+			do_trace($"Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
+			do_trace($"Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
+			do_trace($"Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
 				if !__struct_equals(_recieved[$ _name], _expected_value) {
-					show_debug_message($"Recieved struct's child struct is mismatched with the expected key '{_name}'")
+					do_trace($"Recieved structs child struct is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			case "array":{
 				if !__array_equals(_recieved[$ _name], _expected_value) {
-					show_debug_message($"Recieved struct's child array is mismatched with the expected key '{_name}'")
+					do_trace($"Recieved structs child array is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[$ _name] != _expected_value) {
-					show_debug_message($"Recieved struct's key is mismatched with the expected key '{_name}'")
-					show_debug_message($"Recieved ({_recieved[$ _name]})\nExpected '{_expected_value}'")
+					do_trace($"Recieved structs key is mismatched with the expected key {_name}")
+					do_trace($"Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -130,27 +151,27 @@ function __array_equals(_recieved, _expected) {
 		var _expected_value = _expected[_i];
 		
 		if (typeof(_expected_value) != typeof(_recieved[_i])) {
-			show_debug_message($"Recieved array's index ({_i}) is mismatched with the expected index '{_i}'")
-			show_debug_message($"Recieved ({_recieved[_i]})\nExpected '{_expected_value}'")
+			do_trace($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+			do_trace($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
 				if !__struct_equals(_recieved[_i], _expected_value) {
-					show_debug_message($"Recieved array's child struct is mismatched with the expected index's struct '{_i}'")
+					do_trace($"Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
 					return false;
 				}
 			break;}
 			case "array":{
 				if !__array_equals(_recieved[_i], _expected_value) {
-					show_debug_message($"Recieved array's child array is mismatched with the expected index's value '{_i}'")
+					do_trace($"Recieved arrays child array is mismatched with the expected indexs value {_i}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[_i] != _expected_value) {
-					show_debug_message($"Recieved array's index ({_i}) is mismatched with the expected index '{_i}'")
-					show_debug_message($"Recieved ({_recieved[_i]})\nExpected '{_expected_value}'")
+					do_trace($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+					do_trace($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -638,12 +659,12 @@ run_tokenize_test("Test tokenize_string_literal", "\"This is a stringLiteral\" \
 
 #endregion
 #region Test cases for raw string literal tokenization
-run_tokenize_test("Test Raw string literal tokenization", "@'This is a test of the system'", 
+run_tokenize_test("Test Raw string literal tokenization", "This is a test of the system", 
 {
   tokens:[
     {
       type: __GMLC_TokenType.String,
-      name:"@'This is a test of the system'",
+      name:"This is a test of the system",
       line:1.0,
       column:1.0,
       value:"This is a test of the system"
@@ -651,19 +672,19 @@ run_tokenize_test("Test Raw string literal tokenization", "@'This is a test of t
   ],
 });
 
-run_tokenize_test("Test tokenize_raw_string_literals", "@\"This is a stringBlock\nwith a line break\" @'This is a second stringBlock\nwith a line break'", 
+run_tokenize_test("Test tokenize_raw_string_literals", "\"This is a stringBlock\nwith a line break\" @'This is a second stringBlock\nwith a line break", 
 {
   tokens:[
     {
       type: __GMLC_TokenType.String,
-      name:"@\"This is a stringBlock\nwith a line break\"",
+      name:"\"This is a stringBlock\nwith a line break\"",
       line:1.0,
       column:1.0,
       value:"This is a stringBlock\nwith a line break"
     },
     {
       type: __GMLC_TokenType.String,
-      name:"@'This is a second stringBlock\nwith a line break'",
+      name:"This is a second stringBlock\nwith a line break",
       line:2.0,
       column:20.0,
       value:"This is a second stringBlock\nwith a line break"
@@ -1293,7 +1314,7 @@ run_tokenize_test("Test macro with expression tokenization", "#macro COL make_co
 });
 #endregion
 #region Test case for multi-line macro definition
-run_tokenize_test("Test multi-line macro tokenization", @'#macro HELLO show_debug_message("Hello" + \
+run_tokenize_test("Test multi-line macro tokenization", @'#macro HELLO do_trace("Hello" + \
 string(player_name) + \
 ", how are you today?")',
 {
@@ -1608,7 +1629,7 @@ INIT_LOGIC',
 #endregion
 #region Test 3: Multiline Macro
 run_preprocessor_test("Multiline Macro",
-@'#macro HELLO show_debug_message("Hello" + \
+@'#macro HELLO do_trace("Hello" + \
 string(player_name) + \
 ", how are you today?");
 
@@ -2199,7 +2220,7 @@ INIT_LOGIC',
 #endregion
 #region Test 3: Multiline Macro
 run_parse_test("Multiline Macro",
-@'#macro HELLO show_debug_message("Hello" + \
+@'#macro HELLO do_trace("Hello" + \
 string(player_name) + \
 ", how are you today?");
 
@@ -2265,7 +2286,7 @@ HELLO',
         type: __GMLC_TokenType.Function,
         name:"show_debug_message",
         line:1.0,
-        lineString:"#macro HELLO show_debug_message(\"Hello\" + \\",
+        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
         column:14.0,
         value:1146.0
       },
@@ -2273,7 +2294,7 @@ HELLO',
         type: __GMLC_TokenType.Punctuation,
         name:"(",
         line:1.0,
-        lineString:"#macro HELLO show_debug_message(\"Hello\" + \\",
+        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
         column:32.0,
         value:"("
       },
@@ -2281,7 +2302,7 @@ HELLO',
         type: __GMLC_TokenType.String,
         name:"\"Hello\"",
         line:1.0,
-        lineString:"#macro HELLO show_debug_message(\"Hello\" + \\",
+        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
         column:33.0,
         value:"Hello"
       },
@@ -2289,7 +2310,7 @@ HELLO',
         type: __GMLC_TokenType.Operator,
         name:"+",
         line:1.0,
-        lineString:"#macro HELLO show_debug_message(\"Hello\" + \\",
+        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
         column:41.0,
         value:"+"
       },
@@ -4380,9 +4401,9 @@ run_parse_test("function declaration with nested loops and conditional",
   statements:[
   ],
   GlobalVar:{
-    "GMLC@calculate":{
+    "GMLC@'calculate":{
       type: __GMLC_NodeType.FunctionDeclaration,
-      name:"GMLC@calculate",
+      name:"GMLC@'calculate",
       line:1.0,
       parameters:[
         {
@@ -4529,7 +4550,7 @@ run_parse_test("function declaration with nested loops and conditional",
     }
   },
   GlobalVarNames:[
-    "GMLC@calculate"
+    "GMLC@'calculate"
   ],
 }
 );
@@ -5726,7 +5747,7 @@ run_parse_test("Complex Bitwise, Logical, and Conditional Expression",
 );
 #endregion
 #region If Statement Test
-run_parse_test("'=' Equal inside conditional expression",
+run_parse_test("= Equal inside conditional expression",
 @'if (x = 0) {
 	break;
 }',
@@ -5773,9 +5794,9 @@ run_parse_test("function declaration",
   statements:[
   ],
   GlobalVar:{
-    "GMLC@sum":{
+    "GMLC@'sum":{
       type: __GMLC_NodeType.FunctionDeclaration,
-      name:"GMLC@sum",
+      name:"GMLC@'sum",
       line:1.0,
       parameters:[
         {
@@ -5837,7 +5858,7 @@ run_parse_test("function declaration",
     }
   },
   GlobalVarNames:[
-    "GMLC@sum"
+    "GMLC@'sum"
   ],
 }
 );
@@ -5864,7 +5885,7 @@ sub = function(a, b) {
       right:{
         type: __GMLC_NodeType.Identifier,
         line:1.0,
-        value:"GMLC@anon@0",
+        value:"GMLC@'anon@'0",
         scope: ScopeType.GLOBAL
       },
       line:1.0,
@@ -5880,7 +5901,7 @@ sub = function(a, b) {
       right:{
         type: __GMLC_NodeType.Identifier,
         line:4.0,
-        value:"GMLC@anon@1",
+        value:"GMLC@'anon@'1",
         scope: ScopeType.GLOBAL
       },
       line:4.0,
@@ -5888,9 +5909,9 @@ sub = function(a, b) {
     }
   ],
   GlobalVar:{
-    "GMLC@anon@0":{
+    "GMLC@'anon@'0":{
       type: __GMLC_NodeType.FunctionDeclaration,
-      name:"GMLC@anon@0",
+      name:"GMLC@'anon@'0",
       line:1.0,
       parameters:[
         {
@@ -5950,9 +5971,9 @@ sub = function(a, b) {
         "b"
       ],
     },
-    "GMLC@anon@1":{
+    "GMLC@'anon@'1":{
       type: __GMLC_NodeType.FunctionDeclaration,
-      name:"GMLC@anon@1",
+      name:"GMLC@'anon@'1",
       line:4.0,
       parameters:[
         {
@@ -6014,8 +6035,8 @@ sub = function(a, b) {
     }
   },
   GlobalVarNames:[
-    "GMLC@anon@0",
-    "GMLC@anon@1"
+    "GMLC@'anon@'0",
+    "GMLC@'anon@'1"
   ],
 }
 );
@@ -6035,7 +6056,7 @@ run_parse_test("function declaration with statics, globals, and var",
       right:{
         type: __GMLC_NodeType.Identifier,
         line:1.0,
-        value:"GMLC@anon@2",
+        value:"GMLC@'anon@'2",
         scope: ScopeType.GLOBAL
       },
       type: __GMLC_NodeType.AssignmentExpression,
@@ -6050,9 +6071,9 @@ run_parse_test("function declaration with statics, globals, and var",
     }
   ],
   GlobalVar:{
-    "GMLC@anon@3":{
+    "GMLC@'anon@'3":{
       type: __GMLC_NodeType.FunctionDeclaration,
-      name:"GMLC@anon@3",
+      name:"GMLC@'anon@'3",
       line:2.0,
       parameters:[
       ],
@@ -6063,9 +6084,9 @@ run_parse_test("function declaration with statics, globals, and var",
         ]
       },
     },
-    "GMLC@anon@2":{
+    "GMLC@'anon@'2":{
       type: __GMLC_NodeType.FunctionDeclaration,
-      name:"GMLC@anon@2",
+      name:"GMLC@'anon@'2",
       line:1.0,
       parameters:[
         {
@@ -6108,7 +6129,7 @@ run_parse_test("function declaration with statics, globals, and var",
                   expr:{
                     type: __GMLC_NodeType.Identifier,
                     line:2.0,
-                    value:"GMLC@anon@3",
+                    value:"GMLC@'anon@'3",
                     scope: ScopeType.GLOBAL
                   },
                   type: __GMLC_NodeType.VariableDeclaration,
@@ -6178,9 +6199,9 @@ run_parse_test("function declaration with statics, globals, and var",
     }
   },
   GlobalVarNames:[
-    "GMLC@anon@3",
+    "GMLC@'anon@'3",
     "BAR",
-    "GMLC@anon@2"
+    "GMLC@'anon@'2"
   ],
 }
 );
@@ -8140,41 +8161,41 @@ run_post_processor_test("Struct access and modification with error handling",
 #region Arrays
 #region 1. Array Creation and Direct Assignment
 run_post_processor_test("Array Creation and Direct Assignment",
-@"var arr = [1, 2, 3];
+@'var arr = [1, 2, 3];
 arr[0] = 10;
-return arr[0];",
+return arr[0];',
 {})
 
 #endregion
 #region 2. Array Modification Through Function
 run_post_processor_test("Array Modification Through Function",
-@"var arr = [1, 7, 5, 6];
+@'var arr = [1, 7, 5, 6];
 array_sort(arr, true);
-return arr[1];",
+return arr[1];',
 {})
 
 #endregion
 #region 3. Array Element Increment
 run_post_processor_test("Array Element Increment",
-@"var arr = [10, 20, 30];
+@'var arr = [10, 20, 30];
 arr[2]++;
-return arr[2];",
+return arr[2];',
 {})
 #endregion
 #region 4. Dynamic Array Creation with Loop
 run_post_processor_test("Dynamic Array Creation with Loop",
-@"var arr = [];
+@'var arr = [];
 for (var i = 0; i < 5; i++) {
   arr[i] = i * 2;
 }
-return arr[3];",
+return arr[3];',
 {})
 #endregion
 #region 5. Array Access and Function Call
 run_post_processor_test("Array Access and Function Call",
-@"var arr = [100, 200, 300];
+@'var arr = [100, 200, 300];
 var result = string(arr[1]);
-return result;",
+return result;',
 {})
 #endregion
 #endregion
@@ -8184,7 +8205,7 @@ return result;",
 /*
 #region Inlining Simple Functions
 run_post_processor_test("Inline simple constant-return function",
-@'function getConstant() { return 42; } var x = getConstant();',
+@'function getConstant() { return 42; } var x = getConstant();,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8212,7 +8233,7 @@ run_post_processor_test("Inline simple constant-return function",
 #endregion
 #region Constant Propagation Through Function Calls
 run_post_processor_test("Propagate constants through function calls",
-@'function addTwo(a) { return a + 2; } var y = addTwo(3);',
+@'function addTwo(a) { return a + 2; } var y = addTwo(3);,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8240,7 +8261,7 @@ run_post_processor_test("Propagate constants through function calls",
 #endregion
 #region Inlining Function Calls with Literal Arguments
 run_post_processor_test("Inline function call with literal arguments",
-@'function multiply(a, b) { return a * b; } var result = multiply(6, 7);',
+@'function multiply(a, b) { return a * b; } var result = multiply(6, 7);,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8268,7 +8289,7 @@ run_post_processor_test("Inline function call with literal arguments",
 #endregion
 #region Optimizing Redundant Function Calls
 run_post_processor_test("Optimize redundant function calls",
-@'function getId(x) { return x; } var id = getId(15);',
+@'function getId(x) { return x; } var id = getId(15);,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8296,7 +8317,7 @@ run_post_processor_test("Optimize redundant function calls",
 #endregion
 #region Inlining Functions within Conditionals
 run_post_processor_test("Inline function within if condition",
-@'function isActive() { return true; } if (isActive()) { var x = 1; }',
+@'function isActive() { return true; } if (isActive()) { var x = 1; },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8338,7 +8359,7 @@ run_post_processor_test("Inline function within if condition",
 #endregion
 #region Inlining Functions in Loop Conditions
 run_post_processor_test("Inline function in while loop condition",
-@'function hasItems() { return false; } while (hasItems()) { var y = 2; }',
+@'function hasItems() { return false; } while (hasItems()) { var y = 2; },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8360,7 +8381,7 @@ run_post_processor_test("Inline function in while loop condition",
 #endregion
 #region Inlining Functions in Return Statements
 run_post_processor_test("Inline function in return statement",
-@'function calculateValue() { return 42; } function wrapper() { return calculateValue(); }',
+@'function calculateValue() { return 42; } function wrapper() { return calculateValue(); },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8387,7 +8408,7 @@ run_post_processor_test("Inline function in return statement",
 #endregion
 #region Inlining Functions with Multiple Calls in a Single Expression
 run_post_processor_test("Inline multiple calls in a single expression",
-@'function getFive() { return 5; } var result = getFive() + getFive();',
+@'function getFive() { return 5; } var result = getFive() + getFive();,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8424,7 +8445,7 @@ run_post_processor_test("Inline multiple calls in a single expression",
 #endregion
 #region Inlining Functions with Arguments Used Multiple Times
 run_post_processor_test("Inline function with arguments used multiple times",
-@'function double(x) { return x * 2; } var total = double(3) + double(3);',
+@'function double(x) { return x * 2; } var total = double(3) + double(3);,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8461,7 +8482,7 @@ run_post_processor_test("Inline function with arguments used multiple times",
 #endregion
 #region Loop Unrolling with a Constant Loop Count
 run_post_processor_test("Unroll loop with constant count",
-@'for (var i = 0; i < 4; i++) { var x = x + 1; }',
+@'for (var i = 0; i < 4; i++) { var x = x + 1; },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8485,7 +8506,7 @@ run_post_processor_test("Unroll loop with constant count",
 #endregion
 #region Constant Propagation in Loop Initialization
 run_post_processor_test("Propagate constant in loop initialization",
-@'var limit = 10; for (var i = 0; i < limit; i++) { var y = i; }',
+@'var limit = 10; for (var i = 0; i < limit; i++) { var y = i; },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8514,7 +8535,7 @@ run_post_processor_test("Propagate constant in loop initialization",
 #endregion
 #region Loop Invariant Code Motion
 run_post_processor_test("Loop invariant code motion",
-@'var a = 5; for (var i = 0; i < 10; i++) { var z = a * 2; }',
+@'var a = 5; for (var i = 0; i < 10; i++) { var z = a * 2; },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8541,7 +8562,7 @@ run_post_processor_test("Loop invariant code motion",
 #endregion
 #region Loop with Break Condition Simplified
 run_post_processor_test("Simplify loop with constant break condition",
-@'while (true) { break; }',
+@'while (true) { break; },
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8558,7 +8579,7 @@ run_post_processor_test("Remove redundant computations in loop",
 @'for (var i = 0; i < 10; i++) {
 	var temp = "constant";
 	var result = temp;
-}',
+},
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8601,7 +8622,7 @@ run_post_processor_test("Remove redundant computations in loop",
 #endregion
 #region Inlining Small Functions Directly into Call Sites
 run_post_processor_test("Inline small function directly into call site",
-@'function addOne(x) { return x + 1; } var result = addOne(5);',
+@'function addOne(x) { return x + 1; } var result = addOne(5);,
 {
   type: __GMLC_NodeType.Script,
   statements:[
@@ -8653,22 +8674,16 @@ function run_interpreter_test(description, input, expectedModule=undefined, expe
 	postprocessor.initialize(ast);
 	var ast = postprocessor.parseAll();
 	
-	//log(["AST :: ", json_stringify(ast, true)])
-	//var interpreter = new GML_Interpreter();
-	//interpreter.initialize(ast);
-	//var outputModule = interpreter.parseAll();
-	
-	//var outputReturn = outputModule.execute();
 	var _program = undefined;
-	//try {
-		var _program = compileInLineProgram(ast);
-		var outputReturn = executeInLineProgram(_program)
-	//}catch(e) {
-	//	log($"AST ::\n{json_stringify(ast, true)}\n")
-	//	//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
-	//	log(e)
-	//	return;
-	//}
+	try {
+		var _program = compileProgram(ast);
+		var outputReturn = executeProgram(_program)
+	}catch(e) {
+		log($"AST ::\n{json_stringify(ast, true)}\n")
+		//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+		log(e)
+		return;
+	}
 	
 	expectedReturn = (is_callable(expectedReturn)) ? expectedReturn() : expectedReturn;
 	
@@ -8677,32 +8692,32 @@ function run_interpreter_test(description, input, expectedModule=undefined, expe
 	//log(json_stringify(expectedReturn, true))
 	var _same = __compare_results(description, outputReturn, expectedReturn);
 	if (!_same) {
-		//log($"AST ::\n{json_stringify(ast, true)}\n")
-		log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+		log($"AST ::\n{json_stringify(ast, true)}\n")
+		//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
 	}
 }
 function run_all_interpreter_tests() {
 log("~~~~~ Interpreter Unit Tests ~~~~~\n");
-
+var _s = get_timer()
 #region HIDE
 
 //*
 run_interpreter_test("Boop",
 @'
-			-- compute the factorial of n
-			factorial = funtion(n) {
-			  if (n <= 1) {
-			    return 1;
-			  }
-			  return n * factorial(n - 1)
-			}
+function factorial(n) {
+	static foo = "bar";
+	if (n <= 1) {
+	return 1;
+	}
+	return n * factorial(n - 1)
+}
 			
-			factorial(1) -- result: 1
-			factorial(2) -- result: 2
-			factorial(3) -- result: 6
-			factorial(4) -- result: 24
-			factorial(5) -- result: 120
-			factorial(6) -- result: 720',
+factorial(1) // result: 1
+factorial(2) // result: 2
+factorial(3) // result: 6
+factorial(4) // result: 24
+factorial(5) // result: 120
+factorial(6) // result: 720',
 undefined,
 function(){
 	return "abcdefg";
@@ -9401,9 +9416,9 @@ function(){
 #region Arrays
 #region 1. Array Creation and Direct Assignment
 run_interpreter_test("Array Creation and Direct Assignment",
-@"var arr = [1, 2, 3];
+@'"var arr = [1, 2, 3];
 arr[0] = 10;
-return arr[0];",
+return arr[0];"',
 undefined,
 function(){
   var arr = [1, 2, 3];
@@ -9415,9 +9430,9 @@ function(){
 #endregion
 #region 2. Array Modification Through Function
 run_interpreter_test("Array Modification Through Function",
-@"var arr = [1, 7, 5, 6];
+@'"var arr = [1, 7, 5, 6];
 array_sort(arr, true);
-return arr[1];",
+return arr[1];"',
 undefined,
 function(){
 	var arr = [1, 7, 5, 6];
@@ -9429,9 +9444,9 @@ function(){
 #endregion
 #region 3. Array Element Increment
 run_interpreter_test("Array Element Increment",
-@"var arr = [10, 20, 30];
+@'"var arr = [10, 20, 30];
 arr[2]++;
-return arr[2];",
+return arr[2];"',
 undefined,
 function(){
   var arr = [10, 20, 30];
@@ -9442,11 +9457,11 @@ function(){
 #endregion
 #region 4. Dynamic Array Creation with Loop
 run_interpreter_test("Dynamic Array Creation with Loop",
-@"var arr = [];
+@'"var arr = [];
 for (var i = 0; i < 5; i++) {
   arr[i] = i * 2;
 }
-return arr[3];",
+return arr[3];"',
 undefined,
 function() {
 	var arr = [];
@@ -9459,9 +9474,9 @@ function() {
 #endregion
 #region 5. Array Access and Function Call
 run_interpreter_test("Array Access and Function Call",
-@"var arr = [100, 200, 300];
+@'"var arr = [100, 200, 300];
 var result = string(arr[1]);
-return result;",
+return result;"',
 undefined,
 function(){
 	var arr = [100, 200, 300];
@@ -12002,8 +12017,6 @@ function(){
 
 //*/
 #endregion
-
-
 //*
 #region Factorial Test
 run_interpreter_test("Factorial Test",
@@ -12157,138 +12170,7 @@ function(){
 	return recursiveFunction(0);
 })
 #endregion
-#region Advanced Try with Nested Try Catch Finally and Returns
-//*
-run_interpreter_test("Advanced Try with Nested Try Catch Finally and Returns",
-@'try {
-	try {
-		throw "Error";
-	} catch (e) {
-		try {
-			return 1;
-		} finally {
-			//return 2;
-		}
-		return 2;
-	} finally {
-		//return 3;
-	}
-	return 3;
-} catch (d) {
-	return 4;
-} finally {
-	//return 5;
-}
-return 6;',
-undefined,
-function(){
-	try {
-		try {
-			throw "Error";
-		}
-		catch (e) {
-			try {
-				return 1;
-			} finally {
-				//return 2;
-			}
-			return 2;
-		}
-		finally {
-			//return 3;
-		}
-		return 3;
-	} catch (d) {
-		return 4;
-	} finally {
-		//return 5;
-	}
-	return 6;
-})
-//*/
-#endregion
-#region Advanced Try Catch with Nested Try Finally
-run_interpreter_test("Advanced Try Catch with Nested Try Finally",
-@'try {
-	throw "Error";
-} catch (e) {
-	try {
-		return 1;
-	} finally {
-		a = 1
-		//return 2;
-	}
-	return 2;
-} finally {
-	a = 2
-	//return 3;
-}
-return 4;',
-undefined,
-function(){
-	try {
-		throw "Error";
-	} catch (e) {
-		try {
-			return 1;
-		} finally {
-			//return 2;
-		}
-		return 2;
-	} finally {
-		//return 3;
-	}
-	return 4;
-})
 
-#endregion
-#region Advanced Nested Try Catch Finally
-run_interpreter_test("Advanced Nested Try Catch Finally",
-@'try {
-	try {
-		throw "Error";
-	} catch (e) {
-		try {
-			return 1;
-		} finally {
-			//return 2;
-		}
-		return 2;
-	} finally {
-		//return 3;
-	}
-	return 3;
-} catch (e) {
-	return 4;
-} finally {
-	//return 5;
-}
-return 6;',
-undefined,
-function(){
-	try {
-		try {
-			throw "Error";
-		} catch (e) {
-			try {
-				return 1;
-			} finally {
-				//return 2;
-			}
-			return 2;
-		} finally {
-			//return 3;
-		}
-		return 3;
-	} catch (e) {
-		return 4;
-	} finally {
-		//return 5;
-	}
-	return 6;
-})
-
-#endregion
 #region With Statement Recursive Double With
 run_interpreter_test("With Statement Recursive Double With",
 @'xx = 0;
@@ -12420,6 +12302,142 @@ function(){
 	return attempts;
 })
 #endregion
+
+#region Advanced Try with Nested Try Catch Finally and Returns
+/*
+run_interpreter_test("Advanced Try with Nested Try Catch Finally and Returns",
+@'try {
+	try {
+		throw "Error";
+	} catch (e) {
+		try {
+			return 1;
+		} finally {
+			//return 2;
+		}
+		return 2;
+	} finally {
+		//return 3;
+	}
+	return 3;
+} catch (d) {
+	return 4;
+} finally {
+	//return 5;
+}
+return 6;',
+undefined,
+function(){
+	try {
+		try {
+			throw "Error";
+		}
+		catch (e) {
+			try {
+				return 1;
+			} finally {
+				//return 2;
+			}
+			return 2;
+		}
+		finally {
+			//return 3;
+		}
+		return 3;
+	} catch (d) {
+		return 4;
+	} finally {
+		//return 5;
+	}
+	return 6;
+})
+//*/
+#endregion
+#region Advanced Try Catch with Nested Try Finally
+/*
+run_interpreter_test("Advanced Try Catch with Nested Try Finally",
+@'try {
+	throw "Error";
+} catch (e) {
+	try {
+		return 1;
+	} finally {
+		a = 1
+		//return 2;
+	}
+	return 2;
+} finally {
+	a = 2
+	//return 3;
+}
+return 4;',
+undefined,
+function(){
+	try {
+		throw "Error";
+	} catch (e) {
+		try {
+			return 1;
+		} finally {
+			//return 2;
+		}
+		return 2;
+	} finally {
+		//return 3;
+	}
+	return 4;
+})
+//*/
+#endregion
+#region Advanced Nested Try Catch Finally
+/*
+run_interpreter_test("Advanced Nested Try Catch Finally",
+@'try {
+	try {
+		throw "Error";
+	} catch (e) {
+		try {
+			return 1;
+		} finally {
+			//return 2;
+		}
+		return 2;
+	} finally {
+		//return 3;
+	}
+	return 3;
+} catch (e) {
+	return 4;
+} finally {
+	//return 5;
+}
+return 6;',
+undefined,
+function(){
+	try {
+		try {
+			throw "Error";
+		} catch (e) {
+			try {
+				return 1;
+			} finally {
+				//return 2;
+			}
+			return 2;
+		} finally {
+			//return 3;
+		}
+		return 3;
+	} catch (e) {
+		return 4;
+	} finally {
+		//return 5;
+	}
+	return 6;
+})
+//*/
+#endregion
+log($"Finished compiling and executing tests in {(get_timer() - _s)/1_000}")
 //*/
 }
 run_all_interpreter_tests();
@@ -12543,7 +12561,7 @@ function compile_file(_fname) {
 	log(string_repeat("\n", 5))
 	
 	
-	return method(outputModule.GlobalVar[$ "GMLC@osg"], outputModule.GlobalVar[$ "GMLC@osg"].execute);
+	return method(outputModule.GlobalVar[$ "GMLC@'osg"], outputModule.GlobalVar[$ "GMLC@'osg"].execute);
 	
 	
 	var outputReturn = outputModule.execute();
@@ -12564,7 +12582,7 @@ function compile_file(_fname) {
 //attempt_file_parsing("Coded Games.gml")
 //attempt_file_parsing("Matthew Brown.gml")
 //attempt_file_parsing("Galladhan.gml")
-//attempt_file_parsing("shadowspear1 - shadowspear1's One-Script Tower Defense Game.gml")
+//attempt_file_parsing("shadowspear1 - shadowspear1s One-Script Tower Defense Game.gml")
 //attempt_file_parsing("Nocturne - OSG Asteroids.gml")
 //attempt_file_parsing("YellowAfterLife - Pool of Doom.gml")
 //attempt_file_parsing("JimmyBG - Forest Fox.gml")

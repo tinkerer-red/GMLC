@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"ConfigAPI",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"ConfigAPI",
+  "parent":{
+    "name":"ConfigModule",
+    "path":"folders/xUnit/Modules/ConfigModule.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

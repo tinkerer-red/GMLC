@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"struct_unflatten",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"struct_unflatten",
+  "parent":{
+    "name":"Utils",
+    "path":"folders/xUnit/Modules/ConfigModule/Utils.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

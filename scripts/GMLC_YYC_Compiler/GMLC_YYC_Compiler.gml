@@ -1,5 +1,5 @@
 
-///NOTE: all of these should be build into the parent program's struct, and all children should
+///NOTE: all of these should be build into the parent programs struct, and all children should
 // have a reference to that struct to access the locals and arguments when ever needed
 
 global.selfInstance = undefined;
@@ -12,7 +12,7 @@ global.callStack = [];
 function compileProgram(_AST) {
 	return __GMLCcompileProgram(_AST);
 }
-function executeProgram(_program)  {
+function executeProgram(_program) {
 	//this function should never be called inside a prgroam, for that use `__executeProgram`
     global.selfInstance = self;
     global.otherInstance = other;
@@ -144,7 +144,7 @@ function __GMLCexecuteArgumentList() {
 	var _length = array_length(statements)
 	var _i=0; repeat(_length) {
 		var _arg = statements[_i]
-		if (_arg.index != _i) throw "Why does our index not match our argument's index?"
+		if (_arg.index != _i) throw "Why does our index not match our arguments index?"
 		
 		if (_i < _inputLength) {
 			if (_inputArguments[_i] == undefined) {
@@ -358,7 +358,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node, _isCondtion=fals
 		//*/
 		default:
 			
-			show_debug_message(json_stringify(_node, true))
+			do_trace(json_stringify(_node, true))
 			throw $"\nCurrent Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}"
 		break;
 				
@@ -420,7 +420,7 @@ function __GMLCcompileIf(_rootNode, _parentNode, _condition, _trueBlock, _elseBl
 
 #region //{
 // used for gmlc compiled block statements, these are non-breakable, typically used
-// for if/else statements, function's bodies, etc
+// for if/else statements, functions bodies, etc
 //    blockStatements: [],
 //    size: undefined,
 //}
@@ -465,7 +465,7 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
 }
 
 #region //{
-// used for gmlc compiled switch statement's blocks, as they can be broken, and returned from, but can not be used with continue
+// used for gmlc compiled switch statements blocks, as they can be broken, and returned from, but can not be used with continue
 //    blockStatements: [],
 //}
 #endregion
@@ -530,7 +530,7 @@ function __GMLCcompileLoopStatementEndless(_rootNode, _parentNode, _node) {
 
 #region //{
 // used for gmlc compiled block statements, these are non-breakable, typically used
-// for if/else statements, function's bodies, etc
+// for if/else statements, functions bodies, etc
 //    blockStatements: {},
 //}
 #endregion
@@ -803,7 +803,7 @@ function __GMLCexecuteWith() {
     var _self = global.selfInstance;
     var _other = global.otherInstance;
     
-    //this mimics a with statement, but ultimately it's not actually need to use `with`
+    //this mimics a with statement, but ultimately its not actually need to use `with`
     // until we hit a natively compiled function, as all glmc functions will directly
     // handle the instance
     global.otherInstance = global.selfInstance
@@ -1168,7 +1168,7 @@ function __GMLCexecuteTargetVarStatic() {
 //}
 #endregion
 function __GMLCexecuteTargetUnique() {
-    throw $"Shouldn't be trying to target Unique Scope"
+    throw $"Shouldnt be trying to target Unique Scope"
 }
 
 #region //{
@@ -1905,7 +1905,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _scope, _oper
 		}
 	}
 	
-	throw $"Couldn't find a proper assignment op for the node type :: {_leftNode.type}"
+	throw $"Couldnt find a proper assignment op for the node type :: {_leftNode.type}"
 }
 #region Assignment Expressions
 function __GMLCcompileOpAssignmentPlus(_rootNode, _parentNode, _scope, _leftKey, _rightExpression) {
@@ -3168,10 +3168,10 @@ function __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node) {
 
 
 
-function __GMLCstructMethodAST(_program) {
+function __structMethodAST(_program) {
 	if (is_method(_program)) {
 		var _self = method_get_self(_program);
-		var _inputStruct = __GMLCstructMethodAST(_self)
+		var _inputStruct = __structMethodAST(_self)
 		return _inputStruct
 	}
 	
@@ -3179,7 +3179,7 @@ function __GMLCstructMethodAST(_program) {
 		var _inputArray = []
 		var _i=0; repeat(array_length(_program)) {
 			var _expr = _program[_i];
-			_inputArray[_i] = __GMLCstructMethodAST(_expr)
+			_inputArray[_i] = __structMethodAST(_expr)
 		_i++}
 		return _inputArray
 	}
@@ -3198,7 +3198,7 @@ function __GMLCstructMethodAST(_program) {
 				continue;
 			}
 			
-			_inputStruct[$ _name] = __GMLCstructMethodAST(_program[$ _name])
+			_inputStruct[$ _name] = __structMethodAST(_program[$ _name])
 		_i++}
 		return _inputStruct
 	}
@@ -3231,13 +3231,6 @@ function is_script(_value) {
 function json(_input) {
 	return json_stringify(_input, true)
 }
-
-
-
-
-
-
-
 
 
 

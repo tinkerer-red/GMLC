@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"PublisherAPI",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"PublisherAPI",
+  "parent":{
+    "name":"PublisherModule",
+    "path":"folders/xUnit/Modules/PublisherModule.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
