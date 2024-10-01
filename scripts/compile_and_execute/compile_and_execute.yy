@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"__executeBlock",
+  "%Name":"compile_and_execute",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"__executeBlock",
+  "name":"compile_and_execute",
   "parent":{
     "name":"internal",
     "path":"folders/GMLCompiler/internal.yy",

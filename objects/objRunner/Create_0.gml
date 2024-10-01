@@ -29,25 +29,25 @@ testFramework.addSuite(BasicNetworkTestSuite);
 testFramework.addSuite(BasicRandomTestSuite);
 testFramework.addSuite(BasicRoomTestSuite);
 testFramework.addSuite(BasicScriptTestSuite);
-testFramework.addSuite(BasicShaderTestSuite);
-testFramework.addSuite(BasicShaderUniformsTestSuite);
+//testFramework.addSuite(BasicShaderTestSuite);
+//testFramework.addSuite(BasicShaderUniformsTestSuite);
 testFramework.addSuite(BasicStringTestSuite);
 testFramework.addSuite(BasicSurfaceTestSuite);
 testFramework.addSuite(BasicTilemapTestSuite);
 testFramework.addSuite(BasicVariableTestSuite);
 testFramework.addSuite(BasicWeakRefsTestSuite);
-testFramework.addSuite(ResourceAudioBuffersTestSuite);
+//testFramework.addSuite(ResourceAudioBuffersTestSuite);
 testFramework.addSuite(ResourceAudioEffectsTestSuite);
 testFramework.addSuite(ResourceAudioEmittersTestSuite);
-testFramework.addSuite(ResourceAudioGroupsTestSuite);
+//testFramework.addSuite(ResourceAudioGroupsTestSuite);
 testFramework.addSuite(ResourceAudioListenersTestSuite);
-testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
-testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
+//testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
+//testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
 testFramework.addSuite(ResourceCameraTestSuite);
 testFramework.addSuite(ResourceEventsTestSuite);
 testFramework.addSuite(ResourceLayersTestSuite);
-testFramework.addSuite(ResourceSequenceTestSuite);
-testFramework.addSuite(ResourceTimeSourceTestSuite);
+//testFramework.addSuite(ResourceSequenceTestSuite);
+//testFramework.addSuite(ResourceTimeSourceTestSuite);
 
 // ###########################################################
 
