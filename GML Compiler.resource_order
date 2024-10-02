@@ -56,6 +56,7 @@
   "ResourceOrderSettings":[
     {"name":"handle_testFont","order":1,"path":"fonts/handle_testFont/handle_testFont.yy",},
     {"name":"note_handleResources","order":13,"path":"notes/note_handleResources/note_handleResources.yy",},
+    {"name":"Note2","order":11,"path":"notes/Note2/Note2.yy",},
     {"name":"handle_testObject","order":2,"path":"objects/handle_testObject/handle_testObject.yy",},
     {"name":"obj_gml_compiler_new","order":7,"path":"objects/obj_gml_compiler_new/obj_gml_compiler_new.yy",},
     {"name":"objRunner","order":4,"path":"objects/objRunner/objRunner.yy",},

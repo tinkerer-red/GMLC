@@ -564,10 +564,25 @@ function GML_Tokenizer() constructor {
 		var _index = asset_get_index(_identifier);
 		var _type = asset_get_type(_identifier)
 		
-		
 		#region Assets
-		if (_type != asset_script) && (_index > -1) {
+		if (is_handle(_index))
+		&& (_index > -1)
+		&& ((_type == asset_object)
+		|| (_type == asset_sprite)
+		|| (_type == asset_sound)
+		|| (_type == asset_room)
+		|| (_type == asset_tiles)
+		|| (_type == asset_path)
+		//|| (_type == asset_script)
+		|| (_type == asset_font)
+		|| (_type == asset_timeline)
+		|| (_type == asset_shader)
+		|| (_type == asset_animationcurve)
+		|| (_type == asset_sequence)
+		|| (_type == asset_particlesystem))
+		{
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
+			pprint(_token)
 			return _token;
 		}	
 		#endregion
@@ -598,8 +613,7 @@ function GML_Tokenizer() constructor {
 		
 		static __constants_lookup = __ExistingConstants();
 		var _constant = struct_get(__constants_lookup, _identifier)
-		if (_constant != undefined)
-		|| (_identifier == "undefined") {
+		if (_constant != undefined) {
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
 			return _token;
 		}
@@ -620,23 +634,53 @@ function GML_Tokenizer() constructor {
 		#endregion
 		#region Enum Constants
 		
-		//static __enum_header_arr = __ExistingEnumerationHeaderStrings();
-		//if (array_contains(__enum_header_arr, _identifier)) {
-		//	
-		//	static __enum_arr = __ExistingEnumerationStrings();
-		//	var _i=0; repeat(array_length(__enum_arr)) {
-		//		
-		//		var _enum = __enum_arr[_i];
-		//		if (string_pos_ext(_enum, sourceCodeString, start) == start) {
-		//			static __enum_lookup = __ExistingEnumerations();
-		//			var _val = struct_get(__enum_lookup, _enum)
-		//			
-		//			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _enum, _val, _start_line, _start_column);
-		//			return _token;
-		//		}
-		//		
-		//	_i+=1;}//end repeat loop
-		//}
+		static __enum_header_arr = __ExistingEnumerationHeaderStrings();
+		if (array_contains(__enum_header_arr, _identifier)) {
+			
+			static __enum_arr = __ExistingEnumerationStrings();
+			
+			var _found = false;
+			
+			//find the shortest/longest string
+			var _shortest = infinity; var _longest  = 0;
+			var _i=0; repeat(array_length(__enum_arr)) {
+				var _length = string_length(__enum_arr[_i])
+				_shortest = min(_shortest, _length);
+				_longest  = max(_longest , _length);
+			_i++}
+			
+			//define the range we will be peeking
+			var _peek_length = _shortest - string_length(_identifier);
+			var _iterations = _longest - string_length(_identifier) - _peek_length;
+			
+			var _temp_identifier = _identifier
+			var _i=0; repeat(_peek_length) {
+				_temp_identifier += chr(__peekUTF8(_i));
+			_i++}
+			
+			//iterate through all and try to find a match
+			var _i=0; repeat(_iterations) {
+				_temp_identifier += chr(__peekUTF8(_peek_length+_i));
+				log(_temp_identifier)
+				
+				if (array_contains(__enum_arr, _temp_identifier)) {
+					static __enum_lookup = __ExistingEnumerations();
+					var _val = struct_get(__enum_lookup, _temp_identifier)
+					
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column);
+					_found = true;
+					break;
+				}
+				
+			_i+=1;}//end repeat loop
+			
+			if (_found) {
+				log("Found ::", _temp_identifier, json(_token))
+				var _jump = string_length(_temp_identifier) - string_length(_identifier);
+				repeat (_jump) __nextUTF8();
+				return _token;
+			}
+		}
 		
 		#endregion
 		#region Keywords
@@ -709,11 +753,11 @@ function GML_Tokenizer() constructor {
 			default: return new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
 		}
 		/*/
-		if (_identifier == "true")           return new __GMLC_create_token(__GMLC_TokenType.Identifier, "true", true, _start_line, _start_column);
-		else if (_identifier == "false")     return new __GMLC_create_token(__GMLC_TokenType.Identifier, "false", false, _start_line, _start_column);
-		else if (_identifier == "infinity")  return new __GMLC_create_token(__GMLC_TokenType.Identifier, "infinity", infinity, _start_line, _start_column);
-		else if (_identifier == "undefined") return new __GMLC_create_token(__GMLC_TokenType.Identifier, "undefined", undefined, _start_line, _start_column);
-		else if (_identifier == "NaN")       return new __GMLC_create_token(__GMLC_TokenType.Identifier, "NaN", NaN, _start_line, _start_column);
+		if (_identifier == "true")           return new __GMLC_create_token(__GMLC_TokenType.Number, "true", true, _start_line, _start_column);
+		else if (_identifier == "false")     return new __GMLC_create_token(__GMLC_TokenType.Number, "false", false, _start_line, _start_column);
+		else if (_identifier == "infinity")  return new __GMLC_create_token(__GMLC_TokenType.Number, "infinity", infinity, _start_line, _start_column);
+		else if (_identifier == "undefined") return new __GMLC_create_token(__GMLC_TokenType.Number, "undefined", undefined, _start_line, _start_column);
+		else if (_identifier == "NaN")       return new __GMLC_create_token(__GMLC_TokenType.Number, "NaN", NaN, _start_line, _start_column);
 		
 		var _token = new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
 		return _token;
@@ -2640,7 +2684,7 @@ function GML_PreProcessor() constructor {
 		        }
 				
 		        var identifier = currentToken.value;
-		        nextToken();
+				nextToken();
 				
 				//mark the variable tables
 				if (currentFunction == undefined) {
@@ -2700,6 +2744,9 @@ function GML_PreProcessor() constructor {
 					}
 					
 					array_push(declarations, new ASTVariableDeclaration(identifier, expr, _scope, varLine, varLineString));
+				}
+				else {
+					
 				}
 				
 				
@@ -3221,7 +3268,10 @@ function GML_PreProcessor() constructor {
 		    expectToken(__GMLC_TokenType.Punctuation, "{");
 		    while (currentToken != undefined && currentToken.value != "}") {
 		        if (currentToken.type != __GMLC_TokenType.Identifier)
-				&& (currentToken.type != __GMLC_TokenType.String) {
+				&& (currentToken.type != __GMLC_TokenType.String)
+				&& (currentToken.type != __GMLC_TokenType.UniqueVariable)
+				&& (currentToken.type != __GMLC_TokenType.Number)
+				{
 		            throw $"\nExpected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}";
 		        }
 				
@@ -3231,7 +3281,11 @@ function GML_PreProcessor() constructor {
 				if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
 					var value = parseExpression();
 				}
-				else if (key.type == __GMLC_TokenType.Identifier) {
+				else if (key.type == __GMLC_TokenType.String)
+				     || (key.type == __GMLC_TokenType.Identifier)
+				     || (key.type == __GMLC_TokenType.UniqueVariable)
+				     || (key.type == __GMLC_TokenType.Number)
+				{
 					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), key.line, key.lineString);
 				}
 				else {

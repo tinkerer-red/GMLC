@@ -171,6 +171,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("layer_tilemap_get_id", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -206,6 +211,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_mask", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -246,6 +256,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_global_mask", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var input, output;
 		
@@ -272,6 +287,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_tileset", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -387,6 +407,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_get_tile_width", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -418,6 +443,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_get_tile_height", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -449,6 +479,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_width", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -489,6 +524,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_height", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -529,6 +569,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_x", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -569,6 +614,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_y", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -609,6 +659,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -649,6 +704,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_set_get_at_pixel", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -689,6 +749,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_get_cell_x_at_pixel", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -720,6 +785,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_get_cell_y_at_pixel", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		
@@ -751,6 +821,11 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	addFact("tilemap_clear", function() {
 
 		compile_and_execute(@'
+		enum ARG_TYPE {
+			PTR, PTR_NULL, PTR_INVALID,
+			STRING, UNDEFINED, ARRAY,
+			STRUCT, METHOD
+		}
 		
 		var testLayer, layerTilemap, input, output;
 		

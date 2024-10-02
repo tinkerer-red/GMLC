@@ -249,6 +249,7 @@
     {"id":{"name":"handle_testAnimationCurve","path":"animcurves/handle_testAnimationCurve/handle_testAnimationCurve.yy",},},
     {"id":{"name":"handle_testFont","path":"fonts/handle_testFont/handle_testFont.yy",},},
     {"id":{"name":"note_handleResources","path":"notes/note_handleResources/note_handleResources.yy",},},
+    {"id":{"name":"Note2","path":"notes/Note2/Note2.yy",},},
     {"id":{"name":"handle_testObject","path":"objects/handle_testObject/handle_testObject.yy",},},
     {"id":{"name":"obj_gml_compiler_new","path":"objects/obj_gml_compiler_new/obj_gml_compiler_new.yy",},},
     {"id":{"name":"objRunner","path":"objects/objRunner/objRunner.yy",},},

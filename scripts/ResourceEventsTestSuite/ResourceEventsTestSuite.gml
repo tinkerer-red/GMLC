@@ -5,7 +5,8 @@ function ResourceEventsTestSuite() : TestSuite() constructor {
 	addFact("event_perform_object_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var events, subEvents, event, subEvent, func = "#1 event_perform_object()";
 	
 		var instance = instance_create_depth(0, 0, 0, oEvents);
@@ -245,7 +246,8 @@ function ResourceEventsTestSuite() : TestSuite() constructor {
 	addFact("event_perform_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var events, subEvents, event, subEvent, func = "#1 event_perform()";
 	
 		var instance = instance_create_depth(0, 0, 0, oEvents);
@@ -477,7 +479,8 @@ function ResourceEventsTestSuite() : TestSuite() constructor {
 	addFact("event_user_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var events, subEvents, event, subEvent, func = "#1 event_user()";
 
 		var instance = instance_create_depth(0, 0, 0, oEvents);

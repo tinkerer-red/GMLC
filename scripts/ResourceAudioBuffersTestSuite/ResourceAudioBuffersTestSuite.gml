@@ -249,7 +249,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 			var recorder_info = audio_get_recorder_info(i);
 			
 			var name = ds_map_find_value(recorder_info, "name");
-			do_trace("audio recorder " + string(i) + " name: " + string(name));
+			show_debug_message("audio recorder " + string(i) + " name: " + string(name));
 			assert_not_null(name, "Audio recorder name should not be null");
 			
 		}
@@ -273,7 +273,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 			var recorder_info = audio_get_recorder_info(i);
 			
 			var index = ds_map_find_value(recorder_info, "index");
-			do_trace("audio recorder " + string(i) + " index: " + string(index));
+			show_debug_message("audio recorder " + string(i) + " index: " + string(index));
 			assert_typeof(index, "number", "Audio recorder index should be a number");
 			
 		}
@@ -298,7 +298,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 			
 			// As of Runtime v2024.800.633, only buffer_s16 is supported (according to the manual)
 			var data_format = ds_map_find_value(recorder_info, "data_format");
-			do_trace("audio recorder " + string(i) + " data format: " + string(data_format));
+			show_debug_message("audio recorder " + string(i) + " data format: " + string(data_format));
 			assert_equals(data_format, buffer_s16, "Audio recorder data format should be buffer_s16");
 			
 		}
@@ -323,7 +323,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 			
 			// As of Runtime v2024.800.633, sample rate is clamped to 16000 (according to the manual)
 			var sample_rate = ds_map_find_value(recorder_info, "sample_rate");
-			do_trace("audio recorder " + string(i) + " sample rate: " + string(sample_rate));
+			show_debug_message("audio recorder " + string(i) + " sample rate: " + string(sample_rate));
 			assert_less_or_equal(sample_rate, 16000, "Audio recorder sample rate should be clamped to 16000hz");
 			
 		}
@@ -348,7 +348,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 			
 			// As of Runtime v2024.800.633, recorder channels can only be audio_mono (according to the manual)
 			var channels = ds_map_find_value(recorder_info, "channels");
-			do_trace("audio recorder " + string(i) + " channels: " + string(channels));
+			show_debug_message("audio recorder " + string(i) + " channels: " + string(channels));
 			assert_equals(channels, audio_mono, "Audio recorder channel should be audio_mono");
 			
 		}
@@ -373,14 +373,14 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 				recorderSampleRate = ds_map_find_value(recorderInfo, "sample_rate");
 				
 				channelIndex = audio_start_recording(0);
-				do_trace("Started recording on channel " + string(channelIndex));
+				show_debug_message("Started recording on channel " + string(channelIndex));
 				
 				audioBuffer = buffer_create(0, buffer_grow, 1);
 				
-				do_trace("Created audio buffer with id " + string(audioBuffer));
+				show_debug_message("Created audio buffer with id " + string(audioBuffer));
 				
 			} else {
-				do_trace("No audio recorders available.");
+				show_debug_message("No audio recorders available.");
 				
 				test_end(TestResult.Skipped);
 			}
@@ -413,13 +413,13 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 					if (buffer_exists(bufferId)) {
 						var currentSize = buffer_get_size(audioBuffer);
 						buffer_copy(bufferId, 0, len, audioBuffer, currentSize);
-						do_trace("Buffer copied to audioBuffer. Current buffer size: " + string(buffer_get_size(audioBuffer)));
+						show_debug_message("Buffer copied to audioBuffer. Current buffer size: " + string(buffer_get_size(audioBuffer)));
 			
 					} else {
-						do_trace("Buffer ID does not exist.");
+						show_debug_message("Buffer ID does not exist.");
 					}
 				} else {
-					do_trace("No data to copy.");
+					show_debug_message("No data to copy.");
 				}
 			}
 			else {
@@ -435,7 +435,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 				
 				audio_stop_recording(channelIndex);
 				
-				do_trace("Audio stopped recording");
+				show_debug_message("Audio stopped recording");
 				
 				// Get length and copy the audio buffer into a fixed size buffer,
 				// as creating a sound from a growing buffer is not supported
@@ -450,18 +450,18 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 					// Create sound with fixed buffer
 					soundId = audio_create_buffer_sound(fixed_audio_buffer, buffer_s16, recorderSampleRate, 0, length, audio_mono);
 					
-					do_trace("soundId: " + string(soundId));
+					show_debug_message("soundId: " + string(soundId));
 					
 					// Play sound
 					if (soundId >= 0) {
-						do_trace("Playing sound!!!");
+						show_debug_message("Playing sound!!!");
 						audio_play_sound(soundId, 1, false);
 					} else {
-						do_trace("Failed to create sound from buffer.");
+						show_debug_message("Failed to create sound from buffer.");
 						test_end(TestResult.Failed);
 					}
 				} else {
-					do_trace("Buffer is empty.");
+					show_debug_message("Buffer is empty.");
 					test_end(TestResult.Failed);
 				}
 				
@@ -477,7 +477,7 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 			// the test has passed
 			if (played && !audio_is_playing(soundId)){
 				
-				do_trace("audio ended, ending test now!!");
+				show_debug_message("audio ended, ending test now!!");
 				
 				test_end();
 				

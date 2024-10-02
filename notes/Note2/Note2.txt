@@ -1,0 +1,10 @@
+unsupported syntax::
+
+
+// disabled tileset sprites
+will not be able to be accessed as `asset_get_index(_string)` will always return -1 as nothing is found
+
+
+// automatic array creation
+var _arr;
+_arr[0] = true

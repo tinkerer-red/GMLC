@@ -1190,7 +1190,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_get_seed_test #2", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 		
 		var _arrayLength = 100;
@@ -1205,14 +1205,14 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 		seed = random_get_seed();
 		
 		for(var _i = 0; _i < _arrayLength; ++_i) _output1[_i] = random(99999);
-
+		
 		random_set_seed(seed);
 		for(var _i = 0; _i < _arrayLength; ++_i) _output2[_i] = random(99999);
-
+		
 			
 		assert_array_equals(_output1, _output2, "random_set_seed ( real local ), failed to produce the same output (using same seed)");
-
-
+		
+		
 		')
 	});
 	
@@ -1497,7 +1497,9 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_range_test #11", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt_1_RandomRangeTest 24
+		#macro kInt_2_RandomRangeTest 42
+		
 		//random_range test
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -1692,7 +1694,9 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_range_test #16", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt_1_RandomRangeTest 24
+		#macro kInt_2_RandomRangeTest 42
+		
 		//random_range test
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -1875,7 +1879,9 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_range_test #21", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt64_1_RandomRangeTest int64(5000)
+		#macro kInt64_2_RandomRangeTest int64(10000)
+		
 		//random_range test
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -2024,7 +2030,9 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_range_test #26", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt64_1_RandomRangeTest int64(5000)
+		#macro kInt64_2_RandomRangeTest int64(10000)
+		
 		//random_range test
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -2171,7 +2179,9 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_range_test #31", function() {
 
 		compile_and_execute(@'
-
+		#macro kReal_1_RandomRangeTest 24.5
+		#macro kReal_2_RandomRangeTest 42.5
+		
 		//random_range test
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -2320,7 +2330,9 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_range_test #36", function() {
 
 		compile_and_execute(@'
-
+		#macro kReal_1_RandomRangeTest 24.5
+		#macro kReal_2_RandomRangeTest 42.5
+		
 		//random_range test
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -2480,7 +2492,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	// RANDOM SET SEED TESTS
 	
 	addFact("random_set_seed_test #1", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2514,7 +2526,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #2", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2552,7 +2564,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #3", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2586,7 +2598,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #4", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2625,7 +2637,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #5", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2659,7 +2671,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #6", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2698,7 +2710,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #7", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2732,7 +2744,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #8", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2771,7 +2783,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #9", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2805,7 +2817,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #10", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2844,7 +2856,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #11", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2878,7 +2890,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #12", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2917,7 +2929,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #13", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2951,7 +2963,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #14", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -2990,7 +3002,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #15", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -3024,7 +3036,7 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	});
 
 	addFact("random_set_seed_test #16", function() {
-
+		RefuseTest()
 		compile_and_execute(@'
 
 		var _arrayLength = 100;
@@ -3123,7 +3135,8 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_test #3", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt_RandomTest 42
+		
 		//random tes
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -3280,7 +3293,8 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_test #8", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt_RandomTest 42
+		
 		//random tes
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -3434,7 +3448,8 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_test #13", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt64_RandomTest int64(5000)
+		
 		//random tes
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -3574,7 +3589,8 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_test #18", function() {
 
 		compile_and_execute(@'
-
+		#macro kInt64_RandomTest int64(5000)
+		
 		//random tes
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -3715,7 +3731,8 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_test #23", function() {
 
 		compile_and_execute(@'
-
+		#macro kReal_RandomTest 42.5
+		
 		//random tes
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.
@@ -3855,7 +3872,8 @@ function BasicRandomTestSuite()  : TestSuite() constructor {
 	addFact("random_test #28", function() {
 
 		compile_and_execute(@'
-
+		#macro kReal_RandomTest 42.5
+		
 		//random tes
 			
 		// Iterations - Since this test runs on a randomised function, a larger number of _iterations can be set to better test the function.

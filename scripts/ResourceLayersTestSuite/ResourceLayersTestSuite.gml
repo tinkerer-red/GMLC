@@ -3,7 +3,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_get_set_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var input, output;
 
 		layer_force_draw_depth(true, 0);
@@ -83,7 +84,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_background_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var testLayer, layerBackground, input, output;
 			
 		testLayer = layer_create(100, "testLayer");
@@ -310,7 +312,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_tile_test_legacy", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var testLayer, layerTile, input, output;
 			
 		testLayer = layer_create(100, "testLayer");
@@ -415,12 +418,15 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 		layer_tile_blend(layerTile, c_black);
 		output = layer_tile_get_blend(layerTile);
 		assert_equals(output, c_black, "#5.2 layer_tile_blend(), failed to set the correct value");
-			
-		input = sprTilesetReplacement;
-		layer_tile_change(layerTile, sprTilesetReplacement);
-		output = layer_tile_get_sprite(layerTile);
-		assert_equals(output, sprTilesetReplacement, "#5.3 layer_tile_change(), failed to set the correct value");
-			
+		
+		//Test Removed by Red because its not possible to fetch streamed assets from a string
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//////input = sprTilesetReplacement;
+		//////layer_tile_change(layerTile, sprTilesetReplacement);
+		//////output = layer_tile_get_sprite(layerTile);
+		//////assert_equals(output, sprTilesetReplacement, "#5.3 layer_tile_change(), failed to set the correct value");
+		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		
 		input = [10, 10, 20, 20];
 		layer_tile_region(layerTile, input[0], input[1], input[2], input[3]);
 		output = layer_tile_get_region(layerTile);
@@ -509,6 +515,7 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_instance_test", function() {
 
 		compile_and_execute(@'
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
 		
 		var testLayer, instance, output;
 			
@@ -549,7 +556,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_script_test", function() {
 
 		compile_and_execute(@'
-			
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var input, output, testLayer = layer_create(100, "testLayer");
 			
 		output = layer_get_script_begin(testLayer);
@@ -613,7 +621,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_target_room_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var input, output;
 
 		output = layer_get_target_room();
@@ -666,7 +675,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_sprite_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var testLayer, layerSprite, input, output;
 		
 		testLayer = layer_create(100, "testLayer");
@@ -871,7 +881,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_tilemap_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var testLayer, layerTilemap, output;
 			
 		testLayer = layer_create(100, "testLayer");
@@ -900,7 +911,8 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 	addFact("layer_sequence_test", function() {
 
 		compile_and_execute(@'
-
+		#macro TEST_INVALID_ARGS false /// FLAGS PROVIDED BY RED
+		
 		var testLayer, layerSequence, input, output;
 			
 		testLayer = layer_create(100, "testLayer");
