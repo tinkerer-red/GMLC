@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"GM14Compatibility",
+  "%Name":"Util",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GM14Compatibility",
+  "name":"Util",
   "parent":{
     "name":"internal",
     "path":"folders/GMLCompiler/internal.yy",

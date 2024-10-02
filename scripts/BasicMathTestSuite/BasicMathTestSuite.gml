@@ -93,7 +93,7 @@ function BasicMathTestSuite() : TestSuite() constructor {
 			}
 			{
 				// The only way to generate an int32 is to read it from a buffer
-				var bigInt = 0xFFFFFFFF12345678;
+				var bigInt = 0xFFFF_FFFF_1234_5678;
 				assert_true(is_int64(bigInt), "bigInt is the incorrect type");		
 				var absInt = abs(bigInt);
 				assert_true(is_real(absInt), "absInt is not a real"); // Currently absInt is returned as a real. 

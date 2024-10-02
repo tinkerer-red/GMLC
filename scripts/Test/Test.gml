@@ -132,6 +132,7 @@ function Test(_name = undefined) : Task() constructor {
 				break;
 			
 			case TestResult.Expired:
+				
 			case TestResult.Failed:
 				_summary.duration = getDuration();
 				_summary.errors = getDiagnostics("error");

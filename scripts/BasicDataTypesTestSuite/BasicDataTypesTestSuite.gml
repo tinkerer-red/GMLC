@@ -6,6 +6,8 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 	
 	addFact("bool_test #1", function() {
 
+		compile_and_execute(@'
+
 		var input, output;
 			
 		//#1 bool(pointer) should be true
@@ -14,9 +16,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( pointer:local ), should return true");
 		assert_typeof(output, "bool", "bool ( pointer:local ), should be of type bool");
 		
+
+		')
 	});
 	
 	addFact("bool_test #2", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -26,9 +32,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( pointer_invalid:local ), should be true");
 		assert_typeof(output, "bool", "bool ( pointer_invalid:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #3", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -38,9 +48,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool ( pointer_null:local ), should be false");
 		assert_typeof(output, "bool", "bool ( pointer_null:local ), should be of type bool");
 		
+
+		')
 	});
 	
 	addFact("bool_test #4", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -50,9 +64,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( real:local ), should be true");
 		assert_typeof(output, "bool", "bool ( real:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #5", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -62,9 +80,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool ( real:local ), <= 0.5 should be false");
 		assert_typeof(output, "bool", "bool ( real:local ), should return bool type");	
 		
+
+		')
 	});
 	
 	addFact("bool_test #6", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -74,9 +96,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( real:local ), > 0.5 should be true");
 		assert_typeof(output, "bool", "bool ( real:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #7", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -86,9 +112,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( int32:local ), should be true");
 		assert_typeof(output, "bool", "bool ( int32:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #8", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -98,9 +128,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( int64:local ), should be true");
 		assert_typeof(output, "bool", "bool ( int64:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #9", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -110,9 +144,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( true:local ), should be true");
 		assert_typeof(output, "bool", "bool ( true:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #10", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -122,9 +160,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool ( false:local ), should be false");
 		assert_typeof(output, "bool", "bool ( false:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #11", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -134,9 +176,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( bool - true:local ), should be true");
 		assert_typeof(output, "bool", "bool ( bool - true:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #12", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 		
@@ -146,10 +192,20 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool ( bool - false:local ), should be false" );
 		assert_typeof(output, "bool", "bool ( bool - true:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #13", function() {
 
+		compile_and_execute(@'
+
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
+		
 		var input, output;
 		
 		//#13 bool(enum.0) should be false
@@ -158,10 +214,20 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool (enum.0:local), should be false");
 		assert_typeof(output, "bool", "bool (enum.0:local), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #14", function() {
 
+		compile_and_execute(@'
+
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
+		
 		var input, output;
 		
 		//#14 bool(enum.1) should be true
@@ -170,9 +236,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool (enum.1:local), should be true");
 		assert_typeof(output, "bool", "bool (enum.1:local), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #15", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -182,9 +252,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool ( nan:local ), should be false");
 		assert_typeof(output, "bool", "bool ( nan:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #16", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -194,9 +268,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( infinity:local ), should be true");
 		assert_typeof(output, "bool", "bool ( infinity:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #17", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -206,9 +284,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_false(output, "bool ( undefined:local ), should be false");
 		assert_typeof(output, "bool", "bool ( undefined:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #18", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 
@@ -218,9 +300,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( struct:local ), should be true");
 		assert_typeof(output, "bool", "bool ( struct:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #19", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 			
@@ -230,9 +316,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_true(output, "bool ( method:local ), should be true");
 		assert_typeof(output, "bool", "bool ( method:local ), should return bool type");
 		
+
+		')
 	});
 	
 	addFact("bool_test #20", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 
@@ -242,9 +332,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return bool(input);
 		}, "bool ( array ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("bool_test #21", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 		
@@ -254,9 +348,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return bool(input);
 		}, "bool ( string ), where string is not true/false, should throw error");
 		
+
+		')
 	});
 	
 	addFact("bool_test #22", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 		
@@ -266,9 +364,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return bool(input);
 		}, "bool (empty string), should throw error");
 		
+
+		')
 	});
 
 	addFact("bool_test #23", function() {
+
+		compile_and_execute(@'
 
 		var input, output;
 		
@@ -278,11 +380,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return bool(input);
 		}, "bool (any), should throw error");
 			
+
+		')
 	});
 	
 	// INT64
 	
 	addFact("int64_test #1", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -292,9 +398,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_not_null(output, "int64 ( pointer:local ), should not be null");
 		assert_typeof(output, "int64", "int64 ( pointer:local ), should be of type int64");
 			
+
+		')
 	});
 	
 	addFact("int64_test #2", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -304,9 +414,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, -1, "int64 ( pointer_invalid:local ), should be -1");
 		assert_typeof(output, "int64", "int64 ( pointer_invalid:local ), should be of type int64");
 			
+
+		')
 	});
 	
 	addFact("int64_test #3", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 			
@@ -316,9 +430,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "int64 ( pointer_null:local ), should be 0");
 		assert_typeof(output, "int64", "int64 ( pointer_null:local ), should be of type int64");
 			
+
+		')
 	});
 	
 	addFact("int64_test #4", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -328,9 +446,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, round(input), "int64 ( real:local ), should be rounded value");
 		assert_typeof(output, "int64", "int64 ( real:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #5", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 			
@@ -340,9 +462,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "int64 ( int32:local ), should be equal to input");
 		assert_typeof(output, "int64", "int64 ( int32:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #6", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 			
@@ -352,9 +478,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "int64 ( int64:local ), should be equal to input");
 		assert_typeof(output, "int64", "int64 ( int64:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #7", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -364,9 +494,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 1, "int64 ( bool - true:local ), should equal to 1");
 		assert_typeof(output, "int64", "int64 ( bool - true:local ), should return in64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #8", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -376,9 +510,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "int64 ( bool - false:local), should equal to 0");
 		assert_typeof(output, "int64", "int64 ( bool - false:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #9", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -388,9 +526,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 1, "int64 ( string:local ), with real value, should be rounded value");
 		assert_typeof(output, "int64", "int64 ( string:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #10", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 					
@@ -400,9 +542,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, -21233, "int64 ( string:local ), with real negative value, should be rounded value");
 		assert_typeof(output, "int64", "int64 ( string:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #11", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 
@@ -412,9 +558,19 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 21233, "int64 ( string:local ), with real signed positive value, should be rounded value");
 		assert_typeof(output, "int64", "int64 ( string:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #12", function() {
+
+		compile_and_execute(@'
+		
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
 		
 		var input, output;
 		
@@ -424,9 +580,19 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "int64 ( enum.0:local ), should equal to 0");
 		assert_typeof(output, "int64", "int64 ( enum.0:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #13", function() {
+
+		compile_and_execute(@'
+		
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
 		
 		var input, output;
 			
@@ -436,9 +602,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 1, "int64 ( enum.1:local ), should equal to 1");
 		assert_typeof(output, "int64", "int64 ( enum.1:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #14", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 
@@ -448,9 +618,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "int64 ( nan:local ), should be 0");
 		assert_typeof(output, "int64", "int64 ( nan:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #15", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 			
@@ -460,9 +634,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 9223372036854775807, "int64 ( infinity:local ), should equal to infinity");
 		assert_typeof(output, "int64", "int64 ( infinity:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #16", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 
@@ -472,9 +650,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "int64 ( struct:local ), should be 0");
 		assert_typeof(output, "int64", "int64 ( struct:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #17", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 
@@ -484,9 +666,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "int64 ( function:local ), should be NaN 0");
 		assert_typeof(output, "int64", "int64 ( function:local ), should return int64 type");
 			
+
+		')
 	});
 	
 	addFact("int64_test #18", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 
@@ -496,9 +682,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return int64(input);
 		}, "int64 ( string ), should throw error");
 			
+
+		')
 	});
 	
 	addFact("int64_test #19", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -508,9 +698,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return int64(input);
 		}, "int64 ( empty string ) should throw error");
 			
+
+		')
 	});
 	
 	addFact("int64_test #20", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 
@@ -520,9 +714,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return int64(input);
 		}, "int64 ( array ), should throw error");
 			
+
+		')
 	});
 	
 	addFact("int64_test #21", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -532,9 +730,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return int64(input);
 		}, "int64 ( undefined ), should throw error");
 			
+
+		')
 	});
 
 	addFact("int64_test #22", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 		
@@ -544,11 +746,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return int64(input);
 		}, "int64 ( any ) should throw error");
 		
+
+		')
 	});
 
 	// STRING
 	
 	addFact("string_test #1", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -558,9 +764,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_not_undefined(output, "string ( pointer:local ), should not be undefined");
 		assert_typeof(output, "string", "string ( pointer:local ), should be of type string");
 		
+
+		')
 	});
 	
 	addFact("string_test #2", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 		
@@ -570,9 +780,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_not_undefined(output, "string ( pointer_invalid:local ), should not be undefined");
 		assert_typeof(output, "string", "string ( pointer_invalid:local ), should be of type string");
 		
+
+		')
 	});
 	
 	addFact("string_test #3", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -582,9 +796,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "null", "string ( pointer_null:local ), should be null");
 		assert_typeof(output, "string", "string ( pointer_null:local ), should be of type string");
 		
+
+		')
 	});
 	
 	addFact("string_test #4", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -594,9 +812,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "32.33", "string ( real:local ), should be the equivalent string value");
 		assert_typeof(output, "string", "string ( real:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #5", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -606,9 +828,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "22", "string ( int32:local ), should be the equivalent string value");
 		assert_typeof(output, "string", "string ( int32:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #6", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -618,9 +844,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "223231", "string ( int64:local ), should be the equivalent string value");
 		assert_typeof(output, "string", "string ( int64:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #7", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 		
@@ -630,9 +860,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "1", "string ( bool - true:local ), should equal 1");
 		assert_typeof(output, "string", "string ( bool - true:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #8", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 		
@@ -642,9 +876,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "0", "string ( bool - false:local ), should equal 0");
 		assert_typeof(output, "string", "string ( bool - false:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #9", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 					
@@ -654,9 +892,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "string ( string - real:local ), should be the input value");
 		assert_typeof(output, "string", "string ( string - real:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #10", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 		
@@ -666,9 +908,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "string ( string:local ), should be the input value");
 		assert_typeof(output, "string", "string ( string:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #11", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 		
@@ -678,10 +924,20 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "string ( empty string:local ), should be the input value");
 		assert_typeof(output, "string", "string ( empty string:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #12", function() {
+
+		compile_and_execute(@'
 	
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
+		
 		var input, output;
 		
 		//#12 string ( enum.0:local ) should equal to "0"
@@ -690,10 +946,20 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "0", "string ( enum.0:local ), should be 0");
 		assert_typeof(output, "string", "string ( enum.0:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #13", function() {
+
+		compile_and_execute(@'
 	
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
+		
 		var input, output;
 		
 		//#13 string ( enum.1:local ) should equal to "1"
@@ -702,9 +968,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "1", "string ( enum.1:local ), should be 1");
 		assert_typeof(output, "string", "string ( enum.1:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #14", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -714,9 +984,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "NaN", "string ( nan:local ), should be NaN");
 		assert_typeof(output, "string", "string ( nan:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #15", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -726,9 +1000,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "inf", "string ( infinity:local ), should be inf");
 		assert_typeof(output, "string", "string ( infinity:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #16", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 
@@ -738,33 +1016,45 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, "undefined", "string ( undefined:local ), should be undefined");
 		assert_typeof(output, "string", "string ( undefined:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #17", function() { // KNOWN FAIL - https://github.com/YoYoGames/GameMaker/issues/4312
+
+		compile_and_execute(@'
 	
 		var input, output;
 
 		//#17 string ( struct ), should be the equivalent string value
 		input = { key: "value" };
 		output = string(input);
-		assert_equals(output, @'{ key : "value" }', "string ( struct:local ), should be the equivalent string value");
+		assert_equals(output, "{ key : \"value\" }", "string ( struct:local ), should be the equivalent string value");
 		assert_typeof(output, "string", "string ( struct:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #18", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 
 		//#18 string ( array ), should be the equivalent string value
 		input = [1, 2, 3];
 		output = string(input);
-		assert_equals(output, @'[ 1,2,3 ]', "string ( array:local ), should be the equivalent string value");
+		assert_equals(output, @"[ 1,2,3 ]", "string ( array:local ), should be the equivalent string value");
 		assert_typeof(output, "string", "string ( array:local ), should return string type");
 		
+
+		')
 	});
 	
 	addFact("string_test #19", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 			
@@ -774,9 +1064,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return string(input);
 		}, "string ( method ), should not throw error");
 		
+
+		')
 	});
 
 	addFact("string_test #20", function() {
+
+		compile_and_execute(@'
 	
 		var input, output;
 		
@@ -786,11 +1080,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return string(input);
 		}, "string ( any ), should throw error");
 		
+
+		')
 	});
 	
 	// REAL
 	
 	addFact("real_test #1", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 			
@@ -800,9 +1098,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "real ( real:local ), should be the input value");
 		assert_typeof(output, "number", "real ( real:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #2", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 			
@@ -812,9 +1114,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "real ( int32:local ), should be the input value");
 		assert_typeof(output, "number", "real ( int32:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #3", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 		
@@ -824,9 +1130,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "real ( int64:local ), should be the input value");
 		assert_typeof(output, "number", "real ( int64:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #4", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 			
@@ -836,9 +1146,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, input, "real ( real:local ), should be the input value");
 		assert_typeof(output, "number", "real ( real:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #5", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 		
@@ -848,9 +1162,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 1, "real ( bool - true:local ), should equal to 1");
 		assert_typeof(output, "number", "real ( bool - true:local ) should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #6", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 		
@@ -860,9 +1178,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "real ( bool - false:local ), should equal to 0");
 		assert_typeof(output, "number", "real ( bool - false:local ) should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #7", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 					
@@ -872,9 +1194,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 1.72, "real ( string - real:local ), should be converted and floored");
 		assert_typeof(output, "number", "real ( string - real:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #8", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 					
@@ -884,9 +1210,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, -21233.223, "real ( string - negative real:local ), should be converted and floored");
 		assert_typeof(output, "number", "real ( string - neative real:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #9", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -896,10 +1226,20 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 21233.223, "real ( string - positive real:local ), should be converted and floored");
 		assert_typeof(output, "number", "real ( string - positive real:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #10", function() {
+
+		compile_and_execute(@'
 			
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
+		
 		var input, output;
 		
 		//#10 real ( enum.0 ), should equal to 0
@@ -908,10 +1248,20 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 0, "real ( enum.0:local ), should equal to 0");
 		assert_typeof(output, "number", "real ( enum0:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #11", function() {
+
+		compile_and_execute(@'
 			
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
+		
 		var input, output;
 		
 		//#11 real ( enum.1 ), should equal to 1
@@ -920,9 +1270,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, 1, "real ( enum.1:local ), should equal to 1");
 		assert_typeof(output, "number", "real ( enum1:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #12", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -932,9 +1286,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_nan(output, "real ( nan:local ), should be NaN");
 		assert_typeof(output, "number", "real ( nan:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #13", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 			
@@ -944,9 +1302,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_equals(output, infinity, "real ( infinity:local ), should equal infinity");
 		assert_typeof(output, "number", "real ( infinity:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #14", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -956,9 +1318,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_nan(output, "real ( struct:local ), should be NaN");
 		assert_typeof(output, "number", "real ( struct:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #15", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -968,9 +1334,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_nan(output, "real ( function:local ), should be NaN");
 		assert_typeof(output, "number", "real ( function:local ), should return number type");
 		
+
+		')
 	});
 	
 	addFact("real_test #16", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -980,9 +1350,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( string ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("real_test #17", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 		
@@ -992,9 +1366,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( empty string ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("real_test #18", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -1004,9 +1382,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( array ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("real_test #19", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 		
@@ -1016,9 +1398,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( undefined ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("real_test #20", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 			
@@ -1028,9 +1414,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( ptr ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("real_test #21", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 			
@@ -1040,9 +1430,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( pointer_null ), should throw error");
 		
+
+		')
 	});
 	
 	addFact("real_test #22", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 
@@ -1052,9 +1446,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( pointer_invalid ), should throw error");
 		
+
+		')
 	});
 
 	addFact("real_test #23", function() {
+
+		compile_and_execute(@'
 			
 		var input, output;
 		
@@ -1064,11 +1462,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			return real(input);
 		}, "real ( any ), should throw error");
 			
+
+		')
 	});
 	
 	// PTR
 	
 	addFact("ptr_test #1", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 			
@@ -1078,9 +1480,13 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		assert_not_null(output, "ptr ( pointer:local ), should not be null");
 		assert_typeof(output, "ptr", "ptr ( pointer:local ), should be of type ptr");
 			
+
+		')
 	});
 	
 	addFact("ptr_test #2", function() {
+
+		compile_and_execute(@'
 		
 		var input, output;
 			
@@ -1089,11 +1495,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( pointer_invalid:local ), should not be null");
 		assert_typeof(output, "ptr", "ptr ( pointer_invalid:local ), should return ptr type");
-			
-	});
+		')
+	});	
 	
 	addFact("ptr_test #3", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 			
 		//#3 ptr ( pointer_null ) should be null
@@ -1101,11 +1507,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_null(output, "ptr ( pointer_null:local ), should be null");
 		assert_typeof(output, "ptr", "ptr ( pointer_null:local ), should be of ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #4", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 			
 		//#4 ptr ( real ) should be valid
@@ -1113,11 +1519,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( real:local ), should not be null");
 		assert_typeof(output, "ptr", "ptr ( real:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #5", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 			
 		//#5 ptr ( int32 ) should be valid
@@ -1125,11 +1531,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( int32:local ), should not be null");
 		assert_typeof(output, "ptr", "ptr ( int32:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #6", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#6 ptr ( int64 ) should be valid
@@ -1137,11 +1543,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( int64:local ) should not be null");
 		assert_typeof(output, "ptr", "ptr ( int64:local ) should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #7", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#7 ptr ( true )
@@ -1149,11 +1555,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( bool - true:local ) should not be null");
 		assert_typeof(output, "ptr", "ptr ( bool - true:local ) should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #8", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#8 ptr ( false )
@@ -1161,11 +1567,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_null(output, "ptr ( bool - true:local ) should not be null");
 		assert_typeof(output, "ptr", "ptr ( bool - false:local ) should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #9", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 					
 		//#9 ptr ( string ), with real value should be valid
@@ -1173,11 +1579,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( string:local ), should not be null");
 		assert_typeof(output, "ptr", "ptr ( string:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #10", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#10 ptr ( string ) should be null
@@ -1185,11 +1591,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_null(output, "ptr ( string:local ), should be null");
 		assert_typeof(output, "ptr", "ptr ( string:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #11", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#11 ptr ( empty string ) should be null
@@ -1197,10 +1603,16 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_null(output, "ptr ( empty string:local ), should be null");
 		assert_typeof(output, "ptr", "ptr ( string:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #12", function() {
+		compile_and_execute(@'
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
 		
 		var input, output;
 		
@@ -1209,10 +1621,16 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_null(output, "ptr ( enum.0:local ), should be null");
 		assert_typeof(output, "ptr", "ptr ( enum.0:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #13", function() {
+		compile_and_execute(@'
+		enum RainbowColors {
+			Red, Orange, Yellow,
+			Green, Blue, Indigo,
+			Violet
+		}
 		
 		var input, output;
 		
@@ -1221,11 +1639,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		output = ptr(input);
 		assert_not_null(output, "ptr ( enum.1:local ), should not be null");
 		assert_typeof(output, "ptr", "ptr ( enum.1:local ), should return ptr type");
-			
+		')
 	});
 	
 	addFact("ptr_test #14", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 			
 		//#14 ptr ( nan ), valid convertion
@@ -1234,11 +1652,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			var output = ptr(input);
 			assert_typeof(output, "ptr", "ptr ( nan:local ), should return ptr type");
 		}, "ptr ( nan:local ), should not throw an error, valid convertion" );
-			
+		')
 	});
 	
 	addFact("ptr_test #15", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 
 		//#15 ptr ( infinity ), valid convertion
@@ -1247,11 +1665,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			var output = ptr(input);
 			assert_typeof(output, "ptr", "ptr ( infinity:local ), should return ptr type");
 		}, "ptr ( infinity:local ), should not throw an error, valid convertion" );
-			
+		')
 	});
 	
 	addFact("ptr_test #16", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 			
 		//#16 ptr ( struct ), valid convertion
@@ -1262,11 +1680,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			assert_typeof(output, "ptr", "ptr ( struct:local ), should return ptr type");
 				
 		}, "ptr ( struct:local ), should not throw an error, valid convertion" );
-			
+		')
 	});
 	
 	addFact("ptr_test #17", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 			
 		//#17 ptr ( method ), valid convertion
@@ -1277,11 +1695,11 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			assert_typeof(output, "ptr", "ptr ( method:local ), should return ptr type");
 				
 		}, "ptr ( method:local ), should not throw an error, valid convertion" );
-			
+		')
 	});
 	
 	addFact("ptr_test #18", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#18 ptr ( array ), valid convertion
@@ -1291,14 +1709,14 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			assert_typeof(output, "ptr", "ptr ( array:local ), should return ptr type");
 			
 		}, "ptr ( array:local ), should not throw an error, valid convertion");
-			
+		')
 	}, {
 		test_filter: platform_not_browser
 		
 	});
 	
 	addFact("ptr_test #19", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#19 ptr ( undefined ), should throw error
@@ -1306,12 +1724,12 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			var input = undefined;
 			return ptr(input);
 		}, "ptr ( undefined:local ), should throw error");
-		
+		')
 	});
 	
 
 	addFact("ptr_test #20", function() {
-		
+		compile_and_execute(@'
 		var input, output;
 		
 		//#20 ptr ( any ), should throw error
@@ -1319,7 +1737,7 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 			var input;
 			return ptr(input);
 		}, "ptr ( any ) should throw error");
-		
+		')
 	});
 
 	
@@ -1349,14 +1767,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,				assert_false,	"#16 is_array ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_array(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	
@@ -1384,14 +1803,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,				assert_false,	"#16 is_bool ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_bool(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 	
 
@@ -1425,14 +1845,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[infinity / NaN,		assert_false,	"#21 is_infinity ( value / infinity ), should be false (expect 0)"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_infinity(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 	
 	addTheory("is_int32_test", [
@@ -1459,14 +1880,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,				assert_false,	"#16 is_int32 ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_int32(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 
@@ -1494,14 +1916,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,				assert_false,	"#16 is_int64 ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_int64(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 
@@ -1529,14 +1952,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_false,	"#16 is_method ( function:local ), should be false", platform_not_browser],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_method(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	addTheory("is_nan_test", [
@@ -1572,14 +1996,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[300 / NaN,			assert_true,	"#23 is_nan ( value / NaN ), should be true"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_nan(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	addTheory("is_numeric_test", [
@@ -1609,14 +2034,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_true,	"#18 is_numeric ( function:local ), should be true", platform_not_browser],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_numeric(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 
@@ -1647,14 +2073,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_false,	"#18 is_ptr ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_ptr(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 
@@ -1685,14 +2112,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_true,	"#18 is_real ( function:local ), should be true", platform_not_browser],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_real(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	addTheory("is_string_test", [
@@ -1722,14 +2150,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_false,	"#18 is_real ( function:local ), should be false", platform_not_browser],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_string(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	addTheory("is_struct_test", [
@@ -1759,14 +2188,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_false,	"#18 is_struct ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_struct(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	addTheory("is_undefined_test", [
@@ -1796,14 +2226,15 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			assert_false,	"#18 is_struct ( function:local ), should be false"],
 		
 	], function(_input, _test_func, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		var _output = is_undefined(_input)
 		_test_func(_output, _desc);
-		
+		')
 	})
 
 	
@@ -1834,13 +2265,14 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		[get_timer,			"number",		"#18 typeof ( function:local )", platform_not_browser],
 		
 	], function(_input, _expected, _desc, _condition = undefined) {
-		
+		RefuseTest()
+		compile_and_execute(@'
 		if (is_callable(_condition) && !_condition()) {
 			return log_info("Skipping test: {0}", _desc);
 		}
 		
 		assert_typeof(_input, _expected, _desc);
-		
+		')
 	})
 
 }

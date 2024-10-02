@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"ASTNodes",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"internal",
+    "path":"folders/GMLCompiler/internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

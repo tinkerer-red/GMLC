@@ -306,6 +306,7 @@ function __ExistingFunctions() {
 	"audio_set_master_gain": audio_set_master_gain,
 	"audio_sound_gain": audio_sound_gain,
 	"audio_sound_get_gain": audio_sound_get_gain,
+	"audio_sound_get_asset": audio_sound_get_asset,
 	"audio_sound_get_listener_mask": audio_sound_get_listener_mask,
 	"audio_sound_get_pitch": audio_sound_get_pitch,
 	"audio_sound_get_track_position": audio_sound_get_track_position,
@@ -2051,7 +2052,7 @@ function __ExistingFunctions() {
 	"is_string": is_string,
 	"is_struct": is_struct,
 	"is_undefined": is_undefined,
-//	"nameof": nameof,
+//	"nameof": nameof, //this needs to be handled by the compiler, search for ` == "nameof"` if you need to find it, it's in the parser accessExpression
 	"method": method,
 	"method_get_index": method_get_index,
 	"method_get_self": method_get_self,

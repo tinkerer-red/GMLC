@@ -52,12 +52,17 @@ function Task() : PropertyHolder() constructor {
 	static doRun = function() {
 		
 		state = TaskState.Running;
-		try {
-			preRunFunc();
+		if (ShouldTryCatch) {
+			try {
+				preRunFunc();
+			}
+			catch(_error) {
+				pushDiagnostic(_error, "exception");
+				doFinish();
+			}
 		}
-		catch(_error) {
-			pushDiagnostic(_error, "exception");
-			doFinish();
+		else {
+			preRunFunc();
 		}
 	}
 

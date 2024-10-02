@@ -201,7 +201,10 @@ function __GMLC_TokenType() {
 	static UniqueVariable = "__GMLC_TokenType.UniqueVariable";
 	
 	static String = "__GMLC_TokenType.String";
-	static TemplateString = "__GMLC_TokenType.TemplateString";
+	
+	static TemplateStringBegin = "__GMLC_TokenType.TemplateStringBegin";
+	static TemplateStringMiddle = "__GMLC_TokenType.TemplateStringMiddle";
+	static TemplateStringEnd = "__GMLC_TokenType.TemplateStringEnd";
 	
 	static EscapeOperator = "__GMLC_TokenType.EscapeOperator";
 	
@@ -239,6 +242,8 @@ function GML_Tokenizer() constructor {
 	column = 0;
 	
 	finished = false;
+	
+	templateStringDepth = 0;
 	
 	keywords = ["globalvar", "var", "if", "then", "else", "begin", "end", "for", "while", "do", "until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return", "global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor", "static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw"];
 	
@@ -349,39 +354,54 @@ function GML_Tokenizer() constructor {
 			var _next_char = __peekUTF8() ?? 0;
 		}
 		
+		//comments
 		if (_char == ord("/") && _next_char == ord("/")) {
 			return tokenizeCommentLine();
 		}
+		//comment blocks
 		else if (_char == ord("/") && _next_char == ord("*")) {
 			return tokenizeCommentBlock();
 		}
+		//string literals "example"
 		else if (_char == ord(@'"')) {
 			return tokenizeStringLiteral();
 		}
+		//hex numbers
 		else if (_char == ord("$") && __char_is_hex(_next_char)) || (_char == ord("0") && _next_char == ord("x")) {
 			return tokenizeHexNumber();
 		}
+		//string templates
 		else if (_char == ord("$") && _next_char == ord(@'"')) {
-			return tokenizeTemplateString();
+			return tokenizeTemplateString(false);
 		}
+		else if (templateStringDepth > 0 && _char == ord(@'}')) {
+			return tokenizeTemplateString(true);
+		}
+		//binary numbers
 		else if (_char == ord("0") && _next_char == ord("b")) {
 			return tokenizeBinaryNumber();
 		}
+		//numbers
 		else if (__char_is_digit(_char)) || (_char == ord(".") && __char_is_digit(_next_char)) {
 			return tokenizeNumber();
 		}
+		//identifiers
 		else if (__char_is_alphabetic(_char)) {
 			return tokenizeIdentifier();
 		}
+		//string literals @'example'
 		else if (_char == ord("@") && (_next_char == ord("") || _next_char == ord(@'"'))) {
 			return tokenizeRawStringLiteral();
 		}
+		//operators
 		else if (__char_is_operator(_char)) {
 			return tokenizeOperator();
 		}
+		//punctuation
 		else if (__char_is_punctuation(_char)) {
 			return tokenizePunctuation();
 		}
+		//escape char and macro new lines
 		else if (_char == ord("\\")) {
 			//this is really only ever used for use with macros as everything else is accounted for with strings, apart from that there is no other time a `\` should exist outside a string.
 			var _token = new __GMLC_create_token(__GMLC_TokenType.EscapeOperator, "\\", "\\", line, column);
@@ -436,7 +456,7 @@ function GML_Tokenizer() constructor {
 			var _raw_string = "0x"
 		}
 		else {
-			throw $"\nEntered tokenizeHexNumber with a non-valid entry string : {chr(_char)}"
+			throw $"\nEntered tokenizeHexNumber with a non-valid entry string : {chr(currentCharCode)}"
 		}
 		
 		var _len = 0;
@@ -446,31 +466,33 @@ function GML_Tokenizer() constructor {
 			
 			if (currentCharCode >= ord("0") && currentCharCode <= ord("9")) {
 				_hex_value += currentCharCode - ord("0");
+				_len += 1;
 			}
 			else if (currentCharCode >= ord("A") && currentCharCode <= ord("F")) {
 				_hex_value += currentCharCode - ord("A") + 10;
+				_len += 1;
 			}
 			else if (currentCharCode >= ord("a") && currentCharCode <= ord("f")) {
 				_hex_value += currentCharCode - ord("a") + 10;
+				_len += 1;
 			}
 			
 			_raw_string += chr(currentCharCode);
-			_len += 1;
 			__nextUTF8();
 		}
 		
 		#region Error Handling
 		if (_len > 16) {
-			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small";
+			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: input length == {_len}";
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
 			return _token;
 		}
 		
-		if (_hex_value < 0) {
-			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small";
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
-			return _token;
-		}
+		//if (_hex_value < 0) {
+		//	var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: hex value == {_hex_value}";
+		//	var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+		//	return _token;
+		//}
 		#endregion
 		
 		_hex_value = (_hex_value <= $FFFFFFF) ? real(_hex_value) : int64(_hex_value);
@@ -539,10 +561,19 @@ function GML_Tokenizer() constructor {
 		
 		var _identifier = _raw_string
 		
+		var _index = asset_get_index(_identifier);
+		var _type = asset_get_type(_identifier)
+		
+		
+		#region Assets
+		if (_type != asset_script) && (_index > -1) {
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
+			return _token;
+		}	
+		#endregion
 		#region Functions
 		
-		var _index = asset_get_index(_identifier);
-		if (_index > -1) {
+		if (_type == asset_script) && (_index > -1) {
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
 			return _token;
 		}
@@ -564,9 +595,11 @@ function GML_Tokenizer() constructor {
 		#endregion
 		#region Constants
 		
+		
 		static __constants_lookup = __ExistingConstants();
 		var _constant = struct_get(__constants_lookup, _identifier)
-		if (_constant != undefined) {
+		if (_constant != undefined)
+		|| (_identifier == "undefined") {
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
 			return _token;
 		}
@@ -1074,16 +1107,143 @@ function GML_Tokenizer() constructor {
 		return _token;
 	};
 	
-	static tokenizeTemplateString = function() {
+	static tokenizeTemplateString = function(_suffix=false) {
+		// _suffix is used to state that we are attempting to close an already open template string
+		
 		var _char = currentCharCode;
 		var _start_pos = charPos;
 		var _start_line = line;
 		var _start_column = column;
 		
-		//unfinished
+		var _raw_string = chr(currentCharCode);
+		var _string = "";
+		var _string_closed = false;
+		var _should_break = false;
 		
-		var _name = string_copy(sourceCode, start, charPos - start);
-		var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateString, _name, tokens, _orig_line, _orig_column);
+		// consume the entry quote $"
+		if (!_suffix) {
+			__expectUTF8(ord("$"));
+			__expectUTF8(ord(@'"'));
+			_raw_string += @'"';
+			templateStringDepth += 1;
+		}
+		else {
+			__expectUTF8(ord("}"));
+		}
+		
+		
+		while (currentCharCode != undefined) {
+			var _char = chr(currentCharCode);
+			
+			//convert escape charactors 
+			switch (currentCharCode) {
+				case ord(@'\'): {
+					__nextUTF8();
+					switch (currentCharCode) {
+						case ord(@'{'): { // \\
+							_char = "{";
+							//__nextUTF8();
+						break;}
+						case ord(@'\'): { // \\
+							_char = "\\";
+							//__nextUTF8();
+						break;}
+						case ord(@'"'): { // \"
+							_char = "\"";
+							//__nextUTF8();
+						break;}
+						case ord(@'n'): { // \n
+							_char = "\n";
+							//__nextUTF8();
+						break;}
+						case ord(@'r'): { // \r
+							_char = "\r";
+							//__nextUTF8();
+						break;}
+						case ord(@'t'): { // \t
+							_char = "\t";
+							//__nextUTF8();
+						break;}
+						case ord(@'f'): { // \f
+							_char = "\f";
+							//__nextUTF8();
+						break;}
+						case ord(@'v'): { // \v
+							_char = "\v";
+							//__nextUTF8();
+						break;}
+						case ord(@'b'): { // \b
+							_char = "\b";
+							//__nextUTF8();
+						break;}
+						case ord(@'0'): { // \0
+							_char = "\0";
+							//__nextUTF8();
+							if (currentCharCode == ord("0") && __peekUTF8() == ord("0")) { // \000
+								__nextUTF8();
+								__nextUTF8();
+								_char = "\000"
+							}
+						break;}
+						default: {
+							_char = "";
+						break;}
+					}
+				break;}
+				case ord(@'"'): { // "
+					_raw_string += "\"";
+					_char = "";
+					templateStringDepth -= 1;
+					_string_closed = true;
+				break;}
+				case ord("\n"): { // \n
+					var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+					return _token;
+				break;}
+				case ord(@'{'): { // "
+					if (!_suffix) {
+						//increase the depth so we know how many we should close
+						_raw_string += "{";
+						_char = "";
+						_should_break = true;
+					}
+					else {
+						//if this is the middle segment
+						_raw_string += "{";
+						_char = "";
+						_should_break = true;
+					}
+				break;}
+			}
+			
+			_raw_string += _char;
+			_string += _char;
+			
+			__nextUTF8();
+			
+			if (_string_closed || _should_break) break;
+		}
+		
+		
+		
+		// $" full "
+		if (string_starts_with(_raw_string, @'$"') && string_ends_with(_raw_string, @'"')) {
+			var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
+		}
+		// $" begin {
+		else if (string_starts_with(_raw_string, @'$"') && string_ends_with(_raw_string, "{")) {
+			var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateStringBegin, _raw_string, _string, _start_line, _start_column);
+		}
+		// } middle {
+		if (string_starts_with(_raw_string, "}") && string_ends_with(_raw_string, "{")) {
+			var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateStringMiddle, _raw_string, _string, _start_line, _start_column);
+		}
+		// } end "
+		if (string_starts_with(_raw_string, "}") && string_ends_with(_raw_string, @'"')) {
+			var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateStringEnd, _raw_string, _string, _start_line, _start_column);
+		}
+		
 		return _token;
 	};
 	
@@ -1360,6 +1520,60 @@ function __fetchAllUntil(_ord) {
 		
 	var _string = "";
 	while (currentCharCode != _ord && charPos < sourceCodeCharLength) {
+		if (currentCharCode == ord("\n")) {
+			line += 1;
+			column = 1;
+		}
+		else {
+			column += 1;
+		}
+			
+		_string += chr(currentCharCode);
+			
+		var _character = buffer_read(sourceCodeBuffer, buffer_u8);
+		
+		//Basic Latin
+		if ((_character & 0x80) == 0x00) {
+			bytePos += 1;
+			currentCharCode = _character;
+		}
+		else if ((_character & $E0) == $C0) { //110xxxxx 10xxxxxx
+			bytePos += 2;
+			currentCharCode = ((_character & $1F) << 6) | (buffer_read(sourceCodeBuffer, buffer_u8) & $3F);
+		}
+		else if ((_character & $F0) == $E0) { //1110xxxx 10xxxxxx 10xxxxxx
+			bytePos += 3;
+			var _b = buffer_read(sourceCodeBuffer, buffer_u8);
+			var _c = buffer_read(sourceCodeBuffer, buffer_u8);
+			currentCharCode = ((_character & $0F) << 12) | ((_b & $3F) <<  6) | (_c & $3F);
+		}
+		else if ((_character & $F8) == $F0) { //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+			bytePos += 3;
+			var _b = buffer_read(sourceCodeBuffer, buffer_u8);
+			var _c = buffer_read(sourceCodeBuffer, buffer_u8);
+			var _d = buffer_read(sourceCodeBuffer, buffer_u8);
+			currentCharCode = ((_character & $07) << 18) | ((_b & $3F) << 12) | ((_c & $3F) <<  6) | (_d & $3F);
+		}
+		else {
+			bytePos += 1;
+			currentCharCode = _character;
+		}
+		
+		charPos += 1;
+	}
+		
+	return _string;
+}
+
+function __fetchAllUntilExt(_arr_of_ords) {
+	gml_pragma("forceinline");
+	if (charPos >= sourceCodeCharLength) {
+		currentCharCode = undefined
+		return undefined;
+	}
+		
+	var _string = "";
+	while (!array_contains(_arr_of_ords, currentCharCode) && charPos < sourceCodeCharLength) {
 		if (currentCharCode == ord("\n")) {
 			line += 1;
 			column = 1;
@@ -1905,7 +2119,7 @@ function GML_PreProcessor() constructor {
 				case "with":		return parseWithStatement();
 				case "repeat":		return parseRepeatStatement();
 				case "try":			return parseTryCatchStatement();
-				case "throw":		return parseThrowStatement();
+				case "throw":		return parseThrowExpression();
 				case "function":	parseFunctionDeclaration() return undefined;
 				case "#define":		parseDefineFunctionDeclaration() return undefined;
 				//case "let":			//
@@ -1918,6 +2132,7 @@ function GML_PreProcessor() constructor {
 				case "return":		return parseReturnStatement();
 				case "#macro":		return parseReturnStatement();
 				case "enum":		return parseReturnStatement();
+				case "{":			return parseBlock();
 				default:			return parseExpressionStatement();  // Assume any other token starts an expression statement
 			}
 		};
@@ -1940,6 +2155,12 @@ function GML_PreProcessor() constructor {
 					// Optional: Handle error checking for unexpected end of file
 				}
 				nextToken(); // Consume the }
+				
+				//compile better code
+				if (array_length(_statements) == 1) {
+					return _statements[0];
+				}
+				
 				return new ASTBlockStatement(_statements, line, lineString); // Return a block statement containing all parsed statements
 			}
 			else {
@@ -1990,6 +2211,7 @@ function GML_PreProcessor() constructor {
 			var _condition = parseConditionalExpression();
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
 			var _increment = parseExpression();
+			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
 			expectToken(__GMLC_TokenType.Punctuation, ")");
 			var _codeBlock = parseBlock();
 			return new ASTForStatement(_initialization, _condition, _increment, _codeBlock, line, lineString);
@@ -2141,14 +2363,14 @@ function GML_PreProcessor() constructor {
 			return new ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, line, lineString);
 		};
 		
-		static parseThrowStatement = function() {
+		static parseThrowExpression = function() {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
 			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
-			return new ASTThrowStatement(_err_message, line, lineString);
+			return new ASTThrowExpression(_err_message, line, lineString);
 		};
 		
 		#endregion
@@ -2199,44 +2421,85 @@ function GML_PreProcessor() constructor {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
+			#region `function`
 			expectToken(__GMLC_TokenType.Keyword, "function");
-			var functionName = currentToken.value;  // Parse the function identifier
-			nextToken();  // Move past Identifier
+			#endregion
 			
-			expectToken(__GMLC_TokenType.Punctuation, "(");
-			var _local_var_names = [];
-			var parameters = [];
-			while (currentToken.value != ")") {
-			    var identifier = currentToken.value;  // Parse the parameter name
-			    nextToken();  // Move past Identifier
-				
-				var expr = undefined;
-				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
-					expr = parseAssignmentExpression(); // Assignment is right-associative
-				}
-				else { 
-					expr = new ASTLiteral(undefined, line, lineString);
-				}
-				
-				array_push(parameters, new ASTArgument(identifier, expr, array_length(_local_var_names), line, lineString));
-				array_push(_local_var_names, identifier);
-				
-			    if (currentToken.value == ",") {
-			        nextToken();  // Handle multiple parameters
-			    }
+			#region function `identifier` :: the function's name if provided
+			var functionName = undefined;
+			if (currentToken.type == __GMLC_TokenType.Identifier) {
+				var functionName = currentToken.value;
+				//consume the function's identifier
+				nextToken();
 			}
-			nextToken();  // Close parameters list
+			else {
+				static __anon_id = 0;
+				var functionName = $"GMLC@anon@{__anon_id++}";
+			}
+			#endregion
+			
+			#region function`(arguments)` :: the argument list, or an emply block statement
+			
+			var _argList = parseArgumentDefaultList();
+			
+			var _local_var_names = [];
+			var _i=0; repeat(array_length(_argList.statements)) {
+				var _arg = _argList.statements[_i]
+				array_push(_local_var_names, _arg.identifier)
+			_i++}
+			
+			#endregion
+			
+			var _isConstructor = false;
+			var _parentName = undefined;
+			var _parentCall = undefined;
+			#region function foo() `:` bar() constructor {} :: check and consume the `:` if it has a parent defined
+			if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
+				#region function foo() : `bar`() constructor {} :: parse constructor parent
+				
+				var _parent = parsePrimaryExpression()
+				if (_parent.type != __GMLC_NodeType.Identifier)
+				|| (scope != ScopeType.GLOBAL) {  ///////////////////////// This line might cause errors, maybe the preprocessor should evaluate function name declarations
+					throw $"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}"
+				}
+				
+				#endregion
+				#region function foo() : bar`()` constructor {} :: parse constructor parent's arguments
+				var _parentCall = parseFunctionCall(_parent.value)
+				#endregion
+			}
+			#endregion
+			#region function foo() `constructor` :: parse constructor keyword (if provided)
+			if (optionalToken(__GMLC_TokenType.Keyword, "constructor")) {
+				_isConstructor = true;
+			}
+			#endregion
+			
+			
 			
 			// Register function as a global variable and move its body to GlobalVar
-			var globalFunctionNode = new ASTFunctionDeclaration(
-											functionName,
-											new ASTArgumentList(parameters, line, lineString),
-											_local_var_names,
-											undefined, //will be set after body is parsed
-											line,
-											lineString
-									)
-			
+			if (!_isConstructor) {
+				var globalFunctionNode = new ASTFunctionDeclaration(
+												functionName,
+												_argList,
+												_local_var_names,
+												undefined, //will be set after body is parsed
+												line,
+												lineString
+										)
+			}
+			else {
+				var globalFunctionNode = new ASTConstructorDeclaration(
+												functionName,
+												_parentName,
+												_argList,
+												_parentCall,
+												_local_var_names,
+												undefined, //will be set after body is parsed
+												line,
+												lineString
+										)
+			}
 			
 			//cache the old current function, incase we are declaring a function inside a function
 			var _old_function = currentFunction;
@@ -2255,31 +2518,18 @@ function GML_PreProcessor() constructor {
 			// Return a reference to the function in the global scope
 			return new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
 		};
-		static parseFunctionExpression = function() {
+		static parseArgumentDefaultList = function() {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			static __anon_id = 0;
-			// thing = function()
-			expectToken(__GMLC_TokenType.Keyword, "function");
-			
 			expectToken(__GMLC_TokenType.Punctuation, "(");
-			var _local_var_names = [];
 			var parameters = [];
 			while (currentToken.value != ")") {
-			    var identifier = currentToken.value;  // Parse the parameter name
-			    nextToken();  // Move past Identifier
+			    var _argNode = parseArgumentDefaultSingle()
+				_argNode.argument_index = array_length(parameters);
 				
-				var expr = undefined;
-				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
-					expr = parseAssignmentExpression(); // Assignment is right-associative
-				}
-				else {
-					expr = new ASTLiteral(undefined, line, lineString);
-				}
+				array_push(parameters, _argNode);
 				
-				array_push(parameters, new ASTArgument(identifier, expr, array_length(_local_var_names), line, lineString));
-				array_push(_local_var_names, identifier);
 				
 			    if (currentToken.value == ",") {
 			        nextToken();  // Handle multiple parameters
@@ -2287,36 +2537,28 @@ function GML_PreProcessor() constructor {
 			}
 			nextToken();  // Close parameters list
 			
-			var functionName = $"GMLC@anon@{__anon_id++}";
+			return new ASTArgumentList(parameters, line, lineString);
 			
-			// Register function as a global variable and move its body to GlobalVar
-			var globalFunctionNode = new ASTFunctionDeclaration(
-											functionName,
-											new ASTArgumentList(parameters, line, lineString),
-											_local_var_names,
-											undefined, //will be set after body is parsed
-											line,
-											lineString
-									)
+		}
+		static parseArgumentDefaultSingle = function() {
+			var line = currentToken.line;
+			var lineString = currentToken.lineString;
 			
+			var identifier = currentToken.value;  // Parse the parameter name
+			nextToken();  // Move past Identifier
 			
-			//cache the old current function, incase we are declaring a function inside a function
-			var _old_function = currentFunction;
-			currentFunction = globalFunctionNode;
+			var expr = undefined;
+			if (optionalToken(__GMLC_TokenType.Operator, "=")) {
+				expr = parseAssignmentExpression(); // Assignment is right-associative
+			}
+			else { 
+				expr = new ASTLiteral(undefined, line, lineString);
+			}
 			
-			// Parse the function body
-			globalFunctionNode.body = parseBlock();
-			
-			//reset the current function
-			currentFunction = _old_function;
-			
-			// Add to GlobalVar mapping of the Program node
-			scriptAST.GlobalVar[$ functionName] = globalFunctionNode;
-			array_push(scriptAST.GlobalVarNames, functionName);
-			
-			return new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
-		};
+			return new ASTArgument(identifier, expr, undefined, line, lineString);
+		}
 		
+		//used for gms1.4 #define funcName
 		static parseDefineFunctionDeclaration = function() {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
@@ -2348,7 +2590,7 @@ function GML_PreProcessor() constructor {
 				}
 			}
 			if (currentToken != undefined) nextToken(); // Consume the }
-			globalFunctionNode.body = new ASTBlockStatement(_body, line, lineString); // Return a block statement containing all parsed statements;
+			globalFunctionNode.statements = new ASTBlockStatement(_body, line, lineString); // Return a block statement containing all parsed statements;
 			
 			//reset the current function
 			currentFunction = _old_function;
@@ -2483,22 +2725,9 @@ function GML_PreProcessor() constructor {
 			
 			expectToken(__GMLC_TokenType.Keyword, "new");  // Expect the new keyword
 			
-			var _constructorName = parseIdentifier();  // Parse the constructor function name
-			// Optionally, ensure that the constructorName refers to a valid constructor
-			// This validation might require additional context about declared constructors
+			var _funcCall = parseExpressionStatement();
 			
-			expectToken(__GMLC_TokenType.Punctuation, "(");  // Expect an opening parenthesis for the arguments
-			
-			var _arguments = [];
-			while (currentToken.value != ")") {
-				array_push(_arguments, parseExpression()); // Parse each argument as an expression
-				if (currentToken.value == ",") {
-					nextToken();  // Consume the comma to continue to the next argument
-				}
-			}
-			
-			expectToken(__GMLC_TokenType.Punctuation, ")");  // Expect a closing parenthesis
-			return new ASTNewExpression( _constructorName, _arguments, line, lineString);
+			return new ASTNewExpression( _funcCall, line, lineString);
 		};
 		
 		#endregion
@@ -2690,19 +2919,23 @@ function GML_PreProcessor() constructor {
 
 		static parseRelationalExpression = function() {
 			var expr = parseShiftExpression();
+			
 			static __arr = ["<", "<=", ">", ">="];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			while (currentToken != undefined)
+			&& (currentToken.type == __GMLC_TokenType.Operator)
+			&& (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
 				var operator = currentToken.value;
 				nextToken();
 				var right = parseShiftExpression();
+				var _prev_expr = expr
 				expr = new ASTBinaryExpression(operator, expr, right, line, lineString);
 			}
 			return expr;
 		};
-
+		
 		static parseShiftExpression = function() {
 			var expr = parseAdditiveExpression();
 			static __arr = ["<<", ">>"];
@@ -2757,9 +2990,11 @@ function GML_PreProcessor() constructor {
 				var operator = currentToken.value;
 				nextToken();
 				var expr = parseUnaryExpression(); // Right-associative
+				
 				if (operator == "++" || operator == "--") {
 					return new ASTUpdateExpression(operator, expr, true, line, lineString);
 				}
+				
 				return new ASTUnaryExpression(operator, expr, line, lineString);
 			}
 			else {
@@ -2790,7 +3025,12 @@ function GML_PreProcessor() constructor {
 			while (currentToken != undefined) {
 				switch (currentToken.value) {
 					case "(": {
-						expr = parseFunctionCall(expr);
+						if (expr.name == "nameof") {
+							return new ASTLiteral(expr.name, expr.line, expr.lineString);
+						}
+						else {
+							expr = parseFunctionCall(expr);
+						}
 					break;}
 					case "[": {
 						expr = parseBracketAccessor(expr);
@@ -2858,6 +3098,12 @@ function GML_PreProcessor() constructor {
 						return node;
 					}
 					
+					if (_scopeType == ScopeType.CONST) {
+						var node = new ASTIdentifier(currentToken.value, ScopeType.CONST, line, lineString);
+						nextToken(); // Move past the identifier
+						return node;
+					}
+					
 					if (_scopeType == ScopeType.INSTANCE) {
 						var node = new ASTIdentifier(currentToken.value, undefined, line, lineString);
 						nextToken(); // Move past the identifier
@@ -2870,18 +3116,17 @@ function GML_PreProcessor() constructor {
 					
 				break;}
 				case __GMLC_TokenType.Function:{
-					
-					var node = new ASTFunction(currentToken.value, line, lineString);
+					var _func = getReplacementFunction(currentToken.value)
+					var node = new ASTFunction(_func, line, lineString);
 					nextToken(); // Move past the identifier
 					return node;
 					
 				break;}
 				case __GMLC_TokenType.Keyword:{
-					
-					if (currentToken.value == "function") {
-						return parseFunctionExpression();
+					switch (currentToken.value) {
+						case "function": return parseFunctionDeclaration();
+						case "new": return parseNewExpression()
 					}
-				
 				break;}
 				case __GMLC_TokenType.Punctuation:{
 					
@@ -2902,13 +3147,45 @@ function GML_PreProcessor() constructor {
 					}
 					
 				break;}
-				case __GMLC_TokenType.UniqueVariable: {
+				case __GMLC_TokenType.UniqueVariable:{
 					
 					// Handle literals
 					var node = new ASTUniqueIdentifier(currentToken.value, line, lineString);
 					nextToken();
 					return node;
 					
+				break;}
+				case __GMLC_TokenType.TemplateStringBegin:{
+					
+					var _template_string = currentToken.value;
+					
+					//consume the beginning
+					nextToken();
+					
+					var _arguments = [];
+					var _index = 0;
+					while (currentToken != undefined && currentToken.type != __GMLC_TokenType.TemplateStringEnd) {
+						var _expr = parseExpression()
+						array_push(_arguments, _expr); // Parse each argument as an expression
+						_template_string += "{"+string(_index)+"}"
+						
+						if (currentToken.type == __GMLC_TokenType.TemplateStringMiddle) {
+							_template_string += currentToken.value;
+							nextToken();  // Consume the middle segment
+						}
+					}
+					
+					//add the template strings end, then consume
+					_template_string += currentToken.value;
+					nextToken();  // Consume the middle segment
+					
+					//push the template string into the beginning of the arguments
+					array_insert(_arguments, 0, new ASTLiteral(_template_string, line, lineString));
+					
+					var _literalStringFunction = new ASTFunction(string, line, lineString);
+					var _node = new ASTCallExpression(_literalStringFunction, _arguments, line, lineString);
+					
+					return _node
 				break;}
 			}
 			
@@ -2939,8 +3216,7 @@ function GML_PreProcessor() constructor {
 		    var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			var _keys = [];
-		    var _exprs = [];
+			var _args = [];
 		    
 		    expectToken(__GMLC_TokenType.Punctuation, "{");
 		    while (currentToken != undefined && currentToken.value != "}") {
@@ -2962,10 +3238,12 @@ function GML_PreProcessor() constructor {
 					throw $"\nObject: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id"
 				}
 		        
-				//this is a literal because its technically an argument for a struct creation.
-				array_push(_keys, new ASTLiteral(key.value, key.line, key.lineString));
-				
-				array_push(_exprs, value);
+				//push the key and the value
+				array_push(
+					_args,
+					new ASTLiteral(key.value, key.line, key.lineString),
+					value
+				);
 				
 		        if (currentToken.value == ",") {
 		            nextToken();  // Skip the comma
@@ -2975,29 +3253,45 @@ function GML_PreProcessor() constructor {
 		    expectToken(__GMLC_TokenType.Punctuation, "}");
 			
 			// Properties are not all constants, use a runtime function to create the struct
-			return new ASTStructPattern(_keys, _exprs, line, lineString)
+			return new ASTStructPattern(_args, line, lineString)
 		};
 		
 		static parseFunctionCall = function(callee) {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			var args = [];
+			var arg = parseArgumentInput();
+			
+			return new ASTCallExpression(callee, arg, line, lineString);
+		};
+		static parseArgumentInput = function() {
+			var line = currentToken.line;
+			var lineString = currentToken.lineString;
+			
+			var _arguments = [];
 			expectToken(__GMLC_TokenType.Punctuation, "("); // Ensure ( and consume it
-
+			
+			//early out
 			if (currentToken != undefined && currentToken.value != ")") {
 				while (currentToken != undefined && currentToken.value != ")") {
-					array_push(args, parseExpression()); // Parse each argument
-					if (currentToken != undefined && currentToken.value == ",") {
-						nextToken(); // Consume , to move to the next argument
+					var _expr = parseExpression()
+					
+					array_push(_arguments, _expr); // Parse each argument as an expression
+					if (currentToken.value == ",") {
+						nextToken();  // Consume the comma to continue to the next argument
 					}
-				} 
+				}
 			}
 			
+			if (currentToken == undefined) {
+				throw $"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>"
+			}
 			
 			expectToken(__GMLC_TokenType.Punctuation, ")"); // Ensure ) and consume it
-			return new ASTCallExpression(callee, args, line, lineString);
-		};
+			
+			return _arguments;
+		}
+		
 		
 		static parseDotAccessor = function(object) {
 		    var line = currentToken.line;
@@ -3083,6 +3377,7 @@ function GML_PreProcessor() constructor {
 				throw $"\n\nUnexpected end of input. Expected {expectedValue} but found EOF.";
 			}
 			if (currentToken.type != expectedType || currentToken.value != expectedValue) {
+				pprint("lastFiveTokens :: ",lastFiveTokens)
 				throw $"\n\nSyntax Error: Expected {expectedValue} at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.";
 			}
 			nextToken();
@@ -3098,6 +3393,18 @@ function GML_PreProcessor() constructor {
 			
 			return false;
 		};
+		
+		static getReplacementFunction = function(_func) {
+			switch (_func) {
+				case method           : return __method          ;
+				//case method_get_index :	return __method_get_index;
+				//case method_get_self  :	return __method_get_self ;
+				//case method_call      : return __method_call     ;
+				//case script_execute   : return __script_execute  ;
+				default					: return _func;
+			}
+			
+		}
 		
 		#endregion
 		
@@ -4044,7 +4351,7 @@ function GML_PreProcessor() constructor {
 				var _scopeType = __determineScopeType(node)
 				node.scope = _scopeType;
 			}
-			//log($"\n{json_stringify(_node, true)}\n")
+			
 			switch (node.type) {
 			    case __GMLC_NodeType.Script:{
 					
@@ -4091,7 +4398,7 @@ function GML_PreProcessor() constructor {
 					
 				break;}
 				
-				case __GMLC_NodeType.ThrowStatement: {
+				case __GMLC_NodeType.ThrowExpression: {
 					
 				break;}
 				
@@ -4333,7 +4640,7 @@ function GML_PreProcessor() constructor {
 				break;}
 				case __GMLC_NodeType.StructPattern:{
 					//loop through all children and post process them aswell
-					//log($"STRUCT :: \n{json_stringify(node, true)}\n")
+					
 					//throw "why havent we stopped"
 				break;}
 				case __GMLC_NodeType.Literal:{
@@ -6186,8 +6493,11 @@ function __char_is_whitespace(char) {
 function __determineScopeType(_node) {
 	gml_pragma("forceinline");
 	
-	return _node[$ "scope"] ?? __find_ScopeType_from_string(_node[$ "value"]);
-	
+	var _scope = _node.scope;
+	if (_scope == undefined) {
+		return __find_ScopeType_from_string(_node.value);
+	}
+	return _scope
 }
 /// @ignore
 function __find_ScopeType_from_string(_string) {
@@ -6206,6 +6516,17 @@ function __find_ScopeType_from_string(_string) {
 	if array_contains(currentScript.MacroVarNames, _string) return ScopeType.MACRO;
 	if array_contains(currentScript.GlobalVarNames, _string) return ScopeType.GLOBAL;
 	if struct_exists(currentScript.EnumVarNames, _string) return ScopeType.ENUM;
+	
+	
+	// Asset Handling
+	//NOTE: replace this with an asset look up table built into the build environment later, for API usage as a
+	// modding tool to prevent users from messing with the source code too much
+	var _index = asset_get_index(_string);
+	var _type = asset_get_type(_string)
+	if (_index != asset_script) && (_index > -1) {
+		return ScopeType.CONST;
+	}
+	
 	
 	if (currentFunction != undefined) {
 		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType.LOCAL;
@@ -6228,3 +6549,5 @@ function array_insert_ext(array, index, arr_of_val, offset=0, length=max(array_l
 	return script_execute_ext(array_insert, __args);
 }
 #endregion
+
+

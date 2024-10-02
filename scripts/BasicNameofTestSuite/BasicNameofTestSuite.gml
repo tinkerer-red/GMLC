@@ -15,6 +15,10 @@ function BasicNameofTestSuite() : TestSuite() constructor {
 	// Test names of macros
 	addFact("nameof_macro_test", function() {
 		compile_and_execute(@'
+		#macro NAMEOF_TEST_REAL 21.37
+		#macro NAMEOF_TEST_STRING "foobar"
+			#macro NAMEOF_TEST_TABBED_MACRO "test"
+		
 		assert_equals(nameof(NAMEOF_TEST_REAL), "NAMEOF_TEST_REAL", "nameof of macro which holds real value");
 		assert_equals(nameof(NAMEOF_TEST_STRING), "NAMEOF_TEST_STRING", "nameof of macro which holds string value");
 		assert_equals(nameof(NAMEOF_TEST_TABBED_MACRO), "NAMEOF_TEST_TABBED_MACRO", "nameof of macro which have \\t character before keyword");
@@ -24,6 +28,11 @@ function BasicNameofTestSuite() : TestSuite() constructor {
 	// Test names of enums
 	addFact("nameof_enum_test", function() {
 		compile_and_execute(@'
+		enum nameof_test {
+			entry_1,
+			entry_2,
+		}
+		
 		assert_equals(nameof(nameof_test.entry_1), "nameof_test.entry_1", "nameof of enum which holds real value");
 		assert_equals(nameof(nameof_test.entry_2), "nameof_test.entry_2", "nameof of enum which holds string value");
 		')
@@ -32,6 +41,9 @@ function BasicNameofTestSuite() : TestSuite() constructor {
 	// Test names of global variables
 	addFact("nameof_global_test", function() {
 		compile_and_execute(@'
+		global.NAMEOF_GLOBAL_TEST_REAL = 21.37;
+		global.NAMEOF_GLOBAL_TEST_STRING = "foobar";
+		
 		assert_equals(nameof(global.NAMEOF_GLOBAL_TEST_REAL), "global.NAMEOF_GLOBAL_TEST_REAL", "nameof of global which holds real value");
 		assert_equals(nameof(global.NAMEOF_GLOBAL_TEST_STRING), "global.NAMEOF_GLOBAL_TEST_STRING", "nameof of global which holds string value");
 		')

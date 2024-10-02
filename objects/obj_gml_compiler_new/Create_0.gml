@@ -22,45 +22,45 @@
     
 //    str += "\n"+"}"
 //    t+=1
-//    do_trace(str)
+//    log(str)
     
 //_i++}
 
 
 function __compare_results(desc, result, expected) {
 	if (is_array(expected)) && (!__array_equals(result, expected)) {
-		do_trace($"!!!   Array Value Mismatch   !!!")
-		do_trace($"expected != result")
-		do_trace($"{expected} != {result}")
-		do_trace("Got :: " + json_stringify(result, true));
+		log($"!!!   Array Value Mismatch   !!!")
+		log($"expected != result")
+		log($"{expected} != {result}")
+		log("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (is_struct(expected)) && (!__struct_equals(result, expected)) {
-		do_trace($"!!!   Struct Value Mismatch   !!!")
-		do_trace($"expected != result")
-		do_trace($"{expected} != {result}")
-		do_trace("Got :: " + json_stringify(result, true));
+		log($"!!!   Struct Value Mismatch   !!!")
+		log($"expected != result")
+		log($"{expected} != {result}")
+		log("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (!is_array(expected) && !is_struct(expected)) && (expected != result) {
-		//do_trace("Test Failed: " + description);
-		do_trace($"!!!   Literal Value Mismatch   !!!")
-		do_trace($"expected != result")
-		do_trace($"{expected} != {result}")
-		do_trace("Got :: " + json_stringify(result, true));
+		//log("Test Failed: " + description);
+		log($"!!!   Literal Value Mismatch   !!!")
+		log($"expected != result")
+		log($"{expected} != {result}")
+		log("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (typeof(expected) != typeof(result)) {
-		//do_trace("Test Failed: " + description);
-		do_trace($"!!!   Type Mismatch   !!!")
-		do_trace($"expected != result")
-		do_trace($"{typeof(expected)} != {typeof(result)}")
-		do_trace("Got :: " + json_stringify(result, true));
+		//log("Test Failed: " + description);
+		log($"!!!   Type Mismatch   !!!")
+		log($"expected != result")
+		log($"{typeof(expected)} != {typeof(result)}")
+		log("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else {
-        do_trace("		Test Passed: " + desc);
-        //do_trace($"Return :: {result}");
+        log("		Test Passed: " + desc);
+        //log($"Return :: {result}");
 		return true;
     }
 }
@@ -84,32 +84,32 @@ function __struct_equals(_recieved, _expected) {
 		var _expected_value = _expected[$ _name];
 		
 		if !struct_exists(_recieved, _name) {
-			do_trace($"Recieved struct is missing the expected key {_name}")
+			log($"Recieved struct is missing the expected key {_name}")
 		}
 		
 		if (typeof(_expected_value) != typeof(_recieved[$ _name])) {
-			do_trace($"Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
-			do_trace($"Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
-			do_trace($"Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
+			log($"Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
+			log($"Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
+			log($"Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
 				if !__struct_equals(_recieved[$ _name], _expected_value) {
-					do_trace($"Recieved structs child struct is mismatched with the expected key {_name}")
+					log($"Recieved structs child struct is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			case "array":{
 				if !__array_equals(_recieved[$ _name], _expected_value) {
-					do_trace($"Recieved structs child array is mismatched with the expected key {_name}")
+					log($"Recieved structs child array is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[$ _name] != _expected_value) {
-					do_trace($"Recieved structs key is mismatched with the expected key {_name}")
-					do_trace($"Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
+					log($"Recieved structs key is mismatched with the expected key {_name}")
+					log($"Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -131,27 +131,27 @@ function __array_equals(_recieved, _expected) {
 		var _expected_value = _expected[_i];
 		
 		if (typeof(_expected_value) != typeof(_recieved[_i])) {
-			do_trace($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
-			do_trace($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
+			log($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+			log($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
 				if !__struct_equals(_recieved[_i], _expected_value) {
-					do_trace($"Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
+					log($"Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
 					return false;
 				}
 			break;}
 			case "array":{
 				if !__array_equals(_recieved[_i], _expected_value) {
-					do_trace($"Recieved arrays child array is mismatched with the expected indexs value {_i}")
+					log($"Recieved arrays child array is mismatched with the expected indexs value {_i}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[_i] != _expected_value) {
-					do_trace($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
-					do_trace($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
+					log($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+					log($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -1294,7 +1294,7 @@ run_tokenize_test("Test macro with expression tokenization", "#macro COL make_co
 });
 #endregion
 #region Test case for multi-line macro definition
-run_tokenize_test("Test multi-line macro tokenization", @'#macro HELLO do_trace("Hello" + \
+run_tokenize_test("Test multi-line macro tokenization", @'#macro HELLO log("Hello" + \
 string(player_name) + \
 ", how are you today?")',
 {
@@ -1609,7 +1609,7 @@ INIT_LOGIC',
 #endregion
 #region Test 3: Multiline Macro
 run_preprocessor_test("Multiline Macro",
-@'#macro HELLO do_trace("Hello" + \
+@'#macro HELLO log("Hello" + \
 string(player_name) + \
 ", how are you today?");
 
@@ -2200,7 +2200,7 @@ INIT_LOGIC',
 #endregion
 #region Test 3: Multiline Macro
 run_parse_test("Multiline Macro",
-@'#macro HELLO do_trace("Hello" + \
+@'#macro HELLO log("Hello" + \
 string(player_name) + \
 ", how are you today?");
 
@@ -2266,7 +2266,7 @@ HELLO',
         type: __GMLC_TokenType.Function,
         name:"show_debug_message",
         line:1.0,
-        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
+        lineString:"#macro HELLO log(\"Hello\" + \\",
         column:14.0,
         value:1146.0
       },
@@ -2274,7 +2274,7 @@ HELLO',
         type: __GMLC_TokenType.Punctuation,
         name:"(",
         line:1.0,
-        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
+        lineString:"#macro HELLO log(\"Hello\" + \\",
         column:32.0,
         value:"("
       },
@@ -2282,7 +2282,7 @@ HELLO',
         type: __GMLC_TokenType.String,
         name:"\"Hello\"",
         line:1.0,
-        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
+        lineString:"#macro HELLO log(\"Hello\" + \\",
         column:33.0,
         value:"Hello"
       },
@@ -2290,7 +2290,7 @@ HELLO',
         type: __GMLC_TokenType.Operator,
         name:"+",
         line:1.0,
-        lineString:"#macro HELLO do_trace(\"Hello\" + \\",
+        lineString:"#macro HELLO log(\"Hello\" + \\",
         column:41.0,
         value:"+"
       },
@@ -8655,15 +8655,17 @@ function run_interpreter_test(description, input, expectedModule=undefined, expe
 	var ast = postprocessor.parseAll();
 	
 	var _program = undefined;
-	try {
+	//try {
+		//log($"AST ::\n{json_stringify(ast, true)}\n")
 		var _program = compileProgram(ast);
-		var outputReturn = executeProgram(_program)
-	}catch(e) {
-		log($"AST ::\n{json_stringify(ast, true)}\n")
 		//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
-		log(e)
-		return;
-	}
+		var outputReturn = executeProgram(_program)
+	//}catch(e) {
+	//	log($"AST ::\n{json_stringify(ast, true)}\n")
+	//	log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+	//	log(e)
+	//	return;
+	//}
 	
 	expectedReturn = (is_callable(expectedReturn)) ? expectedReturn() : expectedReturn;
 	
@@ -8681,28 +8683,135 @@ log("~~~~~ Interpreter Unit Tests ~~~~~\n");
 var _s = get_timer()
 #region HIDE
 
+run_interpreter_test("Boop",
+@'
+sound = audio_play_sound(snd_coinpickup_OGG, 1, false);
+',
+undefined,
+function(){
+	foo = 0;
+	var bar = method({foo: 1}, function(){
+		return foo
+	})
+	return bar()
+}
+);
+run_interpreter_test("Boop",
+@'
+	function __TryCatchFinally() {
+    
+	    try {
+	        tryBlock()
+	    }
+	    catch(_e) {
+	        if (catchBlock != undefined) {
+	            catchBlock()
+	        }
+	    }
+	    finally {
+	        if (finallyBlock != undefined) {
+	            finallyBlock();
+	        }
+	    }
+	}
+	var test = method({
+		tryBlock : function(){ throw "error" },
+		catchBlock : function(){ return log("catch") },
+		finallyBlock : function(){ return log("finally") },
+	}, __TryCatchFinally)
+	test()
+
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, __TryCatchFinally)
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, __TryCatchFinally)
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, __TryCatchFinally)
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, __TryCatchFinally)
+	test()
+',
+undefined,
+function(){
+	function ____TryCatchFinally() {
+    
+	    try {
+	        tryBlock()
+	    }
+	    catch(_e) {
+	        if (catchBlock != undefined) {
+	            catchBlock()
+	        }
+	    }
+	    finally {
+	        if (finallyBlock != undefined) {
+	            finallyBlock();
+	        }
+	    }
+	}
+	var test = method({
+		tryBlock : function(){ throw "error" },
+		catchBlock : function(){ return log("catch") },
+		finallyBlock : function(){ return log("finally") },
+	}, ____TryCatchFinally)
+	test()
+
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, ____TryCatchFinally)
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, ____TryCatchFinally)
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, ____TryCatchFinally)
+	var test = method({
+		tryBlock : test,
+		catchBlock : test,
+		finallyBlock : test,
+	}, ____TryCatchFinally)
+	test()
+}
+);
+//game_end()
+//exit;
+
+
 //*
 run_interpreter_test("Boop",
 @'
-function factorial(n) {
-	static foo = "bar";
-	if (n <= 1) {
-	return 1;
-	}
-	return n * factorial(n - 1)
-}
-			
-factorial(1) // result: 1
-factorial(2) // result: 2
-factorial(3) // result: 6
-factorial(4) // result: 24
-factorial(5) // result: 120
-factorial(6) // result: 720',
+var _constructor = function() constructor { }
+
+var _result = array_create_ext(10, method( { const: _constructor }, function() { return new const(); }));
+assert_array_length(_result, 10, "array_create_ext should create array with correct size (constructor)");
+',
 undefined,
 function(){
-	return "abcdefg";
+	var _constructor = function() constructor { }
+	
+	var _result = array_create_ext(10, method( { const: _constructor }, function() { return new const(); }));
+	assert_array_length(_result, 10, "array_create_ext should create array with correct size (constructor)");
 }
 );
+
 
 #region complex expression evaluation
 run_interpreter_test("complex expression evaluation", 
@@ -8721,9 +8830,14 @@ function(){
 #endregion
 #region Accessors <Array, Grid, List, Map, Struct>
 run_interpreter_test("Array access and modification",
-@'var arr = [0, 1, 2];
+@'
+log(0)
+var arr = [0, 1, 2];
+log(1)
 arr[0] = 1;
+log(2)
 var test = arr[2];
+log(3)
 return string(arr);',
 undefined,
 function(){
@@ -9396,9 +9510,9 @@ function(){
 #region Arrays
 #region 1. Array Creation and Direct Assignment
 run_interpreter_test("Array Creation and Direct Assignment",
-@'"var arr = [1, 2, 3];
+@'var arr = [1, 2, 3];
 arr[0] = 10;
-return arr[0];"',
+return arr[0];',
 undefined,
 function(){
   var arr = [1, 2, 3];
@@ -9410,9 +9524,9 @@ function(){
 #endregion
 #region 2. Array Modification Through Function
 run_interpreter_test("Array Modification Through Function",
-@'"var arr = [1, 7, 5, 6];
+@'var arr = [1, 7, 5, 6];
 array_sort(arr, true);
-return arr[1];"',
+return arr[1];',
 undefined,
 function(){
 	var arr = [1, 7, 5, 6];
@@ -9424,9 +9538,9 @@ function(){
 #endregion
 #region 3. Array Element Increment
 run_interpreter_test("Array Element Increment",
-@'"var arr = [10, 20, 30];
+@'var arr = [10, 20, 30];
 arr[2]++;
-return arr[2];"',
+return arr[2];',
 undefined,
 function(){
   var arr = [10, 20, 30];
@@ -9437,11 +9551,11 @@ function(){
 #endregion
 #region 4. Dynamic Array Creation with Loop
 run_interpreter_test("Dynamic Array Creation with Loop",
-@'"var arr = [];
+@'var arr = [];
 for (var i = 0; i < 5; i++) {
   arr[i] = i * 2;
 }
-return arr[3];"',
+return arr[3];',
 undefined,
 function() {
 	var arr = [];
@@ -9454,9 +9568,9 @@ function() {
 #endregion
 #region 5. Array Access and Function Call
 run_interpreter_test("Array Access and Function Call",
-@'"var arr = [100, 200, 300];
+@'var arr = [100, 200, 300];
 var result = string(arr[1]);
-return result;"',
+return result;',
 undefined,
 function(){
 	var arr = [100, 200, 300];

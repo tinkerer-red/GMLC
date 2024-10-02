@@ -1,5 +1,9 @@
 function log(_str) {
-	show_debug_message(_str);
+	var _new_str = "";
+	var _i=0; repeat(argument_count) {
+		_new_str += string(argument[_i])+" ";
+	_i++}
+	show_debug_message(_new_str);
 }
 
 #region jsDoc
@@ -13,11 +17,12 @@ function log(_str) {
 /// @returns {undefined}
 #endregion
 #macro __show_debug_message show_debug_message
-#macro trace __trace(_GMFILE_+"/"+_GMFUNCTION_+":"+string(_GMLINE_)+": ")
-#macro do_trace __trace(_GMFILE_+"/"+_GMFUNCTION_+":"+string(_GMLINE_)+": ")
-function __trace(_location) {
+#macro trace  __trace(_GMFILE_, _GMFUNCTION_, _GMLINE_)
+#macro do_trace __trace(_GMFILE_, _GMFUNCTION_, _GMLINE_)
+function __trace(_file, _func, _line) {
 		static __struct = {};
-		__struct.__location = _location;
+		
+		__struct.__location = $"{_file}/{_func}:{_line}";
 		return method(__struct, function(_str)
     {
         show_debug_message(__location + ": " + string(_str));

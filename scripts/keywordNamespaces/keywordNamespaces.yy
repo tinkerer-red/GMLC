@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"__DeprocatedFunctions",
+  "%Name":"keywordNamespaces",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"__DeprocatedFunctions",
+  "name":"keywordNamespaces",
   "parent":{
     "name":"GMLCompiler",
     "path":"folders/GMLCompiler.yy",

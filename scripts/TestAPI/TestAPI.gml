@@ -82,11 +82,16 @@ function test_run_event(_eventName) {
 	
 	if (!is_callable(_func)) return;
 	
-	try {
-		_func();
+	if (ShouldTryCatch) {
+		try {
+			_func();
+		}
+		catch (_error) {
+			_test.pushDiagnostic(_error, "exception");
+		}
 	}
-	catch (_error) {
-		_test.pushDiagnostic(_error, "exception");
+	else {
+		_func()
 	}
 }
 

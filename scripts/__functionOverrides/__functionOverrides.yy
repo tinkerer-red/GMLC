@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"GM14Compatibility",
+  "%Name":"__functionOverrides",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GM14Compatibility",
+  "name":"__functionOverrides",
   "parent":{
     "name":"internal",
     "path":"folders/GMLCompiler/internal.yy",

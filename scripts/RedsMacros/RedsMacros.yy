@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GM14Compatibility",
+  "%Name":"RedsMacros",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GM14Compatibility",
+  "name":"RedsMacros",
   "parent":{
-    "name":"internal",
-    "path":"folders/GMLCompiler/internal.yy",
+    "name":"GML Compiler",
+    "path":"GML Compiler.yyp",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

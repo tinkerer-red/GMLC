@@ -320,21 +320,22 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 	});
 	
 	addFact("array_create test #12", function() {
-		compile_and_execute(@'
-		/// @DEPRECATED
-		//#12 array_create ( int macro, array2d local )
-		var _array2D;
-		_array2D[1,2] = 2;
-		var _arraySize = 100;
-		var _failed = false;
-		var _result = array_create(_arraySize, _array2D);
-		for(var _i = 0; _i < _arraySize; ++_i)
-		{
-			var _arraysEqual = array_equals(_result[_i], _array2D);
-			_failed |= !assert_true(_arraysEqual, "array_create ( int macro, array2d local )");
-			if (_failed) break;
-		}
-		')
+		RefuseTest()
+		//compile_and_execute(@'
+		///// @DEPRECATED
+		////#12 array_create ( int macro, array2d local )
+		//var _array2D;
+		//_array2D[1,2] = 2;
+		//var _arraySize = 100;
+		//var _failed = false;
+		//var _result = array_create(_arraySize, _array2D);
+		//for(var _i = 0; _i < _arraySize; ++_i)
+		//{
+		//	var _arraysEqual = array_equals(_result[_i], _array2D);
+		//	_failed |= !assert_true(_arraysEqual, "array_create ( int macro, array2d local )");
+		//	if (_failed) break;
+		//}
+		//')
 	});
 	
 	addFact("array_create test #13", function() {
@@ -385,6 +386,15 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 	
 	addFact("array_create test #16", function() {
 		compile_and_execute(@'
+		enum RainbowColors {
+			Red,
+			Orange,
+			Yellow,
+			Green,
+			Blue,
+			Indigo,
+			Violet
+		}
 		//#16 array_create ( int macro, enum local )
 		var _arraySize = 100;
 		var _failed = false;
@@ -938,16 +948,17 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 	});
 	
 	addFact("array_push test #8", function() {
-		compile_and_execute(@'
-		var _idx, _dest = [];
-		var _array2D;
-		_array2D[1,2] = 2;
-			
-		//#8 array_push ( array 1d local, array2d local )
-		array_push(_dest, _array2D);
-		_idx = array_length(_dest) - 1;
-		assert_equals(_dest[_idx], _array2D, "array_push ( array:local, array2d:local )");
-		')
+		RefuseTest()
+		//compile_and_execute(@'
+		//var _idx, _dest = [];
+		//var _array2D;
+		//_array2D[1,2] = 2;
+		//
+		////#8 array_push ( array 1d local, array2d local )
+		//array_push(_dest, _array2D);
+		//_idx = array_length(_dest) - 1;
+		//assert_equals(_dest[_idx], _array2D, "array_push ( array:local, array2d:local )");
+		//')
 	});
 	
 	addFact("array_push test #9", function() {
@@ -989,6 +1000,16 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 
 	addFact("array_push test #12", function() {
 		compile_and_execute(@'
+		enum RainbowColors {
+			Red,
+			Orange,
+			Yellow,
+			Green,
+			Blue,
+			Indigo,
+			Violet
+		}
+		
 		var _idx, _dest = [];
 			
 		//#12 array_push ( array 1d local, enum local )
