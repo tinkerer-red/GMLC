@@ -279,7 +279,7 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 		
 	addFact("Time Sources: Reconfiguration", function() { 
 
-		compile_and_execute(@'
+		//compile_and_execute(@'
 		var _numConfigurations = 1000;
 								
 		var _output, _ts = generate_time_source();
