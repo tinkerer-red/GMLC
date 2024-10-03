@@ -32,6 +32,7 @@ Optimizer ToDo:
 - Improved constant folding :: attempt to include more expressions when ever possible
 - assignment folding :: replace `a = a+1` to `a++` and replace `b = b * a` with `b *= a`
 - Short-Circuit Boolean Evaluation :: `(expensiveFunction() && true)` becomes `(expensiveFunction())`
+- Null/Empty Check Removal :: `if (thing != undefined)` becomes `if (thing)` additionally `if (x <=0)` or `if (x != <zero or negative number>)`
 - logical expression folding :: `(a && false)` should just return `false` same with `b || true`
 - Strength Reduction :: replace `a*2` with `a << 1`, and `b / 4` with `b >> 2` (keep care to check how this works with really big numbers, negatives, and decimals)
 - Loop Unrolling :: really only handle this is we have a definitive loop size, and the block is relatively* small, maybe if `expression * loop_count <= 1024`
