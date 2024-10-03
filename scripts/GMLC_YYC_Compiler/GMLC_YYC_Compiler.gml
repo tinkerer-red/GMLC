@@ -32,10 +32,10 @@ function __GMLCexecuteProgram() {
 	var _pre_args = arguments;
 	
 	//edit our local array
-	arguments  = [];
-	var _i=0; repeat(argument_count) {
+	arguments = array_create(argument_count, undefined);
+	var _i=argument_count-1; repeat(argument_count) {
 		array_push(arguments, argument[_i]);
-	_i++}
+	_i--}
 	
 	var _return = program();
 	
@@ -86,13 +86,14 @@ function __GMLCexecuteFunction() {
 	//incase the program/script/function is recursive we need to stash the arguments
 	var _pre_args = arguments;
 	var _pre_locals = locals;
-	arguments  = [];
 	locals = {};
+	arguments = array_create(max(argument_count, named_arg_size), undefined);
 	
 	//edit our local array
-	var _i=0; repeat(argument_count) {
+	// writing the array backwards is the fastest way to do this apparently.
+	var _i=argument_count-1; repeat(argument_count) {
 		array_push(arguments, argument[_i]);
-	_i++}
+	_i--}
 	
 	argumentsDefault();
 	
@@ -122,6 +123,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _AST) {
 		
 		arguments: undefined,
 		argumentsDefault: undefined,
+		named_arg_size: 0,
 		
 		program: undefined,
 		
@@ -135,6 +137,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _AST) {
 	_output.parentNode = _output;
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _AST.arguments);
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _AST.statements);
+	_output.named_arg_size = method_get_self(_output.argumentsDefault).size;
 	
 	return method(_output, __GMLCexecuteFunction)
 }
@@ -173,6 +176,7 @@ function __GMLCcompileArgumentList(_rootNode, _parentNode, _node) {
 		parentNode: _parentNode,
 		
 		statements: [],
+		size: undefined,
 		
 		varStatics: {},
 		locals: {},
@@ -182,6 +186,8 @@ function __GMLCcompileArgumentList(_rootNode, _parentNode, _node) {
 	var _i=0; repeat(array_length(_arr)) {
 		_output.statements[_i] = __GMLCcompileArgument(_rootNode, _parentNode, _arr[_i]);
 	_i++}
+	
+	_output.size = array_length(_output.statements);
 	
 	return method(_output, __GMLCexecuteArgumentList)
 }
@@ -1825,7 +1831,6 @@ function __GMLCexecuteStructDotAccGet(){
 	var _target = target();
 	var _key = key();
 	
-	
 	if (!struct_exists(_target, _key)) {
 		throw $"\nVariable <unknown_object>.{_key} not set before reading it."
 	}
@@ -3118,12 +3123,10 @@ function __GMLCexecuteNew() {
 		else {
 			throw "target function for 'new' must be a constructor"
 		}
-		
 	}
 	else {
-		if (is_method(_func))
 		with (global.otherInstance) with (global.selfInstance) {
-			var _return = constructor_call_ext(_func, _argArray);
+			var _struct = constructor_call_ext(_func, _argArray);
 		}
 	}
 	

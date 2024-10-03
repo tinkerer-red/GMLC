@@ -8,3 +8,684 @@ will not be able to be accessed as `asset_get_index(_string)` will always return
 // automatic array creation
 var _arr;
 _arr[0] = true
+
+
+need to test native and gmlc
+- methods
+- constructors
+- new statements
+- 2x of each
+- a mix of them all
+
+Debugging tools:
+- code hotspoting :: tool used to see how many times something is run (this is built into native debugger)
+- code expense :: keep track of how many ms it takes to run just it's code (excluding children code)
+- include line error messages with the methods
+
+
+Optimizer ToDo:
+- "pick one" functions should be removed if only one argument is provided, these include `min, max, choose` and some others i guess. idk
+- Dead Code Elimination
+- loop iteration improvements
+- Loop-Invariant Code Motion / constant hoisting :: Move computations that do not change within a loop outside of the loop. local variables which are only ever written to once, we want to pull them out of for/repeat/while/doUntil etc.. loops. 
+- Constant Propagation :: If a constant is found in the AST, just replace all instances of it with the value so the constant folding takes place
+- Improved constant folding :: attempt to include more expressions when ever possible
+- assignment folding :: replace `a = a+1` to `a++` and replace `b = b * a` with `b *= a`
+- Short-Circuit Boolean Evaluation :: `(expensiveFunction() && true)` becomes `(expensiveFunction())`
+- logical expression folding :: `(a && false)` should just return `false` same with `b || true`
+- Strength Reduction :: replace `a*2` with `a << 1`, and `b / 4` with `b >> 2` (keep care to check how this works with really big numbers, negatives, and decimals)
+- Loop Unrolling :: really only handle this is we have a definitive loop size, and the block is relatively* small, maybe if `expression * loop_count <= 1024`
+- Common Subexpression Elimination :: Safe and easy to implement, it avoids recalculating the same expression multiple times within a scope. for instance `c=(a-b)+1; d=(a-b)+2` would become `var _temp<ID>=(a-b); c=_temp+1; d=_temp+2`
+- Function Inlining :: Replace a function call with the body of the function, especially for small, frequently used functions. `var result = add(2, 3);` becomes `var result = add(2, 3);`
+- Peephole Optimizations :: idk what this is really look into this
+
+
+
+
+
+
+
+
+
+
+///GPT Suggestions:::
+Here’s a comprehensive list of optimizations you could consider for your interpreter’s optimizer module, along with explanations and examples when possible:
+
+1. Dead Code Elimination (Removal of Unreachable Nodes)
+Remove code that will never be executed due to logical flow.
+Input:
+gml
+Copy code
+if (false) {
+    var x = 10;
+}
+Output:
+gml
+Copy code
+// Entire block is removed
+2. Constant Folding
+Evaluate constant expressions at compile time instead of runtime.
+Input:
+gml
+Copy code
+var x = 2 * (3 + 4);
+Output:
+gml
+Copy code
+var x = 14;
+3. Constant Propagation
+Replace variables that have constant values with those values.
+Input:
+gml
+Copy code
+var x = 10;
+var y = x + 5;
+Output:
+gml
+Copy code
+var y = 15;
+4. Strength Reduction
+Replace expensive operations with cheaper ones (e.g., multiplication with addition or bit shifts).
+Input:
+gml
+Copy code
+var x = y * 2;
+Output:
+gml
+Copy code
+var x = y << 1;
+5. Loop-Invariant Code Motion
+Move computations that do not change within a loop outside of the loop.
+Input:
+gml
+Copy code
+for (var i = 0; i < 10; i++) {
+    var x = 5 * 3;
+}
+Output:
+gml
+Copy code
+var x = 15;
+for (var i = 0; i < 10; i++) {
+    // No need to compute x inside the loop
+}
+6. Loop Unrolling
+Increase the size of the loop body to reduce the overhead of loop control code.
+Input:
+gml
+Copy code
+for (var i = 0; i < 4; i++) {
+    doSomething();
+}
+Output:
+gml
+Copy code
+doSomething();
+doSomething();
+doSomething();
+doSomething();
+7. Function Inlining
+Replace a function call with the body of the function, especially for small, frequently used functions.
+Input:
+gml
+Copy code
+function add(a, b) {
+    return a + b;
+}
+var result = add(2, 3);
+Output:
+gml
+Copy code
+var result = 2 + 3;
+8. Peephole Optimizations
+Small local optimizations that focus on a small window of instructions, like removing unnecessary load/store or adjusting redundant moves.
+Input:
+gml
+Copy code
+var a = b;
+var b = a;
+Output:
+gml
+Copy code
+// Unnecessary swap operation removed
+9. Alternate Function Selection
+Replace a generic function call with a more efficient variant when applicable.
+Input:
+gml
+Copy code
+str = string_format(myNumber, 2, 0); // Generic formatting function
+Output:
+gml
+Copy code
+str = string(myNumber); // If we know no formatting is needed
+10. Common Subexpression Elimination
+Avoid recomputation of the same expression multiple times.
+Input:
+gml
+Copy code
+var x = (a + b) * c;
+var y = (a + b) * d;
+Output:
+gml
+Copy code
+var temp = a + b;
+var x = temp * c;
+var y = temp * d;
+11. Tail Call Optimization
+If the last operation in a function is a call to another function, eliminate the need to retain the current stack frame.
+Input:
+gml
+Copy code
+function factorial(n) {
+    if (n == 0) return 1;
+    return n * factorial(n - 1);
+}
+Output (Tail Call Optimized):
+gml
+Copy code
+function factorial(n, acc = 1) {
+    if (n == 0) return acc;
+    return factorial(n - 1, n * acc);
+}
+12. Null/Empty Check Removal
+Remove unnecessary null or empty checks when you can statically prove that a variable cannot be null.
+Input:
+gml
+Copy code
+var x = 5;
+if (x != null) {
+    doSomething(x);
+}
+Output:
+gml
+Copy code
+doSomething(x); // x can never be null
+13. Dead Store Elimination
+Remove assignments to variables that are never read.
+Input:
+gml
+Copy code
+var x = 10;
+x = 15;
+Output:
+gml
+Copy code
+var x = 15; // Remove the unused assignment to 10
+14. Short-Circuit Boolean Optimization
+Optimize boolean expressions to avoid unnecessary evaluation.
+Input:
+gml
+Copy code
+if (expensiveFunction() && true) {
+    // Do something
+}
+Output:
+gml
+Copy code
+if (expensiveFunction()) {
+    // Do something
+}
+15. Redundant Conditional Removal
+Simplify or remove conditionals where the outcome is predictable.
+Input:
+gml
+Copy code
+if (true) {
+    doSomething();
+} else {
+    doNothing();
+}
+Output:
+gml
+Copy code
+doSomething(); // The if is always true
+16. Minimization of Object Creation
+Where possible, avoid creating new objects within frequently called functions or loops.
+Input:
+gml
+Copy code
+for (var i = 0; i < 100; i++) {
+    var obj = new Object();
+    obj.doSomething();
+}
+Output:
+gml
+Copy code
+var obj = new Object();
+for (var i = 0; i < 100; i++) {
+    obj.doSomething();
+}
+17. Inline Small Switch Statements as Conditionals
+Small switch statements can be replaced with conditional logic for better performance.
+Input:
+gml
+Copy code
+switch (x) {
+    case 1:
+        doSomething();
+        break;
+    case 2:
+        doSomethingElse();
+        break;
+}
+Output:
+gml
+Copy code
+if (x == 1) {
+    doSomething();
+} else if (x == 2) {
+    doSomethingElse();
+}
+18. Flatten Nested Conditionals
+Simplify deeply nested conditionals when possible.
+Input:
+gml
+Copy code
+if (a) {
+    if (b) {
+        doSomething();
+    }
+}
+Output:
+gml
+Copy code
+if (a && b) {
+    doSomething();
+}
+19. Inlining of Mathematical Functions
+Replace complex mathematical functions with simplified versions when certain arguments are constants.
+Input:
+gml
+Copy code
+var x = pow(2, 3);
+Output:
+gml
+Copy code
+var x = 8;
+By implementing these optimizations, you can significantly improve the performance of the code generated by your interpreter, even without access to low-level memory or bytecode manipulation.
+
+
+
+
+
+
+You said:
+These are all really amazing suggestions, could you list any more which are possibly a little more dangerous to implement?
+Alternatively if you could suggest any which have extreme performance gains in practice?
+ChatGPT said:
+ChatGPT
+Here are a few additional optimizations that can offer extreme performance gains but come with potential dangers or risks if not implemented carefully. These optimizations require a strong understanding of the language's semantics and the execution environment.
+
+1. Aggressive Inlining
+Benefit: Major performance gains by eliminating the overhead of function calls, especially in hot code paths.
+Risk: Code size bloat (sometimes called the "inline expansion problem"), leading to increased memory usage and potential performance hits due to cache misses.
+Danger: Over-inlining recursive or large functions can cause stack overflow or drastically increase memory consumption.
+Example:
+gml
+Copy code
+function smallAdd(a, b) {
+    return a + b;
+}
+var sum = smallAdd(1, 2);
+Optimized:
+gml
+Copy code
+var sum = 1 + 2; // Inlined function body
+2. Speculative Execution/Prediction
+Benefit: Significant performance boost by executing multiple branches of a condition in parallel or by predicting outcomes (branch prediction).
+Risk: If the speculative execution is wrong, you waste computational resources, and it could also lead to incorrect behavior in systems sensitive to timing (e.g., game simulations or multithreaded code).
+Danger: In systems with side effects (like IO, logging, or real-time simulation), speculative execution can introduce subtle bugs.
+Example:
+gml
+Copy code
+if (complexCondition()) {
+    doSomething();
+} else {
+    doSomethingElse();
+}
+Optimized (Speculative):
+gml
+Copy code
+// Start executing both branches and discard the wrong one once condition is evaluated
+3. Global Code Motion (Aggressive Hoisting)
+Benefit: Moves code out of loops or repeated blocks into the global scope, reducing redundant calculations.
+Risk: Moving code too far can introduce semantic changes, especially if the code depends on local conditions or variables within the original context.
+Danger: Moving code out of conditionally executed blocks or loops can create subtle bugs if side effects were expected to occur inside the loop.
+Example:
+gml
+Copy code
+for (var i = 0; i < 10; i++) {
+    var x = calculateValue();
+    useValue(x);
+}
+Optimized:
+gml
+Copy code
+var x = calculateValue();
+for (var i = 0; i < 10; i++) {
+    useValue(x); // calculateValue() moved out of the loop
+}
+4. Lazy Evaluation
+Benefit: Delay expensive operations until their result is actually needed, reducing overall computation.
+Risk: Requires careful tracking of side effects and ensuring that computations that rely on side effects (e.g., file reads, network requests) don't behave unexpectedly.
+Danger: Introducing lazy evaluation into a system that expects immediate side effects can cause unpredictable behavior.
+Example:
+gml
+Copy code
+var x = expensiveCalculation();
+if (condition) {
+    useValue(x);
+}
+Optimized:
+gml
+Copy code
+if (condition) {
+    var x = expensiveCalculation(); // x is only computed when needed
+    useValue(x);
+}
+5. Escape Analysis (Heap to Stack Promotion)
+Benefit: Significant performance gains by allocating objects on the stack rather than the heap, avoiding the overhead of garbage collection.
+Risk: If escape analysis is wrong and the object lives beyond the function or scope where it was allocated, this can lead to use-after-free bugs or memory corruption.
+Danger: Memory bugs are notoriously hard to debug and can cause crashes in unexpected parts of the code.
+Example:
+gml
+Copy code
+function createPoint() {
+    var point = new Object(); // Allocated on the heap
+    point.x = 0;
+    point.y = 0;
+    return point;
+}
+Optimized:
+gml
+Copy code
+function createPoint() {
+    var point = { x: 0, y: 0 }; // Stack allocation (if the object does not escape)
+    return point;
+}
+6. Loop Fusion
+Benefit: Combine multiple loops that iterate over the same range into a single loop, reducing loop overhead and improving cache locality.
+Risk: Can cause complex loops that are harder to maintain and debug. If one loop has dependencies that the other does not, you could accidentally introduce bugs.
+Danger: Merging loops with different side effects or iterations that depend on each other can cause semantic errors.
+Example:
+gml
+Copy code
+for (var i = 0; i < n; i++) {
+    array1[i] = compute1(i);
+}
+for (var i = 0; i < n; i++) {
+    array2[i] = compute2(i);
+}
+Optimized:
+gml
+Copy code
+for (var i = 0; i < n; i++) {
+    array1[i] = compute1(i);
+    array2[i] = compute2(i); // Both computations done in a single loop
+}
+7. Loop Unswitching
+Benefit: Moving conditionals out of loops for conditions that remain constant throughout the loop, which can lead to faster execution.
+Risk: Can increase code size by duplicating loop bodies.
+Danger: If the condition changes mid-loop or is not constant, the optimized code will behave incorrectly.
+Example:
+gml
+Copy code
+for (var i = 0; i < n; i++) {
+    if (constantCondition) {
+        doSomething();
+    }
+    doOtherThings();
+}
+Optimized:
+gml
+Copy code
+if (constantCondition) {
+    for (var i = 0; i < n; i++) {
+        doSomething();
+        doOtherThings();
+    }
+} else {
+    for (var i = 0; i < n; i++) {
+        doOtherThings();
+    }
+}
+8. Aggressive Dead Code Elimination
+Benefit: Extremely beneficial when there are large sections of unreachable or unnecessary code.
+Risk: If code seems unused but actually serves an important purpose (like event hooks or callbacks), this could lead to bugs.
+Danger: Hard to predict runtime conditions or side effects can cause this optimization to remove necessary code.
+Example:
+gml
+Copy code
+if (false) {
+    triggerCriticalEvent();
+}
+Optimized:
+gml
+Copy code
+// Entire block is removed, but ensure it's not dependent on external conditions
+9. Parallel Loop Execution
+Benefit: Substantial performance improvements when loops can be safely executed in parallel.
+Risk: Introducing parallelism into a system that isn’t designed for it can lead to race conditions, deadlocks, and other concurrency bugs.
+Danger: Parallelizing loops that access shared resources (e.g., global variables or file systems) without proper synchronization will cause unpredictable behavior.
+Example:
+gml
+Copy code
+for (var i = 0; i < n; i++) {
+    doHeavyComputation(i);
+}
+Optimized (Parallel):
+gml
+Copy code
+// Split the loop's work across multiple threads
+parallel_for(var i = 0; i < n; i++) {
+    doHeavyComputation(i);
+}
+10. Aggressive Caching/Precomputation
+Benefit: Drastically reduce the cost of repeated computations or object creation by caching results.
+Risk: Memory overhead from storing large caches, and it requires careful invalidation of the cache to avoid stale results.
+Danger: Overly aggressive caching can lead to stale data or logic errors if invalidation isn’t handled properly.
+Example:
+gml
+Copy code
+function computeExpensiveResult(a, b) {
+    return a + b; // Imagine this is expensive
+}
+var result = computeExpensiveResult(1, 2);
+Optimized (Cache):
+gml
+Copy code
+var cachedResults = {};
+function computeExpensiveResult(a, b) {
+    var key = a + "," + b;
+    if (!cachedResults[key]) {
+        cachedResults[key] = a + b; // Expensive calculation cached
+    }
+    return cachedResults[key];
+}
+These optimizations offer extreme performance benefits but also introduce risks, primarily related to correctness and maintainability. In practice, applying these should be done carefully, and ideally with extensive testing to ensure that correctness is maintained. Additionally, aggressive optimizations like speculative execution and loop transformations can have significant impacts on execution speed, but only in the right contexts, making them high-reward but high-risk approaches.
+
+
+
+
+
+
+You said:
+Right lastly what are some of the safest optimizations we can apply which will effect the most performance increase? Specifically I'm looking for what we should prioritize as the most important to start with.
+ChatGPT said:
+ChatGPT
+When prioritizing safe optimizations that provide significant performance gains, it's important to focus on optimizations that are less likely to alter the behavior of the code but can still have a broad impact on execution speed. Here’s a list of safe, high-impact optimizations to prioritize first:
+
+1. Constant Folding
+Why prioritize: Safe and simple, it precomputes constant expressions, reducing runtime computation.
+Impact: Eliminates entire sections of calculations, lowering the CPU burden.
+Example:
+gml
+Copy code
+var x = 2 + 3 * 5; // Can be computed during optimization.
+Optimized:
+gml
+Copy code
+var x = 17; // Computed ahead of time.
+2. Dead Code Elimination (Unreachable Code Removal)
+Why prioritize: Very safe and often results in significant performance improvements, especially in complex codebases with unused or unreachable branches.
+Impact: Removes unnecessary computations and reduces memory usage.
+Example:
+gml
+Copy code
+if (false) {
+    doSomething();
+}
+Optimized:
+gml
+Copy code
+// Unreachable block removed.
+3. Constant Propagation
+Why prioritize: Like constant folding, this optimization is very safe and effective. It replaces variables known to have constant values at compile-time with those values.
+Impact: Reduces memory load and eliminates redundant lookups for constants.
+Example:
+gml
+Copy code
+var x = 5;
+var y = x + 10;
+Optimized:
+gml
+Copy code
+var y = 15;
+4. Common Subexpression Elimination
+Why prioritize: Safe and easy to implement, it avoids recalculating the same expression multiple times within a scope.
+Impact: Reduces redundant computations, saving CPU cycles.
+Example:
+gml
+Copy code
+var x = (a + b) * c;
+var y = (a + b) * d;
+Optimized:
+gml
+Copy code
+var temp = a + b;
+var x = temp * c;
+var y = temp * d;
+5. Inline Small Functions
+Why prioritize: Very safe if limited to small, frequently used functions, especially for utility functions. It eliminates the overhead of function calls.
+Impact: Improves performance in hot code paths where function call overhead adds up.
+Example:
+gml
+Copy code
+function add(a, b) {
+    return a + b;
+}
+var result = add(2, 3);
+Optimized:
+gml
+Copy code
+var result = 2 + 3;
+6. Loop-Invariant Code Motion
+Why prioritize: Safe and applicable in many scenarios. It moves code out of loops that doesn’t need to be recalculated during every iteration.
+Impact: Reduces repetitive calculations, making loops much more efficient.
+Example:
+gml
+Copy code
+for (var i = 0; i < 10; i++) {
+    var x = 5 * 3;
+}
+Optimized:
+gml
+Copy code
+var x = 15;
+for (var i = 0; i < 10; i++) {
+    // Loop body simplified.
+}
+7. Peephole Optimizations
+Why prioritize: Safe and operates on small blocks of code (usually at the instruction level), cleaning up inefficient patterns such as redundant variable assignments.
+Impact: Provides small but meaningful performance boosts by eliminating inefficient code patterns.
+Example:
+gml
+Copy code
+var x = y;
+var y = x;
+Optimized:
+gml
+Copy code
+// Redundant swap eliminated.
+8. Short-Circuit Boolean Evaluation
+Why prioritize: Safe and can significantly boost performance by avoiding unnecessary computation in conditional logic.
+Impact: Avoids executing unnecessary branches in complex conditionals.
+Example:
+gml
+Copy code
+if (expensiveFunction() && true) {
+    doSomething();
+}
+Optimized:
+gml
+Copy code
+if (expensiveFunction()) {
+    doSomething();
+}
+9. Minimize Object Creation (Object Reuse)
+Why prioritize: Safe and easy to implement. Instead of creating new objects in tight loops or frequently executed sections, reuse existing ones when possible.
+Impact: Reduces memory pressure and garbage collection overhead, which can be significant in object-heavy code.
+Example:
+gml
+Copy code
+for (var i = 0; i < 100; i++) {
+    var obj = new Object();
+    obj.doSomething();
+}
+Optimized:
+gml
+Copy code
+var obj = new Object();
+for (var i = 0; i < 100; i++) {
+    obj.doSomething();
+}
+10. Tail Call Optimization
+Why prioritize: Safe if the recursive function is structured correctly. This can prevent stack overflow issues and optimize recursion.
+Impact: Reduces stack usage in recursive functions, making them as efficient as iteration.
+Example:
+gml
+Copy code
+function factorial(n) {
+    if (n == 0) return 1;
+    return n * factorial(n - 1);
+}
+Optimized:
+gml
+Copy code
+function factorial(n, acc = 1) {
+    if (n == 0) return acc;
+    return factorial(n - 1, n * acc);
+}
+11. Removing Redundant Conditionals
+Why prioritize: Redundant conditionals that always evaluate to the same outcome can be safely removed.
+Impact: Reduces the need for unnecessary branching, which saves CPU cycles.
+Example:
+gml
+Copy code
+if (true) {
+    doSomething();
+} else {
+    doNothing();
+}
+Optimized:
+gml
+Copy code
+doSomething(); // Conditional removed.
+12. Strength Reduction
+Why prioritize: Safe when simple arithmetic optimizations are applied, such as replacing expensive operations (multiplication) with cheaper ones (bit shifting).
+Impact: Improves performance of arithmetic-heavy code without changing its behavior.
+Example:
+gml
+Copy code
+var x = y * 2;
+Optimized:
+gml
+Copy code
+var x = y << 1; // Replaced with bit shifting.
+Top 5 to Prioritize for Immediate Gains:
+Constant Folding: Simple to implement and effective for reducing runtime computation.
+Dead Code Elimination: Removes useless code, making your AST and runtime environment leaner.
+Constant Propagation: Makes code easier to optimize further and reduces variable lookups.
+Loop-Invariant Code Motion: Major gains in loops, especially those with expensive repeated operations.
+Function Inlining (Small Functions): Reduces function call overhead, which is a common performance bottleneck.
+These optimizations are safe and have the potential for the greatest impact on performance, particularly in codebases with a lot of calculations or iterations. They can be applied early in the optimization process with little risk of changing the behavior of the program, making them ideal starting points.
