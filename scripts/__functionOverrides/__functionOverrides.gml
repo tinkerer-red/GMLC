@@ -47,3 +47,78 @@ function __method(_struct, _func) {
 		}
 	}
 }
+#region GML Emulated functions
+function __struct_get_with_error(struct, name) {
+	if (struct_exists(struct, name)) return struct_get(struct, name);
+	
+	throw $"\nVariable <unknown_object>.{name} not set before reading it."
+	//throw $"\nVariable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}"
+}
+
+function __script_execute_ext(ind, array) {
+	//execute GMLC Script
+	if (is_instanceof(ind, __GMLC_Script))   return ind.execute(array);
+	
+	//execute GMLC Function
+	if (is_instanceof(ind, __GMLC_Function)) return ind.execute(array);
+	
+	//execute GML Script/Function
+	return script_execute_ext(ind, array)
+}
+
+function __NewGMLArray() {
+	var _arr = [];
+	var _i=0; repeat(argument_count) {
+		_arr[_i] = argument[_i];
+	_i+=1;}//end repeat loop
+	return _arr;
+}
+
+function __NewGMLStruct() {
+	var _struct = {};
+	var _i=0; repeat(argument_count/2) {
+		_struct[$ argument[_i]] = argument[_i+1];
+	_i+=2;}//end repeat loop
+	
+	return _struct;
+}
+
+function __array_update(arr, index, increment, prefix) {
+	if (increment)  && (prefix)  return ++arr[index];
+	if (increment)  && (!prefix) return   arr[index]++;
+	if (!increment) && (prefix)  return --arr[index];
+	if (!increment) && (!prefix) return   arr[index]--;
+}
+function __list_update(list, index, increment, prefix) {
+	if (increment)  && (prefix)  return ++list[| index];
+	if (increment)  && (!prefix) return   list[| index]++;
+	if (!increment) && (prefix)  return --list[| index];
+	if (!increment) && (!prefix) return   list[| index]--;
+}
+function __map_update(map, key, increment, prefix) {
+	if (increment)  && (prefix)  return ++map[? key];
+	if (increment)  && (!prefix) return   map[? key]++;
+	if (!increment) && (prefix)  return --map[? key];
+	if (!increment) && (!prefix) return   map[? key]--;
+}
+function __grid_update(grid, _x, _y, increment, prefix) {
+	if (increment)  && (prefix)  return ++grid[# _x, _y];
+	if (increment)  && (!prefix) return   grid[# _x, _y]++;
+	if (!increment) && (prefix)  return --grid[# _x, _y];
+	if (!increment) && (!prefix) return   grid[# _x, _y]--;
+}
+function __struct_update(struct, name, increment, prefix) {
+	if (increment)  && (prefix)  return ++struct[$ name];
+	if (increment)  && (!prefix) return   struct[$ name]++;
+	if (!increment) && (prefix)  return --struct[$ name];
+	if (!increment) && (!prefix) return   struct[$ name]--;
+}
+function __struct_with_error_update(struct, name, increment, prefix) {
+	if (!struct_exists(struct, name)) throw $"\nVariable <unknown_object>.{name} not set before reading it."
+	
+	if (increment)  && (prefix)  return ++struct[$ name];
+	if (increment)  && (!prefix) return   struct[$ name]++;
+	if (!increment) && (prefix)  return --struct[$ name];
+	if (!increment) && (!prefix) return   struct[$ name]--;
+}
+#endregion

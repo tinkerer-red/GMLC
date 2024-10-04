@@ -140,6 +140,7 @@
     {"name":"keywordNamespaces","order":10,"path":"scripts/keywordNamespaces/keywordNamespaces.yy",},
     {"name":"log","order":6,"path":"scripts/log/log.yy",},
     {"name":"LoggerAPI","order":3,"path":"scripts/LoggerAPI/LoggerAPI.yy",},
+    {"name":"MacrosEnumsNamespaces","order":8,"path":"scripts/MacrosEnumsNamespaces/MacrosEnumsNamespaces.yy",},
     {"name":"normalize","order":1,"path":"scripts/normalize/normalize.yy",},
     {"name":"os_type_to_string","order":1,"path":"scripts/os_type_to_string/os_type_to_string.yy",},
     {"name":"platform_filters","order":2,"path":"scripts/platform_filters/platform_filters.yy",},

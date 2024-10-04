@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"MacrosEnumsNamespaces",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"MacrosEnumsNamespaces",
+  "parent":{
+    "name":"internal",
+    "path":"folders/GMLCompiler/internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

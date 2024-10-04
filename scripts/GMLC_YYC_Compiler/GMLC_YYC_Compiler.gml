@@ -8,7 +8,6 @@ global.otherInstance = undefined;
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-
 function compileProgram(_AST) {
 	return __GMLCcompileProgram(_AST);
 }
@@ -19,6 +18,8 @@ function executeProgram(_program) {
     
 	return _program();
 }
+
+#region Structural Nodes
 
 #region //{
 // used to start the initial entry into the compiled program, mostly just to init variables like 
@@ -211,8 +212,6 @@ function __GMLCcompileArgument(_rootNode, _parentNode, _node) {
 	return _output;
 }
 
-
-
 function __GMLCexecuteExpression() {};
 function __GMLCcompileExpression(_rootNode, _parentNode, _node, _isCondtion=false) {
 	//log("\n\n")
@@ -375,56 +374,11 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node, _isCondtion=fals
 	
 };
 
+#endregion
 
 #region Statements
 
-#region //{
-// used for gmlc compiled repeat blocks
-//    condition: <expression>,
-//    trueBlock: <expression>,
-//}
-#endregion
-function __GMLCexecuteIf() {
-    if (condition()) trueBlock();
-}
-#region //{
-// used for gmlc compiled repeat blocks
-//    condition: <expression>,
-//    trueBlock: <expression>,
-//    elseBlock: <expression>,
-//}
-#endregion
-function __GMLCexecuteIfElse() {
-    ///NOTE: it might be faster to use a ternary operation here,
-    // it is worth investigating with a benchmark
-	if (condition()) {
-		trueBlock()
-    }
-    else {
-		elseBlock();
-    }
-}
-function __GMLCcompileIf(_rootNode, _parentNode, _condition, _trueBlock, _elseBlock=undefined) {
-    var _output = {
-		compilerBase: "__compileIf",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		condition: __GMLCcompileExpression(_rootNode, _parentNode, _condition),
-		trueBlock: __GMLCcompileExpression(_rootNode, _parentNode, _trueBlock),
-    }
-    
-	if (_elseBlock == undefined) {
-		return method(_output, __GMLCexecuteIf);
-    }
-    else {
-		_output.elseBlock = __GMLCcompileExpression(_rootNode, _parentNode, _elseBlock);
-		return method(_output, __GMLCexecuteIfElse);
-    }
-}
-
+#region Block Statements
 
 #region //{
 // used for gmlc compiled block statements, these are non-breakable, typically used
@@ -598,6 +552,55 @@ function __GMLCcompileLoopStatement(_rootNode, _parentNode, _node) {
 	}
 	
     return method(_output, __GMLCexecuteLoopStatement);
+}
+
+#endregion
+
+#region //{
+// used for gmlc compiled repeat blocks
+//    condition: <expression>,
+//    trueBlock: <expression>,
+//}
+#endregion
+function __GMLCexecuteIf() {
+    if (condition()) trueBlock();
+}
+#region //{
+// used for gmlc compiled repeat blocks
+//    condition: <expression>,
+//    trueBlock: <expression>,
+//    elseBlock: <expression>,
+//}
+#endregion
+function __GMLCexecuteIfElse() {
+    ///NOTE: it might be faster to use a ternary operation here,
+    // it is worth investigating with a benchmark
+	if (condition()) {
+		trueBlock()
+    }
+    else {
+		elseBlock();
+    }
+}
+function __GMLCcompileIf(_rootNode, _parentNode, _condition, _trueBlock, _elseBlock=undefined) {
+    var _output = {
+		compilerBase: "__compileIf",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		condition: __GMLCcompileExpression(_rootNode, _parentNode, _condition),
+		trueBlock: __GMLCcompileExpression(_rootNode, _parentNode, _trueBlock),
+    }
+    
+	if (_elseBlock == undefined) {
+		return method(_output, __GMLCexecuteIf);
+    }
+    else {
+		_output.elseBlock = __GMLCcompileExpression(_rootNode, _parentNode, _elseBlock);
+		return method(_output, __GMLCexecuteIfElse);
+    }
 }
 
 #region //{
@@ -932,11 +935,81 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _tryBlock, _catchB
     return method(_output, __GMLCexecuteTryCatchFinally);
 }
 
-
 #endregion
 
 #region Keyword Statements
 
+#region //{
+// used to inform gmlc that a break has occured
+//    callee
+//    calleeName
+//    argArr
+//    size
+//}
+#endregion
+function __GMLCexecuteNew() {
+	var _struct = {};
+	
+	/////////////////////////////////////////////////////////////////////////
+	
+	var _func = callee()
+	
+	var _argArray = array_map(argArr, function(_elem, _index){
+		return _elem();
+	});
+	
+	if (is_method(_func)) {
+		if (is_gmlc_progam(_func)) {
+			if (is_gmlc_method(_func)) {
+				throw "target function for 'new' must be a constructor"
+			}
+		
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
+			global.otherInstance = global.selfInstance;
+			global.selfInstance = _struct;
+		
+			method_call(_func, _argArray);
+		
+			global.otherInstance = _prevOther;
+			global.selfInstance  = _prevSelf;
+		}
+		else {
+			throw "target function for 'new' must be a constructor"
+		}
+	}
+	else {
+		with (global.otherInstance) with (global.selfInstance) {
+			var _struct = constructor_call_ext(_func, _argArray);
+		}
+	}
+	
+	/////////////////////////////////////////////////////////////////////////
+	
+	return _struct;
+}
+function __GMLCcompileNew(_rootNode, _parentNode, _node) {
+	var _output = {
+		compilerBase: "__compileCallExpression",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		callee: __GMLCcompileExpression(_rootNode, _parentNode, _node.expression.callee),
+		calleeName: _node.expression.callee.name,// this is actually unneeded, but we would still like to have it for debugging
+		argArr: [],
+		size: 0,
+    }
+	
+	var _argArr = _node.expression.arguments
+	var _i=0; repeat(array_length(_argArr)) {
+		_output.argArr[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
+		_output.size++;
+	_i++}
+    
+    return method(_output, __GMLCexecuteNew);
+}
 #region //{
 // used to inform gmlc that a break has occured
 //    no data needed
@@ -1025,7 +1098,6 @@ function __GMLCcompileReturn(_rootNode, _parentNode, _expression) {
     
     return method(_output, __GMLCexecuteReturn);
 }
-
 #region //{
 // used to execute gmlc compiled `throw` statement
 //    expression: <exprettion> // expects a string as result
@@ -1051,839 +1123,175 @@ function __GMLCcompileThrow(_rootNode, _parentNode, _expression) {
 
 #endregion
 
-#region Targeters / Getter / Setters
+#region Expressions
 
 #region //{
-// used for natively compiled functions
-//    target: <expression>,
-//    key: <expression>,
+// used to build a new array
+//    expressionsArray: array<expressions>
+//    size: array_length(expressionsArray),
 //}
 #endregion
-function __GMLCexecutePropertyGet() {
-	return struct_get(target(), key());
+function __GMLCexecuteNewArray() {
+    var _arr = array_create(size);
+    var _i=0; repeat(size) {
+		_arr[_i] = expressionsArray[_i]();
+    _i++}
+    return _arr;
 }
-function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey){
-	if (_scope == ScopeType.UNIQUE) {
-		var _output = {
-			compilerBase: "__compilePropertyGet",
-			errorMessage: "<Missing Error Message>",
-			
-			rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-			key: _leftKey,
-			expression: _rightExpression,
-		}
-		
-		return method(_output, __GMLCexecuteGetUnique)
-	}
-	
-	var _output = {
-		compilerBase: "__compilePropertyGet",
-		errorMessage: "<Missing Error Message>",
-	    
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: __GMLCgetScopeTarget(_scope),
-		key: _leftKey,
-	}
-	
-	return method(_output, __GMLCexecutePropertyGet)
-}
-
-#region //{
-// used for natively compiled functions
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecutePropertySet() {
-	struct_set(target(), key(), expression());
-}
-function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _leftKey, _rightExpression){
-	if (_scope == ScopeType.UNIQUE) {
-		var _output = {
-			compilerBase: "__compilePropertySet",
-			errorMessage: "<Missing Error Message>",
-			
-			rootNode: _rootNode,
-			parentNode: _parentNode,
-			
-			key: _leftKey,
-			expression: _rightExpression,
-		}
-		
-		return method(_output, __GMLCexecuteSetUnique)
-	}
-	
-	var _output = {
-		compilerBase: "__compilePropertySet",
-		errorMessage: "<Missing Error Message>",
-	    
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: __GMLCgetScopeTarget(_scope),
-		key: _leftKey,
-		expression: _rightExpression,
-	}
-	
-	return method(_output, __GMLCexecutePropertySet)
-}
-
-#region Scope Getters/Setters
-function __GMLCgetScopeTarget(_scopeType) {
-	switch (_scopeType) {
-		case ScopeType.GLOBAL:   return __GMLCexecuteTargetGlobal    break;
-		case ScopeType.LOCAL:    return __GMLCexecuteTargetVarLocal  break;
-		case ScopeType.STATIC:   return __GMLCexecuteTargetVarStatic break;
-		case ScopeType.INSTANCE: return __GMLCexecuteTargetSelf      break;
-		case ScopeType.CONST:    return __GMLCexecuteTargetConstant  break;
-		case ScopeType.UNIQUE:   return __GMLCexecuteTargetUnique    break;
-		default: throw $"Unsupported scope to be written to :: {_scopeType}";
-	}
-}
-function __GMLCgetScopeGetter(_scopeType) {
-	switch (_scopeType) {
-		case ScopeType.GLOBAL:   return __GMLCexecuteGetGlobal    break;
-		case ScopeType.LOCAL:    return __GMLCexecuteGetVarLocal  break;
-		case ScopeType.STATIC:   return __GMLCexecuteGetVarStatic break;
-		case ScopeType.INSTANCE: return __GMLCexecuteGetInstance  break;
-		case ScopeType.CONST:    return __GMLCexecuteGetConstant  break;
-		case ScopeType.UNIQUE:   return __GMLCexecuteGetUnique    break;
-		default: throw $"Unsupported scope to be written to :: {_scopeType}";
-	}
-}
-function __GMLCgetScopeSetter(_scopeType) {
-	switch (_scopeType) {
-		case ScopeType.GLOBAL:   return __GMLCexecuteSetGlobal    break;
-		case ScopeType.LOCAL:    return __GMLCexecuteSetVarLocal  break;
-		case ScopeType.STATIC:   return __GMLCexecuteSetVarStatic break;
-		case ScopeType.INSTANCE: return __GMLCexecuteSetInstance  break;
-		case ScopeType.CONST:    return __GMLCexecuteSetConstant  break;
-		case ScopeType.UNIQUE:   return __GMLCexecuteSetUnique    break;
-		default: throw $"Unsupported scope to be written to :: {_scopeType}";
-	}
-}
-
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetSelf() {
-    return global.selfInstance;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetOther() {
-    return global.otherInstance;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetGlobal() {
-    return rootNode.globals;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetVarLocal() {
-    return parentNode.locals;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetVarStatic() {
-    return parentNode.statics;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetUnique() {
-    throw $"Shouldnt be trying to target Unique Scope"
-}
-
-#region //{
-//    key: <expression>
-//}
-#endregion
-function __GMLCexecuteGetSelf() {
-    return global.selfInstance;
-}
-#region //{
-//    key: <expression>
-//}
-#endregion
-function __GMLCexecuteGetOther() {
-    return global.otherInstance;
-}
-#region //{
-//    key: <expression>
-//}
-#endregion
-function __GMLCexecuteGetGlobal() {
-    return rootNode.globals;
-}
-#region //{
-//    key: <expression>
-//}
-#endregion
-function __GMLCexecuteGetVarLocal() {
-    return parentNode.locals;
-}
-#region //{
-//    key: <expression>
-//}
-#endregion
-function __GMLCexecuteGetVarStatic() {
-    return parentNode.statics;
-}
-#region //{
-//    key: <expression>
-//}
-#endregion
-function __GMLCexecuteGetUnique() {
-    switch (key) {
-		case "self":				     return global.selfInstance;       break;
-		case "other":				    return global.otherInstance;      break;
-		case "all":				      return all;				       break;
-		case "noone":				    return noone;				     break;
-								
-		case "fps":				      return fps;				       break;
-		case "room":				     return room;				      break;
-		case "lives":				    return lives;				     break;
-		case "score":				    return score;				     break;
-		case "health":				   return health;				    break;
-		case "mouse_x":				  return mouse_x;				   break;
-		case "visible":				  return visible;				   break;
-		case "managed":				  return managed;				   break;
-		case "mouse_y":				  return mouse_y;				   break;
-		case "os_type":				  return os_type;				   break;
-		case "game_id":				  return game_id;				   break;
-		case "iap_data":				 return iap_data;				  break;
-		case "argument":				 return parentNode.arguments    ;  break;
-		case "argument0":				return parentNode.arguments[0] ;  break;
-		case "argument1":				return parentNode.arguments[1] ;  break;
-		case "argument2":				return parentNode.arguments[2] ;  break;
-		case "argument3":				return parentNode.arguments[3] ;  break;
-		case "argument4":				return parentNode.arguments[4] ;  break;
-		case "argument5":				return parentNode.arguments[5] ;  break;
-		case "argument6":				return parentNode.arguments[6] ;  break;
-		case "argument7":				return parentNode.arguments[7] ;  break;
-		case "argument8":				return parentNode.arguments[8] ;  break;
-		case "argument9":				return parentNode.arguments[9] ;  break;
-		case "argument10":		       return parentNode.arguments[10];  break;
-		case "argument11":		       return parentNode.arguments[11];  break;
-		case "argument12":		       return parentNode.arguments[12];  break;
-		case "argument13":		       return parentNode.arguments[13];  break;
-		case "argument14":		       return parentNode.arguments[14];  break;
-		case "argument15":		       return parentNode.arguments[15];  break;
-		case "fps_real":				 return fps_real;				  break;
-		case "room_last":				return room_last;				 break;
-		case "os_device":				return os_device;				 break;
-		case "delta_time":		       return delta_time;				break;
-		case "show_lives":		       return show_lives;				break;
-		case "path_index":		       return path_index;				break;
-		case "room_first":		       return room_first;				break;
-		case "room_width":		       return room_width;				break;
-		case "view_hport":		       return view_hport;				break;
-		case "view_xport":		       return view_xport;				break;
-		case "view_yport":		       return view_yport;				break;
-		case "debug_mode":		       return debug_mode;				break;
-		case "event_data":		       return event_data;				break;
-		case "view_wport":		       return view_wport;				break;
-		case "os_browser":		       return os_browser;				break;
-		case "os_version":		       return os_version;				break;
-		case "room_speed":		       return room_speed;				break;
-		case "show_score":		       return show_score;				break;
-		case "error_last":		       return error_last;				break;
-		case "display_aa":		       return display_aa;				break;
-		case "async_load":		       return async_load;				break;
-		case "instance_id":		      return instance_id;		       break;
-		case "current_day":		      return current_day;		       break;
-		case "view_camera":		      return view_camera;		       break;
-		case "room_height":		      return room_height;		       break;
-		case "show_health":		      return show_health;		       break;
-		case "mouse_button":		     return mouse_button;		      break;
-		case "keyboard_key":		     return keyboard_key;		      break;
-		case "view_visible":		     return view_visible;		      break;
-		case "game_save_id":		     return game_save_id;		      break;
-		case "current_hour":		     return current_hour;		      break;
-		case "room_caption":		     return room_caption;		      break;
-		case "view_enabled":		     return view_enabled;		      break;
-		case "event_action":		     return event_action;		      break;
-		case "view_current":		     return view_current;		      break;
-		case "current_time":		     return current_time;		      break;
-		case "current_year":		     return current_year;		      break;
-		case "browser_width":		    return browser_width;		     break;
-		case "webgl_enabled":		    return webgl_enabled;		     break;
-		case "current_month":		    return current_month;		     break;
-		case "caption_score":		    return caption_score;		     break;
-		case "caption_lives":		    return caption_lives;		     break;
-		case "gamemaker_pro":		    return gamemaker_pro;		     break;
-		case "cursor_sprite":		    return cursor_sprite;		     break;
-		case "caption_health":		   return caption_health;		    break;
-		case "instance_count":		   return instance_count;		    break;
-		case "argument_count":		   return array_length(parentNode.arguments);		    break;
-		case "error_occurred":		   return error_occurred;		    break;
-		case "current_minute":		   return current_minute;		    break;
-		case "current_second":		   return current_second;		    break;
-		case "temp_directory":		   return temp_directory;		    break;
-		case "browser_height":		   return browser_height;		    break;
-		case "view_surface_id":		  return view_surface_id;		   break;
-		case "room_persistent":		  return room_persistent;		   break;
-		case "current_weekday":		  return current_weekday;		   break;
-		case "keyboard_string":		  return keyboard_string;		   break;
-		case "cache_directory":		  return cache_directory;		   break;
-		case "mouse_lastbutton":		 return mouse_lastbutton;		  break;
-		case "keyboard_lastkey":		 return keyboard_lastkey;		  break;
-		case "wallpaper_config":		 return wallpaper_config;		  break;
-		case "background_color":		 return background_color;		  break;
-		case "program_directory":		return program_directory;		 break;
-		case "game_project_name":		return game_project_name;		 break;
-		case "game_display_name":		return game_display_name;		 break;
-		//case "argument_relative":		return argument_relative;		 break;
-		case "keyboard_lastchar":		return keyboard_lastchar;		 break;
-		case "working_directory":		return working_directory;		 break;
-		case "rollback_event_id":		return rollback_event_id;		 break;
-		case "background_colour":		return background_colour;		 break;
-		case "font_texture_page_size":   return font_texture_page_size;    break;
-		case "application_surface":      return application_surface;       break;
-		case "rollback_api_server":      return rollback_api_server;       break;
-		case "gamemaker_registered":     return gamemaker_registered;      break;
-		case "background_showcolor":     return background_showcolor;      break;
-		case "rollback_event_param":     return rollback_event_param;      break;
-		case "background_showcolour":    return background_showcolour;     break;
-		case "rollback_game_running":    return rollback_game_running;     break;
-		case "rollback_current_frame":   return rollback_current_frame;    break;
-		case "rollback_confirmed_frame": return rollback_confirmed_frame;  break;
-								
-	}
-}
-function __GMLCcompileGetUnique(_rootNode, _parentNode, _key) {
-	var _output = {
-		compilerBase: "__compileGetUnique",
+function __GMLCcompileNewArray(_rootNode, _parentNode, _expressionsArray) {
+    var _output = {
+		compilerBase: "__compileNewArray",
 		errorMessage: "<Missing Error Message>",
 		
 		rootNode: _rootNode,
 		parentNode: _parentNode,
 		
-		key: _key,
+		expressionsArray: [],
+		size: undefined,
     }
     
-    return method(_output, __GMLCexecuteGetUnique);
+    var _i=0; repeat(array_length(_expressionsArray)) {
+		_output.expressionsArray[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _expressionsArray[_i]);
+    _i++}
+    
+    _output.size = array_length(_output.expressionsArray)
+    
+    return method(_output, __GMLCexecuteNewArray);
 }
 
-
 #region //{
-//    key: <expression>
-//    expression: <expression>
+// used to build a new array
+//    array: array<expressions>
+//    size: array_length(expressionsArray) / 2,
 //}
 #endregion
-function __GMLCexecuteSetSelf() {
-    return struct_set(global.selfInstance, key, expression())
+function __GMLCexecuteNewStruct() {
+    var _struct = {}
+    var _i=0; repeat(size/2) {
+		var _key = array[_i];
+		var _value = array[_i+1];
+		struct_set(_struct, _key(), _value())
+    _i+=2}
+    return _struct;
 }
-#region //{
-//    key: <expression>
-//    expression: <expression>
-//}
-#endregion
-function __GMLCexecuteSetOther() {
-    return struct_set(global.otherInstance, key, expression())
-}
-#region //{
-//    key: <expression>
-//    expression: <expression>
-//}
-#endregion
-function __GMLCexecuteSetGlobal() {
-    return struct_set(globals, key, expression())
-}
-#region //{
-//    key: <stringLiteral>
-//    expression: <expression>
-//}
-#endregion
-function __GMLCexecuteSetVarLocal() {
-    return struct_set(locals, key, expression())
-}
-#region //{
-//    key: <expression>
-//    expression: <expression>
-//}
-#endregion
-function __GMLCexecuteSetVarStatic() {
-    return struct_set(statics, key, expression())
-}
-#region //{
-//    key: <expression>
-//    expression: <expression>
-//}
-#endregion
-function __GMLCexecuteSetUnique() {
-	switch (key) {
-		//all write protected errors are at the bottom
-		case "room":				     room				      = expression(); break;
-		case "lives":				    lives				     = expression(); break;
-		case "score":				    score				     = expression(); break;
-		case "health":				   health				    = expression(); break;
-		case "visible":				  visible				   = expression(); break;
-		case "argument":				 parentNode.arguments      = expression(); break;
-		case "argument0":				parentNode.arguments[0]   = expression(); break;
-		case "argument1":				parentNode.arguments[1]   = expression(); break;
-		case "argument2":				parentNode.arguments[2]   = expression(); break;
-		case "argument3":				parentNode.arguments[3]   = expression(); break;
-		case "argument4":				parentNode.arguments[4]   = expression(); break;
-		case "argument5":				parentNode.arguments[5]   = expression(); break;
-		case "argument6":				parentNode.arguments[6]   = expression(); break;
-		case "argument7":				parentNode.arguments[7]   = expression(); break;
-		case "argument8":				parentNode.arguments[8]   = expression(); break;
-		case "argument9":				parentNode.arguments[9]   = expression(); break;
-		case "argument10":		       parentNode.arguments[10]  = expression(); break;
-		case "argument11":		       parentNode.arguments[11]  = expression(); break;
-		case "argument12":		       parentNode.arguments[12]  = expression(); break;
-		case "argument13":		       parentNode.arguments[13]  = expression(); break;
-		case "argument14":		       parentNode.arguments[14]  = expression(); break;
-		case "argument15":		       parentNode.arguments[15]  = expression(); break;
-		case "show_lives":		       show_lives				= expression(); break;
-		case "room_width":		       room_width				= expression(); break;
-		case "view_hport":		       view_hport				= expression(); break;
-		case "view_xport":		       view_xport				= expression(); break;
-		case "view_yport":		       view_yport				= expression(); break;
-		case "view_wport":		       view_wport				= expression(); break;
-		case "room_speed":		       room_speed				= expression(); break;
-		case "show_score":		       show_score				= expression(); break;
-		case "error_last":		       error_last				= expression(); break;
-		case "view_camera":		      view_camera		       = expression(); break;
-		case "room_height":		      room_height		       = expression(); break;
-		case "show_health":		      show_health		       = expression(); break;
-		case "mouse_button":		     mouse_button		      = expression(); break;
-		case "keyboard_key":		     keyboard_key		      = expression(); break;
-		case "view_visible":		     view_visible		      = expression(); break;
-		case "room_caption":		     room_caption		      = expression(); break;
-		case "view_enabled":		     view_enabled		      = expression(); break;
-		case "caption_score":		    caption_score		     = expression(); break;
-		case "caption_lives":		    caption_lives		     = expression(); break;
-		case "cursor_sprite":		    cursor_sprite		     = expression(); break;
-		case "caption_health":		   caption_health		    = expression(); break;
-		case "error_occurred":		   error_occurred		    = expression(); break;
-		case "view_surface_id":		  view_surface_id		   = expression(); break;
-		case "room_persistent":		  room_persistent		   = expression(); break;
-		case "keyboard_string":		  keyboard_string		   = expression(); break;
-		case "mouse_lastbutton":		 mouse_lastbutton		  = expression(); break;
-		case "keyboard_lastkey":		 keyboard_lastkey		  = expression(); break;
-		case "background_color":		 background_color		  = expression(); break;
-		case "keyboard_lastchar":		keyboard_lastchar		 = expression(); break;
-		case "background_colour":		background_colour		 = expression(); break;
-		case "font_texture_page_size":   font_texture_page_size    = expression(); break;
-		case "background_showcolor":     background_showcolor      = expression(); break;
-		case "background_showcolour":    background_showcolour     = expression(); break;
-		
-		//begining of write errors
-		case "self":
-		case "other":
-		case "all":
-		case "noone":
-		case "delta_time":
-		case "path_index":
-		case "room_first":
-		case "debug_mode":
-		case "event_data":
-		case "os_browser":
-		case "os_version":
-		case "display_aa":
-		case "async_load":
-		case "instance_id":
-		case "current_day":
-		case "game_save_id":
-		case "current_hour":
-		case "event_action":
-		case "view_current":
-		case "current_time":
-		case "current_year":
-		case "browser_width":
-		case "webgl_enabled":
-		case "current_month":
-		case "gamemaker_pro":
-		case "instance_count":
-		case "argument_count":
-		case "current_minute":
-		case "current_second":
-		case "temp_directory":
-		case "browser_height":
-		case "current_weekday":
-		case "cache_directory":
-		case "wallpaper_config":
-		case "program_directory":
-		case "game_project_name":
-		case "game_display_name":
-		case "argument_relative":
-		case "working_directory":
-		case "rollback_event_id":
-		case "application_surface":
-		case "rollback_api_server":
-		case "gamemaker_registered":
-		case "rollback_event_param":
-		case "rollback_game_running":
-		case "rollback_current_frame":
-		case "rollback_confirmed_frame":
-		case "fps":
-		case "mouse_x":
-		case "managed":
-		case "mouse_y":
-		case "os_type":
-		case "game_id":
-		case "iap_data":
-		case "fps_real":
-		case "room_last":
-		case "os_device": throw $"Attempting to write to a read-only variable {key}";
-	}
-}
-function __GMLCcompileSetUnique(_rootNode, _parentNode, _key, _value) {
-	var _output = {
-		compilerBase: "__compileSetUnique",
+function __GMLCcompileNewStruct(_rootNode, _parentNode, _arr) {
+    var _output = {
+		compilerBase: "__compileNewStruct",
 		errorMessage: "<Missing Error Message>",
 		
 		rootNode: _rootNode,
 		parentNode: _parentNode,
 		
-		key: _key,
+		array: [],
+		size: undefined,
+    }
+    
+    var _i=0; repeat(array_length(_arr)) {
+		//should probably all be literal strings, but i dont care otherwise
+		_output.array[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _arr[_i])
+    _i++}
+    
+    _output.size = array_length(_output.array)
+    
+    return method(_output, __GMLCexecuteNewStruct);
+}
+
+#region //{
+// used to fetch Literal values
+//    value: <any>,
+//}
+#endregion
+function __GMLCexecuteLiteralExpression() {
+    return value;
+}
+function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _value) {
+    var _output = {
+		compilerBase: "__compileLiteralExpression",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
 		value: _value,
     }
     
-    return method(_output, __GMLCexecuteSetUnique);
+    return method(_output, __GMLCexecuteLiteralExpression);
 }
-#endregion
 
-function __GMLCcompileAccessor(_rootNode, _parentNode, _accessorNode) {
+#region //{
+// used to call functions
+//    callee: <method, function, or program>,
+//    argArr: array<expression>,
+//}
+#endregion
+function __GMLCexecuteCallExpression() {
+	var _func = callee()
 	
-	var _target = __GMLCcompileExpression(_rootNode, _parentNode, _accessorNode.expr)
-	var _key = __GMLCcompileExpression(_rootNode, _parentNode, _accessorNode.val1)
+	var _argArray = array_map(argArr, function(_elem, _index){
+		return _elem();
+	});
 	
-	switch (_accessorNode.accessorType) {
-		case __GMLC_AccessorType.Array:  return __GMLCcompileArrayGet       (_rootNode, _parentNode, _target, _key)
-		case __GMLC_AccessorType.Grid:   return __GMLCcompileGridGet		(_rootNode, _parentNode, _target, _key, __GMLCcompileExpression(_rootNode, _parentNode, _accessorNode.val1))
-		case __GMLC_AccessorType.List:   return __GMLCcompileListGet		(_rootNode, _parentNode, _target, _key)
-		case __GMLC_AccessorType.Map:    return __GMLCcompileMapGet		 (_rootNode, _parentNode, _target, _key)
-		case __GMLC_AccessorType.Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _target, _key)
-		case __GMLC_AccessorType.Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key)
-		default: throw $"\nUnsupported accessor type: {_accessorNode.accessorType}\n{_accessorNode}";
+	if (is_method(_func)) {
+		if (is_gmlc_progam(_func)) {
+			var _return = method_call(_func, _argArray);
+		}
+		else {
+		
+			var _self = method_get_self(_func);
+		
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
+			global.otherInstance = global.selfInstance;
+			global.selfInstance = _self;
+		
+			var _return = method_call(_func, _argArray);
+		
+			global.otherInstance = _prevOther;
+			global.selfInstance  = _prevSelf;
+		}
+	}
+	else {
+		with (global.otherInstance) with (global.selfInstance) {
+			var _return = script_execute_ext(_func, _argArray);
+		}
 	}
 	
-	
+	return _return;
 }
-#region Accessor Getters/Setters
-#region Array
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteArrayGet(){
-	var _target = target();
-	return _target[key()]
-}
-function __GMLCcompileArrayGet(_rootNode, _parentNode, _target, _key) {
+function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
     var _output = {
-		compilerBase: "__compileArrayGet",
+		compilerBase: "__compileCallExpression",
 		errorMessage: "<Missing Error Message>",
 		
 		rootNode: _rootNode,
 		parentNode: _parentNode,
 		
-		target: _target,
-		key: _key,
+		callee: __GMLCcompileExpression(_rootNode, _parentNode, _node.callee),
+		calleeName: _node.callee.name,// this is actually unneeded, but we would still like to have it for debugging
+		argArr: [],
+		size: 0,
     }
 	
-	return method(_output, __GMLCexecuteArrayGet)
+	var _argArr = _node.arguments
+	var _i=0; repeat(array_length(_argArr)) {
+		_output.argArr[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
+		_output.size++;
+	_i++}
+    
+    return method(_output, __GMLCexecuteCallExpression);
 }
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteArraySet(){
-	var _target = target();
-	_target[key()] = expression()
-}
-function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression) {
-    var _output = {
-		compilerBase: "__compileArraySet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-		expression: _expression,
-    }
-    return method(_output, __GMLCexecuteArraySet)
-}
-#endregion
-#region List
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteListGet(){
-	var _target = target();
-	return _target[| key()]
-}
-function __GMLCcompileListGet(_rootNode, _parentNode, _target, _key) {
-    var _output = {
-		compilerBase: "__compileListGet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-    }
-    return method(_output, __GMLCexecuteListGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteListSet(){
-	var _target = target();
-	_target[| key()] = expression()
-}
-function __GMLCcompileListSet(_rootNode, _parentNode, _target, _key, _expression) {
-    var _output = {
-		compilerBase: "__compileListSet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-		expression: _expression,
-    }
-    return method(_output, __GMLCexecuteListSet)
-}
-#endregion
-#region Map
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteMapGet(){
-	var _target = target();
-	return _target[? key()]
-}
-function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key) {
-    var _output = {
-		compilerBase: "__compileMapGet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-    }
-    return method(_output, __GMLCexecuteMapGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteMapSet(){
-	var _target = target();
-	_target[? key()] = expression()
-}
-function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression) {
-    var _output = {
-		compilerBase: "__compileMapSet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-		expression: _expression,
-    }
-    return method(_output, __GMLCexecuteMapSet)
-}
-#endregion
 
-#region Grid
-#region //{
-//    target: <expression>,
-//    keyX: <expression>,
-//    keyY: <expression>,
-//}
-#endregion
-function __GMLCexecuteGridGet(){
-	var _target = target();
-	return _target[# keyX(), keyY()]
+function __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _scope, _key, _expr) {
+	return __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, __GMLCcompileLiteralExpression(_rootNode, _parentNode, _key), __GMLCcompileExpression(_rootNode, _parentNode, _expr));
 }
-function __GMLCcompileGridGet(_rootNode, _parentNode, _target, _keyX, _keyY) {
-    var _output = {
-		compilerBase: "__compileGridGet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		keyX: _keyX,
-		keyY: _keyY,
-    }
-    return method(_output, __GMLCexecuteGridGet)
+function __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node) {
+	return __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.statements)
 }
-#region //{
-//    target: <expression>,
-//    keyX: <expression>,
-//    keyY: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteGridSet(){
-	var _target = target();
-	_target[# keyX(), keyY()] = expression()
-}
-function __GMLCcompileGridSet(_rootNode, _parentNode, _target, _keyX, _keyY, _expression) {
-    var _output = {
-		compilerBase: "__compileGridSet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		keyX: _keyX,
-		keyY: _keyY,
-		expression: _expression,
-    }
-    return method(_output, __GMLCexecuteGridSet)
-}
-#endregion
-#region Struct
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteStructGet(){
-	var _target = target();
-	return _target[$ key()]
-}
-function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key) {
-    var _output = {
-		compilerBase: "__compileStructGet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-    }
-    return method(_output, __GMLCexecuteStructGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteStructSet(){
-	var _target = target();
-	_target[$ key()] = expression()
-}
-function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expression) {
-    var _output = {
-		compilerBase: "__compileStructSet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-		expression: _expression,
-    }
-    return method(_output, __GMLCexecuteStructSet)
-}
-#endregion
-#region Struct w/ Error
-#region //{
-//    target: <expression>,
-//    key: <stringLiteral>,
-//}
-#endregion
-function __GMLCexecuteStructDotAccGet(){
-	var _target = target();
-	var _key = key();
-	
-	if (!struct_exists(_target, _key)) {
-		throw $"\nVariable <unknown_object>.{_key} not set before reading it."
-	}
-	
-	return _target[$ _key];
-}
-function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key) {
-	var _output = {
-		compilerBase: "__compileStructDotAccGet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-    }
-	
-	return method(_output, __GMLCexecuteStructDotAccGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <stringLiteral>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteStructDotAccSet(){
-	var _target = target();
-	var _target = _target;
-    if (!struct_exists(_target, key)) throw $"\nVariable <unknown_object>.{name} not set before reading it."
-	_target[$ key] = expression();
-}
-function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression) {
-    var _output = {
-		compilerBase: "__compileStructDotAccSet",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		target: _target,
-		key: _key,
-		expression: _expression,
-    }
-    return method(_output, __GMLCexecuteStructDotAccSet)
-}
-#endregion
-
-#endregion
 
 #endregion
 
 #region Math Expressions
+
 function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 	if (_node.left.type == __GMLC_NodeType.AccessorExpression) {
 		var _target = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
@@ -2917,105 +2325,839 @@ function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _targetExpressi
 
 #endregion
 
+#region Identifiers
+
+#region Targeters / Getter / Setters
+
 #region //{
-// used to build a new array
-//    expressionsArray: array<expressions>
-//    size: array_length(expressionsArray),
+// used for natively compiled functions
+//    target: <expression>,
+//    key: <expression>,
 //}
 #endregion
-function __GMLCexecuteNewArray() {
-    var _arr = array_create(size);
-    var _i=0; repeat(size) {
-		_arr[_i] = expressionsArray[_i]();
-    _i++}
-    return _arr;
+function __GMLCexecutePropertyGet() {
+	return struct_get(target(), key());
 }
-function __GMLCcompileNewArray(_rootNode, _parentNode, _expressionsArray) {
-    var _output = {
-		compilerBase: "__compileNewArray",
+function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey){
+	if (_scope == ScopeType.UNIQUE) {
+		var _output = {
+			compilerBase: "__compilePropertyGet",
+			errorMessage: "<Missing Error Message>",
+			
+			rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+			key: _leftKey,
+			expression: _rightExpression,
+		}
+		
+		return method(_output, __GMLCexecuteGetUnique)
+	}
+	
+	var _output = {
+		compilerBase: "__compilePropertyGet",
+		errorMessage: "<Missing Error Message>",
+	    
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: __GMLCgetScopeTarget(_scope),
+		key: _leftKey,
+	}
+	
+	return method(_output, __GMLCexecutePropertyGet)
+}
+
+#region //{
+// used for natively compiled functions
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecutePropertySet() {
+	struct_set(target(), key(), expression());
+}
+function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _leftKey, _rightExpression){
+	if (_scope == ScopeType.UNIQUE) {
+		var _output = {
+			compilerBase: "__compilePropertySet",
+			errorMessage: "<Missing Error Message>",
+			
+			rootNode: _rootNode,
+			parentNode: _parentNode,
+			
+			key: _leftKey,
+			expression: _rightExpression,
+		}
+		
+		return method(_output, __GMLCexecuteSetUnique)
+	}
+	
+	var _output = {
+		compilerBase: "__compilePropertySet",
+		errorMessage: "<Missing Error Message>",
+	    
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: __GMLCgetScopeTarget(_scope),
+		key: _leftKey,
+		expression: _rightExpression,
+	}
+	
+	return method(_output, __GMLCexecutePropertySet)
+}
+
+#region Scope Getters/Setters
+function __GMLCgetScopeTarget(_scopeType) {
+	switch (_scopeType) {
+		case ScopeType.GLOBAL:   return __GMLCexecuteTargetGlobal    break;
+		case ScopeType.LOCAL:    return __GMLCexecuteTargetVarLocal  break;
+		case ScopeType.STATIC:   return __GMLCexecuteTargetVarStatic break;
+		case ScopeType.INSTANCE: return __GMLCexecuteTargetSelf      break;
+		case ScopeType.CONST:    return __GMLCexecuteTargetConstant  break;
+		case ScopeType.UNIQUE:   return __GMLCexecuteTargetUnique    break;
+		default: throw $"Unsupported scope to be written to :: {_scopeType}";
+	}
+}
+function __GMLCgetScopeGetter(_scopeType) {
+	switch (_scopeType) {
+		case ScopeType.GLOBAL:   return __GMLCexecuteGetGlobal    break;
+		case ScopeType.LOCAL:    return __GMLCexecuteGetVarLocal  break;
+		case ScopeType.STATIC:   return __GMLCexecuteGetVarStatic break;
+		case ScopeType.INSTANCE: return __GMLCexecuteGetInstance  break;
+		case ScopeType.CONST:    return __GMLCexecuteGetConstant  break;
+		case ScopeType.UNIQUE:   return __GMLCexecuteGetUnique    break;
+		default: throw $"Unsupported scope to be written to :: {_scopeType}";
+	}
+}
+function __GMLCgetScopeSetter(_scopeType) {
+	switch (_scopeType) {
+		case ScopeType.GLOBAL:   return __GMLCexecuteSetGlobal    break;
+		case ScopeType.LOCAL:    return __GMLCexecuteSetVarLocal  break;
+		case ScopeType.STATIC:   return __GMLCexecuteSetVarStatic break;
+		case ScopeType.INSTANCE: return __GMLCexecuteSetInstance  break;
+		case ScopeType.CONST:    return __GMLCexecuteSetConstant  break;
+		case ScopeType.UNIQUE:   return __GMLCexecuteSetUnique    break;
+		default: throw $"Unsupported scope to be written to :: {_scopeType}";
+	}
+}
+
+#region //{
+//}
+#endregion
+function __GMLCexecuteTargetSelf() {
+    return global.selfInstance;
+}
+#region //{
+//}
+#endregion
+function __GMLCexecuteTargetOther() {
+    return global.otherInstance;
+}
+#region //{
+//}
+#endregion
+function __GMLCexecuteTargetGlobal() {
+    return rootNode.globals;
+}
+#region //{
+//}
+#endregion
+function __GMLCexecuteTargetVarLocal() {
+    return parentNode.locals;
+}
+#region //{
+//}
+#endregion
+function __GMLCexecuteTargetVarStatic() {
+    return parentNode.statics;
+}
+#region //{
+//}
+#endregion
+function __GMLCexecuteTargetUnique() {
+    throw $"Shouldnt be trying to target Unique Scope"
+}
+
+#region //{
+//    key: <expression>
+//}
+#endregion
+function __GMLCexecuteGetSelf() {
+    return global.selfInstance;
+}
+#region //{
+//    key: <expression>
+//}
+#endregion
+function __GMLCexecuteGetOther() {
+    return global.otherInstance;
+}
+#region //{
+//    key: <expression>
+//}
+#endregion
+function __GMLCexecuteGetGlobal() {
+    return rootNode.globals;
+}
+#region //{
+//    key: <expression>
+//}
+#endregion
+function __GMLCexecuteGetVarLocal() {
+    return parentNode.locals;
+}
+#region //{
+//    key: <expression>
+//}
+#endregion
+function __GMLCexecuteGetVarStatic() {
+    return parentNode.statics;
+}
+#region //{
+//    key: <expression>
+//}
+#endregion
+function __GMLCexecuteGetUnique() {
+    switch (key) {
+		case "self":				     return global.selfInstance;       break;
+		case "other":				    return global.otherInstance;      break;
+		case "all":				      return all;				       break;
+		case "noone":				    return noone;				     break;
+								
+		case "fps":				      return fps;				       break;
+		case "room":				     return room;				      break;
+		case "lives":				    return lives;				     break;
+		case "score":				    return score;				     break;
+		case "health":				   return health;				    break;
+		case "mouse_x":				  return mouse_x;				   break;
+		case "visible":				  return visible;				   break;
+		case "managed":				  return managed;				   break;
+		case "mouse_y":				  return mouse_y;				   break;
+		case "os_type":				  return os_type;				   break;
+		case "game_id":				  return game_id;				   break;
+		case "iap_data":				 return iap_data;				  break;
+		case "argument":				 return parentNode.arguments    ;  break;
+		case "argument0":				return parentNode.arguments[0] ;  break;
+		case "argument1":				return parentNode.arguments[1] ;  break;
+		case "argument2":				return parentNode.arguments[2] ;  break;
+		case "argument3":				return parentNode.arguments[3] ;  break;
+		case "argument4":				return parentNode.arguments[4] ;  break;
+		case "argument5":				return parentNode.arguments[5] ;  break;
+		case "argument6":				return parentNode.arguments[6] ;  break;
+		case "argument7":				return parentNode.arguments[7] ;  break;
+		case "argument8":				return parentNode.arguments[8] ;  break;
+		case "argument9":				return parentNode.arguments[9] ;  break;
+		case "argument10":		       return parentNode.arguments[10];  break;
+		case "argument11":		       return parentNode.arguments[11];  break;
+		case "argument12":		       return parentNode.arguments[12];  break;
+		case "argument13":		       return parentNode.arguments[13];  break;
+		case "argument14":		       return parentNode.arguments[14];  break;
+		case "argument15":		       return parentNode.arguments[15];  break;
+		case "fps_real":				 return fps_real;				  break;
+		case "room_last":				return room_last;				 break;
+		case "os_device":				return os_device;				 break;
+		case "delta_time":		       return delta_time;				break;
+		case "show_lives":		       return show_lives;				break;
+		case "path_index":		       return path_index;				break;
+		case "room_first":		       return room_first;				break;
+		case "room_width":		       return room_width;				break;
+		case "view_hport":		       return view_hport;				break;
+		case "view_xport":		       return view_xport;				break;
+		case "view_yport":		       return view_yport;				break;
+		case "debug_mode":		       return debug_mode;				break;
+		case "event_data":		       return event_data;				break;
+		case "view_wport":		       return view_wport;				break;
+		case "os_browser":		       return os_browser;				break;
+		case "os_version":		       return os_version;				break;
+		case "room_speed":		       return room_speed;				break;
+		case "show_score":		       return show_score;				break;
+		case "error_last":		       return error_last;				break;
+		case "display_aa":		       return display_aa;				break;
+		case "async_load":		       return async_load;				break;
+		case "instance_id":		      return instance_id;		       break;
+		case "current_day":		      return current_day;		       break;
+		case "view_camera":		      return view_camera;		       break;
+		case "room_height":		      return room_height;		       break;
+		case "show_health":		      return show_health;		       break;
+		case "mouse_button":		     return mouse_button;		      break;
+		case "keyboard_key":		     return keyboard_key;		      break;
+		case "view_visible":		     return view_visible;		      break;
+		case "game_save_id":		     return game_save_id;		      break;
+		case "current_hour":		     return current_hour;		      break;
+		case "room_caption":		     return room_caption;		      break;
+		case "view_enabled":		     return view_enabled;		      break;
+		case "event_action":		     return event_action;		      break;
+		case "view_current":		     return view_current;		      break;
+		case "current_time":		     return current_time;		      break;
+		case "current_year":		     return current_year;		      break;
+		case "browser_width":		    return browser_width;		     break;
+		case "webgl_enabled":		    return webgl_enabled;		     break;
+		case "current_month":		    return current_month;		     break;
+		case "caption_score":		    return caption_score;		     break;
+		case "caption_lives":		    return caption_lives;		     break;
+		case "gamemaker_pro":		    return gamemaker_pro;		     break;
+		case "cursor_sprite":		    return cursor_sprite;		     break;
+		case "caption_health":		   return caption_health;		    break;
+		case "instance_count":		   return instance_count;		    break;
+		case "argument_count":		   return array_length(parentNode.arguments);		    break;
+		case "error_occurred":		   return error_occurred;		    break;
+		case "current_minute":		   return current_minute;		    break;
+		case "current_second":		   return current_second;		    break;
+		case "temp_directory":		   return temp_directory;		    break;
+		case "browser_height":		   return browser_height;		    break;
+		case "view_surface_id":		  return view_surface_id;		   break;
+		case "room_persistent":		  return room_persistent;		   break;
+		case "current_weekday":		  return current_weekday;		   break;
+		case "keyboard_string":		  return keyboard_string;		   break;
+		case "cache_directory":		  return cache_directory;		   break;
+		case "mouse_lastbutton":		 return mouse_lastbutton;		  break;
+		case "keyboard_lastkey":		 return keyboard_lastkey;		  break;
+		case "wallpaper_config":		 return wallpaper_config;		  break;
+		case "background_color":		 return background_color;		  break;
+		case "program_directory":		return program_directory;		 break;
+		case "game_project_name":		return game_project_name;		 break;
+		case "game_display_name":		return game_display_name;		 break;
+		//case "argument_relative":		return argument_relative;		 break;
+		case "keyboard_lastchar":		return keyboard_lastchar;		 break;
+		case "working_directory":		return working_directory;		 break;
+		case "rollback_event_id":		return rollback_event_id;		 break;
+		case "background_colour":		return background_colour;		 break;
+		case "font_texture_page_size":   return font_texture_page_size;    break;
+		case "application_surface":      return application_surface;       break;
+		case "rollback_api_server":      return rollback_api_server;       break;
+		case "gamemaker_registered":     return gamemaker_registered;      break;
+		case "background_showcolor":     return background_showcolor;      break;
+		case "rollback_event_param":     return rollback_event_param;      break;
+		case "background_showcolour":    return background_showcolour;     break;
+		case "rollback_game_running":    return rollback_game_running;     break;
+		case "rollback_current_frame":   return rollback_current_frame;    break;
+		case "rollback_confirmed_frame": return rollback_confirmed_frame;  break;
+								
+	}
+}
+function __GMLCcompileGetUnique(_rootNode, _parentNode, _key) {
+	var _output = {
+		compilerBase: "__compileGetUnique",
 		errorMessage: "<Missing Error Message>",
 		
 		rootNode: _rootNode,
 		parentNode: _parentNode,
 		
-		expressionsArray: [],
-		size: undefined,
+		key: _key,
     }
     
-    var _i=0; repeat(array_length(_expressionsArray)) {
-		_output.expressionsArray[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _expressionsArray[_i]);
-    _i++}
-    
-    _output.size = array_length(_output.expressionsArray)
-    
-    return method(_output, __GMLCexecuteNewArray);
+    return method(_output, __GMLCexecuteGetUnique);
 }
 
+
 #region //{
-// used to build a new array
-//    array: array<expressions>
-//    size: array_length(expressionsArray) / 2,
+//    key: <expression>
+//    expression: <expression>
 //}
 #endregion
-function __GMLCexecuteNewStruct() {
-    var _struct = {}
-    var _i=0; repeat(size/2) {
-		var _key = array[_i];
-		var _value = array[_i+1];
-		struct_set(_struct, _key(), _value())
-    _i+=2}
-    return _struct;
+function __GMLCexecuteSetSelf() {
+    return struct_set(global.selfInstance, key, expression())
 }
-function __GMLCcompileNewStruct(_rootNode, _parentNode, _arr) {
-    var _output = {
-		compilerBase: "__compileNewStruct",
+#region //{
+//    key: <expression>
+//    expression: <expression>
+//}
+#endregion
+function __GMLCexecuteSetOther() {
+    return struct_set(global.otherInstance, key, expression())
+}
+#region //{
+//    key: <expression>
+//    expression: <expression>
+//}
+#endregion
+function __GMLCexecuteSetGlobal() {
+    return struct_set(globals, key, expression())
+}
+#region //{
+//    key: <stringLiteral>
+//    expression: <expression>
+//}
+#endregion
+function __GMLCexecuteSetVarLocal() {
+    return struct_set(locals, key, expression())
+}
+#region //{
+//    key: <expression>
+//    expression: <expression>
+//}
+#endregion
+function __GMLCexecuteSetVarStatic() {
+    return struct_set(statics, key, expression())
+}
+#region //{
+//    key: <expression>
+//    expression: <expression>
+//}
+#endregion
+function __GMLCexecuteSetUnique() {
+	switch (key) {
+		//all write protected errors are at the bottom
+		case "room":				     room				      = expression(); break;
+		case "lives":				    lives				     = expression(); break;
+		case "score":				    score				     = expression(); break;
+		case "health":				   health				    = expression(); break;
+		case "visible":				  visible				   = expression(); break;
+		case "argument":				 parentNode.arguments      = expression(); break;
+		case "argument0":				parentNode.arguments[0]   = expression(); break;
+		case "argument1":				parentNode.arguments[1]   = expression(); break;
+		case "argument2":				parentNode.arguments[2]   = expression(); break;
+		case "argument3":				parentNode.arguments[3]   = expression(); break;
+		case "argument4":				parentNode.arguments[4]   = expression(); break;
+		case "argument5":				parentNode.arguments[5]   = expression(); break;
+		case "argument6":				parentNode.arguments[6]   = expression(); break;
+		case "argument7":				parentNode.arguments[7]   = expression(); break;
+		case "argument8":				parentNode.arguments[8]   = expression(); break;
+		case "argument9":				parentNode.arguments[9]   = expression(); break;
+		case "argument10":		       parentNode.arguments[10]  = expression(); break;
+		case "argument11":		       parentNode.arguments[11]  = expression(); break;
+		case "argument12":		       parentNode.arguments[12]  = expression(); break;
+		case "argument13":		       parentNode.arguments[13]  = expression(); break;
+		case "argument14":		       parentNode.arguments[14]  = expression(); break;
+		case "argument15":		       parentNode.arguments[15]  = expression(); break;
+		case "show_lives":		       show_lives				= expression(); break;
+		case "room_width":		       room_width				= expression(); break;
+		case "view_hport":		       view_hport				= expression(); break;
+		case "view_xport":		       view_xport				= expression(); break;
+		case "view_yport":		       view_yport				= expression(); break;
+		case "view_wport":		       view_wport				= expression(); break;
+		case "room_speed":		       room_speed				= expression(); break;
+		case "show_score":		       show_score				= expression(); break;
+		case "error_last":		       error_last				= expression(); break;
+		case "view_camera":		      view_camera		       = expression(); break;
+		case "room_height":		      room_height		       = expression(); break;
+		case "show_health":		      show_health		       = expression(); break;
+		case "mouse_button":		     mouse_button		      = expression(); break;
+		case "keyboard_key":		     keyboard_key		      = expression(); break;
+		case "view_visible":		     view_visible		      = expression(); break;
+		case "room_caption":		     room_caption		      = expression(); break;
+		case "view_enabled":		     view_enabled		      = expression(); break;
+		case "caption_score":		    caption_score		     = expression(); break;
+		case "caption_lives":		    caption_lives		     = expression(); break;
+		case "cursor_sprite":		    cursor_sprite		     = expression(); break;
+		case "caption_health":		   caption_health		    = expression(); break;
+		case "error_occurred":		   error_occurred		    = expression(); break;
+		case "view_surface_id":		  view_surface_id		   = expression(); break;
+		case "room_persistent":		  room_persistent		   = expression(); break;
+		case "keyboard_string":		  keyboard_string		   = expression(); break;
+		case "mouse_lastbutton":		 mouse_lastbutton		  = expression(); break;
+		case "keyboard_lastkey":		 keyboard_lastkey		  = expression(); break;
+		case "background_color":		 background_color		  = expression(); break;
+		case "keyboard_lastchar":		keyboard_lastchar		 = expression(); break;
+		case "background_colour":		background_colour		 = expression(); break;
+		case "font_texture_page_size":   font_texture_page_size    = expression(); break;
+		case "background_showcolor":     background_showcolor      = expression(); break;
+		case "background_showcolour":    background_showcolour     = expression(); break;
+		
+		//begining of write errors
+		case "self":
+		case "other":
+		case "all":
+		case "noone":
+		case "delta_time":
+		case "path_index":
+		case "room_first":
+		case "debug_mode":
+		case "event_data":
+		case "os_browser":
+		case "os_version":
+		case "display_aa":
+		case "async_load":
+		case "instance_id":
+		case "current_day":
+		case "game_save_id":
+		case "current_hour":
+		case "event_action":
+		case "view_current":
+		case "current_time":
+		case "current_year":
+		case "browser_width":
+		case "webgl_enabled":
+		case "current_month":
+		case "gamemaker_pro":
+		case "instance_count":
+		case "argument_count":
+		case "current_minute":
+		case "current_second":
+		case "temp_directory":
+		case "browser_height":
+		case "current_weekday":
+		case "cache_directory":
+		case "wallpaper_config":
+		case "program_directory":
+		case "game_project_name":
+		case "game_display_name":
+		case "argument_relative":
+		case "working_directory":
+		case "rollback_event_id":
+		case "application_surface":
+		case "rollback_api_server":
+		case "gamemaker_registered":
+		case "rollback_event_param":
+		case "rollback_game_running":
+		case "rollback_current_frame":
+		case "rollback_confirmed_frame":
+		case "fps":
+		case "mouse_x":
+		case "managed":
+		case "mouse_y":
+		case "os_type":
+		case "game_id":
+		case "iap_data":
+		case "fps_real":
+		case "room_last":
+		case "os_device": throw $"Attempting to write to a read-only variable {key}";
+	}
+}
+function __GMLCcompileSetUnique(_rootNode, _parentNode, _key, _value) {
+	var _output = {
+		compilerBase: "__compileSetUnique",
 		errorMessage: "<Missing Error Message>",
 		
 		rootNode: _rootNode,
 		parentNode: _parentNode,
 		
-		array: [],
-		size: undefined,
-    }
-    
-    var _i=0; repeat(array_length(_arr)) {
-		//should probably all be literal strings, but i dont care otherwise
-		_output.array[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _arr[_i])
-    _i++}
-    
-    _output.size = array_length(_output.array)
-    
-    return method(_output, __GMLCexecuteNewStruct);
-}
-
-/// Expressions
-
-/// NOTE: there are roughly 20 operators currently in gml, if we handled 1 op at a time
-// we would have 20 unique functions, however if we generated this code 2 ops in a single
-// function call would produce 400 functions, ^3 would produce 8,000, and ^4 would produce
-// 160,000. All of which are possible, but would it really be worth it?
-
-#region //{
-// used to fetch Literal values
-//    value: <any>,
-//}
-#endregion
-function __GMLCexecuteLiteralExpression() {
-    return value;
-}
-function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _value) {
-    var _output = {
-		compilerBase: "__compileLiteralExpression",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
+		key: _key,
 		value: _value,
     }
     
-    return method(_output, __GMLCexecuteLiteralExpression);
+    return method(_output, __GMLCexecuteSetUnique);
 }
+#endregion
+
+function __GMLCcompileAccessor(_rootNode, _parentNode, _accessorNode) {
+	
+	var _target = __GMLCcompileExpression(_rootNode, _parentNode, _accessorNode.expr)
+	var _key = __GMLCcompileExpression(_rootNode, _parentNode, _accessorNode.val1)
+	
+	switch (_accessorNode.accessorType) {
+		case __GMLC_AccessorType.Array:  return __GMLCcompileArrayGet       (_rootNode, _parentNode, _target, _key)
+		case __GMLC_AccessorType.Grid:   return __GMLCcompileGridGet		(_rootNode, _parentNode, _target, _key, __GMLCcompileExpression(_rootNode, _parentNode, _accessorNode.val1))
+		case __GMLC_AccessorType.List:   return __GMLCcompileListGet		(_rootNode, _parentNode, _target, _key)
+		case __GMLC_AccessorType.Map:    return __GMLCcompileMapGet		 (_rootNode, _parentNode, _target, _key)
+		case __GMLC_AccessorType.Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _target, _key)
+		case __GMLC_AccessorType.Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key)
+		default: throw $"\nUnsupported accessor type: {_accessorNode.accessorType}\n{_accessorNode}";
+	}
+	
+	
+}
+#region Accessor Getters/Setters
+#region Array
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteArrayGet(){
+	var _target = target();
+	return _target[key()]
+}
+function __GMLCcompileArrayGet(_rootNode, _parentNode, _target, _key) {
+    var _output = {
+		compilerBase: "__compileArrayGet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+    }
+	
+	return method(_output, __GMLCexecuteArrayGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteArraySet(){
+	var _target = target();
+	_target[key()] = expression()
+}
+function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression) {
+    var _output = {
+		compilerBase: "__compileArraySet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+		expression: _expression,
+    }
+    return method(_output, __GMLCexecuteArraySet)
+}
+#endregion
+#region List
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteListGet(){
+	var _target = target();
+	return _target[| key()]
+}
+function __GMLCcompileListGet(_rootNode, _parentNode, _target, _key) {
+    var _output = {
+		compilerBase: "__compileListGet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+    }
+    return method(_output, __GMLCexecuteListGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteListSet(){
+	var _target = target();
+	_target[| key()] = expression()
+}
+function __GMLCcompileListSet(_rootNode, _parentNode, _target, _key, _expression) {
+    var _output = {
+		compilerBase: "__compileListSet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+		expression: _expression,
+    }
+    return method(_output, __GMLCexecuteListSet)
+}
+#endregion
+#region Map
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteMapGet(){
+	var _target = target();
+	return _target[? key()]
+}
+function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key) {
+    var _output = {
+		compilerBase: "__compileMapGet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+    }
+    return method(_output, __GMLCexecuteMapGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteMapSet(){
+	var _target = target();
+	_target[? key()] = expression()
+}
+function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression) {
+    var _output = {
+		compilerBase: "__compileMapSet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+		expression: _expression,
+    }
+    return method(_output, __GMLCexecuteMapSet)
+}
+#endregion
+
+#region Grid
+#region //{
+//    target: <expression>,
+//    keyX: <expression>,
+//    keyY: <expression>,
+//}
+#endregion
+function __GMLCexecuteGridGet(){
+	var _target = target();
+	return _target[# keyX(), keyY()]
+}
+function __GMLCcompileGridGet(_rootNode, _parentNode, _target, _keyX, _keyY) {
+    var _output = {
+		compilerBase: "__compileGridGet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		keyX: _keyX,
+		keyY: _keyY,
+    }
+    return method(_output, __GMLCexecuteGridGet)
+}
+#region //{
+//    target: <expression>,
+//    keyX: <expression>,
+//    keyY: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteGridSet(){
+	var _target = target();
+	_target[# keyX(), keyY()] = expression()
+}
+function __GMLCcompileGridSet(_rootNode, _parentNode, _target, _keyX, _keyY, _expression) {
+    var _output = {
+		compilerBase: "__compileGridSet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		keyX: _keyX,
+		keyY: _keyY,
+		expression: _expression,
+    }
+    return method(_output, __GMLCexecuteGridSet)
+}
+#endregion
+#region Struct
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteStructGet(){
+	var _target = target();
+	return _target[$ key()]
+}
+function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key) {
+    var _output = {
+		compilerBase: "__compileStructGet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+    }
+    return method(_output, __GMLCexecuteStructGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteStructSet(){
+	var _target = target();
+	_target[$ key()] = expression()
+}
+function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expression) {
+    var _output = {
+		compilerBase: "__compileStructSet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+		expression: _expression,
+    }
+    return method(_output, __GMLCexecuteStructSet)
+}
+#endregion
+#region Struct w/ Error
+#region //{
+//    target: <expression>,
+//    key: <stringLiteral>,
+//}
+#endregion
+function __GMLCexecuteStructDotAccGet(){
+	var _target = target();
+	var _key = key();
+	
+	if (!struct_exists(_target, _key)) {
+		throw $"\nVariable <unknown_object>.{_key} not set before reading it."
+	}
+	
+	return _target[$ _key];
+}
+function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key) {
+	var _output = {
+		compilerBase: "__compileStructDotAccGet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+    }
+	
+	return method(_output, __GMLCexecuteStructDotAccGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <stringLiteral>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteStructDotAccSet(){
+	var _target = target();
+	var _target = _target;
+    if (!struct_exists(_target, key)) throw $"\nVariable <unknown_object>.{name} not set before reading it."
+	_target[$ key] = expression();
+}
+function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression) {
+    var _output = {
+		compilerBase: "__compileStructDotAccSet",
+		errorMessage: "<Missing Error Message>",
+		
+		rootNode: _rootNode,
+		parentNode: _parentNode,
+		
+		target: _target,
+		key: _key,
+		expression: _expression,
+    }
+    return method(_output, __GMLCexecuteStructDotAccSet)
+}
+#endregion
+
+#endregion
+
+#endregion
 
 function __GMLCcompileIdentifier(_rootNode, _parentNode, _scope, _name) {
 	var _target = __GMLCgetScopeTarget(_scope)
@@ -3030,218 +3172,7 @@ function __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _scope, _name) {
 }
 
 
-#region //{
-// used to call functions
-//    callee: <method, function, or program>,
-//    argArr: array<expression>,
-//}
 #endregion
-function __GMLCexecuteCallExpression() {
-	var _func = callee()
-	
-	var _argArray = array_map(argArr, function(_elem, _index){
-		return _elem();
-	});
-	
-	if (is_method(_func)) {
-		if (is_gmlc_progam(_func)) {
-			var _return = method_call(_func, _argArray);
-		}
-		else {
-		
-			var _self = method_get_self(_func);
-		
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance;
-			global.selfInstance = _self;
-		
-			var _return = method_call(_func, _argArray);
-		
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
-		}
-	}
-	else {
-		with (global.otherInstance) with (global.selfInstance) {
-			var _return = script_execute_ext(_func, _argArray);
-		}
-	}
-	
-	return _return;
-}
-function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
-    var _output = {
-		compilerBase: "__compileCallExpression",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		callee: __GMLCcompileExpression(_rootNode, _parentNode, _node.callee),
-		calleeName: _node.callee.name,// this is actually unneeded, but we would still like to have it for debugging
-		argArr: [],
-		size: 0,
-    }
-	
-	var _argArr = _node.arguments
-	var _i=0; repeat(array_length(_argArr)) {
-		_output.argArr[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
-		_output.size++;
-	_i++}
-    
-    return method(_output, __GMLCexecuteCallExpression);
-}
-
-function __GMLCexecuteNew() {
-	var _struct = {};
-	
-	/////////////////////////////////////////////////////////////////////////
-	
-	var _func = callee()
-	
-	var _argArray = array_map(argArr, function(_elem, _index){
-		return _elem();
-	});
-	
-	if (is_method(_func)) {
-		if (is_gmlc_progam(_func)) {
-			if (is_gmlc_method(_func)) {
-				throw "target function for 'new' must be a constructor"
-			}
-		
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance;
-			global.selfInstance = _struct;
-		
-			method_call(_func, _argArray);
-		
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
-		}
-		else {
-			throw "target function for 'new' must be a constructor"
-		}
-	}
-	else {
-		with (global.otherInstance) with (global.selfInstance) {
-			var _struct = constructor_call_ext(_func, _argArray);
-		}
-	}
-	
-	/////////////////////////////////////////////////////////////////////////
-	
-	return _struct;
-}
-function __GMLCcompileNew(_rootNode, _parentNode, _node) {
-	var _output = {
-		compilerBase: "__compileCallExpression",
-		errorMessage: "<Missing Error Message>",
-		
-		rootNode: _rootNode,
-		parentNode: _parentNode,
-		
-		callee: __GMLCcompileExpression(_rootNode, _parentNode, _node.expression.callee),
-		calleeName: _node.expression.callee.name,// this is actually unneeded, but we would still like to have it for debugging
-		argArr: [],
-		size: 0,
-    }
-	
-	var _argArr = _node.expression.arguments
-	var _i=0; repeat(array_length(_argArr)) {
-		_output.argArr[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
-		_output.size++;
-	_i++}
-    
-    return method(_output, __GMLCexecuteNew);
-}
-
-function __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _scope, _key, _expr) {
-	return __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, __GMLCcompileLiteralExpression(_rootNode, _parentNode, _key), __GMLCcompileExpression(_rootNode, _parentNode, _expr));
-}
-function __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node) {
-	return __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.statements)
-}
-
-
-
-
-
-
-
-function __structMethodAST(_program) {
-	if (is_method(_program)) {
-		var _self = method_get_self(_program);
-		var _inputStruct = __structMethodAST(_self)
-		return _inputStruct
-	}
-	
-	if (is_array(_program)) {
-		var _inputArray = []
-		var _i=0; repeat(array_length(_program)) {
-			var _expr = _program[_i];
-			_inputArray[_i] = __structMethodAST(_expr)
-		_i++}
-		return _inputArray
-	}
-	
-	if (is_struct(_program)) {
-		var _inputStruct = {}
-		var _names = struct_get_names(_program)
-		var _i=0; repeat(array_length(_names)) {
-			var _name = _names[_i];
-			
-			//skip these from printing
-			if (_name == "errorMessage")
-			|| (_name == "rootNode")
-			|| (_name == "parentNode") {
-				_i++
-				continue;
-			}
-			
-			_inputStruct[$ _name] = __structMethodAST(_program[$ _name])
-		_i++}
-		return _inputStruct
-	}
-	
-	if (is_script(_program)) {
-		return script_get_name(_program)
-	}
-	
-	return _program;
-}
-
-function is_gmlc_progam(_program) {
-	if (is_method(_program)) {
-		var _self = method_get_self(_program);
-		if (struct_exists(_self, "compilerBase"))
-		&& (struct_exists(_self, "errorMessage")) {
-			return true;
-		}
-	}
-	return false;
-}
-function is_gmlc_method(_program) {
-	if (is_method(_program)) {
-		var _self = method_get_self(_program);
-		if (struct_exists(_self, "__@@GMLC_is_method@@__")) {
-			return true;
-		}
-	}
-	return false;
-}
-function is_script(_value) {
-	if !is_handle(_value) return false;
-	return script_exists(_value);	
-}
-
-
-
-
-function json(_input) {
-	return json_stringify(_input, true)
-}
 
 
 
@@ -3253,13 +3184,10 @@ function json(_input) {
 
 
 
-function pprint(_thing) {
-	var _str = "";
-	var _i=0; repeat(argument_count) {
-		_str += json(__structMethodAST(argument[_i]))
-	_i++}
-	log(_str)
-}
+
+
+
+
 
 
 

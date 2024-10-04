@@ -352,6 +352,7 @@
     {"id":{"name":"log","path":"scripts/log/log.yy",},},
     {"id":{"name":"Logger","path":"scripts/Logger/Logger.yy",},},
     {"id":{"name":"LoggerAPI","path":"scripts/LoggerAPI/LoggerAPI.yy",},},
+    {"id":{"name":"MacrosEnumsNamespaces","path":"scripts/MacrosEnumsNamespaces/MacrosEnumsNamespaces.yy",},},
     {"id":{"name":"ModuleStructure","path":"scripts/ModuleStructure/ModuleStructure.yy",},},
     {"id":{"name":"normalize","path":"scripts/normalize/normalize.yy",},},
     {"id":{"name":"os_type_to_string","path":"scripts/os_type_to_string/os_type_to_string.yy",},},

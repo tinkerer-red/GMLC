@@ -141,3 +141,85 @@ function constructor_call_ext(_func, _args) {
 	return _exe(_func, _args)
 	
 }
+
+function is_gmlc_progam(_program) {
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		if (struct_exists(_self, "compilerBase"))
+		&& (struct_exists(_self, "errorMessage")) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function is_gmlc_method(_program) {
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		if (struct_exists(_self, "__@@GMLC_is_method@@__")) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function is_script(_value) {
+	if !is_handle(_value) return false;
+	return script_exists(_value);	
+}
+
+
+//debugging
+function __structMethodAST(_program) {
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		var _inputStruct = __structMethodAST(_self)
+		return _inputStruct
+	}
+	
+	if (is_array(_program)) {
+		var _inputArray = []
+		var _i=0; repeat(array_length(_program)) {
+			var _expr = _program[_i];
+			_inputArray[_i] = __structMethodAST(_expr)
+		_i++}
+		return _inputArray
+	}
+	
+	if (is_struct(_program)) {
+		var _inputStruct = {}
+		var _names = struct_get_names(_program)
+		var _i=0; repeat(array_length(_names)) {
+			var _name = _names[_i];
+			
+			//skip these from printing
+			if (_name == "errorMessage")
+			|| (_name == "rootNode")
+			|| (_name == "parentNode") {
+				_i++
+				continue;
+			}
+			
+			_inputStruct[$ _name] = __structMethodAST(_program[$ _name])
+		_i++}
+		return _inputStruct
+	}
+	
+	if (is_script(_program)) {
+		return script_get_name(_program)
+	}
+	
+	return _program;
+}
+
+function json(_input) {
+	return json_stringify(_input, true)
+}
+
+function pprint(_thing) {
+	var _str = "";
+	var _i=0; repeat(argument_count) {
+		_str += json(__structMethodAST(argument[_i]))
+	_i++}
+	log(_str)
+}
