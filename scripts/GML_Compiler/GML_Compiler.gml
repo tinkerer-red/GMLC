@@ -4636,8 +4636,7 @@ function GML_PreProcessor() constructor {
 			var _get_expr = new ASTCallExpression(_getterFunc, _args, node.line, node.lineString);
 			//var expr = parseLogicalOrExpression();
 			
-			if (currentToken != undefined)
-			&& (currentToken.type == __GMLC_NodeType.Operator) {
+			if (currentToken != undefined) {
 				var _op = currentToken.value;
 				var _new_args = variable_clone(_args);
 				var right;

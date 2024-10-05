@@ -1,16 +1,24 @@
+
+//for debugging purposes I make use of strings,
+// if you would like to make use of Enums instead
+// please add an additional `/` to the first `/*`
+// making this a `//*` will toggle this for you
+
 #region NodeType
 /*
 	enum __GMLC_NodeType {
-		Base,
-		
+		ArrayPattern,
 		AccessorExpression,
 		AssignmentExpression,
+		Base,
 		BinaryExpression,
 		BlockStatement,
 		BreakStatement,
+		CallExpression,
 		CaseDefault,
 		CaseExpression,
 		ConditionalExpression,
+		ConstructorDeclaration,
 		ContinueStatement,
 		DoUntillStatement,
 		ExitStatement,
@@ -18,68 +26,31 @@
 		ForStatement,
 		Function,
 		FunctionDeclaration,
+		ArgumentList,
+		Argument,
 		Identifier,
 		IfStatement,
+		ImportDeclaration,
 		Literal,
-		UniqueIdentifier, 
+		UniqueIdentifier,
 		LogicalExpression,
 		NewExpression,
 		NullishExpression,
+		Object,
 		PostfixExpression,
 		RepeatStatement,
 		ReturnStatement,
 		Script,
-		SwitchStatement,
-		ThrowExpression,
-		TryStatement,
-		UnaryExpression,
-		VariableDeclaration,
-		VariableDeclarationList,
-		WhileStatement,
-		WithStatement,
-		
-		
-		BlockStatement,
-		DoUntillStatement,
-		ForStatement,
-		IfStatement,
-		RepeatStatement,
-		SwitchStatement,
-		CaseDefault,
-		CaseExpression,
-		TryStatement,
-		WhileStatement,
-		WithStatement,
-		BreakStatement,
-		ContinueStatement,
-		ExitStatement,
-		NewExpression,
-		ReturnStatement,
-		ThrowExpression,
-		VariableDeclarationList,
-		VariableDeclaration,
-		AssignmentExpression,
-		BinaryExpression,
-		LogicalExpression,
-		NullishExpression,
-		UnaryExpression,
-		ConditionalExpression,
-		UpdateExpression,
-		Script,
-		Object,
-		FunctionDeclaration,
-		ConstructorDeclaration,
-		FunctionDeclaration,
-		ImportDeclaration,
-		ImportDeclaration,
-		Function,
-		CallExpression,
-		Identifier,
-		Literal,
-		Identifier,
-		ArrayPattern,
 		StructPattern,
-		Super,
+		SwitchStatement,
+		ThrowExpression,
+		TryStatement,
+		UnaryExpression,
+		UpdateExpression,
+		VariableDeclaration,
+		VariableDeclarationList,
+		WhileStatement,
+		WithStatement,
 		
 		__SIZE__
 	}
@@ -158,45 +129,18 @@
 	__GMLC_AccessorType();
 //*/
 #endregion
-#region ByteOp Enum
+#region ScopeType
 // add or remove a slash here to toggle between enums and string lookups
 /*
-enum ByteOp {
-	OPERATOR, //any mathmatical or logical operation
-	CALL, // function call
-	INC, // Increment
-	DEC, // Decrement
-	JUMP, // Jump
-	JUMP_IF_TRUE, // Jump if true
-	JUMP_IF_FALSE, // Jump if false
-	RETURN, // Return a value
-	DUP, // Duplicate the top of the stack
-	POP, // Pop the top of the stack
-		
-		
-	// Loading from a variable location
-	LOAD,
-	STORE,
-		
-	// try-catch-finally specific ops
-	TRY_START,
-	TRY_END,
-	CATCH_START,
-	CATCH_END,
-	FINALLY_START,
-	FINALLY_END,
-		
-	END, // end of file OR Exit statement
-		
-	__SIZE__,
-}
 enum ScopeType {
+	MACRO,
 	GLOBAL,
+	ENUM,
+	UNIQUE,
 	LOCAL,
 	STATIC,
 	INSTANCE,
 	CONST,
-	UNIQUE,
 		
 	__SIZE__
 }
@@ -230,41 +174,6 @@ enum OpCode {
 	__SIZE__
 }
 /*/
-function ByteOp() {
-	static OPERATOR = "ByteOp.OPERATOR";
-	static CALL = "ByteOp.CALL";
-	static INC = "ByteOp.INC";
-	static DEC = "ByteOp.DEC";
-	static JUMP = "ByteOp.JUMP";
-	static JUMP_IF_TRUE = "ByteOp.JUMP_IF_TRUE";
-	static JUMP_IF_FALSE = "ByteOp.JUMP_IF_FALSE";
-	static RETURN = "ByteOp.RETURN";
-	static DUP = "ByteOp.DUP";
-	static POP = "ByteOp.POP";
-		
-	static JUMP_EXPECT = "ByteOp.JUMP_EXPECT"
-		
-			// Loading from a variable location
-	static LOAD = "ByteOp.LOAD";
-	static STORE = "ByteOp.STORE";
-		
-			// try-catch-finally specific ops
-	static TRY_START = "ByteOp.TRY_START";
-	static TRY_END = "ByteOp.TRY_END";
-	static CATCH_START = "ByteOp.CATCH_START";
-	static CATCH_END = "ByteOp.CATCH_END";
-	static FINALLY_START = "ByteOp.FINALLY_START";
-	static FINALLY_END = "ByteOp.FINALLY_END";
-		
-	static WITH_START = "ByteOp.WITH_START";
-	static WITH_END =   "ByteOp.WITH_END";
-		
-	static END = "ByteOp.END";
-		
-	static THROW = "ByteOp.THROW";
-		
-	static __SIZE__ = "__SIZE__";
-}
 function ScopeType() {
 	static MACRO = "ScopeType.MACRO";
 	static GLOBAL = "ScopeType.GLOBAL";
@@ -307,115 +216,42 @@ function OpCode() {
 		
 	static __SIZE__ = "__SIZE__";
 }
-ByteOp()
 ScopeType()
 OpCode()
 //*/
 #endregion
-#region Token Enum
-enum tok {
-	eAnd, // &&
-	eArrayClose, // ]
-	eArrayOpen, // [
-	eAssign, // =
-	eAssignMinus, // -=
-	eAssignOr, // |=
-	eAssignPlus, // +=
-	eBegin, // {
-	eBinary, // 
-	eBitAnd, // &
-	eBitNegate, // ~
-	eBitOr, // |
-	eBitShiftLeft, // <<
-	eBitXor, // ^
-	eBlock, // used to declare a block statement, an array of statements
-	eBreak, // break keyword
-	eCase, // case keyword
-	eCatch, // catch keyword
-	eClose, // )
-	eConditional, // ?
-	eConstant, // any constant variable
-	eContinue, // continue keyword
-	eDefault, // default keyword
-	eDiv, // div keyword
-	eDivide, // /
-	eDot, // .
-	eEOF, // marks the end of a file
-	eElse, // else keyword
-	eEnd, // }
-	eEnum, // enum keyword
-	eEqual, // =
-	eFinally, // finally keyword
-	eFor, // for keyworf
-	eFunction, // function; as in just a function its self
-	eFunctionDecl, // `function` keyword
-	eGreater, // >
-	eGreaterEqual, // >=
-	eGridArrayOpen, // [#
-	eIf, // if keyword
-	eLabel, // :
-	eLess, // <
-	eLessEqual, // <=
-	eMinus, // -
-	eMod, // % or mod
-	eName, // any unidentified text thus far
-	eNew, // new keyword
-	eNot, // !
-	eNotEqual, // !=
-	eNullCoalesce, // ??
-	eNullCoalesceAssign, // ??=
-	eNumber, // any number declaration `1` `$FF` `0xFF` `0b1111`
-	eOpen, // (
-	eOr, // ||
-	ePlus, // +
-	ePlusPlus, // ++
-	ePost, // ++ (also) but used for the second pass
-	eRepeat, // repeat keyword
-	eReturn, // return keyword
-	eSepArgument, // ,
-	eSepStatement, // ;
-	eStatic, // static keyword
-	eString, // any string literal @"example", @example, "example"
-	eStructArrayOpen, // [$
-	eSwitch, // switch keyword
-	eTemplateString, // the mark of a template string
-	eThrow, // throw keyword
-	eTime, // *
-	eTry, // try keyword
-	eUnary, // ~ ! - +, this is only applied on second pass when building the ast
-	eVar, // var keyword
-	eVariable, // 
-	eVariableSimple, // 
-	eWhile, // while keyword
-	eWith, // with keyword
-	eXor, // ^^
+#region TokenType
+/*
+enum __GMLC_TokenType {
+	Whitespace,
+	Identifier,
+	Number,
+	Operator,
+	Keyword,
+	Function,
+	Punctuation,
+	
+	UniqueVariable,
+	
+	String,
+	
+	TemplateStringBegin,
+	TemplateStringMiddle,
+	TemplateStringEnd,
+	
+	EscapeOperator,
+	
+	Comment,
+	
+	Macro,
+	Region,
+	Enum,
+	Define,
+	
+	Illegal,
+	SIZE
 }
-//enum __GMLC_TokenType {
-//	Whitespace,
-//	Identifier,
-//	Number,
-//	Operator,
-//	Keyword,
-//	Function,
-//	Punctuation,
-//
-//	UniqueVariable, //things like `argument`, `argument0`, `current_day`, etc.
-//	
-//	String,
-//	TemplateString,
-//	
-//	EscapeOperator,
-//	
-//	Comment,
-//	
-//	Macro,
-//	Region,
-//	Enum,
-//	
-//	Illegal,
-//	SIZE
-//}
-
+/*/
 //used for debugging
 function __GMLC_TokenType() {
 	static Whitespace = "__GMLC_TokenType.Whitespace";
@@ -448,5 +284,5 @@ function __GMLC_TokenType() {
 	static SIZE = "SIZE"
 }
 __GMLC_TokenType();
-
+//*/
 #endregion

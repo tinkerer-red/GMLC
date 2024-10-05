@@ -1,0 +1,11 @@
+{
+  "$GMNotes":"",
+  "%Name":"DeprocatedUnitTests",
+  "name":"DeprocatedUnitTests",
+  "parent":{
+    "name":"GMLCompiler",
+    "path":"folders/GMLCompiler.yy",
+  },
+  "resourceType":"GMNotes",
+  "resourceVersion":"2.0",
+}

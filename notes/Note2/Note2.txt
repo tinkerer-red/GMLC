@@ -10,6 +10,10 @@ ToDo ::
 
 - better loop statements, break a loop statement down into block statements and exit/return/break/continue statements, parent blocks should account for these and addapt accordingly the same way.
 
+- replace literal methods with direct values when ever possible (maybe make them a struct with "is_literal" so incase we reference undefined)
+
+- `instaceof` and `is_instanceof` gmlc replacements
+
 - automatic array creation
 var _arr;
 _arr[0] = true
