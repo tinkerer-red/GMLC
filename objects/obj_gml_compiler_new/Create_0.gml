@@ -8683,116 +8683,62 @@ log("~~~~~ Interpreter Unit Tests ~~~~~\n");
 var _s = get_timer()
 #region HIDE
 
+//run_interpreter_test("Boop",
+//@'
+//sound = audio_play_sound(snd_coinpickup_OGG, 1, false);
+//',
+//undefined,
+//function(){
+//	foo = 0;
+//	var bar = method({foo: 1}, function(){
+//		return foo
+//	})
+//	return bar()
+//}
+//);
 run_interpreter_test("Boop",
 @'
-sound = audio_play_sound(snd_coinpickup_OGG, 1, false);
+	var __a = 1
 ',
 undefined,
 function(){
-	foo = 0;
-	var bar = method({foo: 1}, function(){
-		return foo
-	})
-	return bar()
+	function a(arg0) constructor {
+		static overwrite = "A Overwrite"
+		static aStatic = "This is A's Static"
+		aInstance = "This is A's Instance"
+		argumentChain = arg0;
+		localChain = 0;
+	}
+	function b(arg0) : a(arg0+1) constructor {
+		static overwrite = "B Overwrite"
+		static bStatic = "This is B's Static"
+		bInstance = "This is B's Instance"
+		localChain++;
+	}
+	function c(arg0) : b(arg0+1) constructor {
+		static overwrite = "C Overwrite"
+		static cStatic = "This is C's Static"
+		cInstance = "This is C's Instance"
+		localChain++;
+	}
+	
+	var _a = new a();
+	log(_a)
+	log(static_get(_a))
+	
+	var _b = new b();
+	log(_b)
+	log(static_get(_b))
+	
+	var _c = new c();
+	log(_c)
+	log(static_get(_c))
+	
+	return string(_c);
 }
 );
-run_interpreter_test("Boop",
-@'
-	function __TryCatchFinally() {
-    
-	    try {
-	        tryBlock()
-	    }
-	    catch(_e) {
-	        if (catchBlock != undefined) {
-	            catchBlock()
-	        }
-	    }
-	    finally {
-	        if (finallyBlock != undefined) {
-	            finallyBlock();
-	        }
-	    }
-	}
-	var test = method({
-		tryBlock : function(){ throw "error" },
-		catchBlock : function(){ return log("catch") },
-		finallyBlock : function(){ return log("finally") },
-	}, __TryCatchFinally)
-	test()
-
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, __TryCatchFinally)
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, __TryCatchFinally)
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, __TryCatchFinally)
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, __TryCatchFinally)
-	test()
-',
-undefined,
-function(){
-	function ____TryCatchFinally() {
-    
-	    try {
-	        tryBlock()
-	    }
-	    catch(_e) {
-	        if (catchBlock != undefined) {
-	            catchBlock()
-	        }
-	    }
-	    finally {
-	        if (finallyBlock != undefined) {
-	            finallyBlock();
-	        }
-	    }
-	}
-	var test = method({
-		tryBlock : function(){ throw "error" },
-		catchBlock : function(){ return log("catch") },
-		finallyBlock : function(){ return log("finally") },
-	}, ____TryCatchFinally)
-	test()
-
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, ____TryCatchFinally)
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, ____TryCatchFinally)
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, ____TryCatchFinally)
-	var test = method({
-		tryBlock : test,
-		catchBlock : test,
-		finallyBlock : test,
-	}, ____TryCatchFinally)
-	test()
-}
-);
-//game_end()
-//exit;
+game_end()
+exit;
 
 
 //*

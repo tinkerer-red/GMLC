@@ -4,10 +4,17 @@ unsupported syntax::
 // disabled tileset sprites
 will not be able to be accessed as `asset_get_index(_string)` will always return -1 as nothing is found
 
+ToDo ::
 
-// automatic array creation
+- delete
+
+- better loop statements, break a loop statement down into block statements and exit/return/break/continue statements, parent blocks should account for these and addapt accordingly the same way.
+
+- automatic array creation
 var _arr;
 _arr[0] = true
+
+- add support for gmlc constructors to parent from native constructors
 
 
 need to test native and gmlc
@@ -17,10 +24,13 @@ need to test native and gmlc
 - 2x of each
 - a mix of them all
 
+
+
 Debugging tools:
 - code hotspoting :: tool used to see how many times something is run (this is built into native debugger)
 - code expense :: keep track of how many ms it takes to run just it's code (excluding children code)
-- include line error messages with the methods
+- include line error messages
+
 
 
 Optimizer ToDo:
@@ -30,15 +40,54 @@ Optimizer ToDo:
 - Loop-Invariant Code Motion / constant hoisting :: Move computations that do not change within a loop outside of the loop. local variables which are only ever written to once, we want to pull them out of for/repeat/while/doUntil etc.. loops. 
 - Constant Propagation :: If a constant is found in the AST, just replace all instances of it with the value so the constant folding takes place
 - Improved constant folding :: attempt to include more expressions when ever possible
-- assignment folding :: replace `a = a+1` to `a++` and replace `b = b * a` with `b *= a`
 - Short-Circuit Boolean Evaluation :: `(expensiveFunction() && true)` becomes `(expensiveFunction())`
 - Null/Empty Check Removal :: `if (thing != undefined)` becomes `if (thing)` additionally `if (x <=0)` or `if (x != <zero or negative number>)`
 - logical expression folding :: `(a && false)` should just return `false` same with `b || true`
+- assignment folding :: replace `a = a+1` to `a++` and replace `b = b * a` with `b *= a`
 - Strength Reduction :: replace `a*2` with `a << 1`, and `b / 4` with `b >> 2` (keep care to check how this works with really big numbers, negatives, and decimals)
 - Loop Unrolling :: really only handle this is we have a definitive loop size, and the block is relatively* small, maybe if `expression * loop_count <= 1024`
 - Common Subexpression Elimination :: Safe and easy to implement, it avoids recalculating the same expression multiple times within a scope. for instance `c=(a-b)+1; d=(a-b)+2` would become `var _temp<ID>=(a-b); c=_temp+1; d=_temp+2`
-- Function Inlining :: Replace a function call with the body of the function, especially for small, frequently used functions. `var result = add(2, 3);` becomes `var result = add(2, 3);`
+- Function Inlining :: Replace a function call with the body of the function, especially for small, frequently used functions. `var result = add(2, 3);` becomes `var result = 2+3;`
 - Peephole Optimizations :: idk what this is really look into this
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

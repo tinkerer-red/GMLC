@@ -141,13 +141,16 @@ config_set("TestFrameworkRun", {
 		
 		if (is_array(_resultBag[$ "failed"])) {
 			array_foreach(_resultBag[$ "failed"], function(_failure) {
-				log_info($"FAILED: {_failure}");
+				//log_info($"FAILED: {_failure}");
+				log("FAILED:")
+				log(json(_failure))
 			});
 		}
 		
 		if (is_array(_resultBag[$ "expired"])) {
 			array_foreach(_resultBag[$ "expired"], function(_failure) {
-				log_info($"EXPIRED: {_failure}");
+				log("EXPIRED:")
+				log(json(_failure))
 			});
 		}
 	}

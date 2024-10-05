@@ -92,6 +92,7 @@
     {"name":"BasicAudioTestSuite","order":1,"path":"scripts/BasicAudioTestSuite/BasicAudioTestSuite.yy",},
     {"name":"BasicBase64TestSuite","order":2,"path":"scripts/BasicBase64TestSuite/BasicBase64TestSuite.yy",},
     {"name":"BasicBufferTestSuite","order":3,"path":"scripts/BasicBufferTestSuite/BasicBufferTestSuite.yy",},
+    {"name":"BasicConstructorTestSuit","order":43,"path":"scripts/BasicConstructorTestSuit/BasicConstructorTestSuit.yy",},
     {"name":"BasicDataStructuresGridTestSuite","order":4,"path":"scripts/BasicDataStructuresGridTestSuite/BasicDataStructuresGridTestSuite.yy",},
     {"name":"BasicDataStructuresListTestSuite","order":5,"path":"scripts/BasicDataStructuresListTestSuite/BasicDataStructuresListTestSuite.yy",},
     {"name":"BasicDataStructuresMapTestSuite","order":6,"path":"scripts/BasicDataStructuresMapTestSuite/BasicDataStructuresMapTestSuite.yy",},

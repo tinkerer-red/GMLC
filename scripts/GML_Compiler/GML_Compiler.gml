@@ -414,7 +414,6 @@ function GML_Tokenizer() constructor {
 		|| (_type == asset_particlesystem))
 		{
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
-			pprint(_token)
 			return _token;
 		}	
 		#endregion
@@ -493,7 +492,6 @@ function GML_Tokenizer() constructor {
 			//iterate through all and try to find a match
 			var _i=0; repeat(_iterations) {
 				_temp_identifier += chr(__peekUTF8(_peek_length+_i));
-				log(_temp_identifier)
 				
 				if (array_contains(__enum_arr, _temp_identifier)) {
 					static __enum_lookup = __ExistingEnumerations();
@@ -507,7 +505,6 @@ function GML_Tokenizer() constructor {
 			_i+=1;}//end repeat loop
 			
 			if (_found) {
-				log("Found ::", _temp_identifier, json(_token))
 				var _jump = string_length(_temp_identifier) - string_length(_identifier);
 				repeat (_jump) __nextUTF8();
 				return _token;
@@ -2022,7 +2019,10 @@ function GML_PreProcessor() constructor {
 				var _statements = [];
 				while (currentToken != undefined && currentToken.value != "}") {
 					var _statement = parseStatement();
-					array_push(_statements, _statement);
+					
+					if (_statement != undefined) {
+						array_push(_statements, _statement);
+					}
 					
 					//consume optional `;`
 					optionalToken(__GMLC_TokenType.Punctuation, ";")
@@ -2284,10 +2284,11 @@ function GML_PreProcessor() constructor {
 			
 			nextToken(); // Consume return
 			var expr = undefined;
-			if (currentToken.value != ";" && currentToken.type != __GMLC_TokenType.Punctuation) {
+			if (currentToken.value != ";") {
 				expr = parseExpression(); // Parse the return expression if any
 			}
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
+			
 			return new ASTReturnStatement(expr, line, lineString);
 		};
 		#endregion
@@ -2333,16 +2334,18 @@ function GML_PreProcessor() constructor {
 			if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
 				#region function foo() : `bar`() constructor {} :: parse constructor parent
 				
-				var _parent = parsePrimaryExpression()
-				if (_parent.type != __GMLC_NodeType.Identifier)
-				|| (scope != ScopeType.GLOBAL) {  ///////////////////////// This line might cause errors, maybe the preprocessor should evaluate function name declarations
+				var _identifier = parsePrimaryExpression();
+				var _parent = parseFunctionCall(_identifier);
+				
+				if (_parent.type != __GMLC_NodeType.CallExpression)
+				|| (_identifier.type != __GMLC_NodeType.Identifier) {  ///////////////////////// This line might cause errors, maybe the preprocessor should evaluate function name declarations
 					throw $"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}"
 				}
 				
 				#endregion
-				#region function foo() : bar`()` constructor {} :: parse constructor parent's arguments
-				var _parentCall = parseFunctionCall(_parent.value)
-				#endregion
+				
+				_parentCall = _parent;
+				_parentName = _parent.callee.value;
 			}
 			#endregion
 			#region function foo() `constructor` :: parse constructor keyword (if provided)
@@ -2482,7 +2485,7 @@ function GML_PreProcessor() constructor {
 		static parseVariableDeclaration = function () {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
-			
+			var _should_hoist = false
 			var type = currentToken.value;  // var, globalvar, or static
 			
 			var _scope = undefined;
@@ -2494,6 +2497,7 @@ function GML_PreProcessor() constructor {
 					_scope = ScopeType.LOCAL;
 				break;}
 				case "static":{
+					_should_hoist = true;
 					_scope = ScopeType.STATIC;
 				break;}
 				case "globalvar":{
@@ -2519,15 +2523,16 @@ function GML_PreProcessor() constructor {
 				nextToken();
 				
 				//mark the variable tables
+				var _tableArr = undefined
 				if (currentFunction == undefined) {
 					//script scrope
 					switch (_scope) {
 						//case "let":{
 						//	//dont to nuttin`!
 						//break;}
-						case ScopeType.LOCAL: array_push(scriptAST.LocalVarNames, identifier); break;
+						case ScopeType.LOCAL: _tableArr = scriptAST.LocalVarNames; break;
 						case ScopeType.STATIC: throw $"\nScript: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"; break;
-						case ScopeType.GLOBAL: array_push(scriptAST.GlobalVarNames, identifier); break;
+						case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
 						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
 					}
 					
@@ -2538,19 +2543,23 @@ function GML_PreProcessor() constructor {
 						//case "let":{
 						//	//dont to nuttin`!
 						//break;}
-						case ScopeType.LOCAL: array_push(currentFunction.LocalVarNames, identifier); break;
-						case ScopeType.STATIC: array_push(currentFunction.StaticVarNames, identifier); break;
-						case ScopeType.GLOBAL: array_push(scriptAST.GlobalVarNames, identifier); break;
+						case ScopeType.LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
+						case ScopeType.STATIC: _tableArr = currentFunction.StaticVarNames; break;
+						case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
 						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
 					}
 				}
+				if (!array_contains(_tableArr, identifier)) {
+					array_push(_tableArr, identifier);
+				}
+				
 				
 				//fetch expression
 				var expr = undefined;
 				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
 					expr = parseConditionalExpression();
 					
-					// a uniqu check to apply static functions names
+					// a unique check to apply static functions names
 					if (_scope == ScopeType.STATIC) {
 						//if this is a static function assignment, assign the static identifiers name to the functions name
 						if (expr.type == "Identifier")
@@ -2575,12 +2584,21 @@ function GML_PreProcessor() constructor {
 						}
 					}
 					
-					array_push(declarations, new ASTVariableDeclaration(identifier, expr, _scope, varLine, varLineString));
-				}
-				else {
+					switch (_scope) {
+						//case "let":{
+						//	//dont to nuttin`!
+						//break;}
+						case ScopeType.LOCAL:
+						case ScopeType.GLOBAL:{
+							array_push(declarations, new ASTVariableDeclaration(identifier, expr, _scope, varLine, varLineString));
+						break;}
+						case ScopeType.STATIC:{
+							array_push(currentFunction.StaticVarArray, new ASTVariableDeclaration(identifier, expr, ScopeType.STATIC, varLine, varLineString))
+						break;}
+						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
+					}
 					
 				}
-				
 				
 				if (optionalToken(__GMLC_TokenType.Punctuation, ";")) {
 					break
@@ -2591,6 +2609,10 @@ function GML_PreProcessor() constructor {
 				
 		        nextToken(); // Consume , and move to the next identifier
 		    }
+			
+			if (_should_hoist) {
+				return undefined;
+			}
 			
 			return new ASTVariableDeclarationList(declarations, _scope, line, lineString);
 		};
@@ -4190,7 +4212,8 @@ function GML_PreProcessor() constructor {
 			if (currentNode.node.visited == false) {
 				currentNode.node.visited = true;
 				
-				if (currentNode.node.type == __GMLC_NodeType.FunctionDeclaration) {
+				if (currentNode.node.type == __GMLC_NodeType.FunctionDeclaration)
+				|| (currentNode.node.type == __GMLC_NodeType.ConstructorDeclaration) {
 					currentFunction = currentNode.node
 				}
 				
@@ -4544,14 +4567,14 @@ function GML_PreProcessor() constructor {
 				case __GMLC_NodeType.Function:{
 					
 				break;}
+				case __GMLC_NodeType.ConstructorDeclaration:{
+					
+				break;}
 				/*
 				case __GMLC_NodeType.PropertyAccessor:{
 					throw $"\n{currentNode.type} :: Not implimented yet"
 				break;}
 				case __GMLC_NodeType.AccessorExpression:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
-				break;}
-				case __GMLC_NodeType.ConstructorFunction:{
 					throw $"\n{currentNode.type} :: Not implimented yet"
 				break;}
 				case __GMLC_NodeType.MethodVariableConstructor:{
@@ -4780,61 +4803,61 @@ function GML_PreProcessor() constructor {
 					    // Both nodes are literals, perform constant folding
 					    switch (node.operator) {
 							case "|":{
-								return new ASTNodes("Literal", {value: node.left.value | node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value | node.right.value, node.line, node.lineString);
 							break;}
 							case "^":{
-								return new ASTNodes("Literal", {value: node.left.value ^ node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value ^ node.right.value, node.line, node.lineString);
 							break;}
 							case "&":{
-								return new ASTNodes("Literal", {value: node.left.value & node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value & node.right.value, node.line, node.lineString);
 							break;}
 							case "==":{
-								return new ASTNodes("Literal", {value: node.left.value == node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value == node.right.value, node.line, node.lineString);
 							break;}
 							case "!=":{
-								return new ASTNodes("Literal", {value: node.left.value != node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value != node.right.value, node.line, node.lineString);
 							break;}
 							case "<":{
-								return new ASTNodes("Literal", {value: node.left.value < node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value < node.right.value, node.line, node.lineString);
 							break;}
 							case "<=":{
-								return new ASTNodes("Literal", {value: node.left.value <= node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value <= node.right.value, node.line, node.lineString);
 							break;}
 							case ">":{
-								return new ASTNodes("Literal", {value: node.left.value > node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value > node.right.value, node.line, node.lineString);
 							break;}
 							case ">=":{
-								return new ASTNodes("Literal", {value: node.left.value >= node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value >= node.right.value, node.line, node.lineString);
 							break;}
 							case "<<":{
-								return new ASTNodes("Literal", {value: node.left.value << node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value << node.right.value, node.line, node.lineString);
 							break;}
 							case ">>":{
-								return new ASTNodes("Literal", {value: node.left.value >> node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value >> node.right.value, node.line, node.lineString);
 							break;}
 							case "+":{
-								return new ASTNodes("Literal", {value: node.left.value + node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value + node.right.value, node.line, node.lineString);
 							break;}
 							case "-":{
-								return new ASTNodes("Literal", {value: node.left.value - node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value - node.right.value, node.line, node.lineString);
 							break;}
 							case "*":{
-								return new ASTNodes("Literal", {value: node.left.value * node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value * node.right.value, node.line, node.lineString);
 							break;}
 							case "/":{
-								return new ASTNodes("Literal", {value: node.left.value / node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value / node.right.value, node.line, node.lineString);
 							break;}
 							case "mod":{
 								if (node.right.value == 0) {
 									throw $"\nDoMod :: Divide by zero"
 								}
-								return new ASTNodes("Literal", {value: node.left.value mod node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value mod node.right.value, node.line, node.lineString);
 							break;}
 							case "div":{
 								if (node.right.value == 0) {
 									throw $"\nDoRem :: Divide by zero"
 								}
-								return new ASTNodes("Literal", {value: node.left.value div node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value div node.right.value, node.line, node.lineString);
 							break;}
 						}
 					}
@@ -4843,54 +4866,59 @@ function GML_PreProcessor() constructor {
 					if (node.left.type == "Literal" && node.right.type == "Literal") {
 					    switch (node.operator) {
 							case "||":{
-								return new ASTNodes("Literal", {value: node.left.value || node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value || node.right.value, node.line, node.lineString);
 							break;}
 							case "&&":{
-								return new ASTNodes("Literal", {value: node.left.value && node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value && node.right.value, node.line, node.lineString);
 							break;}
 							case "^^":{
-								return new ASTNodes("Literal", {value: node.left.value ^^ node.right.value, scope: ScopeType.CONST});
+								return new ASTLiteral(node.left.value ^^ node.right.value, node.line, node.lineString);
 							break;}
 					    }
 					}
 					else if (node.left.type == "Literal" || node.right.type == "Literal") {
 					    switch (node.operator) {
 							case "||":{
-								if (node.left.type  == "Literal" && node.left.value ) return new ASTNodes("Literal", {value: true, scope: ScopeType.CONST});
-								if (node.right.type == "Literal" && node.right.value) return new ASTNodes("Literal", {value: true, scope: ScopeType.CONST});
+								if (node.left.type  == "Literal" && node.left.value ) return new ASTLiteral(true, node.line, node.lineString);
+								if (node.right.type == "Literal" && node.right.value) return new ASTLiteral(true, node.line, node.lineString);
 							break;}
 							case "&&":{
-								if (node.left.type  == "Literal" && !node.left.value ) return new ASTNodes("Literal", {value: false, scope: ScopeType.CONST});
-								if (node.right.type == "Literal" && !node.right.value) return new ASTNodes("Literal", {value: false, scope: ScopeType.CONST});
+								if (node.left.type  == "Literal" && !node.left.value ) return new ASTLiteral(false, node.line, node.lineString);
+								if (node.right.type == "Literal" && !node.right.value) return new ASTLiteral(false, node.line, node.lineString);
 							break;}
 					    }
 					}
 				break;}
 				case "NullishExpression":{
-					if (node.left.type == "Literal" && node.left.value == undefined) {
-						return node.right;
+					if (node.left.type == "Literal") {
+						if (node.left.value == undefined) {
+							return node.right;
+						}
+						else {
+							return node.left;
+						}
 					}
 				break;}
 				case "UnaryExpression":{
 					if (node.expr.type == "Literal") {
 					    switch (node.operator) {
 							case "!":{
-								return new ASTNodes("Literal", {value: !node.expr.value, scope: ScopeType.CONST});
+								return new ASTLiteral(!node.expr.value, node.line, node.lineString);
 							break;}
 							case "+":{
-								return new ASTNodes("Literal", {value: +node.expr.value, scope: ScopeType.CONST});
+								return new ASTLiteral(+node.expr.value, node.line, node.lineString);
 							break;}
 							case "-":{
-								return new ASTNodes("Literal", {value: -node.expr.value, scope: ScopeType.CONST});
+								return new ASTLiteral(-node.expr.value, node.line, node.lineString);
 							break;}
 							case "~":{
-								return new ASTNodes("Literal", {value: ~node.expr.value, scope: ScopeType.CONST});
+								return new ASTLiteral(~node.expr.value, node.line, node.lineString);
 							break;}
 							case "++":{
-								return new ASTNodes("Literal", {value: ++node.expr.value, scope: ScopeType.CONST});
+								return new ASTLiteral(++node.expr.value, node.line, node.lineString);
 							break;}
 							case "--":{
-								return new ASTNodes("Literal", {value: --node.expr.value, scope: ScopeType.CONST});
+								return new ASTLiteral(--node.expr.value, node.line, node.lineString);
 							break;}
 					    }
 					}
@@ -4899,21 +4927,17 @@ function GML_PreProcessor() constructor {
 					if (node.condition.type == "Literal") {
 					    // If the condition is a literal, determine which branch to take
 						if (node.condition.value) {
-							if (node.trueExpr.type == "Literal") {
-								return new ASTNodes("Literal", {value: node.trueExpr.value, scope: ScopeType.CONST});
-							}
+							return node.trueExpr;
 						}
 						else {
-							if (node.falseExpr.type == "Literal") {
-								return new ASTNodes("Literal", {value: node.falseExpr.value, scope: ScopeType.CONST});
-							}
+							return node.falseExpr;
 						}
 					}
 				break;}
 				case "ExpressionStatement":{
 					if (node.expr.type == "Literal") {
 					    // If the condition is a literal, determine which branch to take
-						return new ASTNodes("Literal", {value: node.expr.value, scope: ScopeType.CONST});
+						return new ASTLiteral(node.expr.value, node.line, node.lineString);
 					}
 				break;}
 				case "FunctionCall":{
@@ -5765,10 +5789,6 @@ function GML_PreProcessor() constructor {
 							
 						break;}
 						
-						
-//buffer_sizeof
-
-						
 					}
 				break;}
 				// Add more cases as needed for different node types
@@ -5779,6 +5799,8 @@ function GML_PreProcessor() constructor {
 		
 		static singleWriteOptimization = function(node) {
 			// Replace single-assignment variables with their values
+			// this essentially acts as a constant value.
+			
 		};
 		
 		static deadCodeElimination = function(node) {
@@ -5952,11 +5974,7 @@ function GML_PreProcessor() constructor {
 		};
 		
 		static variableHoisting = function(node) {
-			// Hoist and remove duplicate variable declarations
-		};
-		
-		static tailCallOptimization = function(node) {
-			// Convert tail-recursive functions into iterative forms
+			// Hoist and variable declarations (specifically outside of loops when ever possible)
 		};
 		
 		static commonSubexpressionElimination = function(node) {
@@ -5977,10 +5995,6 @@ function GML_PreProcessor() constructor {
 		
 		static lazyEvaluation = function(node) {
 			// Delay the evaluation of expressions until their results are needed
-		};
-		
-		static memoryAccessOptimization = function(node) {
-			// Reorder data accesses to improve cache locality
 		};
 		
 		#endregion
@@ -6008,65 +6022,6 @@ function GML_PreProcessor() constructor {
 			return new ASTLiteral(script_execute_ext(_script, _new_arr), node.line, node.lineString);
 		}
 		
-		static handleAccessorFunctionCall = function(accessorType, _args) {
-		    var _getterFunc, _setterFunc;
-			
-			// Getter context
-		    switch (accessorType) {
-				case __GMLC_AccessorType.Array:  _getterFunc = new ASTFunction(array_get,               node.line, node.lineString); _setterFunc = new ASTFunction(array_set,   node.line, node.lineString); break;
-				case __GMLC_AccessorType.List:   _getterFunc = new ASTFunction(ds_list_find_value,      node.line, node.lineString); _setterFunc = new ASTFunction(ds_list_set, node.line, node.lineString); break;
-				case __GMLC_AccessorType.Map:    _getterFunc = new ASTFunction(ds_map_find_value,       node.line, node.lineString); _setterFunc = new ASTFunction(ds_map_set,  node.line, node.lineString); break;
-				case __GMLC_AccessorType.Grid:   _getterFunc = new ASTFunction(ds_grid_get,             node.line, node.lineString); _setterFunc = new ASTFunction(ds_grid_set, node.line, node.lineString); break;
-				case __GMLC_AccessorType.Struct: _getterFunc = new ASTFunction(struct_get,              node.line, node.lineString); _setterFunc = new ASTFunction(struct_set,  node.line, node.lineString); break;
-				case __GMLC_AccessorType.Dot:    _getterFunc = new ASTFunction(__struct_get_with_error, node.line, node.lineString); _setterFunc = new ASTFunction(struct_set,  node.line, node.lineString); break;
-				default: throw $"\nUnexpected entry into handleAccessorFunctionCall with accessorType: {accessorType}" break;
-			}
-			
-			var _get_expr = new ASTCallExpression(_getterFunc, _args, node.line, node.lineString);
-			//var expr = parseLogicalOrExpression();
-			
-			if (currentToken != undefined)
-			&& (currentToken.type == __GMLC_NodeType.Operator) {
-				var _op = currentToken.value;
-				var _new_args = variable_clone(_args);
-				var right;
-				
-				// Handle compound assignments
-				static __op_arr = ["+=", "-=", "*=", "/=", "^=", "&=", "|=", "++", "--"];
-				if (_op == "=") {
-					nextToken(); // Consume the operator
-					
-					var expr = parseLogicalOrExpression();
-					array_push(_new_args, expr);
-					return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
-				}
-				else if (array_contains(__op_arr, _op)) {
-					nextToken(); // Consume the operator
-					
-					// Determine the right-hand side expression based on the operator
-					switch (_op) {
-						case "+=": case "-=": case "*=": case "/=":
-						case "^=": case "&=": case "|=":
-						    right = parseLogicalOrExpression(); break;
-						case "++": case "--":
-						    right = new ASTNodes("Literal", {value: 1, scope: ScopeType.CONST}); break;
-					}
-					
-					// Create binary expression node
-					var adjustedOperator = string_copy(_op, 1, 1); // Remove = or adjust for ++/--
-					var expr = new ASTNodes("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
-					array_push(_new_args, expr);
-					
-					// Return the setter function call with updated arguments
-					return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
-				}
-				else {
-					return _get_expr; // For unsupported operators or when no assignment is detected
-				}
-			}
-			
-		    return _get_expr;
-		};
 		#endregion
 	}
 #endregion

@@ -5,6 +5,8 @@ testFramework = new TestFrameworkRun();
 // ################# TEST SUITE REGISTRATION #################
 
 //// Register your test suites here...
+testFramework.addSuite(BasicConstructorTestSuit);
+
 testFramework.addSuite(BasicArrayTestSuite);
 testFramework.addSuite(BasicBase64TestSuite);
 testFramework.addSuite(BasicDataStructuresGridTestSuite);
@@ -50,8 +52,8 @@ testFramework.addSuite(BasicAudioTestSuite);
 
 // unsafe to run currently
 testFramework.addSuite(ResourceAudioBuffersTestSuite);
-testFramework.addSuite(ResourceTimeSourceTestSuite);
-testFramework.addSuite(ResourceSequenceTestSuite);
+////testFramework.addSuite(ResourceTimeSourceTestSuite);
+//testFramework.addSuite(ResourceSequenceTestSuite);
 ////testFramework.addSuite(ResourceAudioGroupsTestSuite);
 ////testFramework.addSuite(BasicShaderUniformsTestSuite);
 ////testFramework.addSuite(BasicShaderTestSuite);

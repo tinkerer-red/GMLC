@@ -1394,7 +1394,15 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 		compile_and_execute(@'
 		var _constructor = function() constructor { }
 	
-		var _result = array_create_ext(10, method( { const: _constructor }, function() { return new const(); }));
+		var _result = array_create_ext(
+			10,
+			method( 
+				{ const: _constructor },
+				function() { 
+					return new const(); 
+				}
+			)
+		);
 		assert_array_length(_result, 10, "array_create_ext should create array with correct size (constructor)");
 		')
 	});

@@ -47,6 +47,38 @@ function __method(_struct, _func) {
 		}
 	}
 }
+
+function __new(_func, argArr=[]) {
+	if (is_method(_func))
+	&& (is_gmlc_progam(_func)) {
+		if (is_gmlc_method(_func)) {
+			//a gmlc method
+			throw "target function for 'new' must be a constructor, this one is a gmlc method"
+		}
+		else {
+			//init our arguments
+			
+			//run the parent
+			var _constructor = method_get_self(_func);
+			if (_constructor.parentCall != undefined) {
+				var _struct = __new(parentCall.callee(), _args)
+			}
+			else {
+				var _struct = {};
+			}
+			
+			//run our body
+			_constructor.statements();
+		}
+	}
+	else {
+		//a native gml constructor
+		with (global.otherInstance) with (global.selfInstance) {
+			return constructor_call_ext(_func, _argArr);
+		}
+	}	
+}
+
 #region GML Emulated functions
 function __struct_get_with_error(struct, name) {
 	if (struct_exists(struct, name)) return struct_get(struct, name);
@@ -68,9 +100,9 @@ function __script_execute_ext(ind, array) {
 
 function __NewGMLArray() {
 	var _arr = [];
-	var _i=0; repeat(argument_count) {
+	var _i=argument_count-1; repeat(argument_count) {
 		_arr[_i] = argument[_i];
-	_i+=1;}//end repeat loop
+	_i--;}//end repeat loop
 	return _arr;
 }
 
