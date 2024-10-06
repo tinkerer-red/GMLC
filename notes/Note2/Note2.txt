@@ -6,6 +6,8 @@ will not be able to be accessed as `asset_get_index(_string)` will always return
 
 ToDo ::
 
+- optimize execute_call's with literal identifiers to seporate it into two different methods so we dont need to check if it's a gmlc program or if it's a real function
+
 - delete
 
 - better loop statements, break a loop statement down into block statements and exit/return/break/continue statements, parent blocks should account for these and addapt accordingly the same way.

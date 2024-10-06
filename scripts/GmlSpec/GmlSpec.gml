@@ -29,6 +29,6 @@ function GmlSpec() {
 	return __GmlSpec;
 	
 }
-GmlSpec();
+//GmlSpec();
 
 

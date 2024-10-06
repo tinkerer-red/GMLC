@@ -143,8 +143,11 @@ function constructor_call_ext(_func, _args) {
 }
 
 function is_gmlc_program(_program) {
-	if (is_method(_program)) {
-		var _self = method_get_self(_program);
+	var _self = method_get_self(_program);
+	if (is_method(_program))
+	&& (_self != undefined)
+	&& (_self != global) {
+		// this line turned out not to be needed, however we might want to add it back in when updates come.
 		if (struct_exists(_self, "__@@is_gmlc_function@@__")) {
 			return true;
 		}
@@ -153,7 +156,11 @@ function is_gmlc_program(_program) {
 }
 
 function is_gmlc_method(_program) {
-	if (is_method(_program)) {
+	var _self = method_get_self(_program);
+	if (is_method(_program))
+	&& (_self != undefined)
+	&& (_self != global) {
+		// this line turned out not to be needed, however we might want to add it back in when updates come.
 		var _self = method_get_self(_program);
 		if (struct_exists(_self, "__@@is_gmlc_method@@__")) {
 			return true;

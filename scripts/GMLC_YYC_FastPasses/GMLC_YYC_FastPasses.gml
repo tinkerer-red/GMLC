@@ -19,14 +19,14 @@ function __GMLCexecuteGetPropertyOther() {
 //}
 #endregion
 function __GMLCexecuteGetPropertyGlobal() {
-    return rootNode.globals[$ key];
+    return globals[$ key];
 }
 #region //{
 //    key: <expression>
 //}
 #endregion
 function __GMLCexecuteGetPropertyVarLocal() {
-    return parentNode.locals[$ key];
+    return locals[localIndex];
 }
 #region //{
 //    key: <expression>
@@ -182,7 +182,7 @@ function __GMLCexecuteSetPropertyOther() {
 //}
 #endregion
 function __GMLCexecuteSetPropertyGlobal() {
-    rootNode.globals[$ key] = expression()
+    globals[$ key] = expression()
 }
 #region //{
 //    key: <stringLiteral>
@@ -190,7 +190,7 @@ function __GMLCexecuteSetPropertyGlobal() {
 //}
 #endregion
 function __GMLCexecuteSetPropertyVarLocal() {
-	parentNode.locals[$ key] = expression()
+	locals[localIndex] = expression()
 }
 #region //{
 //    key: <expression>
@@ -373,16 +373,16 @@ function __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix() {
 #endregion
 #region Local
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix() {
-    return ++parentNode.locals[$ key];
+    return ++locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix() {
-    return parentNode.locals[$ key]++;
+    return locals[localIndex]++;
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix() {
-    return --parentNode.locals[$ key];
+    return --locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix() {
-    return parentNode.locals[$ key]--;
+    return locals[localIndex]--;
 }
 #endregion
 #region Static
@@ -873,4 +873,8 @@ function __GMLCexecuteUpdatePropertyUniqueMinusMinusPostfix() {
 	}
 }
 #endregion
+#endregion
+
+#region Call Expressions
+
 #endregion

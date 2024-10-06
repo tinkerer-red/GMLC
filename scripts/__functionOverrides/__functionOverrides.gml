@@ -9,27 +9,33 @@ function __method(_struct, _func) {
 		var _i=argument_count-1; repeat(argument_count) {
 			argArr[_i] = argument[_i];
 		_i--}
-	
-		var _prevOther = global.otherInstance;
-		var _prevSelf  = global.selfInstance;
-		global.otherInstance = global.selfInstance;
-		global.selfInstance = target;
 		
-		var _return = method_call(func, argArr);
-	
-		global.otherInstance = _prevOther;
-		global.selfInstance  = _prevSelf;
-	
+		if (target != undefined) {
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
+			global.otherInstance = global.selfInstance;
+			global.selfInstance = target;
+		
+			var _return = method_call(func, argArr);
+			
+			global.otherInstance = _prevOther;
+			global.selfInstance  = _prevSelf;
+		}
+		else {
+			var _return = method_call(func, argArr);
+		}
+		
 		return _return;
 	}
 	
-	
-	
-	if (is_method(_func))
-	&& (is_gmlc_program(_func)) {
+	if (is_gmlc_program(_func)) {
 		if (is_gmlc_method(_func)) {
 			//a gmlc method
-			throw_gmlc_error("Red needs to support methoding a method, what ever that does")
+			return method({
+				"__@@is_gmlc_method@@__": true,
+				target: _struct,
+				func: method_get_self(_func).func,
+			}, __executeMethod)
 		}
 		else {
 			//a gmlc function
@@ -42,9 +48,7 @@ function __method(_struct, _func) {
 	}
 	else {
 		//a native gml function/method
-		with (global.otherInstance) with (global.selfInstance) {
-			return method(_struct, _func);
-		}
+		return method(_struct, _func);
 	}
 }
 

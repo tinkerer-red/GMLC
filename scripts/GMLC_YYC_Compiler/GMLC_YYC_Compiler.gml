@@ -29,33 +29,54 @@ function executeProgram(_program) {
 //}
 #endregion
 function __GMLCexecuteProgram() {
-	//incase the program/script/function is recursive we need to stash the arguments
-	var _pre_args = arguments;
-	
 	//edit our local array
-	arguments = array_create(argument_count, undefined);
+	if (recursionCount++) {
+        // stash the arguments
+        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
+		array_resize(arguments, 0);
+		array_resize(arguments, argument_count);
+		array_push(argCountMemory, argument_count)
+    }
+	
+	//remember how many the function had
+	prevArgCount = argument_count;
+	
+	
+	// populate argument array
 	var _i=argument_count-1; repeat(argument_count) {
 		arguments[_i] = argument[_i];
 	_i--}
 	
-	var _return = program();
 	
-	arguments = _pre_args;
-	//reset variables
-	//locals = {};
-	//var _return = returnValue;
-	//returnValue = undefined;
-	//shouldReturn = false;
-	//shouldBreak = false;
-	//shouldContinue = false;
+	////////////////EXECUTE////////////////////////
+	var _return = program();
+	///////////////////////////////////////////////
+	
+	if (--recursionCount) {
+        // Un-stash the arguments
+		var _prev_arg_count = array_pop(argCountMemory)
+		var _arg_offset = array_length(backupArguments)-argument_count
+        array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);
+        array_resize(backupArguments, _arg_offset);
+    }
+	else {
+		array_resize(arguments, 0);
+	}
+	
 	
 	return _return;
 }
 function __GMLCcompileProgram(_node, _globalsStruct={"__@@ASSETS@@__":{}}) {
 	var _output = new __GMLC_Function(undefined, undefined, "__GMLCcompileProgram", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.globals = _globalsStruct; // these are optional inputs for future use with compiling a full project folder.
-	_output.arguments = [];
 	_output.program = __GMLCcompileFunction(_output, _output, _node);
+	
+	_output.recursionCount = 0; 
+	_output.prevArgCount = 0; 
+	_output.arguments = [];
+	_output.backupArguments = [];
+	_output.argCountMemory = [];
+	
 	
 	//compile all of the global variable functions
 	var _names = struct_get_names(_node.GlobalVar)
@@ -76,20 +97,32 @@ function __GMLCcompileProgram(_node, _globalsStruct={"__@@ASSETS@@__":{}}) {
 }
 
 function __GMLCexecuteFunction() {
+	//mostly just used in recursion code
+	var _arg_count = max(argument_count, argumentCount)
 	
-	//incase the program/script/function is recursive we need to stash the arguments
-	var _pre_args = arguments;
-	var _pre_locals = locals;
-	locals = {};
-	arguments = array_create(max(argument_count, named_arg_size), undefined);
+	if (recursionCount++) {
+        // stash the locals
+        array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);
+		array_resize(locals, 0);
+		array_resize(locals, localCount);
+        // stash the arguments
+        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
+		array_resize(arguments, 0);
+		array_resize(arguments, _arg_count);
+		array_push(argCountMemory, _arg_count)
+    }
 	
-	//edit our local array
-	// writing the array backwards is the fastest way to do this apparently.
+	//remember how many the function had
+	prevArgCount = _arg_count;
+	
+	
+	// populate argument array
 	var _i=argument_count-1; repeat(argument_count) {
 		arguments[_i] = argument[_i];
 	_i--}
-	
-	argumentsDefault();
+	if (argumentCount) {
+		argumentsDefault();
+	}
 	
 	//run our statics
 	if (!staticsExecuted) {
@@ -106,8 +139,25 @@ function __GMLCexecuteFunction() {
 	//shouldBreak = false;
 	//shouldContinue = false;
 	
-	arguments = _pre_args;
-	locals = _pre_locals;
+	if (--recursionCount) {
+        // Un-stash the locals
+		var _local_offset = array_length(backupLocals)-localCount
+        array_copy(locals, 0, backupLocals, _local_offset, localCount);
+        array_resize(backupLocals, _local_offset);
+		// Un-stash the arguments
+		var _prev_arg_count = array_pop(argCountMemory)
+		var _arg_offset = array_length(backupArguments)-_prev_arg_count
+        array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);
+        array_resize(backupArguments, _arg_offset);
+    }
+	else {
+		array_resize(locals, 0);
+        array_resize(arguments, 0);
+		if (array_length(backupArguments))
+		|| (array_length(backupArguments)) {
+			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
+		}
+	}
 	
 	return _return;
 }
@@ -120,13 +170,25 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_output.staticsExecuted = false;
 	_output.statics = new __GMLC_Statics();
 	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
-		
-	_output.locals = undefined;
-		
-	_output.arguments = undefined;
+	
+	
+	_output.recursionCount = 0; 
+	
+	//this assists with converting locals from struct accessors to an array write
+	_output.localLookUps = {};
+	var _i=0; repeat(array_length(_node.LocalVarNames)){
+		_output.localLookUps[$ _node.LocalVarNames[_i]] = _i;
+	_i++}
+	_output.localCount = _i;
+	_output.locals = array_create(_i, undefined);
+	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
+	
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
-	_output.named_arg_size = method_get_self(_output.argumentsDefault).size;
-		
+	_output.argumentCount = array_length(_node.arguments.statements);
+	_output.arguments = array_create(_i, _output.argumentCount);
+	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
+	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
+	
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
 		
 	_output.returnValue = undefined;
@@ -139,20 +201,32 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCexecuteConstructor() {
+	//mostly just used in recursion code
+	var _arg_count = max(argument_count, argumentCount)
 	
-	//incase the program/script/function is recursive we need to stash the arguments
-	var _pre_args = arguments;
-	var _pre_locals = locals;
-	locals = {};
-	arguments = array_create(max(argument_count, named_arg_size), undefined);
+	if (recursionCount++) {
+        // stash the locals
+        array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);
+		array_resize(locals, 0);
+		array_resize(locals, localCount);
+        // stash the arguments
+        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
+		array_resize(arguments, 0);
+		array_resize(arguments, _arg_count);
+		array_push(argCountMemory, _arg_count)
+    }
 	
-	//edit our local array
-	// writing the array backwards is the fastest way to do this apparently.
+	//remember how many the function had
+	prevArgCount = _arg_count;
+	
+	
+	// populate argument array
 	var _i=argument_count-1; repeat(argument_count) {
 		arguments[_i] = argument[_i];
 	_i--}
-	
-	argumentsDefault();
+	if (argumentCount) {
+		argumentsDefault();
+	}
 	
 	if (hasParentConstructor) {
 		//run the parent 
@@ -188,8 +262,25 @@ function __GMLCexecuteConstructor() {
 	//shouldBreak = false;
 	//shouldContinue = false;
 	
-	arguments = _pre_args;
-	locals = _pre_locals;
+	if (--recursionCount) {
+        // Un-stash the locals
+		var _local_offset = array_length(backupLocals)-localCount
+        array_copy(locals, 0, backupLocals, _local_offset, localCount);
+        array_resize(backupLocals, _local_offset);
+		// Un-stash the arguments
+		var _prev_arg_count = array_pop(argCountMemory)
+		var _arg_offset = array_length(backupArguments)-_prev_arg_count
+        array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);
+        array_resize(backupArguments, _arg_offset);
+    }
+	else {
+		array_resize(locals, 0);
+        array_resize(arguments, 0);
+		if (array_length(backupArguments))
+		|| (array_length(backupArguments)) {
+			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
+		}
+	}
 	
 	return _return;
 }
@@ -208,12 +299,24 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output.statics = new __GMLC_Constructor_Statics(_node.name);
 	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
 		
-	_output.locals = undefined;
-		
-	_output.arguments = undefined;
+	_output.recursionCount = 0; 
+	
+	//locals
+	_output.localLookUps = {};
+	var _i=0; repeat(array_length(_node.LocalVarNames)){
+		_output.localLookUps[$ _node.LocalVarNames[_i]] = _i;
+	_i++}
+	_output.localCount = _i;
+	_output.locals = array_create(_i, undefined);
+	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
+	
+	//arguments
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
-	_output.named_arg_size = method_get_self(_output.argumentsDefault).size;
-		
+	_output.argumentCount = method_get_self(_output.argumentsDefault).size;
+	_output.arguments = array_create(_i, _output.argumentCount);
+	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
+	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
+	
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
 		
 	_output.returnValue = undefined;
@@ -234,10 +337,9 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 
 function __GMLCexecuteArgumentList() {
 	var _inputArguments = parentNode.arguments
-	var _inputLength = array_length(_inputArguments);
+	var _inputLength = parentNode.prevArgCount; //at this current stage these are actually our current arguments, hopefully this does cause issues in the furst.. :/
 	
-	var _length = array_length(statements)
-	var _i=0; repeat(_length) {
+	var _i=0; repeat(size) {
 		var _arg = statements[_i]
 		if (_arg.index != _i) throw_gmlc_error("Why does our index not match our arguments index?"+$"\n(line {line}) -\t{lineString}")
 		
@@ -252,8 +354,8 @@ function __GMLCexecuteArgumentList() {
 			_inputArguments[_i] = _val;
 		}
 		
-		//apply to the local struct
-		parentNode.locals[$ _arg.identifier] = _inputArguments[_i]
+		//apply to the local array
+		parentNode.locals[_arg.localIndex] = _inputArguments[_i]
 		
 	_i++}
 }
@@ -262,8 +364,8 @@ function __GMLCcompileArgumentList(_rootNode, _parentNode, _node) {
 	_output.statements = [];
 	_output.size = undefined;
 	
-	_output.varStatics = {};
-	_output.locals = {};
+	//_output.varStatics = {};
+	//_output.locals = {};
 	
 	
 	var _arr = _node.statements;
@@ -282,6 +384,7 @@ function __GMLCexecuteArgument() {
 function __GMLCcompileArgument(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArgument", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.index = _node.argument_index;
+	_output.localIndex = _parentNode.localLookUps[$ _node.identifier];
 	_output.identifier = _node.identifier;
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr)
 	
@@ -861,31 +964,28 @@ function __GMLCexecuteWith() {
     // handle the instance
     global.otherInstance = global.selfInstance
     
-    ///NOTE: count how many objects, or valid `with` instances there are, then itterate through them all
-    var _validInstances = [];
+	var _self   = self;
+	//var _index  = myIndex;
+	//var _method = myMethod;
+	static __empty_arr = [];
     with (_inst) {
-		array_push(_validInstances, self);
-	}
-	
-    var _i=0; repeat(array_length(_validInstances)) {
-		global.selfInstance = _validInstances[_i];
+		global.selfInstance = self;
 		
-		blockStatement();
+		method_call(_self.blockStatement, __empty_arr);
 		
 		//we break on all three cases here because we would like to run the
 		// rest of the function to return to our previous self/other
-		if (parentNode.shouldReturn) break;
-		if (parentNode.shouldBreak) {
-		    parentNode.shouldBreak = false;
+		if (_self.parentNode.shouldReturn) break;
+		if (_self.parentNode.shouldBreak) {
+		    _self.parentNode.shouldBreak = false;
 		    break;
 		}
-		if (parentNode.shouldContinue) {
-		    parentNode.shouldContinue = false;
+		if (_self.parentNode.shouldContinue) {
+		    _self.parentNode.shouldContinue = false;
 		    //no need to break or continue we will already be doing that
 		}
-    _i++}
-    
-    
+	}
+	
     
     //reset
     global.selfInstance = _self;
@@ -895,8 +995,11 @@ function __GMLCcompileWith(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileWith", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
-    
-    return method(_output, __GMLCexecuteWith);
+    //_output.mySelf  = _output;
+    //_output.myIndex = __GMLCexecuteWith;
+    //_output.myMethod = method(_output, __GMLCexecuteWith);
+	
+	return method(_output, __GMLCexecuteWith);
 }
 
 #region //{
@@ -916,7 +1019,7 @@ function __GMLCexecuteTryCatchFinally() {
 		if (parentNode.shouldReturn) return;
 		if (catchBlock != undefined) {
 			//locals = variable_clone(parentNode.locals, 1)
-			parentNode.locals[$ catchVariableName] = _e
+			parentNode.locals[catchVariableIndex] = _e
 			catchBlock()
 		}
     }
@@ -929,6 +1032,7 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileTryCatchFinally", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.tryBlock = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.tryBlock);
 	_output.catchVariableName = _node.exceptionVar;
+	_output.catchVariableIndex = _parentNode.localLookUps[$ _node.exceptionVar];
 	_output.catchBlock = undefined;
 	_output.finallyBlock = undefined;
     
@@ -952,19 +1056,19 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteNewExpression() {
-	
 	var _func = callee()
 	
-	var _argArray = array_map(argArr, function(_elem, _index){
-		return _elem();
-	});
+	//avoids garbage collection lag spikes
+	static __argArray = []
+	array_resize(__argArray, size);
+	var _i=size-1; repeat(size) {
+		__argArray[_i] = argArr[_i]();
+	_i--}
 	
+	var _return = undefined;
 	if (is_method(_func)) {
-		if (is_gmlc_program(_func)) {
-			if (is_gmlc_method(_func)) {
-				throw_gmlc_error("target function for 'new' must be a constructor, this one is a gmlc method"+$"\n(line {line})\t-\t{lineString}")
-			}
-			
+		if (is_gmlc_program(_func))
+		|| (is_gmlc_method(_func)) {
 			var _struct = {};
 			
 			var _prevOther = global.otherInstance;
@@ -972,20 +1076,26 @@ function __GMLCexecuteNewExpression() {
 			global.otherInstance = global.selfInstance;
 			global.selfInstance = _struct;
 			
-			var _return = method_call(_func, _argArray);
-		
+			
+			with (method_get_self(_func)) {
+				var _return = script_execute_ext(_func, __argArray)
+			}
+			
 			global.otherInstance = _prevOther;
 			global.selfInstance  = _prevSelf;
 		}
 		else {
-			throw_gmlc_error("target function for 'new' must be a constructor, this one is a method"+$"\n(line {line})\t-\t{lineString}")
+			with (global.otherInstance) with (global.selfInstance) {
+				var _struct = constructor_call_ext(_func, __argArray);
+			}
 		}
 	}
 	else {
 		with (global.otherInstance) with (global.selfInstance) {
-			var _struct = constructor_call_ext(_func, _argArray);
+			_struct = constructor_call_ext(_func, __argArray);
 		}
 	}
+	
 	
 	return _struct;
 	
@@ -1170,13 +1280,18 @@ function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _value, _line, _
 function __GMLCexecuteCallExpression() {
 	var _func = callee()
 	
-	var _argArray = array_map(argArr, function(_elem, _index){
-		return _elem();
-	});
+	//avoids garbage collection lag spikes
+	static __argArray = []
+	array_resize(__argArray, size);
+	var _i=size-1; repeat(size) {
+		__argArray[_i] = argArr[_i]();
+	_i--}
 	
+	var _return = undefined;
 	if (is_method(_func)) {
-		if (is_gmlc_program(_func)) {
-			var _return = method_call(_func, _argArray);
+		if (is_gmlc_program(_func))
+		|| (is_gmlc_method(_func)) {
+			_return = method_call(_func, __argArray);
 		}
 		else {
 			
@@ -1184,11 +1299,11 @@ function __GMLCexecuteCallExpression() {
 		
 			var _prevOther = global.otherInstance;
 			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance;
+			global.otherInstance = _prevSelf;
 			global.selfInstance = _self;
 			
-			with (global.otherInstance) {
-				var _return = method_call(_func, _argArray);
+			with (_prevSelf) {
+				_return = method_call(_func, __argArray);
 			}
 		
 			global.otherInstance = _prevOther;
@@ -1197,7 +1312,7 @@ function __GMLCexecuteCallExpression() {
 	}
 	else {
 		with (global.otherInstance) with (global.selfInstance) {
-			var _return = script_execute_ext(_func, _argArray);
+			_return = script_execute_ext(_func, __argArray);
 		}
 	}
 	
@@ -1222,7 +1337,14 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 
 function __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileVariableDeclaration", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.key = _node.identifier;
+	_output.key = _node.identifier; //this is now unused but we keep it around for crash reports and debugging purposes
+	if (_node.scope == ScopeType.LOCAL) {
+		_output.locals = _parentNode.locals;
+		_output.localIndex = _parentNode.localLookUps[$ _output.key];
+	}
+	else if (_node.scope == ScopeType.GLOBAL) {
+		_output.globals = _rootNode.globals;
+	}
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
 	
 	return method(_output, __GMLCGetScopeSetter(_node.scope))
@@ -1337,6 +1459,13 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		//compile the getter
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);	
 		_output.key = _node.left.name;
+		if (_node.left.scope == ScopeType.LOCAL) {
+			_output.locals     = _parentNode.locals;
+			_output.localIndex = _parentNode.localLookUps[$ _output.key];
+		}
+		else if (_node.left.scope == ScopeType.GLOBAL) {
+			_output.globals = _rootNode.globals;
+		}
 		var _getter_expression = method(_output, _getter);
 		
 		//compile the additive method
@@ -1348,6 +1477,13 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		//compile the actual method we will be calling
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
 		_output.key        = _node.left.name;
+		if (_node.left.scope == ScopeType.LOCAL) {
+			_output.locals     = _parentNode.locals;
+			_output.localIndex = _parentNode.localLookUps[$ _output.key];
+		}
+		else if (_node.left.scope == ScopeType.GLOBAL) {
+			_output.globals = _rootNode.globals;
+		}
 		_output.expression = _expression;
 		return method(_output, _setter);
 	}
@@ -1407,9 +1543,7 @@ function __GMLCexecuteOpPlus() {
 	return left() + right();
 }
 function __GMLCexecuteOpMinus() {
-    var _left = left();
-	var _right = right();
-	return left() - right();
+    return left() - right();
 }
 function __GMLCexecuteOpMultiply() {
 	return left() * right();
@@ -1740,7 +1874,14 @@ function __GMLCcompileUpdateStruct(_rootNode, _parentNode, _node) {
 function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _scope, _key, _increment, _prefix, _line, _lineString) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileUpdateStructDotAcc", "<Missing Error Message>", _line, _lineString);
 	_output.key = _key;
-    
+    if (_scope == ScopeType.LOCAL) {
+		_output.locals = _parentNode.locals;
+		_output.localIndex = _parentNode.localLookUps[$ _output.key];
+	}
+	else if (_scope == ScopeType.GLOBAL) {
+		_output.globals = _rootNode.globals;
+	}
+	
 	return method(_output, __GMLCGetScopeUpdater(_scope, _increment, _prefix));
 }
 #endregion
@@ -1883,7 +2024,14 @@ function __GMLCexecutePropertyGet() {
 }
 function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _line, _lineString){
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compilePropertyGet", "<Missing Error Message>", _line, _lineString);	
-	_output.key = _leftKey;
+	_output.key      = _leftKey;
+	if (_scope == ScopeType.LOCAL) {
+		_output.locals = _parentNode.locals;
+		_output.localIndex = _parentNode.localLookUps[$ _output.key];
+	}
+	else if (_scope == ScopeType.GLOBAL) {
+		_output.globals = _rootNode.globals;
+	}
 	return method(_output, __GMLCGetScopeGetter(_scope))
 }
 #endregion
@@ -1902,6 +2050,13 @@ function __GMLCexecutePropertySet() {
 function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightExpression, _line, _lineString){
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compilePropertySet", "<Missing Error Message>", _line, _lineString);
 	_output.key = _key;
+	if (_scope == ScopeType.LOCAL) {
+		_output.locals = _parentNode.locals;
+		_output.localIndex = _parentNode.localLookUps[$ _output.key];
+	}
+	else if (_scope == ScopeType.GLOBAL) {
+		_output.globals = _rootNode.globals;
+	}
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _rightExpression);
 	
 	return method(_output, __GMLCGetScopeSetter(_scope))
@@ -2170,8 +2325,14 @@ function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _ex
 
 function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.key = _node.value
-	
+	_output.key = _node.value;
+	if (_node.scope == ScopeType.LOCAL) {
+		_output.locals = _parentNode.locals;
+		_output.localIndex = _parentNode.localLookUps[$ _output.key];
+	}
+	else if (_node.scope == ScopeType.GLOBAL) {
+		_output.globals = _rootNode.globals;
+	}
 	return method(_output, __GMLCGetScopeGetter(_node.scope))
 }
 

@@ -3230,6 +3230,7 @@ function GML_PreProcessor() constructor {
 		static getReplacementFunction = function(_func) {
 			switch (_func) {
 				case method           : return __method          ;
+				case is_instanceof    : return __is_instanceof   ;
 				//case method_get_index :	return __method_get_index;
 				//case method_get_self  :	return __method_get_self ;
 				//case method_call      : return __method_call     ;
