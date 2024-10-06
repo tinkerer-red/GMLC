@@ -63,7 +63,6 @@ function __GMLCexecuteProgram() {
 		array_resize(arguments, 0);
 	}
 	
-	
 	return _return;
 }
 function __GMLCcompileProgram(_node, _globalsStruct={"__@@ASSETS@@__":{}}) {
@@ -76,7 +75,6 @@ function __GMLCcompileProgram(_node, _globalsStruct={"__@@ASSETS@@__":{}}) {
 	_output.arguments = [];
 	_output.backupArguments = [];
 	_output.argCountMemory = [];
-	
 	
 	//compile all of the global variable functions
 	var _names = struct_get_names(_node.GlobalVar)
@@ -154,7 +152,7 @@ function __GMLCexecuteFunction() {
 		array_resize(locals, 0);
         array_resize(arguments, 0);
 		if (array_length(backupArguments))
-		|| (array_length(backupArguments)) {
+		|| (array_length(backupLocals)) {
 			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
 		}
 	}
@@ -185,7 +183,8 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
 	_output.argumentCount = array_length(_node.arguments.statements);
-	_output.arguments = array_create(_i, _output.argumentCount);
+	_output.prevArgCount = 0;
+	_output.arguments = array_create(_output.argumentCount);
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
@@ -277,7 +276,7 @@ function __GMLCexecuteConstructor() {
 		array_resize(locals, 0);
         array_resize(arguments, 0);
 		if (array_length(backupArguments))
-		|| (array_length(backupArguments)) {
+		|| (array_length(backupLocals)) {
 			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
 		}
 	}
@@ -313,7 +312,8 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	//arguments
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
 	_output.argumentCount = method_get_self(_output.argumentsDefault).size;
-	_output.arguments = array_create(_i, _output.argumentCount);
+	_output.prevArgCount = 0;
+	_output.arguments = array_create(_output.argumentCount);
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
@@ -1058,11 +1058,29 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
 function __GMLCexecuteNewExpression() {
 	var _func = callee()
 	
+	//mostly just used in recursion code
+	var _arg_count = max(argument_count, argumentCount)
+	
+	if (recursionCount++) {
+        // stash the locals
+        array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);
+		array_resize(locals, 0);
+		array_resize(locals, localCount);
+        // stash the arguments
+        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
+		array_resize(arguments, 0);
+		array_resize(arguments, _arg_count);
+		array_push(argCountMemory, _arg_count)
+    }
+	
+	//remember how many the function had
+	prevArgCount = _arg_count;
+	
+	
 	//avoids garbage collection lag spikes
-	static __argArray = []
-	array_resize(__argArray, size);
-	var _i=size-1; repeat(size) {
-		__argArray[_i] = argArr[_i]();
+	array_resize(arguments, argumentCount);
+	var _i=argumentCount-1; repeat(argumentCount) {
+		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 	
 	var _return = undefined;
@@ -1070,6 +1088,7 @@ function __GMLCexecuteNewExpression() {
 		if (is_gmlc_program(_func))
 		|| (is_gmlc_method(_func)) {
 			var _struct = {};
+			var _args = arguments;
 			
 			var _prevOther = global.otherInstance;
 			var _prevSelf  = global.selfInstance;
@@ -1078,24 +1097,39 @@ function __GMLCexecuteNewExpression() {
 			
 			
 			with (method_get_self(_func)) {
-				var _return = script_execute_ext(_func, __argArray)
+				var _return = script_execute_ext(_func, _args)
 			}
 			
 			global.otherInstance = _prevOther;
 			global.selfInstance  = _prevSelf;
 		}
 		else {
+			var _args = arguments;
 			with (global.otherInstance) with (global.selfInstance) {
-				var _struct = constructor_call_ext(_func, __argArray);
+				var _struct = constructor_call_ext(_func, _args);
 			}
 		}
 	}
 	else {
 		with (global.otherInstance) with (global.selfInstance) {
-			_struct = constructor_call_ext(_func, __argArray);
+			_struct = constructor_call_ext(_func, arguments);
 		}
 	}
 	
+	
+	if (--recursionCount) {
+        // Un-stash the arguments
+		var _prev_arg_count = array_pop(argCountMemory)
+		var _arg_offset = array_length(backupArguments)-_prev_arg_count
+        array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);
+        array_resize(backupArguments, _arg_offset);
+    }
+	else {
+		array_resize(arguments, 0);
+		if (array_length(backupArguments)) {
+			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
+		}
+	}
 	
 	return _struct;
 	
@@ -1104,17 +1138,21 @@ function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileNewExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.expression.callee);
 	_output.calleeName = _node.expression.callee.name; // this is actually unneeded, but we would still like to have it for debugging
-	_output.argArr = [];
-	_output.size = 0;
-    
+	
+	_output.recursionCount = 0; 
+	_output.prevArgCount = 0;
+	_output.argumentCount = array_length(_node.expression.arguments);
+	_output.argumentExpressions = array_create(_output.argumentCount);
+	_output.arguments = array_create(_output.argumentCount);
+	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
+	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
 	var _argArr = _node.expression.arguments
 	var _i=0; repeat(array_length(_argArr)) {
-		_output.argArr[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
-		_output.size++;
+		_output.argumentExpressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
 	_i++}
-	
-	return method(_output, __GMLCexecuteNewExpression);
+    
+    return method(_output, __GMLCexecuteNewExpression);
 }
 #region //{
 // used to inform gmlc that a break has occured
@@ -1280,30 +1318,49 @@ function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _value, _line, _
 function __GMLCexecuteCallExpression() {
 	var _func = callee()
 	
+	//mostly just used in recursion code
+	var _arg_count = max(argument_count, argumentCount)
+	
+	if (recursionCount++) {
+        // stash the locals
+        array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);
+		array_resize(locals, 0);
+		array_resize(locals, localCount);
+        // stash the arguments
+        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
+		array_resize(arguments, 0);
+		array_resize(arguments, _arg_count);
+		array_push(argCountMemory, _arg_count)
+    }
+	
+	//remember how many the function had
+	prevArgCount = _arg_count;
+	
+	
 	//avoids garbage collection lag spikes
-	static __argArray = []
-	array_resize(__argArray, size);
-	var _i=size-1; repeat(size) {
-		__argArray[_i] = argArr[_i]();
+	array_resize(arguments, 0);
+	var _i=argumentCount-1; repeat(argumentCount) {
+		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 	
 	var _return = undefined;
 	if (is_method(_func)) {
 		if (is_gmlc_program(_func))
 		|| (is_gmlc_method(_func)) {
-			_return = method_call(_func, __argArray);
+			_return = method_call(_func, arguments);
 		}
 		else {
 			
 			var _self = method_get_self(_func);
-		
+			var _args = arguments;
+			
 			var _prevOther = global.otherInstance;
 			var _prevSelf  = global.selfInstance;
 			global.otherInstance = _prevSelf;
 			global.selfInstance = _self;
 			
 			with (_prevSelf) {
-				_return = method_call(_func, __argArray);
+				_return = method_call(_func, _args);
 			}
 		
 			global.otherInstance = _prevOther;
@@ -1311,8 +1368,23 @@ function __GMLCexecuteCallExpression() {
 		}
 	}
 	else {
+		var _args = arguments;
 		with (global.otherInstance) with (global.selfInstance) {
-			_return = script_execute_ext(_func, __argArray);
+			_return = script_execute_ext(_func, _args);
+		}
+	}
+	
+	if (--recursionCount) {
+        // Un-stash the arguments
+		var _prev_arg_count = array_pop(argCountMemory)
+		var _arg_offset = array_length(backupArguments)-_prev_arg_count
+        array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);
+        array_resize(backupArguments, _arg_offset);
+    }
+	else {
+		array_resize(arguments, 0);
+		if (array_length(backupArguments)) {
+			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
 		}
 	}
 	
@@ -1322,14 +1394,18 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileCallExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee);
 	_output.calleeName = _node.callee.name; // this is actually unneeded, but we would still like to have it for debugging
-	_output.argArr = [];
-	_output.size = 0;
-    
+	
+	_output.recursionCount = 0; 
+	_output.prevArgCount = 0;
+	_output.argumentCount = array_length(_node.arguments);
+	_output.argumentExpressions = array_create(_output.argumentCount);
+	_output.arguments = array_create(_output.argumentCount);
+	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
+	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
 	var _argArr = _node.arguments
 	var _i=0; repeat(array_length(_argArr)) {
-		_output.argArr[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
-		_output.size++;
+		_output.argumentExpressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
 	_i++}
     
     return method(_output, __GMLCexecuteCallExpression);
