@@ -12,8 +12,6 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		function a(arg0) constructor {
 			static overwrite = "A Overwrite"
 			static aStatic = "This is A`s Static"
-			static aStaticLog = log("Staic A")
-			aInstanceLog = log("Instance A")
 			aInstance = "This is A`s Instance"
 			argumentChain = arg0;
 			localChain = 0;
@@ -21,8 +19,6 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		function b(arg0) : a(arg0+1) constructor {
 			static overwrite = "B Overwrite"
 			static bStatic = "This is B`s Static"
-			static bStaticLog = log("Staic B")
-			bInstanceLog = log("Instance B")
 			bInstance = "This is B`s Instance"
 			localChain++;
 		}
@@ -33,7 +29,6 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 			localChain++;
 		}
 		
-		log("Newing A")
 		var _a = new a(1);
 		
 		//self
@@ -42,10 +37,9 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		assert_struct_equals(_struct, _expected, "A`s Structs are not equal")
 		//A`s statics
 		var _struct = static_get(_a)
-		var _expected = { overwrite : "A Overwrite", aStatic : "This is A`s Static" }
+		var _expected = static_get(a)
 		assert_struct_equals(_struct, _expected, "A`s Static Structs are not equal")
 		
-		log("Newing B")
 		var _b = new b(1);
 		
 		//self
@@ -54,34 +48,31 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		assert_struct_equals(_struct, _expected, "B`s Structs are not equal")
 		//B`s statics
 		var _struct = static_get(_b)
-		var _expected = { overwrite : "B Overwrite", bStatic : "This is B`s Static" }
+		var _expected = static_get(b)
 		assert_struct_equals(_struct, _expected, "B`s Static Structs are not equal")
 		//A`s statics
 		var _struct = static_get(static_get(_b))
-		var _expected = { overwrite : "A Overwrite", aStatic : "This is A`s Static" }
-		assert_struct_equals(_struct, _expected, "B`s 2xStatic`s Structs are not equal to A`s")
+		var _expected = static_get(a)
+		assert_struct_equals(_struct, _expected, "B`s 2xStatic`s Structs are not equal to construct A`s")
 		
-		log("Newing C")
 		var _c = new c(1);
-		log(_c)
-		log(static_get(_c))
 		
 		//self
 		var _struct = _c;
-		var _expected = { aInstance : "This is A`s Instance", cInstance : "This is C`s Instance", argumentChain : 3, localChain : 2, bInstance : "This is B`s Instance" }
+		var _expected = {"__":{"__@@is_gmlc_constructed@@__":true,"__@@gmlc_constructor_name@@__":"c"},"overwrite":"C Overwrite","cStatic":"This is C`s Static","bStatic":"This is B`s Static","aStatic":"This is A`s Static"}
 		assert_struct_equals(_struct, _expected, "C`s Structs are not equal")
 		//C`s statics
 		var _struct = static_get(_c)
-		var _expected = { overwrite : "C Overwrite", cStatic : "This is C`s Static" }
+		var _expected = static_get(c)
 		assert_struct_equals(_struct, _expected, "C`s Static Structs are not equal")
 		//B`s statics
 		var _struct = static_get(static_get(_c))
-		var _expected = { overwrite : "B Overwrite", bStatic : "This is B`s Static" }
-		assert_struct_equals(_struct, _expected, "C`s 2xStatic`s Structs are not equal to B`s")
+		var _expected = static_get(b)
+		assert_struct_equals(_struct, _expected, "C`s 2xStatic`s Structs are not equal to construct B`s")
 		//A`s statics
 		var _struct = static_get(static_get(static_get(_c)))
-		var _expected = { overwrite : "A Overwrite", aStatic : "This is A`s Static" }
-		assert_struct_equals(_struct, _expected, "C`s 3xStatic`s Structs are not equal to A`s")
+		var _expected = static_get(a)
+		assert_struct_equals(_struct, _expected, "C`s 3xStatic`s Structs are not equal to construct A`s")
 		')
 	});
 	

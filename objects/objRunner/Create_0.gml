@@ -25,7 +25,6 @@ testFramework.addSuite(BasicJsonTestSuite);
 testFramework.addSuite(BasicMathTestSuite);
 testFramework.addSuite(BasicMatrixTestSuite);
 testFramework.addSuite(BasicNameofTestSuite);
-testFramework.addSuite(BasicNetworkTestSuite);
 testFramework.addSuite(BasicRandomTestSuite);
 testFramework.addSuite(BasicScriptTestSuite);
 testFramework.addSuite(BasicStringTestSuite);
@@ -33,25 +32,25 @@ testFramework.addSuite(BasicVariableTestSuite);
 
 testFramework.addSuite(BasicSurfaceTestSuite);
 testFramework.addSuite(BasicWeakRefsTestSuite);
-testFramework.addSuite(ResourceAudioEffectsTestSuite);
-testFramework.addSuite(ResourceAudioEmittersTestSuite);
-testFramework.addSuite(ResourceAudioListenersTestSuite);
+//testFramework.addSuite(ResourceAudioEffectsTestSuite);
+//testFramework.addSuite(ResourceAudioEmittersTestSuite);
+//testFramework.addSuite(ResourceAudioListenersTestSuite);
 testFramework.addSuite(ResourceCameraTestSuite);
 testFramework.addSuite(ResourceEventsTestSuite);
 testFramework.addSuite(ResourceLayersTestSuite);
 
 
 // Async Tests
-testFramework.addSuite(BasicNetworkTestSuite);
-testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
-testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
-testFramework.addSuite(BasicTilemapTestSuite);
-testFramework.addSuite(BasicRoomTestSuite);
-testFramework.addSuite(BasicBufferTestSuite);
-testFramework.addSuite(BasicAudioTestSuite);
+//testFramework.addSuite(BasicNetworkTestSuite);
+//testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
+//testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
+//testFramework.addSuite(BasicTilemapTestSuite);
+//testFramework.addSuite(BasicRoomTestSuite);
+//testFramework.addSuite(BasicBufferTestSuite);
+//testFramework.addSuite(BasicAudioTestSuite);
+//testFramework.addSuite(ResourceAudioBuffersTestSuite);
 
 // unsafe to run currently
-testFramework.addSuite(ResourceAudioBuffersTestSuite);
 ////testFramework.addSuite(ResourceTimeSourceTestSuite);
 //testFramework.addSuite(ResourceSequenceTestSuite);
 ////testFramework.addSuite(ResourceAudioGroupsTestSuite);

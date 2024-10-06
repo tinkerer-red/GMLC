@@ -292,20 +292,20 @@ function GML_Tokenizer() constructor {
 		}
 		
 		var _len = 0;
-		var _hex_value = 0;
+		//var _hex_value = 0;
 		while (currentCharCode != undefined && __char_is_hex(currentCharCode)) {
-			_hex_value = _hex_value << 4;
+			//_hex_value = _hex_value << 4;
 			
 			if (currentCharCode >= ord("0") && currentCharCode <= ord("9")) {
-				_hex_value += currentCharCode - ord("0");
+				//_hex_value += currentCharCode - ord("0");
 				_len += 1;
 			}
 			else if (currentCharCode >= ord("A") && currentCharCode <= ord("F")) {
-				_hex_value += currentCharCode - ord("A") + 10;
+				//_hex_value += currentCharCode - ord("A") + 10;
 				_len += 1;
 			}
 			else if (currentCharCode >= ord("a") && currentCharCode <= ord("f")) {
-				_hex_value += currentCharCode - ord("a") + 10;
+				//_hex_value += currentCharCode - ord("a") + 10;
 				_len += 1;
 			}
 			
@@ -326,8 +326,10 @@ function GML_Tokenizer() constructor {
 		//	return _token;
 		//}
 		#endregion
-		
-		_hex_value = (_hex_value <= $FFFFFFF) ? real(_hex_value) : int64(_hex_value);
+		var _str = string_replace(_raw_string, "$", "0x")
+		_str = string_replace_all(_str, "_", "")
+		var _hex_value = real(_str);
+		if (_hex_value > 2147483647 || _hex_value < -2147483648) _hex_value = int64(_hex_value);
 		
 		var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _hex_value, _start_line, _start_column);
 		return _token;
@@ -349,11 +351,10 @@ function GML_Tokenizer() constructor {
 		}
 		
 		var _len = 0;
-		var _binary_value = 0;
 		while (currentCharCode != undefined && __char_is_binary(currentCharCode)) {
-			_binary_value = _binary_value << 1;
+			//_binary_value = _binary_value << 1;
 			
-			_binary_value += currentCharCode - ord("0");
+			//_binary_value += currentCharCode - ord("0");
 			
 			_len += 1;
 			_raw_string += chr(currentCharCode);
@@ -366,14 +367,11 @@ function GML_Tokenizer() constructor {
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_str, _error, _start_line, _start_column);
 			return _token;
 		}
-		if (_binary_value < 0) {
-			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {line} : Binary number {_raw_string} is too large or too small";
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
-			return _token;
-		}
 		#endregion
 		
-		_binary_value = (_binary_value <= 0b1111111111111111111111111111111) ? real(_binary_value) : int64(_binary_value);
+		var _str = string_replace_all(_raw_string, "_", "")
+		var _binary_value = real(_str);
+		if (_binary_value > 2147483647 || _binary_value < -2147483648) _binary_value = int64(_binary_value);
 		
 		var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _binary_value, _start_line, _start_column);
 		return _token;
