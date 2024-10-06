@@ -701,12 +701,12 @@ return x;',
 {
   IR:[
 	{ op: ByteOp.LOAD, value:1.0, scope: ScopeType.CONST },
-	{ op: ByteOp.STORE, value:"x", scope: ScopeType.INSTANCE },
-	{ op: ByteOp.LOAD, value:"x", scope: ScopeType.INSTANCE },
+	{ op: ByteOp.STORE, value:"x", scope: ScopeType.SELF },
+	{ op: ByteOp.LOAD, value:"x", scope: ScopeType.SELF },
 	{ op: ByteOp.DUP },
 	{ op: ByteOp.OPERATOR, operator: OpCode.INC },
-	{ op: ByteOp.STORE, value:"x", scope: ScopeType.INSTANCE },
-	{ op: ByteOp.LOAD, value:"x", scope: ScopeType.INSTANCE },
+	{ op: ByteOp.STORE, value:"x", scope: ScopeType.SELF },
+	{ op: ByteOp.LOAD, value:"x", scope: ScopeType.SELF },
 	{ op: ByteOp.RETURN },
 	{ op: ByteOp.END }
   ],
@@ -725,8 +725,8 @@ return y',
 {
   IR:[
 	{ op: ByteOp.LOAD,  value:1.0, scope: ScopeType.CONST },
-	{ op: ByteOp.STORE, value:"y", scope: ScopeType.INSTANCE },
-	{ op: ByteOp.LOAD,  value:"y", scope: ScopeType.INSTANCE },
+	{ op: ByteOp.STORE, value:"y", scope: ScopeType.SELF },
+	{ op: ByteOp.LOAD,  value:"y", scope: ScopeType.SELF },
 	{ op: ByteOp.RETURN },
 	{ op: ByteOp.END }
   ],
@@ -3779,21 +3779,21 @@ run_interpreter_test("Do/Until Loop with Recursive Call",
 function increment() {
 	do {
 		xx++;
-		if (xx < 9) increment();
+		if (xx < 9) __increment();
 	} until (xx == 10);
 }
-increment();
+__increment();
 return xx;',
 undefined,
 function(){
 	xx = 0;
-	function increment() {
+	function __increment() {
 		do {
 			xx++;
 			if (xx < 9) increment();
 		} until (xx == 10);
 	}
-	increment();
+	__increment();
 	return xx;
 })
 #endregion

@@ -139,7 +139,8 @@ enum ScopeType {
 	UNIQUE,
 	LOCAL,
 	STATIC,
-	INSTANCE,
+	SELF,
+	OTHER,
 	CONST,
 		
 	__SIZE__
@@ -181,7 +182,8 @@ function ScopeType() {
 	static UNIQUE = "ScopeType.UNIQUE";
 	static LOCAL = "ScopeType.LOCAL";
 	static STATIC = "ScopeType.STATIC";
-	static INSTANCE = "ScopeType.INSTANCE";
+	static SELF = "ScopeType.SELF";
+	static OTHER = "ScopeType.OTHER";
 	static CONST = "ScopeType.CONST";
 		
 	static __SIZE__ = "__SIZE__";

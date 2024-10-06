@@ -288,7 +288,7 @@ function GML_Tokenizer() constructor {
 			var _raw_string = "0x"
 		}
 		else {
-			throw $"\nEntered tokenizeHexNumber with a non-valid entry string : {chr(currentCharCode)}"
+			throw_gmlc_error($"\nEntered tokenizeHexNumber with a non-valid entry string : {chr(currentCharCode)}")
 		}
 		
 		var _len = 0;
@@ -345,7 +345,7 @@ function GML_Tokenizer() constructor {
 			var _raw_string = "0b";
 		}
 		else {
-			throw $"\nEntered tokenizeBinaryNumber with a non-valid entry string : {chr(_char)}"
+			throw_gmlc_error($"\nEntered tokenizeBinaryNumber with a non-valid entry string : {chr(_char)}")
 		}
 		
 		var _len = 0;
@@ -846,7 +846,7 @@ function GML_Tokenizer() constructor {
 				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 			break;};
 			default: {
-				throw $"\nEntered tokenizeOperator with a non-valid entry string : {chr(currentCharCode)}"
+				throw_gmlc_error($"\nEntered tokenizeOperator with a non-valid entry string : {chr(currentCharCode)}")
 			break;}
 		}
 		
@@ -1184,81 +1184,6 @@ function GML_Tokenizer() constructor {
 		return _token;
 	};
 	
-	#region unused
-	//static tokenizeMacro = function() {
-	//	var start = charPos;
-	//	var _orig_line = line;
-	//	var _orig_column = column;
-			
-	//	charPos += 6; // Skip the #macro keyword itself, assuming #macro was already detected
-	//	column += 6;
-		
-	//	var _name = string_copy(sourceCode, start, charPos - start);
-	//	var _token = new __GMLC_create_token(__GMLC_TokenType.Macro, "#macro", "#macro", _orig_line, _orig_column);
-	//	return _token;
-	//};
-	
-	//static tokenizeEnum = function() {
-	//	var start = charPos;
-	//	var _orig_line = line;
-	//	var _orig_column = column;
-			
-	//	charPos += 4; // Skip the enum keyword itself, assuming enum was already detected
-	//	column += 4;
-		
-	//	var _name = string_copy(sourceCode, start, charPos - start);
-	//	var _token = new __GMLC_create_token(__GMLC_TokenType.Enum, __GMLC_TokenType.Enum, __GMLC_TokenType.Enum, _orig_line, _orig_column);
-	//	return _token;
-	//};
-	
-	//static tokenizeRegion = function() {
-	//	var start = charPos;
-	//	var _orig_line = line;
-	//	var _orig_column = column;
-		
-	//	var _type = undefined;
-		
-	//	var _char = string_char_at(sourceCode, charPos+1);
-	//	if (_char == "r") {
-	//		//skip #region
-	//		charPos += 7;
-	//		column += 7;
-	//		_type = "#region"
-	//		//skip the comment block of the region
-	//		var _dist = string_pos_ext("\n", sourceCode, charPos) - charPos;
-	//		charPos += _dist;
-	//		column += _dist;
-	//	}
-	//	else if (_char == "e") {
-	//		//skip #endregion
-	//		charPos += 10;
-	//		column += 10;
-	//		_type = "#endregion"
-	//	}
-	//	else {
-	//		throw "\naww fuck"
-	//	}
-		
-	//	var _name = string_copy(sourceCode, start, charPos - start);
-	//	var _token = new __GMLC_create_token(__GMLC_TokenType.Region, _name, _type, _orig_line, _orig_column);
-	//	return _token;
-	//};
-	
-	//static tokenizeDefine = function() {
-	//	var start = charPos;
-	//	var _orig_line = line;
-	//	var _orig_column = column;
-			
-	//	charPos += 7; // Skip the #macro keyword itself, assuming #macro was already detected
-	//	column += 7;
-		
-	//	var _name = string_copy(sourceCode, start, charPos - start);
-	//	var _token = new __GMLC_create_token(__GMLC_TokenType.Define, "#define", "#define", _orig_line, _orig_column);
-	//	return _token;
-	//};
-	
-	#endregion
-	
 	#endregion
 	
 }
@@ -1342,11 +1267,11 @@ function __peekUTF8(_look_ahead=1) {
 function __expectUTF8(_ord) {
 	gml_pragma("forceinline");
 	if is_string(_ord) {
-		throw "please use character code instead of a string"
+		throw_gmlc_error("please use character code instead of a string")
 	}
 		
 	if (currentCharCode != _ord) {
-		throw $"\n\nExpected {_ord} ({chr(_ord)}), got {currentCharCode} ({chr(currentCharCode)})";
+		throw_gmlc_error($"\n\nExpected {_ord} ({chr(_ord)}), got {currentCharCode} ({chr(currentCharCode)})");
 	}
 		
 	__nextUTF8();
@@ -1355,7 +1280,7 @@ function __expectUTF8(_ord) {
 function __optionalUTF8(_ord) {
 	gml_pragma("forceinline");
 	if is_string(_ord) {
-		throw "please use character code instead of a string"
+		throw_gmlc_error("please use character code instead of a string")
 	}
 		
 	var _character = buffer_read(sourceCodeBuffer, buffer_u8);
@@ -1612,7 +1537,7 @@ function GML_PreProcessor() constructor {
 	static expectToken = function(expectedType, expectedValue=undefined) {
 		if (currentToken.type != expectedType)
 		|| (expectedValue != undefined && currentToken.value != expectedValue) {
-			throw $"\n\nExpected {expectedValue}, got {currentToken}";
+			throw_gmlc_error($"\n\nExpected {expectedValue}, got {currentToken}");
 		}
 		nextToken();
 	};
@@ -1644,7 +1569,7 @@ function GML_PreProcessor() constructor {
 		expectToken(__GMLC_TokenType.Keyword, "enum")
 		
 		if (currentToken.type != __GMLC_TokenType.Identifier) {
-			throw $"\nEnum Declaration expecting Identifier, got :: {currentToken}";
+			throw_gmlc_error($"\nEnum Declaration expecting Identifier, got :: {currentToken}");
 		}
 		
 		enumName = currentToken.value;  // Next token should be the enum name
@@ -1661,7 +1586,7 @@ function GML_PreProcessor() constructor {
 			skipWhitespaces();
 			
 			if (currentToken.type != __GMLC_TokenType.Identifier) {
-				throw $"\nEnum.Key Declaration expecting Identifier, got :: {currentToken}";
+				throw_gmlc_error($"\nEnum.Key Declaration expecting Identifier, got :: {currentToken}");
 			}
 			
 			memberName = currentToken.value;
@@ -1975,7 +1900,7 @@ function GML_PreProcessor() constructor {
 				}
 				_loop_count++
 				if (_loop_count > 1000) {
-					throw $"Recursive Macro or Enum Declaration detected! Quitting"
+					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting")
 				}
 			}
 		}
@@ -2144,7 +2069,7 @@ function GML_PreProcessor() constructor {
 				if (currentToken.type == __GMLC_TokenType.Keyword) {
 					if (currentToken.value == "case") {
 						if (_expectClosingCurly) {
-							throw $"\nswitch/case statement was opened with \{ but was never closed"
+							throw_gmlc_error($"\nswitch/case statement was opened with \{ but was never closed")
 						}
 						
 						var caseLine = currentToken.line;
@@ -2161,7 +2086,7 @@ function GML_PreProcessor() constructor {
 					}
 					else if (currentToken.value == "default") {
 						if (_expectClosingCurly) {
-							throw $"\nswitch/case statement was opened with \{ but was never closed"
+							throw_gmlc_error($"\nswitch/case statement was opened with \{ but was never closed")
 						}
 						
 						var caseLine = currentToken.line;
@@ -2339,7 +2264,7 @@ function GML_PreProcessor() constructor {
 				
 				if (_parent.type != __GMLC_NodeType.CallExpression)
 				|| (_identifier.type != __GMLC_NodeType.Identifier) {  ///////////////////////// This line might cause errors, maybe the preprocessor should evaluate function name declarations
-					throw $"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}"
+					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}")
 				}
 				
 				#endregion
@@ -2503,7 +2428,7 @@ function GML_PreProcessor() constructor {
 				case "globalvar":{
 					_scope = ScopeType.GLOBAL;
 				break;}
-				default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
+				default: throw_gmlc_error($"\nHow did we enter variable declaration with out meeting a variable keyword?")
 			}
 			
 			nextToken();
@@ -2516,7 +2441,7 @@ function GML_PreProcessor() constructor {
 				var varLineString = currentToken.lineString;
 				
 				if (currentToken.type != __GMLC_TokenType.Identifier) {
-		            throw $"\nExpected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}";
+		            throw_gmlc_error($"\nExpected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}");
 		        }
 				
 		        var identifier = currentToken.value;
@@ -2531,9 +2456,9 @@ function GML_PreProcessor() constructor {
 						//	//dont to nuttin`!
 						//break;}
 						case ScopeType.LOCAL: _tableArr = scriptAST.LocalVarNames; break;
-						case ScopeType.STATIC: throw $"\nScript: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"; break;
+						case ScopeType.STATIC: throw_gmlc_error($"\nScript: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"); break;
 						case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
+						default: throw_gmlc_error($"\nHow did we enter variable declaration with out meeting a variable keyword?")
 					}
 					
 				}
@@ -2546,7 +2471,7 @@ function GML_PreProcessor() constructor {
 						case ScopeType.LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
 						case ScopeType.STATIC: _tableArr = currentFunction.StaticVarNames; break;
 						case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
+						default: throw_gmlc_error($"\nHow did we enter variable declaration with out meeting a variable keyword?")
 					}
 				}
 				if (!array_contains(_tableArr, identifier)) {
@@ -2595,7 +2520,7 @@ function GML_PreProcessor() constructor {
 						case ScopeType.STATIC:{
 							array_push(currentFunction.StaticVarArray, new ASTVariableDeclaration(identifier, expr, ScopeType.STATIC, varLine, varLineString))
 						break;}
-						default: throw $"\nHow did we enter variable declaration with out meeting a variable keyword?"
+						default: throw_gmlc_error($"\nHow did we enter variable declaration with out meeting a variable keyword?")
 					}
 					
 				}
@@ -2636,7 +2561,7 @@ function GML_PreProcessor() constructor {
 		static parseExpressionStatement = function() {
 			var expr = parseExpression();
 			if (expr == undefined) {
-				throw $"\nGetting an error parsing expression, current token is:\n{currentToken}\nLast Five Tokens:\n{lastFiveTokens}"
+				throw_gmlc_error($"\nGetting an error parsing expression, current token is:\n{currentToken}\nLast Five Tokens:\n{lastFiveTokens}")
 			}
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Handle the optional semicolon
 			return expr;
@@ -2952,7 +2877,7 @@ function GML_PreProcessor() constructor {
 			var lineString = currentToken.lineString;
 			
 			if (currentToken == undefined) {
-				throw "\nUnexpected end of input";
+				throw_gmlc_error("\nUnexpected end of input");
 			}
 			
 			switch (currentToken.type) {
@@ -3005,7 +2930,7 @@ function GML_PreProcessor() constructor {
 						return node;
 					}
 					
-					if (_scopeType == ScopeType.INSTANCE) {
+					if (_scopeType == ScopeType.SELF) {
 						var node = new ASTIdentifier(currentToken.value, undefined, line, lineString);
 						nextToken(); // Move past the identifier
 						return node;
@@ -3090,7 +3015,7 @@ function GML_PreProcessor() constructor {
 				break;}
 			}
 			
-			throw $"\n\nUnexpected token in expression: {currentToken}\nLast five tokens were:\n{lastFiveTokens}";
+			throw_gmlc_error($"\n\nUnexpected token in expression: {currentToken}\nLast five tokens were:\n{lastFiveTokens}");
 		};
 		
 		static parseArrayCreation = function() {
@@ -3126,7 +3051,7 @@ function GML_PreProcessor() constructor {
 				&& (currentToken.type != __GMLC_TokenType.UniqueVariable)
 				&& (currentToken.type != __GMLC_TokenType.Number)
 				{
-		            throw $"\nExpected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}";
+		            throw_gmlc_error($"\nExpected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}");
 		        }
 				
 		        var key = currentToken;
@@ -3143,7 +3068,7 @@ function GML_PreProcessor() constructor {
 					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), key.line, key.lineString);
 				}
 				else {
-					throw $"\nObject: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id"
+					throw_gmlc_error($"\nObject: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id")
 				}
 		        
 				//push the key and the value
@@ -3192,7 +3117,7 @@ function GML_PreProcessor() constructor {
 			}
 			
 			if (currentToken == undefined) {
-				throw $"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>"
+				throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>")
 			}
 			
 			expectToken(__GMLC_TokenType.Punctuation, ")"); // Ensure ) and consume it
@@ -3207,7 +3132,7 @@ function GML_PreProcessor() constructor {
 			
 			nextToken(); // Consume .
 		    if (currentToken.type != __GMLC_TokenType.Identifier) {
-		        throw "Expected identifier after .";
+		        throw_gmlc_error("Expected identifier after .");
 		    }
 			
 			var _expr = new ASTAccessorExpression(
@@ -3282,11 +3207,11 @@ function GML_PreProcessor() constructor {
 		
 		static expectToken = function(expectedType, expectedValue) {
 			if (currentToken == undefined) {
-				throw $"\n\nUnexpected end of input. Expected {expectedValue} but found EOF.";
+				throw_gmlc_error($"\n\nUnexpected end of input. Expected {expectedValue} but found EOF.");
 			}
 			if (currentToken.type != expectedType || currentToken.value != expectedValue) {
 				pprint("lastFiveTokens :: ",lastFiveTokens)
-				throw $"\n\nSyntax Error: Expected {expectedValue} at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.";
+				throw_gmlc_error($"\n\nSyntax Error: Expected {expectedValue} at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.");
 			}
 			nextToken();
 		};
@@ -3386,7 +3311,7 @@ function GML_PreProcessor() constructor {
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldnt be finished"
+						throw_gmlc_error($"\nWe still have nodes in the nodeStack, we shouldnt be finished")
 					}
 					
 					finished = true;
@@ -4234,7 +4159,7 @@ function GML_PreProcessor() constructor {
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldnt be finished"
+						throw_gmlc_error($"\nWe still have nodes in the nodeStack, we shouldnt be finished")
 					}
 					
 					finished = true;
@@ -4371,7 +4296,7 @@ function GML_PreProcessor() constructor {
 								getterFunc = new ASTFunction(__struct_get_with_error, node.line, node.lineString);
 								setterFunc = new ASTFunction(struct_set, node.line, node.lineString);
 							break;}
-							default: throw $"\nUnsupported accessor type: {node.left.accessorType}";
+							default: throw_gmlc_error($"\nUnsupported accessor type: {node.left.accessorType}");
 						}
 						
 						var getterArgs = [node.left.expr];
@@ -4397,7 +4322,7 @@ function GML_PreProcessor() constructor {
 							case "=": {
 								rightExpr = node.right; // Direct assignment doesnt need an operator
 							break;} // Direct assignment doesnt need an operator
-							default: throw $"\nUnsupported assignment operator: {node.operator}";
+							default: throw_gmlc_error($"\nUnsupported assignment operator: {node.operator}");
 						}
 						
 						
@@ -4445,6 +4370,9 @@ function GML_PreProcessor() constructor {
 				break;}
 				case __GMLC_NodeType.UpdateExpression:{
 					if (node.expr.type == __GMLC_NodeType.AccessorExpression) {
+						
+						throw_gmlc_error("updating accessor")
+						
 						var increment = (node.operator == "++");
 						var prefix = node.prefix; // Since this is a postfix expression
 						
@@ -4550,7 +4478,7 @@ function GML_PreProcessor() constructor {
 				case __GMLC_NodeType.StructPattern:{
 					//loop through all children and post process them aswell
 					
-					//throw "why havent we stopped"
+					//throw_gmlc_error("why havent we stopped")
 				break;}
 				case __GMLC_NodeType.Literal:{
 				    
@@ -4572,19 +4500,19 @@ function GML_PreProcessor() constructor {
 				break;}
 				/*
 				case __GMLC_NodeType.PropertyAccessor:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
+					throw_gmlc_error($"\n{currentNode.type} :: Not implimented yet")
 				break;}
 				case __GMLC_NodeType.AccessorExpression:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
+					throw_gmlc_error($"\n{currentNode.type} :: Not implimented yet")
 				break;}
 				case __GMLC_NodeType.MethodVariableConstructor:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
+					throw_gmlc_error($"\n{currentNode.type} :: Not implimented yet")
 				break;}
 				case __GMLC_NodeType.MethodVariableFunction:{
-					throw $"\n{currentNode.type} :: Not implimented yet"
+					throw_gmlc_error($"\n{currentNode.type} :: Not implimented yet")
 				break;}
 				//*/
-				default: throw $"\nCurrent Node does not have a valid type for the post processor,\ntype: {node.type}\ncurrentNode: {node}"
+				default: throw_gmlc_error($"\nCurrent Node does not have a valid type for the post processor,\ntype: {node.type}\ncurrentNode: {node}")
 				
 				// Add cases for other types of nodes
 			}
@@ -4630,7 +4558,7 @@ function GML_PreProcessor() constructor {
 				case __GMLC_AccessorType.Grid:   _getterFunc = new ASTFunction(ds_grid_get,             node.line, node.lineString); _setterFunc = new ASTFunction(ds_grid_set, node.line, node.lineString); break;
 				case __GMLC_AccessorType.Struct: _getterFunc = new ASTFunction(struct_get,              node.line, node.lineString); _setterFunc = new ASTFunction(struct_set,  node.line, node.lineString); break;
 				case __GMLC_AccessorType.Dot:    _getterFunc = new ASTFunction(__struct_get_with_error, node.line, node.lineString); _setterFunc = new ASTFunction(struct_set,  node.line, node.lineString); break;
-				default: throw $"\nUnexpected entry into handleAccessorFunctionCall with accessorType: {accessorType}" break;
+				default: throw_gmlc_error($"\nUnexpected entry into handleAccessorFunctionCall with accessorType: {accessorType}") break;
 			}
 			
 			var _get_expr = new ASTCallExpression(_getterFunc, _args, node.line, node.lineString);
@@ -4745,7 +4673,7 @@ function GML_PreProcessor() constructor {
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw $"\nWe still have nodes in the nodeStack, we shouldnt be finished"
+						throw_gmlc_error($"\nWe still have nodes in the nodeStack, we shouldnt be finished")
 					}
 					
 					finished = true;
@@ -4848,13 +4776,13 @@ function GML_PreProcessor() constructor {
 							break;}
 							case "mod":{
 								if (node.right.value == 0) {
-									throw $"\nDoMod :: Divide by zero"
+									throw_gmlc_error($"\nDoMod :: Divide by zero")
 								}
 								return new ASTLiteral(node.left.value mod node.right.value, node.line, node.lineString);
 							break;}
 							case "div":{
 								if (node.right.value == 0) {
-									throw $"\nDoRem :: Divide by zero"
+									throw_gmlc_error($"\nDoRem :: Divide by zero")
 								}
 								return new ASTLiteral(node.left.value div node.right.value, node.line, node.lineString);
 							break;}
@@ -4943,391 +4871,391 @@ function GML_PreProcessor() constructor {
 					switch (node.callee.value) {
 						case abs:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for abs is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for abs is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(abs, node);
 						break;}
 						case angle_difference:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for angle_difference is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for angle_difference is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(angle_difference, node);
 						break;}
 						case ansi_char:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for ansi_char is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for ansi_char is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(ansi_char, node);
 						break;}
 						case arccos:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for arccos is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for arccos is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(arccos, node);
 						break;}
 						case arcsin:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for arcsin is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for arcsin is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(arcsin, node);
 						break;}
 						case arctan:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for arctan is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for arctan is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(arctan, node);
 						break;}
 						case arctan2:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for arctan2 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for arctan2 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(arctan2, node);
 						break;}
 						case buffer_sizeof:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for buffer_sizeof is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for buffer_sizeof is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(buffer_sizeof, node);
 						break;}
 						case ceil:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for ceil is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for ceil is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(ceil, node);
 						break;}
 						case chr:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for chr is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for chr is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(chr, node);
 						break;}
 						case clamp:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for clamp is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for clamp is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(clamp, node);
 						break;}
 						case color_get_blue:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for color_get_blue is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for color_get_blue is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(color_get_blue, node);
 						break;}
 						case color_get_green:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for color_get_green is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for color_get_green is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(color_get_green, node);
 						break;}
 						case color_get_red:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for color_get_red is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for color_get_red is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(color_get_red, node);
 						break;}
 						case colour_get_blue:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for colour_get_blue is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for colour_get_blue is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(colour_get_blue, node);
 						break;}
 						case colour_get_green:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for colour_get_green is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for colour_get_green is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(colour_get_green, node);
 						break;}
 						case colour_get_red:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for colour_get_red is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for colour_get_red is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(colour_get_red, node);
 						break;}
 						case cos:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for cos is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for cos is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(cos, node);
 						break;}
 						case darccos:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for darccos is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for darccos is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(darccos, node);
 						break;}
 						case darcsin:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for darcsin is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for darcsin is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(darcsin, node);
 						break;}
 						case darctan:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for darctan is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for darctan is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(darctan, node);
 						break;}
 						case darctan2:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for darctan2 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for darctan2 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(darctan2, node);
 						break;}
 						case dcos:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for dcos is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dcos is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dcos, node);
 						break;}
 						case degtorad:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for degtorad is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for degtorad is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(degtorad, node);
 						break;}
 						case dot_product:{
 							if (array_length(node.arguments) != 4) {
-								throw $"\nArgument count for dot_product is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dot_product is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dot_product, node);
 						break;}
 						case dot_product_3d:{
 							if (array_length(node.arguments) != 6) {
-								throw $"\nArgument count for dot_product_3d is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dot_product_3d is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dot_product_3d, node);
 						break;}
 						case dot_product_3d_normalised:{
 							if (array_length(node.arguments) != 6) {
-								throw $"\nArgument count for dot_product_3d_normalised is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dot_product_3d_normalised is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dot_product_3d_normalised, node);
 						break;}
 						case dot_product_normalised:{
 							if (array_length(node.arguments) != 4) {
-								throw $"\nArgument count for dot_product_normalised is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dot_product_normalised is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dot_product_normalised, node);
 						break;}
 						case dsin:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for dsin is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dsin is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dsin, node);
 						break;}
 						case dtan:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for dtan is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for dtan is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(dtan, node);
 						break;}
 						case exp:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for exp is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for exp is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(exp, node);
 						break;}
 						case floor:{
 							if (array_length(node.arguments) != XXX) {
-								throw $"\nArgument count for floor is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for floor is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(floor, node);
 						break;}
 						case frac:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for frac is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for frac is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(frac, node);
 						break;}
 						case int64:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for int64 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for int64 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(int64, node);
 						break;}
 						case is_array:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_array is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_array is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_array, node);
 						break;}
 						case is_bool:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_bool is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_bool is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_bool, node);
 						break;}
 						case is_callable:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_callable is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_callable is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_callable, node);
 						break;}
 						case is_handle:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_handle is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_handle is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_handle, node);
 						break;}
 						case is_infinity:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_infinity is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_infinity is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_infinity, node);
 						break;}
 						case is_int32:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_int32 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_int32 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_int32, node);
 						break;}
 						case is_method:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_method is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_method is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_method, node);
 						break;}
 						case is_nan:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_nan is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_nan is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_nan, node);
 						break;}
 						case is_numeric:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_numeric is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_numeric is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_numeric, node);
 						break;}
 						case is_ptr:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_ptr is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_ptr is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_ptr, node);
 						break;}
 						case is_struct:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_struct is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_struct is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_struct, node);
 						break;}
 						case is_undefined:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for is_undefined is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for is_undefined is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(is_undefined, node);
 						break;}
 						case lengthdir_x:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for lengthdir_x is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for lengthdir_x is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(lengthdir_x, node);
 						break;}
 						case lengthdir_y:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for lengthdir_y is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for lengthdir_y is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(lengthdir_y, node);
 						break;}
 						case lerp:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for lerp is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for lerp is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(lerp, node);
 						break;}
 						case ln:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for ln is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for ln is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(ln, node);
 						break;}
 						case log10:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for log10 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for log10 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(log10, node);
 						break;}
 						case log2:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for log2 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for log2 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(log2, node);
 						break;}
 						case logn:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for logn is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for logn is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(logn, node);
 						break;}
 						case make_color_rgb:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for make_color_rgb is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for make_color_rgb is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(make_color_rgb, node);
 						break;}
 						case make_colour_rgb:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for make_colour_rgb is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for make_colour_rgb is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(make_colour_rgb, node);
 						break;}
 						case max:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for max is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for max is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(max, node);
 						break;}
 						case mean:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for mean is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for mean is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(mean, node);
 						break;}
 						case median:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for median is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for median is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(median, node);
 						break;}
 						case min:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for min is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for min is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(min, node);
 						break;}
 						case object_exists:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for object_exists is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for object_exists is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(object_exists, node);
 						break;}
 						case object_get_name:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for object_get_name is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for object_get_name is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(object_get_name, node);
 						break;}
 						case object_get_parent:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for object_get_parent is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for object_get_parent is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(object_get_parent, node);
 						break;}
 						case object_get_physics:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for object_get_physics is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for object_get_physics is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(object_get_physics, node);
 						break;}
 						case object_is_ancestor:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for object_is_ancestor is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for object_is_ancestor is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(object_is_ancestor, node);
 						break;}
 						case ord:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for ord is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for ord is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(ord, node);
 						break;}
@@ -5336,73 +5264,73 @@ function GML_PreProcessor() constructor {
 						break;}
 						case point_direction:{
 							if (array_length(node.arguments) != 4) {
-								throw $"\nArgument count for point_direction is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for point_direction is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(point_direction, node);
 						break;}
 						case point_distance:{
 							if (array_length(node.arguments) != 4) {
-								throw $"\nArgument count for point_distance is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for point_distance is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(point_distance, node);
 						break;}
 						case point_distance_3d:{
 							if (array_length(node.arguments) != 6) {
-								throw $"\nArgument count for point_distance_3d is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for point_distance_3d is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(point_distance_3d, node);
 						break;}
 						case power:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for power is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for power is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(power, node);
 						break;}
 						case radtodeg:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for radtodeg is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for radtodeg is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(radtodeg, node);
 						break;}
 						case real:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for real is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for real is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(real, node);
 						break;}
 						case round:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for round is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for round is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(round, node);
 						break;}
 						case script_exists:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for script_exists is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for script_exists is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(script_exists, node);
 						break;}
 						case script_get_name:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for script_get_name is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for script_get_name is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(script_get_name, node);
 						break;}
 						case sign:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for sign is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for sign is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(sign, node);
 						break;}
 						case sin:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for sin is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for sin is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(sin, node);
 						break;}
 						case sqr:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for sqr is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for sqr is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(sqr, node);
 						break;}
@@ -5416,25 +5344,25 @@ function GML_PreProcessor() constructor {
 						break;}
 						case string_lower:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_lower is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_lower is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_lower, node);
 						break;}
 						case string_upper:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_upper is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_upper is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_upper, node);
 						break;}
 						case string_repeat:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_repeat is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_repeat is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_repeat, node);
 						break;}
 						case tan:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for tan is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for tan is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(tan, node);
 						break;}
@@ -5446,252 +5374,252 @@ function GML_PreProcessor() constructor {
 						break;}
 						case string_byte_length:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_byte_length is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_byte_length is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_byte_length, node);
 						break;}
 						case string_char_at:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_char_at is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_char_at is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_char_at, node);
 						break;}
 						case string_concat_ext:{
 							if (array_length(node.arguments) >= 1)
 							&& (array_length(node.arguments) <= 3) {
-								throw $"\nArgument count for string_concat_ext is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_concat_ext is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_concat_ext, node);
 						break;}
 						case string_copy:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_copy is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_copy is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_copy, node);
 						break;}
 						case string_count:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_count is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_count is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_count, node);
 						break;}
 						case string_delete:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_delete is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_delete is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_delete, node);
 						break;}
 						case string_digits:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_digits is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_digits is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_digits, node);
 						break;}
 						case string_ends_with:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_ends_with is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_ends_with is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_ends_with, node);
 						break;}
 						case string_ext:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_ext is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_ext is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_ext, node);
 						break;}
 						case string_format:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_format is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_format is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_format, node);
 						break;}
 						case string_hash_to_newline:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_hash_to_newline is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_hash_to_newline is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_hash_to_newline, node);
 						break;}
 						case string_insert:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_insert is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_insert is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_insert, node);
 						break;}
 						case string_join_ext:{
 							if (array_length(node.arguments) >= 2)
 							&& (array_length(node.arguments) <= 4) {
-								throw $"\nArgument count for string_join_ext is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_join_ext is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_join_ext, node);
 						break;}
 						case string_last_pos:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_last_pos is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_last_pos is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_last_pos, node);
 						break;}
 						case string_last_pos_ext:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_last_pos_ext is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_last_pos_ext is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_last_pos_ext, node);
 						break;}
 						case string_length:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_length is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_length is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_length, node);
 						break;}
 						case string_letters:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for string_letters is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_letters is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_letters, node);
 						break;}
 						case string_ord_at:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_ord_at is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_ord_at is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_ord_at, node);
 						break;}
 						case string_pos:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_pos is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_pos is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_pos, node);
 						break;}
 						case string_pos_ext:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_pos_ext is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_pos_ext is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_pos_ext, node);
 						break;}
 						case string_replace:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_replace is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_replace is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_replace, node);
 						break;}
 						case string_replace_all:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_replace_all is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_replace_all is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_replace_all, node);
 						break;}
 						case string_set_byte_at:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for string_set_byte_at is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_set_byte_at is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_set_byte_at, node);
 						break;}
 						case string_starts_with:{
 							if (array_length(node.arguments) != 2) {
-								throw $"\nArgument count for string_starts_with is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_starts_with is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_starts_with, node);
 						break;}
 						case string_trim:{
 							if (array_length(node.arguments) >= 1)
 							&& (array_length(node.arguments) <= 2) {
-								throw $"\nArgument count for string_trim is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_trim is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_trim, node);
 						break;}
 						case string_trim_end:{
 							if (array_length(node.arguments) >= 1)
 							&& (array_length(node.arguments) <= 2) {
-								throw $"\nArgument count for string_trim_end is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_trim_end is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_trim_end, node);
 						break;}
 						case string_trim_start:{
 							if (array_length(node.arguments) >= 1)
 							&& (array_length(node.arguments) <= 2) {
-								throw $"\nArgument count for string_trim_start is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_trim_start is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(string_trim_start, node);
 						break;}
 						case md5_string_unicode:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for md5_string_unicode is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for md5_string_unicode is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(md5_string_unicode, node);
 						break;}
 						case md5_string_utf8:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for md5_string_utf8 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for md5_string_utf8 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(md5_string_utf8, node);
 						break;}
 						case color_get_hue:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for color_get_hue is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for color_get_hue is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(color_get_hue, node);
 						break;}
 						case colour_get_hue:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for colour_get_hue is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for colour_get_hue is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(colour_get_hue, node);
 						break;}
 						case color_get_saturation:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for color_get_saturation is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for color_get_saturation is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(color_get_saturation, node);
 						break;}
 						case colour_get_saturation:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for colour_get_saturation is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for colour_get_saturation is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(colour_get_saturation, node);
 						break;}
 						case color_get_value:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for color_get_value is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for color_get_value is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(color_get_value, node);
 						break;}
 						case colour_get_value:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for colour_get_value is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for colour_get_value is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(colour_get_value, node);
 						break;}
 						case base64_encode:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for base64_encode is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for base64_encode is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(base64_encode, node);
 						break;}
 						case base64_decode:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for base64_decode is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for base64_decode is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(base64_decode, node);
 						break;}
 						case sha1_string_utf8:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for sha1_string_utf8 is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for sha1_string_utf8 is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(sha1_string_utf8, node);
 						break;}
 						case sha1_string_unicode:{
 							if (array_length(node.arguments) != 1) {
-								throw $"\nArgument count for sha1_string_unicode is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for sha1_string_unicode is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(sha1_string_unicode, node);
 						break;}
 						case make_color_hsv:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for make_color_hsv is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for make_color_hsv is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(make_color_hsv, node);
 						break;}
 						case make_colour_hsv:{
 							if (array_length(node.arguments) != 3) {
-								throw $"\nArgument count for make_colour_hsv is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for make_colour_hsv is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							return __build_literal_from_function_call_constant_folding(make_colour_hsv, node);
 						break;}
@@ -5700,7 +5628,7 @@ function GML_PreProcessor() constructor {
 						//all of the ones above use the same code
 						case string:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for string is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							if (__argumentsAreLiteral(node.arguments)) {
 								return __build_literal_from_function_call_constant_folding(string_lower, node);
@@ -5731,7 +5659,7 @@ function GML_PreProcessor() constructor {
 						break;}
 						case string_concat:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for string_concat is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_concat is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							
 							if (__argumentsAreLiteral(node.arguments)) {
@@ -5760,7 +5688,7 @@ function GML_PreProcessor() constructor {
 						break;}
 						case string_join:{
 							if (array_length(node.arguments) < 1) {
-								throw $"\nArgument count for string_join is incorrect!\nArgument Count : {array_length(node.arguments)}"
+								throw_gmlc_error($"\nArgument count for string_join is incorrect!\nArgument Count : {array_length(node.arguments)}")
 							}
 							
 							if (__argumentsAreLiteral(node.arguments)) {
@@ -6122,7 +6050,7 @@ function __find_ScopeType_from_string(_string) {
 	//ScopeType.UNIQUE;
 	//ScopeType.LOCAL;
 	//ScopeType.STATIC;
-	//ScopeType.INSTANCE;
+	//ScopeType.SELF;
 	//ScopeType.CONST;
 	
 	if array_contains(currentScript.MacroVarNames, _string) return ScopeType.MACRO;
@@ -6148,7 +6076,7 @@ function __find_ScopeType_from_string(_string) {
 		if array_contains(currentScript.LocalVarNames, _string) return ScopeType.LOCAL;
 	}
 	
-	return ScopeType.INSTANCE;  // Default to instance if scope is unknown
+	return ScopeType.SELF;  // Default to instance if scope is unknown
 	
 }
 /// @ignore

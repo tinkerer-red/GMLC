@@ -135,18 +135,17 @@ function constructor_call_ext(_func, _args) {
 	var _exe = struct_get_from_hash(__executors, array_length(_args))
 	
 	if (_exe == undefined) {
-		throw "Attempting to create a constructor with more then 128 arguments, this is not dynamically possible, bring it up with YoYoGames"+@'¯\_(ツ)_/¯'+$"\nCurrent argument count :: {array_length(_args)}"
+		throw_gmlc_error("Attempting to create a constructor with more then 128 arguments, this is not dynamically possible, bring it up with YoYoGames"+@'¯\_(ツ)_/¯'+$"\nCurrent argument count :: {array_length(_args)}")
 	}
 	
 	return _exe(_func, _args)
 	
 }
 
-function is_gmlc_progam(_program) {
+function is_gmlc_program(_program) {
 	if (is_method(_program)) {
 		var _self = method_get_self(_program);
-		if (struct_exists(_self, "compilerBase"))
-		&& (struct_exists(_self, "errorMessage")) {
+		if (struct_exists(_self, "__@@is_gmlc_function@@__")) {
 			return true;
 		}
 	}
@@ -156,11 +155,19 @@ function is_gmlc_progam(_program) {
 function is_gmlc_method(_program) {
 	if (is_method(_program)) {
 		var _self = method_get_self(_program);
-		if (struct_exists(_self, "__@@GMLC_is_method@@__")) {
+		if (struct_exists(_self, "__@@is_gmlc_method@@__")) {
 			return true;
 		}
 	}
 	return false;
+}
+
+function is_gmlc_constructed(_struct) {
+	//this only returns true when ever it was created by a gmlc constructor,
+	// there is no reason to use this for anything else,
+	// as a generic struct made by gmlc would still only need to be a struct
+	// no need for additional information
+	return is_struct(_struct) && struct_exists(_struct, "__") && struct_exists(_struct.__, "__@@is_gmlc_constructed@@__")
 }
 
 function is_script(_value) {
@@ -222,4 +229,12 @@ function pprint(_thing) {
 		_str += json(__structMethodAST(argument[_i]))
 	_i++}
 	log(_str)
+}
+
+
+function throw_gmlc_error(_err) {
+	show_error(@'
+===GMLC===
+'+string(_err)+"\n=========\n\n", true)
+
 }

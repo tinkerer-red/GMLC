@@ -26,15 +26,15 @@ function __method(_struct, _func) {
 	
 	
 	if (is_method(_func))
-	&& (is_gmlc_progam(_func)) {
+	&& (is_gmlc_program(_func)) {
 		if (is_gmlc_method(_func)) {
 			//a gmlc method
-			throw "Red needs to support methoding a method, what ever that does"
+			throw_gmlc_error("Red needs to support methoding a method, what ever that does")
 		}
 		else {
 			//a gmlc function
 			return method({
-				"__@@GMLC_is_method@@__": true,
+				"__@@is_gmlc_method@@__": true,
 				target: _struct,
 				func: _func,
 			}, __executeMethod)
@@ -50,10 +50,10 @@ function __method(_struct, _func) {
 
 function __new(_func, argArr=[]) {
 	if (is_method(_func))
-	&& (is_gmlc_progam(_func)) {
+	&& (is_gmlc_program(_func)) {
 		if (is_gmlc_method(_func)) {
 			//a gmlc method
-			throw "target function for 'new' must be a constructor, this one is a gmlc method"
+			throw_gmlc_error("target function for 'new' must be a constructor, this one is a gmlc method")
 		}
 		else {
 			//init our arguments
@@ -79,12 +79,50 @@ function __new(_func, argArr=[]) {
 	}	
 }
 
-#region GML Emulated functions
+function __instanceof(_struct) {
+	if (is_gmlc_constructed(_struct)) {
+		return _struct.__[$ "__@@gmlc_constructor_name@@__"]
+	}
+	
+	if (is_method(_struct)) {
+		if (is_gmlc_method(_struct)) {
+			return "function"
+		}
+		
+		if (is_gmlc_program(_struct)) {
+			return undefined
+		}
+	}
+	
+	// any number of other things
+	return instanceof(_struct);
+	
+}
+
+function __is_instanceof(_struct, _constructor) {
+	if (is_gmlc_constructed(_struct)) {
+		static __base_struct_statics = static_get({});
+		var _static = static_get(_struct);
+		var _constructor_static = static_get(_constructor);
+		while(_static != __base_struct_statics) {
+			if (_static == _constructor_static) {
+				return true;
+			}
+			_static = static_get(_static);
+		}
+		return false
+	}
+	
+	// any number of other things
+	return is_instanceof(_struct, _constructor);
+	
+}
+
 function __struct_get_with_error(struct, name) {
 	if (struct_exists(struct, name)) return struct_get(struct, name);
 	
-	throw $"\nVariable <unknown_object>.{name} not set before reading it."
-	//throw $"\nVariable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}"
+	throw_gmlc_error($"\nVariable <unknown_object>.{name} not set before reading it.")
+	//throw_gmlc_error($"\nVariable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}")
 }
 
 function __script_execute_ext(ind, array) {
@@ -146,11 +184,10 @@ function __struct_update(struct, name, increment, prefix) {
 	if (!increment) && (!prefix) return   struct[$ name]--;
 }
 function __struct_with_error_update(struct, name, increment, prefix) {
-	if (!struct_exists(struct, name)) throw $"\nVariable <unknown_object>.{name} not set before reading it."
+	if (!struct_exists(struct, name)) throw_gmlc_error($"\nVariable <unknown_object>.{name} not set before reading it.")
 	
 	if (increment)  && (prefix)  return ++struct[$ name];
 	if (increment)  && (!prefix) return   struct[$ name]++;
 	if (!increment) && (prefix)  return --struct[$ name];
 	if (!increment) && (!prefix) return   struct[$ name]--;
 }
-#endregion

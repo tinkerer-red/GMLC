@@ -15,9 +15,9 @@ function compile_and_execute(_string) {
 	postprocessor.initialize(ast);
 	var ast = postprocessor.parseAll();
 	
-	static optimizer = new GML_Optimizer();
-	optimizer.initialize(ast);
-	var ast = optimizer.parseAll();
+	//static optimizer = new GML_Optimizer();
+	//optimizer.initialize(ast);
+	//var ast = optimizer.parseAll();
 	
 	//log(json(ast))
 	

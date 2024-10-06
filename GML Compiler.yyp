@@ -344,6 +344,7 @@
     {"id":{"name":"GM14Compatibility","path":"scripts/GM14Compatibility/GM14Compatibility.yy",},},
     {"id":{"name":"GML_Compiler","path":"scripts/GML_Compiler/GML_Compiler.yy",},},
     {"id":{"name":"GMLC_YYC_Compiler","path":"scripts/GMLC_YYC_Compiler/GMLC_YYC_Compiler.yy",},},
+    {"id":{"name":"GMLC_YYC_FastPasses","path":"scripts/GMLC_YYC_FastPasses/GMLC_YYC_FastPasses.yy",},},
     {"id":{"name":"GmlSpec","path":"scripts/GmlSpec/GmlSpec.yy",},},
     {"id":{"name":"handle_testScript","path":"scripts/handle_testScript/handle_testScript.yy",},},
     {"id":{"name":"HttpPublisher","path":"scripts/HttpPublisher/HttpPublisher.yy",},},

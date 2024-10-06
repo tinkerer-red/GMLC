@@ -326,7 +326,7 @@ function BasicVariableTestSuite() : TestSuite() constructor {
 		
 	})
 
-	// INSTANCES
+	// SELFS
 	
 	addFact("variable_instance_exists_test #1", function() {
 

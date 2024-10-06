@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_YYC_FastPasses",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_YYC_FastPasses",
+  "parent":{
+    "name":"internal",
+    "path":"folders/GMLCompiler/internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

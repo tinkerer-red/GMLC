@@ -12,6 +12,8 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		function a(arg0) constructor {
 			static overwrite = "A Overwrite"
 			static aStatic = "This is A`s Static"
+			static aStaticLog = log("Staic A")
+			aInstanceLog = log("Instance A")
 			aInstance = "This is A`s Instance"
 			argumentChain = arg0;
 			localChain = 0;
@@ -19,6 +21,8 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		function b(arg0) : a(arg0+1) constructor {
 			static overwrite = "B Overwrite"
 			static bStatic = "This is B`s Static"
+			static bStaticLog = log("Staic B")
+			bInstanceLog = log("Instance B")
 			bInstance = "This is B`s Instance"
 			localChain++;
 		}

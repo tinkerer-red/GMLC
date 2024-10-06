@@ -607,7 +607,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			')
 		})
 
-		// SEQUENCE INSTANCES
+		// SEQUENCE SELFS
 
 		addFact("sequenceInstance.activeTrack_test", function() {
 
