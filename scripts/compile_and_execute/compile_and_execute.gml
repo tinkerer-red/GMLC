@@ -23,5 +23,10 @@ function compile_and_execute(_string) {
 	
 	var _program = compileProgram(ast);
 	//pprint(_program)
-	return executeProgram(_program);
+	
+	//GC_START
+	var _r = executeProgram(_program);
+	//GC_LOG
+	
+	return _r;
 }

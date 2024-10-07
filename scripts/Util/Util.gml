@@ -159,12 +159,9 @@ function is_gmlc_method(_program) {
 	var _self = method_get_self(_program);
 	if (is_method(_program))
 	&& (_self != undefined)
-	&& (_self != global) {
-		// this line turned out not to be needed, however we might want to add it back in when updates come.
-		var _self = method_get_self(_program);
-		if (struct_exists(_self, "__@@is_gmlc_method@@__")) {
-			return true;
-		}
+	&& (_self != global)
+	&& (struct_exists(_self, "__@@is_gmlc_method@@__")) {
+		return true;
 	}
 	return false;
 }
@@ -184,10 +181,14 @@ function is_script(_value) {
 
 
 //debugging
-function __structMethodAST(_program) {
+function __printMethodStructure(_program) {
+	static __recursion_memory = []
+	static __depth = 0;
+	__depth++
+	
 	if (is_method(_program)) {
 		var _self = method_get_self(_program);
-		var _inputStruct = __structMethodAST(_self)
+		var _inputStruct = __printMethodStructure(_self)
 		return _inputStruct
 	}
 	
@@ -195,32 +196,56 @@ function __structMethodAST(_program) {
 		var _inputArray = []
 		var _i=0; repeat(array_length(_program)) {
 			var _expr = _program[_i];
-			_inputArray[_i] = __structMethodAST(_expr)
+			_inputArray[_i] = __printMethodStructure(_expr)
 		_i++}
 		return _inputArray
 	}
 	
 	if (is_struct(_program)) {
+		if (array_get_index(__recursion_memory, _program) == -1) {
+			array_push(__recursion_memory, _program);
+		}
+		else {
+			return "<Recursive Reference>";
+		}
+		
 		var _inputStruct = {}
 		var _names = struct_get_names(_program)
-		var _i=0; repeat(array_length(_names)) {
-			var _name = _names[_i];
+		var _length = array_length(_names)
+		if (_length < 300) {
+			var _i=0; repeat(_length) {
+				var _name = _names[_i];
 			
-			//skip these from printing
-			if (_name == "errorMessage")
-			|| (_name == "rootNode")
-			|| (_name == "parentNode") {
-				_i++
-				continue;
-			}
 			
-			_inputStruct[$ _name] = __structMethodAST(_program[$ _name])
-		_i++}
+				//skip these from printing
+				if (_name == "errorMessage")
+				|| (_name == "rootNode")
+				|| (_name == "parentNode") {
+					_i++
+					continue;
+				}
+			
+				var _new_name = _name;
+				if (string_starts_with(_name, "@@")) {
+					_new_name = string_replace(_name, "@@", "_@@")
+				}
+			
+				_inputStruct[$ _new_name] = __printMethodStructure(_program[$ _name])
+			_i++}
+		}
+		else {
+			return "<Struct Is too Large to Print>"
+		}
 		return _inputStruct
 	}
 	
 	if (is_script(_program)) {
 		return script_get_name(_program)
+	}
+	
+	__depth--
+	if (__depth == 0) {
+		array_resize(__recursion_memory, 0)
 	}
 	
 	return _program;
@@ -233,9 +258,9 @@ function json(_input) {
 function pprint(_thing) {
 	var _str = "";
 	var _i=0; repeat(argument_count) {
-		_str += json(__structMethodAST(argument[_i]))
+		_str += json(__printMethodStructure(argument[_i]))
 	_i++}
-	log(_str)
+	show_debug_message(_str)
 }
 
 

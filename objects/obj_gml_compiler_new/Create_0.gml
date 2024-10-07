@@ -187,11 +187,11 @@ function run_interpreter_test(description, input, expectedModule=undefined, expe
 	//try {
 		//log($"AST ::\n{json_stringify(ast, true)}\n")
 		var _program = compileProgram(ast);
-		//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+		//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 		var outputReturn = executeProgram(_program)
 	//}catch(e) {
 	//	log($"AST ::\n{json_stringify(ast, true)}\n")
-	//	log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+	//	log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 	//	log(e)
 	//	return;
 	//}
@@ -204,7 +204,7 @@ function run_interpreter_test(description, input, expectedModule=undefined, expe
 	var _same = __compare_results(description, outputReturn, expectedReturn);
 	if (!_same) {
 		log($"AST ::\n{json_stringify(ast, true)}\n")
-		//log($"Program Method ::\n{json_stringify(__structMethodAST(_program), true)}\n")
+		//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 	}
 }
 function run_all_interpreter_tests() {

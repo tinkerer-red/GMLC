@@ -122,11 +122,35 @@ function __is_instanceof(_struct, _constructor) {
 	
 }
 
+function __static_get(_struct) {
+	var _json = __printMethodStructure(_struct);
+	
+	if (is_gmlc_constructed(_struct)) {
+		return static_get(_struct)
+	}
+	
+	if (is_method(_struct)) {
+		if (is_gmlc_method(_struct)) {
+			var _r = static_get(method_get_self(_struct).func)
+			return _r
+		}
+		
+		if (is_gmlc_program(_struct)) {
+			var _r = static_get(method_get_self(_struct))
+			return _r
+		}
+	}
+	
+	// any number of other things
+	return static_get(_struct);
+	
+}
+
 function __struct_get_with_error(struct, name) {
 	if (struct_exists(struct, name)) return struct_get(struct, name);
 	
-	throw_gmlc_error($"\nVariable <unknown_object>.{name} not set before reading it.")
-	//throw_gmlc_error($"\nVariable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}")
+	throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.")
+	//throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}")
 }
 
 function __script_execute_ext(ind, array) {
@@ -188,7 +212,7 @@ function __struct_update(struct, name, increment, prefix) {
 	if (!increment) && (!prefix) return   struct[$ name]--;
 }
 function __struct_with_error_update(struct, name, increment, prefix) {
-	if (!struct_exists(struct, name)) throw_gmlc_error($"\nVariable <unknown_object>.{name} not set before reading it.")
+	if (!struct_exists(struct, name)) throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.")
 	
 	if (increment)  && (prefix)  return ++struct[$ name];
 	if (increment)  && (!prefix) return   struct[$ name]++;

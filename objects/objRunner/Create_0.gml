@@ -32,12 +32,12 @@ testFramework.addSuite(BasicVariableTestSuite);
 
 testFramework.addSuite(BasicSurfaceTestSuite);
 testFramework.addSuite(BasicWeakRefsTestSuite);
-//testFramework.addSuite(ResourceAudioEffectsTestSuite);
-//testFramework.addSuite(ResourceAudioEmittersTestSuite);
-//testFramework.addSuite(ResourceAudioListenersTestSuite);
-testFramework.addSuite(ResourceCameraTestSuite);
-testFramework.addSuite(ResourceEventsTestSuite);
-testFramework.addSuite(ResourceLayersTestSuite);
+testFramework.addSuite(ResourceAudioEffectsTestSuite);
+testFramework.addSuite(ResourceAudioEmittersTestSuite);
+testFramework.addSuite(ResourceAudioListenersTestSuite);
+//testFramework.addSuite(ResourceCameraTestSuite);
+//testFramework.addSuite(ResourceEventsTestSuite);
+//testFramework.addSuite(ResourceLayersTestSuite);
 
 
 // Async Tests
