@@ -3231,11 +3231,15 @@ function GML_PreProcessor() constructor {
 				case method             : return __method          ;
 				case is_instanceof      : return __is_instanceof   ;
 				case static_get         : return __static_get      ;
-				//case method_get_index   :	return __method_get_index;
-				//case method_get_self    :	return __method_get_self ;
-				//case method_call        : return __method_call     ;
-				//case script_execute     : return __script_execute  ;
-				//case script_execute_ext : return __script_execute  ;
+				
+				case static_set         : return __static_set      ;
+				case typeof             : return __typeof          ;
+				case method_get_index   : return __method_get_index;
+				case method_get_self    : return __method_get_self ;
+				case method_call        : return __method_call     ;
+				case script_execute     : return __script_execute  ;
+				case script_execute_ext : return __script_execute  ;
+				
 				default					: return _func;
 			}
 			

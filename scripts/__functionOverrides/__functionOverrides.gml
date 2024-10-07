@@ -146,6 +146,23 @@ function __static_get(_struct) {
 	
 }
 
+function __typeof(_val) {
+	if (is_method(_val)) {
+		if (is_gmlc_method(_val)) {
+			return "method"
+		}
+		if (is_gmlc_program(_val)) {
+			return "ref"
+		}
+	}
+	
+	// any number of other things
+	return typeof(_val);
+}
+
+
+
+
 function __struct_get_with_error(struct, name) {
 	if (struct_exists(struct, name)) return struct_get(struct, name);
 	
@@ -153,7 +170,23 @@ function __struct_get_with_error(struct, name) {
 	//throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}")
 }
 
-function __script_execute_ext(ind, array) {
+function __script_execute_ext(ind, array, offset=0, num_args=array_length(array)-offset) {
+	if (is_method(ind))
+	&& (is_gmlc_program(ind)) {
+		if (is_gmlc_method(ind)) {
+			//a gmlc method
+			return method_call(method_get_self(ind).func, array)
+		}
+		else {
+			return method_call(ind, array)
+		}
+	}
+	else {
+		//a native gml constructor
+		with (global.otherInstance) with (global.selfInstance) {
+			return constructor_call_ext(ind, _argArr);
+		}
+	}	
 	//execute GMLC Script
 	if (is_instanceof(ind, __GMLC_Script))   return ind.execute(array);
 	
@@ -161,7 +194,7 @@ function __script_execute_ext(ind, array) {
 	if (is_instanceof(ind, __GMLC_Function)) return ind.execute(array);
 	
 	//execute GML Script/Function
-	return script_execute_ext(ind, array)
+	return script_execute_ext(ind, array, offset, num_args)
 }
 
 function __NewGMLArray() {
