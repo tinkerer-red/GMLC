@@ -1958,13 +1958,13 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted value to be of a given type";
 
-		var _resolver = typeof(_value) == _expected ? pass : fail;
+		var _resolver = __typeof(_value) == _expected ? pass : fail;
 	
 		if (_resolver == fail) {
-			do_trace($"{_value} :: {typeof(_value)} != {_expected}");
+			do_trace($"{_value} :: {__typeof(_value)} != {_expected}");
 		}
 	
-		return _resolver(assertTitle, _description, typeof(_value), _expected);
+		return _resolver(assertTitle, _description, __typeof(_value), _expected);
 	}
 
 	/// @function isFalse(value, description)
@@ -2004,7 +2004,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted value to not be of a given type";
 
-		var _resolver = typeof(_value) != _expected ? pass : fail;
+		var _resolver = __typeof(_value) != _expected ? pass : fail;
 	
 		return _resolver(assertTitle, _description, _value, _expected);
 	}

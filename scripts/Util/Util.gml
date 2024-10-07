@@ -146,11 +146,9 @@ function is_gmlc_program(_program) {
 	var _self = method_get_self(_program);
 	if (is_method(_program))
 	&& (_self != undefined)
-	&& (_self != global) {
-		// this line turned out not to be needed, however we might want to add it back in when updates come.
-		if (struct_exists(_self, "__@@is_gmlc_function@@__")) {
+	&& (_self != global)
+	&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
 			return true;
-		}
 	}
 	return false;
 }

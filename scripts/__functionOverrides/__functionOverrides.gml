@@ -146,6 +146,49 @@ function __static_get(_struct) {
 	
 }
 
+function __static_set(_targetStruct, _staticStruct) {
+	if (is_gmlc_program(_targetStruct)) {
+		_targetStruct.statics = _staticStruct;
+		return static_set(method_get_self(_targetStruct), _staticStruct);
+	}
+	
+	// any number of other things
+	return static_set(_targetStruct, _staticStruct);
+	
+}
+
+function __method_get_index(_method) {
+	if (is_method(_method)) {
+		if (is_gmlc_method(_method)) {
+			return method_get_self(_method).func;
+		}
+		
+		if (is_gmlc_program(_method)) {
+			return undefined;
+		}
+	}
+	
+	// any number of other things
+	return method_get_index(_method);
+	
+}
+
+function __method_get_self(_method) {
+	if (is_method(_method)) {
+		if (is_gmlc_method(_method)) {
+			return method_get_self(_method).target;
+		}
+		
+		if (is_gmlc_program(_method)) {
+			return undefined;
+		}
+	}
+	
+	// any number of other things
+	return method_get_self(_method);
+	
+}
+
 function __typeof(_val) {
 	if (is_method(_val)) {
 		if (is_gmlc_method(_val)) {
@@ -160,8 +203,70 @@ function __typeof(_val) {
 	return typeof(_val);
 }
 
+function __script_execute(ind) {
+	static __argArr = [];
+	array_resize(__argArr, 0);
+	
+	if (argument_count > 1) {
+		var _i=1; repeat(argument_count-1) {
+			__argArr[_i] = argument[_i];
+		_i++}
+		
+		return __script_execute_ext(argument0, __argArr)
+	}
+	
+	return __script_execute_ext(argument0)
+	
+}
 
-
+function __script_execute_ext(ind, array=undefined, offset=0, num_args=array_length(array)-offset) {
+	static __argArr = [];
+	array_resize(__argArr, 0)
+	
+	/// code coppied from html5 source, modified for speed improvements
+	if (array != undefined) {
+		var _length = array_length(array)
+		if (_length) {
+			var dir = 1;
+			if (offset < 0) offset = _length + offset;
+			if (offset >= _length) offset = _length;
+			if (num_args < 0) {
+				dir = -1;
+				if ((offset + num_args) < 0) {
+					num_args = offset+1;
+				} // end if
+				else {
+					num_args = -num_args;
+				} // end else
+			} // end if
+			else {
+				if ((offset + num_args) > _length) {
+					num_args = _length - offset;
+				} // end if
+			} // end else
+	
+	
+			var n = offset+num_args-1, i=num_args-1;
+			repeat (num_args) {
+				__argArr[i] = array[n];
+			--i; n-=dir}
+		}
+	}
+	///////////////////////////////////////////
+	
+	if (is_method(ind)) {
+		if (is_gmlc_method(ind)) {
+			var _self = method_get_self(ind);
+			var _func = _self.func;
+			return method_call(_func, __argArr);
+		}
+		if (is_gmlc_program(ind)) {
+			return method_call(ind, __argArr);
+		}
+	}
+	pprint([ind, __argArr, offset, num_args])
+	return script_execute_ext(ind, __argArr);
+}
 
 function __struct_get_with_error(struct, name) {
 	if (struct_exists(struct, name)) return struct_get(struct, name);
@@ -170,32 +275,7 @@ function __struct_get_with_error(struct, name) {
 	//throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}")
 }
 
-function __script_execute_ext(ind, array, offset=0, num_args=array_length(array)-offset) {
-	if (is_method(ind))
-	&& (is_gmlc_program(ind)) {
-		if (is_gmlc_method(ind)) {
-			//a gmlc method
-			return method_call(method_get_self(ind).func, array)
-		}
-		else {
-			return method_call(ind, array)
-		}
-	}
-	else {
-		//a native gml constructor
-		with (global.otherInstance) with (global.selfInstance) {
-			return constructor_call_ext(ind, _argArr);
-		}
-	}	
-	//execute GMLC Script
-	if (is_instanceof(ind, __GMLC_Script))   return ind.execute(array);
-	
-	//execute GMLC Function
-	if (is_instanceof(ind, __GMLC_Function)) return ind.execute(array);
-	
-	//execute GML Script/Function
-	return script_execute_ext(ind, array, offset, num_args)
-}
+
 
 function __NewGMLArray() {
 	var _arr = [];
@@ -213,6 +293,8 @@ function __NewGMLStruct() {
 	
 	return _struct;
 }
+
+
 
 function __array_update(arr, index, increment, prefix) {
 	if (increment)  && (prefix)  return ++arr[index];
