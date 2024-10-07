@@ -265,7 +265,11 @@ function GML_Tokenizer() constructor {
 			__nextUTF8();
 		}
 		
-		var _number = real(string_replace_all(_num_string, "_", ""));
+		var _str = real(string_replace_all(_num_string, "_", ""));
+		var _number = real(_str);
+		if (_number > 2147483647 || _number < -2147483648) _number = int64(_number);
+		
+		
 		_number = (_number <= $FFFFFFF) ? real(_number) : int64(_number);
 		
 		var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _num_string, _number, _start_line, _start_column);
@@ -562,24 +566,7 @@ function GML_Tokenizer() constructor {
 		}
 		
 		#endregion
-		/*
-		// micro optimization
-		static __mappingStruct = {
-			"true": 1,
-			"false": 2,
-			"infinity": 3,
-			"undefined": 4,
-			"NaN": 5,
-		}
-		switch (__mappingStruct[$ _identifier]) {
-			case 1 : return new __GMLC_create_token(__GMLC_TokenType.Identifier, "true", true, _start_line, _start_column);
-			case 2 : return new __GMLC_create_token(__GMLC_TokenType.Identifier, "false", false, _start_line, _start_column);
-			case 3 : return new __GMLC_create_token(__GMLC_TokenType.Identifier, "infinity", infinity, _start_line, _start_column);
-			case 4 : return new __GMLC_create_token(__GMLC_TokenType.Identifier, "undefined", undefined, _start_line, _start_column);
-			case 5 : return new __GMLC_create_token(__GMLC_TokenType.Identifier, "NaN", NaN, _start_line, _start_column);
-			default: return new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
-		}
-		/*/
+		
 		if (_identifier == "true")           return new __GMLC_create_token(__GMLC_TokenType.Number, "true", true, _start_line, _start_column);
 		else if (_identifier == "false")     return new __GMLC_create_token(__GMLC_TokenType.Number, "false", false, _start_line, _start_column);
 		else if (_identifier == "infinity")  return new __GMLC_create_token(__GMLC_TokenType.Number, "infinity", infinity, _start_line, _start_column);

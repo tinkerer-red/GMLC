@@ -102,12 +102,12 @@ function compile_and_execute(_string) {
 	var _prev_time = global.TestSpeeds[$ global.gCurrentTest.getName()] ?? infinity;
 	var _current_time = _end/1_000
 	if (_succeeded) {
-		if (_current_time < _prev_time*0.6) {
+		if (_current_time < _prev_time*0.5) {
 			log("Current Test is significantly ::FASTER::")
 			global.TestSpeeds[$ global.gCurrentTest.getName()] = _end/1_000;
 			json_save("PrevTestSpeeds.json", global.TestSpeeds)
 		}
-		if (_current_time > _prev_time/0.6) {
+		if (_current_time > _prev_time/0.5) {
 			log("Current Test is significantly ::SLOWER::")
 		}
 		//we do not log tests which are with in a varying degree of results
