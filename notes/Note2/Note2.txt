@@ -8,15 +8,9 @@ ToDo ::
 
 - delete
 
-- `static_get` should work on gmlc methods, need an overwrite function for it.
-
 - better loop statements, break a loop statement down into block statements and exit/return/break/continue statements, parent blocks should account for these and addapt accordingly the same way.
 
-- replace literal methods with direct values when ever possible (maybe make them a struct with "is_literal" so incase we reference undefined)
-
-- automatic array creation
-var _arr;
-_arr[0] = true
+- replace literal GMLC methods with direct values when ever possible (maybe make them a struct with "is_literal" so incase we reference undefined)
 
 - add support for gmlc constructors to parent from native constructors
 - - - this will require us to check all parents at compile, and if they have one which is native
