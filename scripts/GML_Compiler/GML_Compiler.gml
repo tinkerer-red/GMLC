@@ -3,6 +3,176 @@
 
 
 
+#region ParserBase.gml
+	#region ParserBase
+	/*
+	Purpose: The base constructor for all parsers to abide by, helps to standardize function names, and allow for easy logging, debugging, and async execution.
+	
+	Methods:
+	
+	initialize  :: initialize the parser with it's input data, this will also execute the custom initialize function supplied
+	cleanup     :: cleans up any active time source, this will also execute the custom cleanup function supplied
+	isFinished :: returns if the parsing is finished
+	finalize    :: should not be called externally, it's called as soon as the parsing is finished, this will also execute the custom finalize function supplied
+	parseAll    :: forcibly parse all, regardless of time or cpu usage.
+	parseAsync  :: creates a time source which will parse passively until it's finished then execute the callback with the supplied data from your custom finalize function
+	nextToken   :: this will execute your custom nextToken function with the input being the current token.
+
+	*/
+	#endregion
+	function ParserBase() constructor {
+		//init variables:
+		
+		target = undefined;
+		stack = [];
+		finished = false;
+		
+		logEnabled = false;
+		
+		should_catch_errors = false;
+		error_handler = function(_error){ show_debug_message("[ERROR] " + instanceof(self) + " :: " + string(_error)); }
+		
+		async_active = false;
+		async_max_time = (1/gamespeed_fps * 1_000) * (1/8) //the max time to spend parsing, default is 1/8th of a frame time.
+		async_start_time = undefined;
+		async_time_source = undefined;
+		async_callback = undefined;
+		
+		
+		static initialize = function(_input) {
+			array_resize(stack, 0);
+			__initialize(_input);
+			currentTarget = undefined;
+		};
+		
+		static cleanup = function() {
+			if (async_time_source != undefined) {
+				time_source_destroy(async_time_source);
+			}
+			__cleanup();
+		}
+		
+		static isFinished = function() {
+			return __isFinished();
+		}
+		
+		static finalize = function() {
+			return __finalize()
+		}
+		
+		static parseAll = function() {
+			while (array_length(stack)) {
+				nextToken();
+			}
+			return finalize();
+		}
+		
+		static parseAsync = function(_callback, _errback=undefined) {
+			async_active = true;
+			async_callback = _callback;
+			error_handler  = _errback ?? error_handler;
+			
+			var _asyncParse = method(self, function() {
+				async_start_time = current_time;
+				while (current_time-async_start_time < async_max_time) {
+					parseNext();
+					
+					if (isFinished()) {
+						async_active = false;
+						async_callback(finalize());
+						time_source_destroy(async_time_source);
+						async_time_source = undefined;
+					}
+				}
+			})
+			
+			//execute the time source
+			async_time_source = time_source_create(time_source_game, 1, time_source_units_frames, _asyncParse, [], -1)
+			time_source_start(async_time_source)
+			
+			return async_time_source
+		}
+		
+		static nextToken = function() {
+			if (should_catch_errors) {
+				try {
+					__nextToken(target);
+				} catch (e) {
+					error_handler(e);
+				}
+			}
+			else {
+				__nextToken(target);
+			}
+		};
+		
+		static setErrorHandler = function(_handler) {
+			error_handler = _handler;
+		}
+		
+		static setAsyncMaxTime = function(_max_time) {
+			async_max_time = _max_time;
+		};
+		
+		static print = function(_str) {
+		    if (logEnabled) {
+		        show_debug_message("[INFO] Logger :: " + _str);
+		    }
+		};
+
+		static setLogEnabled = function(enabled) {
+		    logEnabled = enabled;
+		};
+		
+		static setErrorHandler = function(_enabled) {
+			should_catch_errors = _enabled;
+		}
+		
+		static asyncPause = function() {
+			if (async_time_source != undefined) {
+				time_source_pause(async_time_source);
+				async_active = false;
+			}
+		};
+
+		static asyncResume = function() {
+			if (async_time_source != undefined) {
+				time_source_start(async_time_source);
+				async_active = true;
+			}
+		};
+
+		static asyncCancel = function() {
+			if (async_time_source != undefined) {
+				time_source_destroy(async_time_source);
+				async_time_source = undefined;
+				async_active = false;
+			}
+		};
+		
+		
+		static setCustomInitialize = function(_func) {
+			__initialize = _func;
+		}
+		static setCustomCleanup = function(_func) {
+			__cleanup = _func;
+		}
+		static setCustomFinalize = function(_func) {
+			__finalize = _func;
+		}
+		static setCustomIsFinished = function(_func) {
+			__isFinished = _func;
+		}
+		static setCustomNextToken = function(_func) {
+			__nextToken = _func;
+		}
+	}
+#endregion
+
+
+
+
+
 #macro GML_COMPILER_GM1_4 false
 /* allows for
 // #define
