@@ -38,13 +38,27 @@
 		async_time_source = undefined;
 		async_callback = undefined;
 		
-		
+		#region jsDoc
+		/// @func    initialize()
+		/// @desc    Initializes the parser with its input data. Executes the custom initialize function.
+		///
+		///          New stack is resized, and the custom initialization logic is applied.
+		/// @self    ParserBase
+		/// @param   {any} _input : The input data to initialize the parser with
+		/// @returns {undefined}
+		#endregion
 		static initialize = function(_input) {
 			array_resize(stack, 0);
 			__initialize(_input);
 			currentTarget = undefined;
 		};
 		
+		#region jsDoc
+		/// @func    cleanup()
+		/// @desc    Cleans up any active time source. Also executes the custom cleanup function.
+		/// @self    ParserBase
+		/// @returns {undefined}
+		#endregion
 		static cleanup = function() {
 			if (async_time_source != undefined) {
 				time_source_destroy(async_time_source);
@@ -52,14 +66,32 @@
 			__cleanup();
 		}
 		
+		#region jsDoc
+		/// @func    isFinished()
+		/// @desc    Checks if the parsing is finished.
+		/// @self    ParserBase
+		/// @returns {boolean}
+		#endregion
 		static isFinished = function() {
 			return __isFinished();
 		}
 		
+		#region jsDoc
+		/// @func    finalize()
+		/// @desc    Finalizes the parsing process. Executes the custom finalize function.
+		/// @self    ParserBase
+		/// @returns {any}
+		#endregion
 		static finalize = function() {
 			return __finalize()
 		}
 		
+		#region jsDoc
+		/// @func    parseAll()
+		/// @desc    Parses all tokens in the stack regardless of CPU usage or time. Calls nextToken for every token until finished.
+		/// @self    ParserBase
+		/// @returns {any} : The result of the finalize function after parsing all tokens
+		#endregion
 		static parseAll = function() {
 			while (array_length(stack)) {
 				nextToken();
@@ -67,6 +99,16 @@
 			return finalize();
 		}
 		
+		#region jsDoc
+		/// @func    parseAsync()
+		/// @desc    Asynchronously parses the tokens in the stack. Parses until it's finished or until time runs out.
+		///
+		///          If the parsing is completed, the callback is executed. Optionally accepts an error callback.
+		/// @self    ParserBase
+		/// @param   {function} _callback  : The callback to execute when parsing is complete
+		/// @param   {function} [_errback] : Optional error callback to handle parsing errors
+		/// @returns {any} : The time source reference for the async execution
+		#endregion
 		static parseAsync = function(_callback, _errback=undefined) {
 			async_active = true;
 			async_callback = _callback;
@@ -93,6 +135,12 @@
 			return async_time_source
 		}
 		
+		#region jsDoc
+		/// @func    nextToken()
+		/// @desc    Processes the next token from the stack. If errors are to be caught, they will be handled via the error handler.
+		/// @self    ParserBase
+		/// @returns {undefined}
+		#endregion
 		static nextToken = function() {
 			if (should_catch_errors) {
 				try {
@@ -106,42 +154,95 @@
 			}
 		};
 		
+		#region jsDoc
+		/// @func    setErrorHandler()
+		/// @desc    Sets a custom error handler function to handle errors during parsing.
+		/// @self    ParserBase
+		/// @param   {function} _handler : The custom error handler function
+		/// @returns {undefined}
+		#endregion
 		static setErrorHandler = function(_handler) {
 			error_handler = _handler;
 		}
 		
+		#region jsDoc
+		/// @func    setAsyncMaxTime()
+		/// @desc    Sets the maximum time allowed for async parsing within one frame.
+		/// @self    ParserBase
+		/// @param   {number} _max_time : The maximum time (in ms) allowed for async parsing
+		/// @returns {undefined}
+		#endregion
 		static setAsyncMaxTime = function(_max_time) {
 			async_max_time = _max_time;
 		};
 		
+		#region jsDoc
+		/// @func    print()
+		/// @desc    Logs a message to the console if logging is enabled.
+		/// @self    ParserBase
+		/// @param   {string} _str : The message to log
+		/// @returns {undefined}
+		#endregion
 		static print = function(_str) {
 		    if (logEnabled) {
 		        show_debug_message("[INFO] Logger :: " + _str);
 		    }
 		};
-
+		
+		#region jsDoc
+		/// @func    setLogEnabled()
+		/// @desc    Enables or disables logging for the parser.
+		/// @self    ParserBase
+		/// @param   {boolean} enabled : Whether logging should be enabled
+		/// @returns {undefined}
+		#endregion
 		static setLogEnabled = function(enabled) {
 		    logEnabled = enabled;
 		};
 		
+		#region jsDoc
+		/// @func    setErrorHandler()
+		/// @desc    Sets whether errors should be caught during parsing and handled by the error handler.
+		/// @self    ParserBase
+		/// @param   {boolean} _enabled : Whether error catching should be enabled
+		/// @returns {undefined}
+		#endregion
 		static setErrorHandler = function(_enabled) {
 			should_catch_errors = _enabled;
 		}
 		
+		#region jsDoc
+		/// @func    asyncPause()
+		/// @desc    Pauses the asynchronous parsing process.
+		/// @self    ParserBase
+		/// @returns {undefined}
+		#endregion
 		static asyncPause = function() {
 			if (async_time_source != undefined) {
 				time_source_pause(async_time_source);
 				async_active = false;
 			}
 		};
-
+		
+		#region jsDoc
+		/// @func    asyncResume()
+		/// @desc    Resumes the asynchronous parsing process.
+		/// @self    ParserBase
+		/// @returns {undefined}
+		#endregion
 		static asyncResume = function() {
 			if (async_time_source != undefined) {
 				time_source_start(async_time_source);
 				async_active = true;
 			}
 		};
-
+		
+		#region jsDoc
+		/// @func    asyncCancel()
+		/// @desc    Cancels the asynchronous parsing process and destroys the active time source.
+		/// @self    ParserBase
+		/// @returns {undefined}
+		#endregion
 		static asyncCancel = function() {
 			if (async_time_source != undefined) {
 				time_source_destroy(async_time_source);
@@ -150,19 +251,57 @@
 			}
 		};
 		
-		
+		#region jsDoc
+		/// @func    setCustomInitialize()
+		/// @desc    Sets the custom initialize function to be used by the parser.
+		/// @self    ParserBase
+		/// @param   {function} _func : The custom initialization function
+		/// @returns {undefined}
+		#endregion
 		static setCustomInitialize = function(_func) {
 			__initialize = _func;
 		}
+		
+		#region jsDoc
+		/// @func    setCustomCleanup()
+		/// @desc    Sets the custom cleanup function to be used by the parser.
+		/// @self    ParserBase
+		/// @param   {function} _func : The custom cleanup function
+		/// @returns {undefined}
+		#endregion
 		static setCustomCleanup = function(_func) {
 			__cleanup = _func;
 		}
+		
+		#region jsDoc
+		/// @func    setCustomFinalize()
+		/// @desc    Sets the custom finalize function to be used by the parser.
+		/// @self    ParserBase
+		/// @param   {function} _func : The custom finalize function
+		/// @returns {undefined}
+		#endregion
 		static setCustomFinalize = function(_func) {
 			__finalize = _func;
 		}
+		
+		#region jsDoc
+		/// @func    setCustomIsFinished()
+		/// @desc    Sets the custom isFinished function to check if parsing is completed.
+		/// @self    ParserBase
+		/// @param   {function} _func : The custom isFinished function
+		/// @returns {undefined}
+		#endregion
 		static setCustomIsFinished = function(_func) {
 			__isFinished = _func;
 		}
+		
+		#region jsDoc
+		/// @func    setCustomNextToken()
+		/// @desc    Sets the custom nextToken function to process tokens in the stack.
+		/// @self    ParserBase
+		/// @param   {function} _func : The custom nextToken function
+		/// @returns {undefined}
+		#endregion
 		static setCustomNextToken = function(_func) {
 			__nextToken = _func;
 		}
