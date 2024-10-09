@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"Util",
+  "%Name":"GMLCParserBase",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Util",
+  "name":"GMLCParserBase",
   "parent":{
-    "name":"__Final",
-    "path":"folders/GMLCompiler/__Final.yy",
+    "name":"Internal",
+    "path":"folders/GMLCompiler/__Final/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

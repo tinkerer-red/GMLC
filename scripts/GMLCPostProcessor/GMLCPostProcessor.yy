@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"Util",
+  "%Name":"GMLCPostProcessor",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Util",
+  "name":"GMLCPostProcessor",
   "parent":{
-    "name":"__Final",
-    "path":"folders/GMLCompiler/__Final.yy",
+    "name":"Parsers",
+    "path":"folders/GMLCompiler/__Final/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
