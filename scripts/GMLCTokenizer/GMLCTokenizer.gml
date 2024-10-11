@@ -1,29 +1,4 @@
 #region Tokenizer.gml
-/// @ignore
-function __GMLC_ProgramTokens(_tokens) constructor {
-	GlobalVar = {};
-	MacroVar  = {};
-	EnumVar   = {};
-	GlobalVarNames = [];
-	MacroVarNames  = [];
-	EnumVarNames   = {}; //structure is {HEADER1: [TAIL1, TAIL2, TAIL3], HEADER2: [TAIL1, TAIL2, TAIL3]}
-	LocalVarNames  = [];
-	
-	tokens = _tokens;
-}
-/// @ignore
-function __GMLC_create_token(_type, _name, _value, _line, _column, _lineString = other.sourceCodeLineArray[_line-1]) constructor {
-	type   = _type;
-	name   = _name;
-	value  = _value;
-	line   = _line;
-	column = _column;
-	lineString = _lineString;
-		
-	static toString = function() {
-		return $"\{type: \"{type}\", name: \"{name}\", value: \"{value}\", line: {line}, column: {column}, lineString: {lineString}\}"
-	}
-};
 
 #region 1. Tokenizer Module
 /*
@@ -48,7 +23,6 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 	bytePos = 0;
 	
 	currentCharCode = undefined;
-	currentChar = undefined;
 	
 	tokens = undefined;
 	program = undefined;
@@ -60,7 +34,12 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 	
 	templateStringDepth = 0;
 	
-	keywords = ["globalvar", "var", "if", "then", "else", "begin", "end", "for", "while", "do", "until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return", "global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor", "static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw"];
+	
+	sandboxed = false;
+	keywords = ["globalvar", "var", "if", "then", "else", "begin", "end", "for", "while", "do",
+	"until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return",
+	"global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor",
+	"static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw"];
 	
 	// Initialize tokenizer with source code
 	static __initialize = function(_sourceCode) {
@@ -75,16 +54,22 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		charPos = 0;
 		bytePos = 0;
 		
-		if (sourceCodeBuffer != undefined && buffer_exists(sourceCodeBuffer)) { buffer_delete(sourceCodeBuffer); };
+		//destroy old buffer if we were previously parsing
+		if (sourceCodeBuffer != undefined)
+		&& (buffer_exists(sourceCodeBuffer)) {
+			buffer_delete(sourceCodeBuffer);
+		};
 		sourceCodeBuffer = buffer_create(sourceCodeByteLength, buffer_fixed, 1);
 	    buffer_write(sourceCodeBuffer, buffer_text, sourceCodeString);
 		buffer_seek(sourceCodeBuffer, buffer_seek_start, 0);
 		
 		//init the charPos, bytePos, and currentCharCode
-		__nextUTF8();
+		// we just do this to prevent succeeding in the isFinished check,
+		// the proper token gets set when we first call nextToken
+		currentCharCode = 0x0000
 		
 		line = 1;
-		column = 1;
+		column = 0;
 		
 		finished = false;
 	};
@@ -93,899 +78,1043 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		if (sourceCodeBuffer != undefined && buffer_exists(sourceCodeBuffer)) { buffer_delete(sourceCodeBuffer); };
 	}
 	
+	static __isFinished = function() {
+		return finished;
+	}
+	
 	static __finalize = function() {
-		cleanup();
 		return program;
 	}
 	
-	static parseAll = function() {
-		//reset incase a user ran this while half way through a coroutine compile
-		initialize(sourceCodeString);
-		
-		while (!finished) {
-			parseNext()
-		}
-		
-		return program;
+	static __nextToken = function() {
+		__nextUTF8()
+		return currentCharCode;
 	}
 	
-	static parseNext = function() {
-		var _token = detectToken();
-		if (_token != undefined) {
-			array_push(tokens, _token);
-			
-			if (GML_COMPILER_DEBUG) {
-				static __lastString = ""
-				var _str = string(charPos/sourceCodeCharLength/10)
-				if (__lastString != _str) {
-					do_trace($"{real(_str)*1000}% Finished")
-					__lastString = _str;
-				}
+	static __shouldBreakParserSteps = function(_input, _output) {
+		return (_output != false) || (currentCharCode == undefined)
+	}
+	
+	#region Parser Functions
+	
+	static parseSkipWhitespace = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		if (__char_is_whitespace(currentCharCode)) {
+			while (currentCharCode != undefined)
+			&& (__char_is_whitespace(__peekUTF8() ?? 0)) {
+				__nextUTF8();
 			}
-		}
-		
-	};
-	
-	static skipWhitespace = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		while (currentCharCode != undefined) {
 			if (currentCharCode == ord("\n")) {
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Whitespace, "\n", "\n", line, column);
+				array_push(tokens, _token);
+				return _token;
+			}
+			return true;
+		}
+		//show_debug_message($":: parseSkipWhitespace :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseCommentLine = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		if (currentCharCode == ord("/") && _next_char == ord("/")) {
+			//var _start_pos = charPos;
+			var _start_line = line;
+			var _start_column = column;
+		
+			__expectUTF8(ord("/")); //consume first /
+			__expectUTF8(ord("/")); //consume second /
+			var _raw_string = "//";
+			
+			while (currentCharCode != undefined)
+			&& (currentCharCode != ord("\n"))
+			&& (currentCharCode != ord("\r"))
+			{
+				_raw_string += chr(currentCharCode);
 				__nextUTF8();
+			}
+			
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseCommentLine :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseCommentBlock = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		if (currentCharCode == ord("/") && _next_char == ord("*")) {
+			var _start_line = line;
+			var _start_column = column;
+		
+			__expectUTF8(ord("/")); //consume /
+			__expectUTF8(ord("*")); //consume *
+			var _raw_string = "/*";
+		
+			while (currentCharCode != undefined)
+			&& (currentCharCode != ord("*"))
+			&& (__peekUTF8() != ord("/"))
+			{
+				_raw_string += chr(currentCharCode);
+				__nextUTF8();
+			}
+		
+			__expectUTF8(ord("*")); //consume *
+			//__expectUTF8(ord("/")); //consume /
+		
+			_raw_string += "*/";
+		
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseCommentBlock :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseStringLiteral = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		if (currentCharCode == ord(@'"')) {
+			//var _start_pos = charPos;
+			var _start_line = line;
+			var _start_column = column;
+			
+			var _raw_string = chr(currentCharCode);
+			var _string = "";
+			var _string_closed = false;
+			var _should_break = false;
+			
+			__expectUTF8(ord("\"")); // consume the entry quote "
+			
+			while (currentCharCode != undefined) {
+				var _char = chr(currentCharCode);
+			
+				//convert escape charactors 
+				switch (currentCharCode) {
+					case ord(@'\'): {
+						__nextUTF8();
+						switch (currentCharCode) {
+							case ord(@'\'): { // \\
+								_char = "\\";
+							break;}
+							case ord(@'"'): { // \"
+								_char = "\"";
+							break;}
+							case ord(@'n'): { // \n
+								_char = "\n";
+							break;}
+							case ord(@'r'): { // \r
+								_char = "\r";
+							break;}
+							case ord(@'t'): { // \t
+								_char = "\t";
+							break;}
+							case ord(@'f'): { // \f
+								_char = "\f";
+							break;}
+							case ord(@'v'): { // \v
+								_char = "\v";
+							break;}
+							case ord(@'b'): { // \b
+								_char = "\b";
+							break;}
+							case ord(@'0'): { // \0
+								_char = "\0";
+								if (__peekUTF8() == ord("0") && __peekUTF8(1) == ord("0")) { // \000
+									__nextUTF8();
+									__nextUTF8();
+									_char = "\000"
+								}
+							break;}
+							case ord(@'u'): { // \uFFFFF
+								_char = "0x";
+								if (__char_is_hex(__peekUTF8() ?? 0)) {
+									__nextUTF8();
+									
+									var _len = 0;
+									while (currentCharCode != undefined)
+									&& (__char_is_hex(currentCharCode))
+									&& (currentCharCode != "_")
+									&& (_len <= 5)
+									{
+										_len += 1;
+										_char += chr(currentCharCode);
+										
+										//if the next char is not hex back out
+										var _nextToken = __peekUTF8();
+										if (!__char_is_hex(_nextToken)) 
+										|| (_nextToken == "_")
+										{
+											break;
+										}
+										
+										__nextUTF8();
+									}
+								}
+								
+								_char = chr(real(_char))
+							
+							break;}
+							default: {
+								_char = "";
+							break;}
+						}
+					break;}
+					case ord(@'"'): { // "
+						_raw_string += @'"';
+						_char = "";
+						_string_closed = true;
+					break;}
+					case ord("\n"): { // \n
+						_char = "";
+						_should_break = true;
+					break;}
+				}
+			
+				_raw_string += _char;
+				_string += _char;
+			
+				if (_string_closed || _should_break) break;
+				
+				__nextUTF8();
+			}
+			
+			if (!_string_closed) {
+				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+				array_push(tokens, _token);
 				return _token;
 			}
 			
-			if (__char_is_whitespace(currentCharCode)) {
-				__nextUTF8();
+			var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseStringLiteral :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseHexNumbers = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		
+		if (currentCharCode == ord("$") && __char_is_hex(_next_char))
+		|| (currentCharCode == ord("0") && _next_char == ord("x"))
+		{
+			var _start_line = line;
+			var _start_column = column;
+			
+			if (currentCharCode == ord("$")) {
+				__nextUTF8(); // consume $
+				var _raw_string = "$"
+			}
+			else if (currentCharCode == ord("0")) {
+				__nextUTF8(); // consume 0
+				__nextUTF8(); // consume x
+				var _raw_string = "0x"
 			}
 			else {
-				break;
-			}
-		}
-		return undefined;
-	};
-	
-	static detectToken = function() {
-		//skip white spaces
-		var _token = skipWhitespace();
-		if (_token != undefined) {
-			return _token;
-		}
-		
-		//if the whitespace was the end of the token stream
-		if (currentCharCode == undefined) {
-			finished = true;
-			return undefined; // No more tokens
-		}
-		
-		var _char = currentCharCode;
-		//var _debug_char = chr(_char);
-		
-		//we dont need the next char most of the time so this cuts out about 95% of the time we needed it
-		if (_char == ord("/"))
-		|| (_char == ord("$"))
-		|| (_char == ord("0"))
-		|| (_char == ord("."))
-		|| (_char == ord("@")) {
-			var _next_char = __peekUTF8() ?? 0;
-		}
-		
-		//comments
-		if (_char == ord("/") && _next_char == ord("/")) {
-			return tokenizeCommentLine();
-		}
-		//comment blocks
-		else if (_char == ord("/") && _next_char == ord("*")) {
-			return tokenizeCommentBlock();
-		}
-		//string literals "example"
-		else if (_char == ord(@'"')) {
-			return tokenizeStringLiteral();
-		}
-		//hex numbers
-		else if (_char == ord("$") && __char_is_hex(_next_char)) || (_char == ord("0") && _next_char == ord("x")) {
-			return tokenizeHexNumber();
-		}
-		//string templates
-		else if (_char == ord("$") && _next_char == ord(@'"')) {
-			return tokenizeTemplateString(false);
-		}
-		else if (templateStringDepth > 0 && _char == ord(@'}')) {
-			return tokenizeTemplateString(true);
-		}
-		//binary numbers
-		else if (_char == ord("0") && _next_char == ord("b")) {
-			return tokenizeBinaryNumber();
-		}
-		//numbers
-		else if (__char_is_digit(_char)) || (_char == ord(".") && __char_is_digit(_next_char)) {
-			return tokenizeNumber();
-		}
-		//identifiers
-		else if (__char_is_alphabetic(_char)) {
-			return tokenizeIdentifier();
-		}
-		//string literals @'example'
-		else if (_char == ord("@") && (_next_char == ord("") || _next_char == ord(@'"'))) {
-			return tokenizeRawStringLiteral();
-		}
-		//operators
-		else if (__char_is_operator(_char)) {
-			return tokenizeOperator();
-		}
-		//punctuation
-		else if (__char_is_punctuation(_char)) {
-			return tokenizePunctuation();
-		}
-		//escape char and macro new lines
-		else if (_char == ord("\\")) {
-			//this is really only ever used for use with macros as everything else is accounted for with strings, apart from that there is no other time a `\` should exist outside a string.
-			var _token = new __GMLC_create_token(__GMLC_TokenType.EscapeOperator, "\\", "\\", line, column);
-			__nextUTF8();
-			return _token;
-		}
-		
-		return tokenizeIllegal();
-		
-	};
-	
-	#region Token Creators
-	
-	static tokenizeNumber = function() {
-		var hasDecimal = false;
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		var _num_string = ""
-		while (currentCharCode != undefined)
-		&& (__char_is_digit(currentCharCode) || currentCharCode == ord(".") || currentCharCode == ord("_")) {
-			if (currentCharCode == ord(".")) {
-				if (hasDecimal) break; // Prevent multiple decimals
-				hasDecimal = true;
-			}
-			_num_string += chr(currentCharCode);
-			__nextUTF8();
-		}
-		
-		var _str = real(string_replace_all(_num_string, "_", ""));
-		var _number = real(_str);
-		if (_number > 2147483647 || _number < -2147483648) _number = int64(_number);
-		
-		
-		_number = (_number <= $FFFFFFF) ? real(_number) : int64(_number);
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _num_string, _number, _start_line, _start_column);
-		
-		return _token;
-	};
-	
-	static tokenizeHexNumber = function() {
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		if (currentCharCode == ord("$")) {
-			__nextUTF8();
-			var _raw_string = "$"
-		}
-		else if (currentCharCode == ord("0")) {
-			__nextUTF8(); // 0x
-			__nextUTF8();
-			var _raw_string = "0x"
-		}
-		else {
-			throw_gmlc_error($"Entered tokenizeHexNumber with a non-valid entry string : {chr(currentCharCode)}")
-		}
-		
-		var _len = 0;
-		//var _hex_value = 0;
-		while (currentCharCode != undefined && __char_is_hex(currentCharCode)) {
-			//_hex_value = _hex_value << 4;
-			
-			if (currentCharCode >= ord("0") && currentCharCode <= ord("9")) {
-				//_hex_value += currentCharCode - ord("0");
-				_len += 1;
-			}
-			else if (currentCharCode >= ord("A") && currentCharCode <= ord("F")) {
-				//_hex_value += currentCharCode - ord("A") + 10;
-				_len += 1;
-			}
-			else if (currentCharCode >= ord("a") && currentCharCode <= ord("f")) {
-				//_hex_value += currentCharCode - ord("a") + 10;
-				_len += 1;
+				throw_gmlc_error($"Entered parseHexNumbers with a non-valid entry string : {chr(currentCharCode)}")
 			}
 			
-			_raw_string += chr(currentCharCode);
-			__nextUTF8();
-		}
-		
-		#region Error Handling
-		if (_len > 16) {
-			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: input length == {_len}";
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
-			return _token;
-		}
-		
-		//if (_hex_value < 0) {
-		//	var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: hex value == {_hex_value}";
-		//	var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
-		//	return _token;
-		//}
-		#endregion
-		var _str = string_replace(_raw_string, "$", "0x")
-		_str = string_replace_all(_str, "_", "")
-		var _hex_value = real(_str);
-		if (_hex_value > 2147483647 || _hex_value < -2147483648) _hex_value = int64(_hex_value);
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _hex_value, _start_line, _start_column);
-		return _token;
-	};
-	
-	static tokenizeBinaryNumber = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		if (currentCharCode == ord("0")) {
-			__expectUTF8(ord("0"));
-			__expectUTF8(ord("b"));
-			var _raw_string = "0b";
-		}
-		else {
-			throw_gmlc_error($"Entered tokenizeBinaryNumber with a non-valid entry string : {chr(_char)}")
-		}
-		
-		var _len = 0;
-		while (currentCharCode != undefined && __char_is_binary(currentCharCode)) {
-			//_binary_value = _binary_value << 1;
-			
-			//_binary_value += currentCharCode - ord("0");
-			
-			_len += 1;
-			_raw_string += chr(currentCharCode);
-			__nextUTF8();
-		}
-		
-		#region Error Handling
-		if (_len > 64) {
-			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {line} : Binary number {_raw_string} is too large or too small";
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_str, _error, _start_line, _start_column);
-			return _token;
-		}
-		#endregion
-		
-		var _str = string_replace_all(_raw_string, "_", "")
-		var _binary_value = real(_str);
-		if (_binary_value > 2147483647 || _binary_value < -2147483648) _binary_value = int64(_binary_value);
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _binary_value, _start_line, _start_column);
-		return _token;
-	};
-	
-	static tokenizeIdentifier = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		var _raw_string = "";
-		while (currentCharCode != undefined && __char_is_alphanumeric(currentCharCode)) {
-			_raw_string += chr(currentCharCode);
-			__nextUTF8();
-		}
-		
-		var _identifier = _raw_string
-		
-		var _index = asset_get_index(_identifier);
-		var _type = asset_get_type(_identifier)
-		
-		#region Assets
-		if (is_handle(_index))
-		&& (_index > -1)
-		&& ((_type == asset_object)
-		|| (_type == asset_sprite)
-		|| (_type == asset_sound)
-		|| (_type == asset_room)
-		|| (_type == asset_tiles)
-		|| (_type == asset_path)
-		//|| (_type == asset_script)
-		|| (_type == asset_font)
-		|| (_type == asset_timeline)
-		|| (_type == asset_shader)
-		|| (_type == asset_animationcurve)
-		|| (_type == asset_sequence)
-		|| (_type == asset_particlesystem))
-		{
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
-			return _token;
-		}	
-		#endregion
-		#region Functions
-		
-		if (_type == asset_script) && (_index > -1) {
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
-			return _token;
-		}
-		//built in functions
-		static __functions_lookup = __ExistingFunctions();
-		var _index = struct_get(__functions_lookup, _identifier)
-		if (_index != undefined) {
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
-			return _token;
-		}
-		
-		static __dep_functions_lookup = __DeprocatedFunctions();
-		var _index = struct_get(__dep_functions_lookup, _identifier)
-		if (_index != undefined) {
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
-			return _token;
-		}
-		
-		#endregion
-		#region Constants
-		
-		
-		static __constants_lookup = __ExistingConstants();
-		var _constant = struct_get(__constants_lookup, _identifier)
-		if (_constant != undefined) {
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
-			return _token;
-		}
-		
-		static __dep_constants_lookup = __DeprocatedConstants();
-		var _constant = struct_get(__dep_constants_lookup, _identifier)
-		if (_constant != undefined) {
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
-			return _token;
-		}
-		
-		static __unique_variables_arr = __ExistingUniqueVariables();
-		if (array_contains(__unique_variables_arr, _identifier)) {
-			var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
-			return _token;
-		}
-		
-		#endregion
-		#region Enum Constants
-		
-		static __enum_header_arr = __ExistingEnumerationHeaderStrings();
-		if (array_contains(__enum_header_arr, _identifier)) {
-			
-			static __enum_arr = __ExistingEnumerationStrings();
-			
-			var _found = false;
-			
-			//find the shortest/longest string
-			var _shortest = infinity; var _longest  = 0;
-			var _i=0; repeat(array_length(__enum_arr)) {
-				var _length = string_length(__enum_arr[_i])
-				_shortest = min(_shortest, _length);
-				_longest  = max(_longest , _length);
-			_i++}
-			
-			//define the range we will be peeking
-			var _peek_length = _shortest - string_length(_identifier);
-			var _iterations = _longest - string_length(_identifier) - _peek_length;
-			
-			var _temp_identifier = _identifier
-			var _i=0; repeat(_peek_length) {
-				_temp_identifier += chr(__peekUTF8(_i));
-			_i++}
-			
-			//iterate through all and try to find a match
-			var _i=0; repeat(_iterations) {
-				_temp_identifier += chr(__peekUTF8(_peek_length+_i));
+			var _len = 0;
+			while (currentCharCode != undefined)
+			&& (__char_is_hex(currentCharCode))
+			{
+				if (currentCharCode >= ord("0") && currentCharCode <= ord("9")) {
+					_len += 1;
+				}
+				else if (currentCharCode >= ord("A") && currentCharCode <= ord("F")) {
+					_len += 1;
+				}
+				else if (currentCharCode >= ord("a") && currentCharCode <= ord("f")) {
+					_len += 1;
+				}
 				
-				if (array_contains(__enum_arr, _temp_identifier)) {
-					static __enum_lookup = __ExistingEnumerations();
-					var _val = struct_get(__enum_lookup, _temp_identifier)
-					
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column);
-					_found = true;
+				_raw_string += chr(currentCharCode);
+				
+				if (!__char_is_hex(__peekUTF8() ?? 0)) {
 					break;
 				}
 				
-			_i+=1;}//end repeat loop
+				__nextUTF8();
+			}
 			
-			if (_found) {
-				var _jump = string_length(_temp_identifier) - string_length(_identifier);
-				repeat (_jump) __nextUTF8();
+			#region Error Handling
+			if (_len > 16) {
+				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: input length == {_len}";
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+				return _token;
+			}
+			#endregion
+			
+			var _str = string_replace(_raw_string, "$", "0x")
+			_str = string_replace_all(_str, "_", "")
+			var _hex_value = real(_str);
+			if (_hex_value > 2147483647 || _hex_value < -2147483648) _hex_value = int64(_hex_value);
+		
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _hex_value, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseHexNumbers :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseStringTemplate = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		if (currentCharCode == ord("$"))
+		&& (_next_char == ord(@'"'))
+		{
+			var _token = tokenizeTemplateString(false);
+			array_push(tokens, _token);
+			return _token;
+		}
+		if (templateStringDepth > 0)
+		&& (currentCharCode == ord(@'}'))
+		{
+			var _token = tokenizeTemplateString(true);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseStringTemplate :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseBinaryNumber = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		if (currentCharCode == ord("0"))
+		&& (_next_char == ord("b"))
+		{
+			var _start_line = line;
+			var _start_column = column;
+			
+			if (currentCharCode == ord("0"))
+			{
+				__expectUTF8(ord("0")); // consume 0
+				__expectUTF8(ord("b")); // consume b
+				var _raw_string = "0b";
+			}
+			else
+			{
+				throw_gmlc_error($"Entered tokenizeBinaryNumber with a non-valid entry string : {chr(currentCharCode)}")
+			}
+			
+			var _len = 0;
+			while (currentCharCode != undefined)
+			&& (__char_is_binary(currentCharCode))
+			{
+				_len += 1;
+				_raw_string += chr(currentCharCode);
+				
+				if (!__char_is_binary(__peekUTF8() ?? 0)) {
+					break;
+				}
+				
+				__nextUTF8();
+			}
+			
+			#region Error Handling
+			if (_len > 64) {
+				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {line} : Binary number {_raw_string} is too large or too small";
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_str, _error, _start_line, _start_column);
+				return _token;
+			}
+			#endregion
+			
+			var _str = string_replace_all(_raw_string, "_", "")
+			var _binary_value = real(_str);
+			if (_binary_value > 2147483647 || _binary_value < -2147483648) _binary_value = int64(_binary_value);
+			
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _binary_value, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseBinaryNumber :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseNumber = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		if (__char_is_digit(currentCharCode))
+		|| (currentCharCode == ord(".") && __char_is_digit(_next_char))
+		{
+			var hasDecimal = false;
+			var _start_line = line;
+			var _start_column = column;
+			
+			var _num_string = ""
+			while (currentCharCode != undefined)
+			&& (__char_is_digit(currentCharCode) || currentCharCode == ord(".") || currentCharCode == ord("_"))
+			{
+				if (currentCharCode == ord(".")) {
+					if (hasDecimal) { break; } // Prevent multiple decimals
+					hasDecimal = true;
+				}
+				
+				_num_string += chr(currentCharCode);
+				
+				
+				var _nextToken = __peekUTF8() ?? 0
+				if not (__char_is_digit(_nextToken) || _nextToken == ord(".") || _nextToken == ord("_")) {
+					break;
+				}
+				
+				__nextUTF8();
+			}
+			
+			var _str = real(string_replace_all(_num_string, "_", ""));
+			var _number = real(_str);
+			if (_number > 2147483647 || _number < -2147483648) _number = int64(_number);
+			
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _num_string, _number, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseNumber :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseIdentifier = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		if (__char_is_alphabetic(currentCharCode))
+		{
+			var _start_line = line;
+			var _start_column = column;
+			
+			var _raw_string = "";
+			while (currentCharCode != undefined)
+			&& (__char_is_alphanumeric(currentCharCode))
+			{
+				_raw_string += chr(currentCharCode);
+				
+				if (!__char_is_alphanumeric(__peekUTF8() ?? 0)) {
+					break;
+				}
+				
+				__nextUTF8();
+			}
+			
+			var _identifier = _raw_string
+			
+			if (!sandboxed) {
+				var _index = asset_get_index(_identifier);
+				var _type = asset_get_type(_identifier)
+				
+				#region Assets
+				if (is_handle(_index))
+				&& (_index > -1)
+				&& ((_type == asset_object)
+				|| (_type == asset_sprite)
+				|| (_type == asset_sound)
+				|| (_type == asset_room)
+				|| (_type == asset_tiles)
+				|| (_type == asset_path)
+				//|| (_type == asset_script)
+				|| (_type == asset_font)
+				|| (_type == asset_timeline)
+				|| (_type == asset_shader)
+				|| (_type == asset_animationcurve)
+				|| (_type == asset_sequence)
+				|| (_type == asset_particlesystem))
+				{
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}	
+				#endregion
+				#region Functions
+			
+				if (_type == asset_script) && (_index > -1) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+				//built in functions
+				static __functions_lookup = __ExistingFunctions();
+				var _index = struct_get(__functions_lookup, _identifier)
+				if (_index != undefined) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+			
+				static __dep_functions_lookup = __DeprocatedFunctions();
+				var _index = struct_get(__dep_functions_lookup, _identifier)
+				if (_index != undefined) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+			
+				#endregion
+				#region Constants
+			
+			
+				static __constants_lookup = __ExistingConstants();
+				var _constant = struct_get(__constants_lookup, _identifier)
+				if (_constant != undefined) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+			
+				static __dep_constants_lookup = __DeprocatedConstants();
+				var _constant = struct_get(__dep_constants_lookup, _identifier)
+				if (_constant != undefined) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+			
+				static __unique_variables_arr = __ExistingUniqueVariables();
+				if (array_contains(__unique_variables_arr, _identifier)) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+			
+				#endregion
+				#region Enum Constants
+			
+				static __enum_header_arr = __ExistingEnumerationHeaderStrings();
+				if (array_contains(__enum_header_arr, _identifier)) {
+				
+					static __enum_arr = __ExistingEnumerationStrings();
+				
+					var _found = false;
+				
+					//find the shortest/longest string
+					var _shortest = infinity; var _longest  = 0;
+					var _i=0; repeat(array_length(__enum_arr)) {
+						var _length = string_length(__enum_arr[_i])
+						_shortest = min(_shortest, _length);
+						_longest  = max(_longest , _length);
+					_i++}
+				
+					//define the range we will be peeking
+					var _peek_length = _shortest - string_length(_identifier);
+					var _iterations = _longest - string_length(_identifier) - _peek_length;
+				
+					var _temp_identifier = _identifier
+					var _i=0; repeat(_peek_length) {
+						_temp_identifier += chr(__peekUTF8(_i));
+					_i++}
+				
+					//iterate through all and try to find a match
+					var _i=0; repeat(_iterations) {
+						var _nextIterToken = __peekUTF8(_peek_length+_i);
+						
+						if (_nextIterToken == undefined) {
+							break;
+						}
+						
+						_temp_identifier += chr(_nextIterToken);
+					
+						if (array_contains(__enum_arr, _temp_identifier)) {
+							static __enum_lookup = __ExistingEnumerations();
+							var _val = struct_get(__enum_lookup, _temp_identifier)
+						
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column);
+							_found = true;
+							break;
+						}
+					
+					_i+=1;}//end repeat loop
+				
+					if (_found) {
+						var _jump = string_length(_temp_identifier) - string_length(_identifier);
+						repeat (_jump) __nextUTF8();
+						
+						array_push(tokens, _token);
+						return _token;
+					}
+				}
+			
+				#endregion
+				#region Keywords
+			
+				if (array_contains(keywords, _identifier)) {
+					switch (_identifier) {
+						case "begin":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "end":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "mod":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "div":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "not":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "and":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "or":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "xor":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+				
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				}
+			
+				#endregion
+			
+				if (_identifier == "true")           var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "true", true, _start_line, _start_column);
+				else if (_identifier == "false")     var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "false", false, _start_line, _start_column);
+				else if (_identifier == "infinity")  var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "infinity", infinity, _start_line, _start_column);
+				else if (_identifier == "undefined") var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "undefined", undefined, _start_line, _start_column);
+				else if (_identifier == "NaN")       var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "NaN", NaN, _start_line, _start_column);
+				else                                 var _token = new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
+				
+				array_push(tokens, _token);
+				return _token;
+			}
+			else {
+				// parse the exposed functions and assets
+				//var _data = exposedIdentifiers[$ _identifier]
+				//var _type = _data.type;
+				//var _identifier = _data.value;
+				//var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
+				//array_push(tokens, _token);
 				return _token;
 			}
 		}
-		
-		#endregion
-		#region Keywords
-		
-		if (array_contains(keywords, _identifier)) {
-			switch (_identifier) {
-				case "begin":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "end":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "mod":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "div":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "not":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "and":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "or":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
-					
-					return _token;
-				break;}
-				case "xor":{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
-					
-					return _token;
-				break;}
-			}
+		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseRawStringLiteral = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		var _next_char = __peekUTF8() ?? 0;
+		if (currentCharCode == ord("@"))
+		&& (_next_char == ord("'") || _next_char == ord(@'"'))
+		{
+			var _start_line = line;
+			var _start_column = column;
 			
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
+			__expectUTF8(ord("@")); //consume @
 			
+			var _start_quote = currentCharCode;
+			
+			__nextUTF8(); // consume starting quote
+			
+			var _raw_string = "@"+chr(_start_quote);//add the starting quote
+			var _string = __fetchAllUntil(_start_quote);
+			_raw_string += _string+chr(currentCharCode) // add the closing quote
+			
+			var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
+			
+			array_push(tokens, _token);
 			return _token;
 		}
-		
-		#endregion
-		
-		if (_identifier == "true")           return new __GMLC_create_token(__GMLC_TokenType.Number, "true", true, _start_line, _start_column);
-		else if (_identifier == "false")     return new __GMLC_create_token(__GMLC_TokenType.Number, "false", false, _start_line, _start_column);
-		else if (_identifier == "infinity")  return new __GMLC_create_token(__GMLC_TokenType.Number, "infinity", infinity, _start_line, _start_column);
-		else if (_identifier == "undefined") return new __GMLC_create_token(__GMLC_TokenType.Number, "undefined", undefined, _start_line, _start_column);
-		else if (_identifier == "NaN")       return new __GMLC_create_token(__GMLC_TokenType.Number, "NaN", NaN, _start_line, _start_column);
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
-		return _token;
-		//*/
+		//show_debug_message($":: parseRawStringLiteral :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
 	};
 	
-	static tokenizeOperator = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		var start = charPos;
-		
-		var _op_string = "";
-		
-		switch (currentCharCode) {
-			case ord("!"): { // !
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): { // !=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("#"): { // #
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				//switch (currentCharCode) {
-				//	case ord("EMPTY"): {
-						
-				//	break;}
-				//}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("$"): { // $
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				//switch (currentCharCode) {
-				//	case ord("EMPTY"): {
-						
-				//	break;}
-				//}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("%"): { // %
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				//switch (currentCharCode) {
-				//	case ord("EMPTY"): {
-						
-				//	break;}
-				//}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "mod", _start_line, _start_column);
-			break;};
-			case ord("&"): { // &
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("&"): { // &&
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord("="): { // &=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("*"): { // *
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): { // *=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("+"): { // +
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): { // +=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord("+"): { // ++
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("-"): { // -
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): { // -=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord("-"): { // --
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("/"): { // /
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): {
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("<"): { // <
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord(">"): { // <> AKA: !=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "!=", _start_line, _start_column);
-					break;}
-					case ord("="): { // <=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord("<"): { // <<
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("="): { // =
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): {
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord(">"): { // >
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("="): {
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord(">"): {
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("?"): { // ?
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("?"): { // ??
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						switch (currentCharCode) {
-							case ord("="): { // ??=
-								_op_string += chr(currentCharCode);
-								__nextUTF8();
-								return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-							break;}
-						}
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("@"): { // @
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				//switch (currentCharCode) {
-				//	case ord("EMPTY"): {
-						
-				//	break;}
-				//}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("^"): { // ^
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("^"): { // ^^
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord("="): { // ^=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("~"): { // ~
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				//switch (currentCharCode) {
-				//	case ord("EMPTY"): {
-						
-				//	break;}
-				//}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			case ord("|"): { // |
-				_op_string += chr(currentCharCode);
-				__nextUTF8();
-				switch (currentCharCode) {
-					case ord("|"): { // ||
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-					case ord("="): { // |=
-						_op_string += chr(currentCharCode);
-						__nextUTF8();
-						return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
-					break;}
-				}
-				return new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
-			break;};
-			default: {
-				throw_gmlc_error($"Entered tokenizeOperator with a non-valid entry string : {chr(currentCharCode)}")
-			break;}
-		}
-		
-	};
-	
-	static tokenizePunctuation = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		var _punctuation = chr(currentCharCode);
-		__nextUTF8();
-		return new __GMLC_create_token(__GMLC_TokenType.Punctuation, _punctuation, _punctuation, _start_line, _start_column);
-	}
-	
-	static tokenizeStringLiteral = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		var _raw_string = chr(currentCharCode);
-		var _string = "";
-		var _string_closed = false;
-		var _should_break = false;
-		
-		__expectUTF8(ord("\"")); // consume the entry quote "
-		
-		while (currentCharCode != undefined) {
-			var _char = chr(currentCharCode);
+	static parseOperator = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		if (__char_is_operator(currentCharCode)) {
+			//var _start_pos = charPos;
+			var _start_line = line;
+			var _start_column = column;
 			
-			//convert escape charactors 
+			var start = charPos;
+			
+			var _op_string = "";
+			
 			switch (currentCharCode) {
-				case ord(@'\'): {
-					__nextUTF8();
-					switch (currentCharCode) {
-						case ord(@'\'): { // \\
-							_char = "\\";
-							//__nextUTF8();
-						break;}
-						case ord(@'"'): { // \"
-							_char = "\"";
-							//__nextUTF8();
-						break;}
-						case ord(@'n'): { // \n
-							_char = "\n";
-							//__nextUTF8();
-						break;}
-						case ord(@'r'): { // \r
-							_char = "\r";
-							//__nextUTF8();
-						break;}
-						case ord(@'t'): { // \t
-							_char = "\t";
-							//__nextUTF8();
-						break;}
-						case ord(@'f'): { // \f
-							_char = "\f";
-							//__nextUTF8();
-						break;}
-						case ord(@'v'): { // \v
-							_char = "\v";
-							//__nextUTF8();
-						break;}
-						case ord(@'b'): { // \b
-							_char = "\b";
-							//__nextUTF8();
-						break;}
-						case ord(@'0'): { // \0
-							_char = "\0";
-							//__nextUTF8();
-							if (currentCharCode == ord("0") && __peekUTF8() == ord("0")) { // \000
-								__nextUTF8();
-								__nextUTF8();
-								_char = "\000"
-							}
-						break;}
-						case ord(@'u'): { // \v
-							_char = "0x";
+				case ord("!"): { // !
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): { // !=
 							__nextUTF8();
-							
-							var _len = 0;
-							while (currentCharCode != undefined && __char_is_hex(currentCharCode) && (_len <= 5)) {
-								if (currentCharCode >= ord("0") && currentCharCode <= ord("9")) {
-									_len += 1;
-								}
-								else if (currentCharCode >= ord("A") && currentCharCode <= ord("F")) {
-									_len += 1;
-								}
-								else if (currentCharCode >= ord("a") && currentCharCode <= ord("f")) {
-									_len += 1;
-								}
-								
-								_char += chr(currentCharCode);
-								
-								//if the next char is not hex back out
-								if (!__char_is_hex(__peekUTF8())) break;
-								
-								
-								__nextUTF8();
-							}
-							
-							_char = chr(real(_char))
-							log(_char)
-							
-						break;}
-						default: {
-							_char = "";
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
 						break;}
 					}
-				break;}
-				case ord(@'"'): { // "
-					_raw_string += "\"";
-					_char = "";
-					_string_closed = true;
-				break;}
-				case ord("\n"): { // \n
-					_char = "";
-					_should_break = true;
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("#"): { // #
+					_op_string += chr(currentCharCode);
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("$"): { // $
+					_op_string += chr(currentCharCode);
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("%"): { // %
+					_op_string += chr(currentCharCode);
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "mod", _start_line, _start_column);
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("&"): { // &
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("&"): { // &&
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("="): { // &=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("*"): { // *
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): { // *=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("+"): { // +
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): { // +=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("+"): { // ++
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("-"): { // -
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): { // -=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("-"): { // --
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("/"): { // /
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): {
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("<"): { // <
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord(">"): { // <> AKA: !=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "!=", _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("="): { // <=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("<"): { // <<
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("="): { // =
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): {
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord(">"): { // >
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): {
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord(">"): {
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("?"): { // ?
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("?"): { // ??
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _nextToken = __peekUTF8() ?? 0;
+							switch (_nextToken) {
+								case ord("="): { // ??=
+									__nextUTF8();
+									_op_string += chr(currentCharCode);
+									var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+									array_push(tokens, _token);
+									return _token;
+								break;}
+							}
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("@"): { // @
+					_op_string += chr(currentCharCode);
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("^"): { // ^
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("^"): { // ^^
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("="): { // ^=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("~"): { // ~
+					_op_string += chr(currentCharCode);
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				case ord("|"): { // |
+					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("|"): { // ||
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case ord("="): { // |=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
+					array_push(tokens, _token);
+					return _token;
+				break;};
+				default: {
+					throw_gmlc_error($"Entered tokenizeOperator with a non-valid entry string : {chr(currentCharCode)}")
 				break;}
 			}
 			
-			_raw_string += _char;
-			_string += _char;
-			
-			__nextUTF8();
-			
-			if (_string_closed || _should_break) break;
 		}
-		
-		if (!_string_closed) {
-			var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
-			var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
-			return _token;
-		}
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
-		return _token;
+		//show_debug_message($":: parseOperator :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
 	};
 	
-	static tokenizeRawStringLiteral = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
+	static parsePunctuation = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		if (__char_is_punctuation(currentCharCode)) {
+			var _start_line = line;
+			var _start_column = column;
+		
+			var _punctuation = chr(currentCharCode);
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _punctuation, _punctuation, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parsePunctuation :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseEscapeOperator = function(_inputToken) {
+		var _startCharCode = currentCharCode;
+		if (currentCharCode == ord(@'\')) {
+			var _token = new __GMLC_create_token(__GMLC_TokenType.EscapeOperator, "\\", "\\", line, column);
+			array_push(tokens, _token);
+			return _token;
+		}
+		//show_debug_message($":: parseEscapeOperator :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseIllegal = function(_inputToken) {
 		var _start_line = line;
 		var _start_column = column;
 		
-		__expectUTF8(ord("@")); //consume @
+		var illegalChar = chr(currentCharCode);
+		var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : invalid token \"{illegalChar}\"";
+		var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, illegalChar, _error, _start_line, _start_column);
 		
-		var _start_quote = currentCharCode;
-		
-		__nextUTF8(); // consume starting quote
-		
-		var _raw_string = "@"+chr(_start_quote);//add the starting quote
-		var _string = __fetchAllUntil(_start_quote);
-		_raw_string += _string+chr(currentCharCode) // add the closing quote
-		__expectUTF8(_start_quote); // consume ending quote
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
+		array_push(tokens, _token);
+		throw_gmlc_error(_error)
 		return _token;
 	};
+	
+	array_push(parserSteps, parseSkipWhitespace);
+	array_push(parserSteps, parseCommentLine);
+	array_push(parserSteps, parseCommentBlock);
+	array_push(parserSteps, parseStringLiteral);
+	array_push(parserSteps, parseHexNumbers);
+	array_push(parserSteps, parseStringTemplate);
+	array_push(parserSteps, parseBinaryNumber);
+	array_push(parserSteps, parseNumber);
+	array_push(parserSteps, parseIdentifier);
+	array_push(parserSteps, parseRawStringLiteral);
+	array_push(parserSteps, parseOperator);
+	array_push(parserSteps, parsePunctuation);
+	array_push(parserSteps, parseEscapeOperator);
+	array_push(parserSteps, parseIllegal);
+	
+	#endregion
+	
+	
+	#region Util
 	
 	static tokenizeTemplateString = function(_suffix=false) {
 		// _suffix is used to state that we are attempting to close an already open template string
 		
-		var _char = currentCharCode;
 		var _start_pos = charPos;
 		var _start_line = line;
 		var _start_column = column;
@@ -1015,50 +1144,66 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 				case ord(@'\'): {
 					__nextUTF8();
 					switch (currentCharCode) {
-						case ord(@'{'): { // \\
-							_char = "{";
-							//__nextUTF8();
-						break;}
 						case ord(@'\'): { // \\
 							_char = "\\";
-							//__nextUTF8();
 						break;}
 						case ord(@'"'): { // \"
 							_char = "\"";
-							//__nextUTF8();
 						break;}
 						case ord(@'n'): { // \n
 							_char = "\n";
-							//__nextUTF8();
 						break;}
 						case ord(@'r'): { // \r
 							_char = "\r";
-							//__nextUTF8();
 						break;}
 						case ord(@'t'): { // \t
 							_char = "\t";
-							//__nextUTF8();
 						break;}
 						case ord(@'f'): { // \f
 							_char = "\f";
-							//__nextUTF8();
 						break;}
 						case ord(@'v'): { // \v
 							_char = "\v";
-							//__nextUTF8();
 						break;}
 						case ord(@'b'): { // \b
 							_char = "\b";
-							//__nextUTF8();
 						break;}
 						case ord(@'0'): { // \0
 							_char = "\0";
-							//__nextUTF8();
-							if (currentCharCode == ord("0") && __peekUTF8() == ord("0")) { // \000
+							if (__peekUTF8() == ord("0") && __peekUTF8(1) == ord("0")) { // \000
 								__nextUTF8();
 								__nextUTF8();
 								_char = "\000"
 							}
+						break;}
+						case ord(@'u'): { // \uFFFFF
+							_char = "0x";
+							if (__char_is_hex(__peekUTF8() ?? 0)) {
+								__nextUTF8();
+									
+								var _len = 0;
+								while (currentCharCode != undefined)
+								&& (__char_is_hex(currentCharCode))
+								&& (currentCharCode != "_")
+								&& (_len <= 5)
+								{
+									_len += 1;
+									_char += chr(currentCharCode);
+										
+									//if the next char is not hex back out
+									var _nextToken = __peekUTF8();
+									if (!__char_is_hex(_nextToken)) 
+									|| (_nextToken == "_")
+									{
+										break;
+									}
+										
+									__nextUTF8();
+								}
+							}
+								
+							_char = chr(real(_char))
+							
 						break;}
 						default: {
 							_char = "";
@@ -1095,9 +1240,10 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 			_raw_string += _char;
 			_string += _char;
 			
-			__nextUTF8();
 			
 			if (_string_closed || _should_break) break;
+			
+			__nextUTF8();
 		}
 		
 		
@@ -1122,78 +1268,21 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return _token;
 	};
 	
-	static tokenizeCommentLine = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		__expectUTF8(ord("/")); //consume first /
-		__expectUTF8(ord("/")); //consume second /
-		var _raw_string = "//";
-		//var _string = "";
-		while (currentCharCode != undefined && currentCharCode != ord("\n") && currentCharCode != ord("\r")) {
-			_raw_string += chr(currentCharCode);
-			//_string += chr(currentCharCode);
-			__nextUTF8();
-		}
-		
-		//if (currentCharCode != undefined) {
-		//	__expectUTF8(ord("\n")); //consume \n
-		//}
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
-		
-		return _token;
-	};
-	
-	static tokenizeCommentBlock = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		__expectUTF8(ord("/")); //consume /
-		__expectUTF8(ord("*")); //consume *
-		var _raw_string = "/*";
-		//var _string = "";
-		
-		while (currentCharCode != undefined && !(currentCharCode == ord("*") && __peekUTF8() == ord("/"))) {
-			_raw_string += chr(currentCharCode);
-			//_string += chr(currentCharCode);
-			__nextUTF8();
-		}
-		
-		__expectUTF8(ord("*")); //consume *
-		__expectUTF8(ord("/")); //consume /
-		
-		_raw_string += "*/";
-		
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
-		return _token;
-	};
-	
-	static tokenizeIllegal = function() {
-		var _char = currentCharCode;
-		var _start_pos = charPos;
-		var _start_line = line;
-		var _start_column = column;
-		
-		var illegalChar = chr(currentCharCode);
-		var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : invalid token {illegalChar}";
-		var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, illegalChar, _error, _start_line, _start_column);
-		__nextUTF8();
-		return _token;
-	};
-	
 	#endregion
 	
 }
-#region Buffer Accessors
 
+#endregion
+
+
+
+#region Util
+#region Buffer Accessors
+/// @ignore
 function __nextUTF8() {
 	gml_pragma("forceinline");
 	if (charPos >= sourceCodeCharLength) {
+		finished = true;
 		currentCharCode = undefined
 		return undefined;
 	}
@@ -1205,9 +1294,9 @@ function __nextUTF8() {
 	else {
 		column += 1;
 	}
-		
+	
 	var _character = buffer_read(sourceCodeBuffer, buffer_u8);
-		
+	
 	//Basic Latin
 	if ((_character & 0x80) == 0x00) {
 		bytePos += 1;
@@ -1234,12 +1323,12 @@ function __nextUTF8() {
 		bytePos += 1;
 		currentCharCode = _character;
 	}
-		
+	
 	charPos += 1;
-		
+	
 	return currentCharCode;
 }
-	
+/// @ignore
 function __peekUTF8(_look_ahead=1) {
 	gml_pragma("forceinline");
 	if (charPos > sourceCodeCharLength-1) return undefined;
@@ -1249,6 +1338,7 @@ function __peekUTF8(_look_ahead=1) {
 	var _prev_bytePos  = bytePos;
 	var _prev_line     = line;
 	var _prev_column   = column;
+	var _prev_finished = finished;
 		
 	repeat(_look_ahead) {
 		__nextUTF8();
@@ -1262,10 +1352,11 @@ function __peekUTF8(_look_ahead=1) {
 	bytePos = _prev_bytePos;
 	line = _prev_line;
 	column = _prev_column;
-		
+	finished = _prev_finished;
+	
 	return _nextCharCode;
 }
-	
+/// @ignore
 function __expectUTF8(_ord) {
 	gml_pragma("forceinline");
 	if is_string(_ord) {
@@ -1278,7 +1369,7 @@ function __expectUTF8(_ord) {
 		
 	__nextUTF8();
 }
-	
+/// @ignore
 function __optionalUTF8(_ord) {
 	gml_pragma("forceinline");
 	if is_string(_ord) {
@@ -1310,7 +1401,7 @@ function __optionalUTF8(_ord) {
 	buffer_seek(sourceCodeBuffer, buffer_seek_start, bytePos);
 	return (_charCode == _ord);
 }
-	
+/// @ignore
 function __fetchAllUntil(_ord) {
 	gml_pragma("forceinline");
 	if (charPos >= sourceCodeCharLength) {
@@ -1364,7 +1455,7 @@ function __fetchAllUntil(_ord) {
 		
 	return _string;
 }
-
+/// @ignore
 function __fetchAllUntilExt(_arr_of_ords) {
 	gml_pragma("forceinline");
 	if (charPos >= sourceCodeCharLength) {
@@ -1418,11 +1509,8 @@ function __fetchAllUntilExt(_arr_of_ords) {
 		
 	return _string;
 }
-	
-#endregion
-#endregion
 
-
+#endregion
 #region Helper Functions
 /// @ignore
 function __char_is_digit(char) {
@@ -1497,3 +1585,33 @@ function __char_is_whitespace(char) {
 }
 
 #endregion
+#region Constructors
+/// @ignore
+function __GMLC_ProgramTokens(_tokens) constructor {
+	GlobalVar = {};
+	MacroVar  = {};
+	EnumVar   = {};
+	GlobalVarNames = [];
+	MacroVarNames  = [];
+	EnumVarNames   = {}; //structure is {HEADER1: [TAIL1, TAIL2, TAIL3], HEADER2: [TAIL1, TAIL2, TAIL3]}
+	LocalVarNames  = [];
+	
+	tokens = _tokens;
+}
+/// @ignore
+function __GMLC_create_token(_type, _name, _value, _line, _column, _lineString = other.sourceCodeLineArray[_line-1]) constructor {
+	type   = _type;
+	name   = _name;
+	value  = _value;
+	line   = _line;
+	column = _column;
+	lineString = _lineString;
+		
+	static toString = function() {
+		return $"\{type: \"{type}\", name: \"{name}\", value: \"{value}\", line: {line}, column: {column}, lineString: {lineString}\}"
+	}
+};
+#endregion
+#endregion
+
+

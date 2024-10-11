@@ -2,8 +2,8 @@
   "FolderOrderSettings":[
     {"name":"GMLCompiler","order":7,"path":"folders/GMLCompiler.yy",},
     {"name":"__Final","order":8,"path":"folders/GMLCompiler/__Final.yy",},
-    {"name":"Parsers","order":5,"path":"folders/GMLCompiler/__Final/Parsers.yy",},
     {"name":"Internal","order":1,"path":"folders/GMLCompiler/__Final/Internal.yy",},
+    {"name":"Parsers","order":5,"path":"folders/GMLCompiler/__Final/Parsers.yy",},
     {"name":"group1","order":1,"path":"folders/GMLCompiler/group1.yy",},
     {"name":"xUnit","order":8,"path":"folders/xUnit.yy",},
     {"name":"Modules","order":1,"path":"folders/xUnit/Modules.yy",},

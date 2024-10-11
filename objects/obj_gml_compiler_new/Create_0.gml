@@ -1,3 +1,4 @@
+
 //t = 0
 //var _i=1; repeat(1024) {
 //    str = "function __gmlc_execute_block_"+string_replace_all(string_format(_i, 4, 0), " ", "0")+"__() {"
@@ -38,7 +39,7 @@ function __compare_results(desc, result, expected) {
 	else if (is_struct(expected)) && (!__struct_equals(result, expected)) {
 		log($"!!!   Struct Value Mismatch   !!!")
 		log($"expected != result")
-		log($"{expected} != {result}")
+		log("Expected :: " + json_stringify(expected, true));
 		log("Got :: " + json_stringify(result, true));
 		return false;
 	}
@@ -75,7 +76,7 @@ function __string_token_arr(_arr) {
 	
 	return _str;
 }
-function __struct_equals(_recieved, _expected) {
+function __struct_equals(_recieved, _expected, _depth=1) {
 	if (_recieved == undefined) return false;
 	
 	var _names = struct_get_names(_expected);
@@ -84,32 +85,32 @@ function __struct_equals(_recieved, _expected) {
 		var _expected_value = _expected[$ _name];
 		
 		if !struct_exists(_recieved, _name) {
-			log($"Recieved struct is missing the expected key {_name}")
+			log($"{string_repeat("\t", _depth)}Recieved struct is missing the expected key {_name}")
 		}
 		
 		if (typeof(_expected_value) != typeof(_recieved[$ _name])) {
-			log($"Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
-			log($"Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
-			log($"Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
+			log($"{string_repeat("\t", _depth)}Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
+			log($"{string_repeat("\t", _depth)}Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
+			log($"{string_repeat("\t", _depth)}Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
-				if !__struct_equals(_recieved[$ _name], _expected_value) {
-					log($"Recieved structs child struct is mismatched with the expected key {_name}")
+				if !__struct_equals(_recieved[$ _name], _expected_value, _depth+1) {
+					log($"{string_repeat("\t", _depth)}Recieved structs child struct is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			case "array":{
-				if !__array_equals(_recieved[$ _name], _expected_value) {
-					log($"Recieved structs child array is mismatched with the expected key {_name}")
+				if !__array_equals(_recieved[$ _name], _expected_value, _depth+1) {
+					log($"{string_repeat("\t", _depth)}Recieved structs child array is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[$ _name] != _expected_value) {
-					log($"Recieved structs key is mismatched with the expected key {_name}")
-					log($"Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
+					log($"{string_repeat("\t", _depth)}Recieved structs key is mismatched with the expected key {_name}")
+					log($"{string_repeat("\t", _depth)}Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -118,7 +119,7 @@ function __struct_equals(_recieved, _expected) {
 	
 	return true;
 }
-function __array_equals(_recieved, _expected) {
+function __array_equals(_recieved, _expected, _depth=1) {
 	if (_recieved == undefined) return false;
 	
 	if (array_length(_recieved) != array_length(_expected)) {
@@ -131,27 +132,27 @@ function __array_equals(_recieved, _expected) {
 		var _expected_value = _expected[_i];
 		
 		if (typeof(_expected_value) != typeof(_recieved[_i])) {
-			log($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
-			log($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
+			log($"{string_repeat("\t", _depth)}Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+			log($"{string_repeat("\t", _depth)}Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
-				if !__struct_equals(_recieved[_i], _expected_value) {
-					log($"Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
+				if !__struct_equals(_recieved[_i], _expected_value, _depth+1) {
+					log($"{string_repeat("\t", _depth)}Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
 					return false;
 				}
 			break;}
 			case "array":{
-				if !__array_equals(_recieved[_i], _expected_value) {
-					log($"Recieved arrays child array is mismatched with the expected indexs value {_i}")
+				if !__array_equals(_recieved[_i], _expected_value, _depth+1) {
+					log($"{string_repeat("\t", _depth)}Recieved arrays child array is mismatched with the expected indexs value {_i}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[_i] != _expected_value) {
-					log($"Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
-					log($"Recieved ({_recieved[_i]})\nExpected {_expected_value}")
+					log($"{string_repeat("\t", _depth)}Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+					log($"{string_repeat("\t", _depth)}Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -161,10 +162,1379 @@ function __array_equals(_recieved, _expected) {
 	return true;
 }
 
+#region Tokenizer Tests
+function run_tokenize_test(description, input, expected) {
+	log($"Attempting Tokenizer Test :: {description}")
+	
+	var tokenizer = new GML_Tokenizer();
+	tokenizer.initialize(input);
+	var program = tokenizer.parseAll();
+	
+	__compare_results(description, program, expected);
+}
+function run_all_tokenize_test() {
+log("~~~~~ Tokenizer Unit Tests ~~~~~\n")
+
+#region Whitespace handling remains unchanged as there are no tokens expected
+run_tokenize_test("Test whitespace handling", "    ",
+{
+  tokens:[
+  ],
+});
+run_tokenize_test("Test whitespace varients", "   \t\n", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Whitespace,
+      name:"\n",
+      line:1.0,
+      column:5.0,
+      value:"\n"
+    }
+  ],
+});
+#endregion
+#region Test cases for number tokenization
+run_tokenize_test("Test number tokenization", "123 456.789 01234", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"123",
+      line:1.0,
+      column:1.0,
+      value:123.0
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"456.789",
+      line:1.0,
+      column:5.0,
+      value:456.78899999999999
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"01234",
+      line:1.0,
+      column:13.0,
+      value:1234.0
+    }
+  ],
+});
+
+// Test case for floating point edge cases
+run_tokenize_test("Test floating point edge cases", ".5 5.", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:".5",
+      line:1.0,
+      column:1.0,
+      value:0.5
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"5.",
+      line:1.0,
+      column:4.0,
+      value:5.0
+    }
+  ],
+});
+
+run_tokenize_test("Test tokenize_number", "123 4.56 7_890", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"123",
+      line:1.0,
+      column:1.0,
+      value:123.0
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"4.56",
+      line:1.0,
+      column:5.0,
+      value:4.56
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"7_890",
+      line:1.0,
+      column:10.0,
+      value:7890.0
+    }
+  ],
+});
+
+#endregion
+#region Test cases for identifiers and keywords
+run_tokenize_test("Test identifiers and keywords", "function varName if else", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"function",
+      line:1.0,
+      column:1.0,
+      value:"function"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"varName",
+      line:1.0,
+      column:10.0,
+      value:"varName"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"if",
+      line:1.0,
+      column:18.0,
+      value:"if"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"else",
+      line:1.0,
+      column:21.0,
+      value:"else"
+    }
+  ],
+});
+
+run_tokenize_test("Test tokenize_identifier", "variableName _with_underscore CamelCase123 function globalvar region if(){}else{}", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"variableName",
+      line:1.0,
+      column:1.0,
+      value:"variableName"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"_with_underscore",
+      line:1.0,
+      column:14.0,
+      value:"_with_underscore"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"CamelCase123",
+      line:1.0,
+      column:31.0,
+      value:"CamelCase123"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"function",
+      line:1.0,
+      column:44.0,
+      value:"function"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"globalvar",
+      line:1.0,
+      column:53.0,
+      value:"globalvar"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"region",
+      line:1.0,
+      column:63.0,
+      value:"region"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"if",
+      line:1.0,
+      column:70.0,
+      value:"if"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"(",
+      line:1.0,
+      column:72.0,
+      value:"("
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:")",
+      line:1.0,
+      column:73.0,
+      value:")"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"{",
+      line:1.0,
+      column:74.0,
+      value:"{"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"}",
+      line:1.0,
+      column:75.0,
+      value:"}"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"else",
+      line:1.0,
+      column:76.0,
+      value:"else"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"{",
+      line:1.0,
+      column:80.0,
+      value:"{"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"}",
+      line:1.0,
+      column:81.0,
+      value:"}"
+    }
+  ],
+});
+
+#endregion
+#region Test cases for operator tokenization
+run_tokenize_test("Test operator tokenization", "+ - * / == != < <= > >= && ||",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"+",
+      line:1.0,
+      column:1.0,
+      value:"+"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"-",
+      line:1.0,
+      column:3.0,
+      value:"-"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"*",
+      line:1.0,
+      column:5.0,
+      value:"*"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"\/",
+      line:1.0,
+      column:7.0,
+      value:"\/"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"==",
+      line:1.0,
+      column:9.0,
+      value:"=="
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"!=",
+      line:1.0,
+      column:12.0,
+      value:"!="
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"<",
+      line:1.0,
+      column:15.0,
+      value:"<"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"<=",
+      line:1.0,
+      column:17.0,
+      value:"<="
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:">",
+      line:1.0,
+      column:20.0,
+      value:">"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:">=",
+      line:1.0,
+      column:22.0,
+      value:">="
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"&&",
+      line:1.0,
+      column:25.0,
+      value:"&&"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"||",
+      line:1.0,
+      column:28.0,
+      value:"||"
+    }
+  ],
+});
+
+run_tokenize_test("Test tokenize_operator", "+ - * / % ??=",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"+",
+      line:1.0,
+      column:1.0,
+      value:"+"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"-",
+      line:1.0,
+      column:3.0,
+      value:"-"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"*",
+      line:1.0,
+      column:5.0,
+      value:"*"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"\/",
+      line:1.0,
+      column:7.0,
+      value:"\/"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"%",
+      line:1.0,
+      column:9.0,
+      value:"mod"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"??=",
+      line:1.0,
+      column:11.0,
+      value:"??="
+    }
+  ],
+});
+// Test case for chained operators
+run_tokenize_test("Test chained operators", "+++", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"++",
+      line:1.0,
+      column:1.0,
+      value:"++"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"+",
+      line:1.0,
+      column:3.0,
+      value:"+"
+    }
+  ],
+});
+
+#endregion
+#region Test cases for string literal tokenization
+run_tokenize_test("Test string literal tokenization", @'"Hello, World!" "Another\"String"', 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"Hello, World!\"",
+      line:1.0,
+      column:1.0,
+      value:"Hello, World!"
+    },
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"Another\"String\"",
+      line:1.0,
+      column:17.0,
+      value:"Another\"String"
+    }
+  ],
+});
+run_tokenize_test("Test empty string literal tokenization", "\"\"", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"\"",
+      line:1.0,
+      column:1.0,
+      value:""
+    }
+  ],
+});
+// Test case for escape characters in strings
+run_tokenize_test("Test escape sequences in strings", "\"Line\\nBreak\"", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"Line\nBreak\"",
+      line:1.0,
+      column:1.0,
+      value:"Line\nBreak"
+    }
+  ],
+});
+run_tokenize_test("Test tokenize_string_literal", "\"This is a stringLiteral\" \"\\tThis is a stringLiteral\\nWith line breaks\"", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"This is a stringLiteral\"",
+      line:1.0,
+      column:1.0,
+      value:"This is a stringLiteral"
+    },
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"\tThis is a stringLiteral\nWith line breaks\"",
+      line:1.0,
+      column:27.0,
+      value:"\tThis is a stringLiteral\nWith line breaks"
+    }
+  ],
+});
+
+#endregion
+#region Test cases for raw string literal tokenization
+run_tokenize_test("Test Raw string literal tokenization", @'"This is a test of the system"', 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.String,
+      name:@'"This is a test of the system"',
+      line:1.0,
+      column:1.0,
+      value:"This is a test of the system"
+    }
+  ],
+});
+
+//run_tokenize_test("Test tokenize_raw_string_literals",
+//"\"This is a stringLiteral\\nwith a line break\" @'This is a second rawStringLiteral'", 
+//{
+//  tokens:[
+//    {
+//      column:1.0,
+//      type: __GMLC_TokenType.String,
+//      name:"\"This is a stringLiteral\\nwith a line break\"",
+//      line:1.0,
+//      value:"This is a stringLiteral\nwith a line break"
+//    },
+//    {
+//      column:45.0,
+//      type: __GMLC_TokenType.String,
+//      name:"@'This is a second rawStringLiteral\nwith a line break'",
+//      line:1.0,
+//      value:"This is a second rawStringLiteral\nwith a line break"
+//    }
+//  ],
+//});
+
+#endregion
+#region Test cases for line comment tokenization
+run_tokenize_test("Test line comment tokenization", "// This is a comment\n// Another line", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/\/ This is a comment",
+      line:1.0,
+      column:1.0,
+      value:"\/\/ This is a comment"
+    },
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/\/ Another line",
+      line:2.0,
+      column:1.0,
+      value:"\/\/ Another line"
+    }
+  ],
+});
+#endregion
+#region Test cases for block comment tokenization
+run_tokenize_test("Test block comment tokenization", "/* Block comment */ int x = 5;", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/* Block comment *\/",
+      line:1.0,
+      column:1.0,
+      value:"\/* Block comment *\/"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"int",
+      line:1.0,
+      column:21.0,
+      value:"int"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"x",
+      line:1.0,
+      column:25.0,
+      value:"x"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"=",
+      line:1.0,
+      column:27.0,
+      value:"="
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"5",
+      line:1.0,
+      column:29.0,
+      value:5.0
+    },
+    {
+      column:30.0,
+      type: __GMLC_TokenType.Punctuation,
+      name:";",
+      line:1.0,
+      value:";"
+    }
+  ],
+});
+// Test case for nested block comments
+run_tokenize_test("Test nested block comments", "/* Comment */ Nested /* End */", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/* Comment *\/",
+      line:1.0,
+      column:1.0,
+      value:"\/* Comment *\/"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"Nested",
+      line:1.0,
+      column:15.0,
+      value:"Nested"
+    },
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/* End *\/",
+      line:1.0,
+      column:22.0,
+      value:"\/* End *\/"
+    }
+  ],
+});
+run_tokenize_test("Test tokenize_comment_line and block", @'// This is the comment
+/*This is the comment
+on
+multiple lines*/
+var b = 2;',
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/\/ This is the comment",
+      line:1.0,
+      column:1.0,
+      value:"\/\/ This is the comment"
+    },
+    {
+      type: __GMLC_TokenType.Whitespace,
+      name:"\n",
+      line:1.0,
+      column:24.0,
+      value:"\n"
+    },
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/*This is the comment\r\non\r\nmultiple lines*\/",
+      line:2.0,
+      column:1.0,
+      value:"\/*This is the comment\r\non\r\nmultiple lines*\/"
+    },
+    {
+      type: __GMLC_TokenType.Whitespace,
+      name:"\n",
+      line:4.0,
+      column:18.0,
+      value:"\n"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"var",
+      line:5.0,
+      column:1.0,
+      value:"var"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"b",
+      line:5.0,
+      column:5.0,
+      value:"b"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"=",
+      line:5.0,
+      column:7.0,
+      value:"="
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"2",
+      line:5.0,
+      column:9.0,
+      value:2.0
+    },
+    {
+      column:10.0,
+      type: __GMLC_TokenType.Punctuation,
+      name:";",
+      line:5.0,
+      lineString:"var b = 2;",
+      value:";"
+    }
+  ],
+});
+
+#endregion
+#region Test cases for mixed content
+run_tokenize_test("Test mixed content", @'var x = 100; // variable declaration
+function test() { return x; }',
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"var",
+      line:1.0,
+      column:1.0,
+      value:"var"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"x",
+      line:1.0,
+      column:5.0,
+      value:"x"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"=",
+      line:1.0,
+      column:7.0,
+      value:"="
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"100",
+      line:1.0,
+      column:9.0,
+      value:100.0
+    },
+    {
+      column:12.0,
+      type: __GMLC_TokenType.Punctuation,
+      name:";",
+      line:1.0,
+      value:";"
+    },
+    {
+      type: __GMLC_TokenType.Comment,
+      name:"\/\/ variable declaration",
+      line:1.0,
+      column:14.0,
+      value:"\/\/ variable declaration"
+    },
+    {
+      type: __GMLC_TokenType.Whitespace,
+      name:"\n",
+      line:1.0,
+      column:38.0,
+      value:"\n"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"function",
+      line:2.0,
+      column:1.0,
+      value:"function"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"test",
+      line:2.0,
+      column:10.0,
+      value:"test"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"(",
+      line:2.0,
+      column:14.0,
+      value:"("
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:")",
+      line:2.0,
+      column:15.0,
+      value:")"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"{",
+      line:2.0,
+      column:17.0,
+      value:"{"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"return",
+      line:2.0,
+      column:19.0,
+      value:"return"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"x",
+      line:2.0,
+      column:26.0,
+      value:"x"
+    },
+	{
+      column:27.0,
+      type: __GMLC_TokenType.Punctuation,
+      name:";",
+      line:2.0,
+      value:";"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"}",
+      line:2.0,
+      column:29.0,
+      value:"}"
+    }
+  ],
+});
+#endregion
+#region Test case for simple hexadecimal number tokenization
+run_tokenize_test("Test hexadecimal number tokenization", "$FFFFFFFF", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"$FFFFFFFF",
+      line:1.0,
+      column:1.0,
+      value:4294967295.0
+    }
+  ],
+});
+#endregion
+#region Test case for mixed tokens involving a hexadecimal number
+run_tokenize_test("Test hexadecimal number mixed tokens", "$Fg=1", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"$F",
+      line:1.0,
+      column:1.0,
+      value:15.0
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"g",
+      line:1.0,
+      column:3.0,
+      value:"g"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"=",
+      line:1.0,
+      column:4.0,
+      value:"="
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"1",
+      line:1.0,
+      column:5.0,
+      value:1.0
+    }
+  ],
+});
+#endregion
+#region Test case for a long hexadecimal number tokenization
+run_tokenize_test("Test hexadecimal number <number> tokenization", "0xF", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0xF",
+      line:1.0,
+      column:1.0,
+      value:15.0
+    }
+  ],
+});
+run_tokenize_test("Test hexadecimal number <number> tokenization", "0xFFFFFFF", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0xFFFFFFF",
+      line:1.0,
+      column:1.0,
+      value:268435455.0
+    }
+  ],
+});
+run_tokenize_test("Test hexadecimal number <int64> tokenization", "$FFFFFFFF",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"$FFFFFFFF",
+      line:1.0,
+      column:1.0,
+      value:$FFFFFFFF
+    }
+  ],
+});
+run_tokenize_test("Test hexadecimal number <int64> tokenization", "0xFFFFFFFFFFFFFFF", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0xFFFFFFFFFFFFFFF",
+      line:1.0,
+      column:1.0,
+      value:0xFFFFFFFFFFFFFFF
+    }
+  ],
+});
+#endregion
+#region Test case for simple binary number tokenization
+run_tokenize_test("Test binary number <number> tokenization", "0b1",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0b1",
+      line:1.0,
+      column:1.0,
+      value:1.0
+    }
+  ],
+});
+run_tokenize_test("Test binary number <number> tokenization", "0b1111111111111111111111111111111", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0b1111111111111111111111111111111",
+      line:1.0,
+      column:1.0,
+      value:2147483647.0
+    }
+  ],
+});
+run_tokenize_test("Test binary number <int64> tokenization", "0b11111111111111111111111111111111", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0b11111111111111111111111111111111",
+      line:1.0,
+      column:1.0,
+      value:0b11111111111111111111111111111111
+    }
+  ],
+});
+run_tokenize_test("Test binary number <int64> tokenization", "0b11111111111111111111111111111111111111111111111111111111111111", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0b11111111111111111111111111111111111111111111111111111111111111",
+      line:1.0,
+      column:1.0,
+      value:0b11111111111111111111111111111111111111111111111111111111111111
+    }
+  ],
+});
+#endregion
+#region Test case for binary number tokenization with mixed tokens
+run_tokenize_test("Test binary number tokenization", "0b1111a=2", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"0b1111",
+      line:1.0,
+      column:1.0,
+      value:15.0
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"a",
+      line:1.0,
+      column:7.0,
+      value:"a"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"=",
+      line:1.0,
+      column:8.0,
+      value:"="
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"2",
+      line:1.0,
+      column:9.0,
+      value:2.0
+    }
+  ],
+});
+#endregion
+#region Test case for recognizing a function identifier token
+run_tokenize_test("Test Function Identifier tokenization", "animcurve_get_channel", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Function,
+      name:"animcurve_get_channel",
+      line:1.0,
+      column:1.0,
+      value: real(animcurve_get_channel)
+    }
+  ],
+});
+#endregion
+#region Test case for recognizing a constant identifier token
+run_tokenize_test("Test Constant Identifier tokenization", "c_red", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Number,
+      name:"c_red",
+      line:1.0,
+      column:1.0,
+      value:255.0
+    }
+  ],
+});
+#endregion
+#region Test case for simple macro definition
+run_tokenize_test("Test simple macro tokenization", "#macro TOTAL_WEAPONS 10", 
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"#",
+      line:1.0,
+      column:1.0,
+      value:"#"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"macro",
+      line:1.0,
+      column:2.0,
+      value:"macro"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"TOTAL_WEAPONS",
+      line:1.0,
+      column:8.0,
+      value:"TOTAL_WEAPONS"
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"10",
+      line:1.0,
+      column:22.0,
+      value:10.0
+    }
+  ],
+});
+#endregion
+#region Test case for macro with a complex expression
+run_tokenize_test("Test macro with expression tokenization", "#macro COL make_colour_hsv(irandom(255), 255, 255)",{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"#",
+      line:1.0,
+      column:1.0,
+      value:"#"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"macro",
+      line:1.0,
+      column:2.0,
+      value:"macro"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"COL",
+      line:1.0,
+      column:8.0,
+      value:"COL"
+    },
+    {
+      type: __GMLC_TokenType.Function,
+      name:"make_colour_hsv",
+      line:1.0,
+      column:12.0,
+      value:402.0
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"(",
+      line:1.0,
+      column:27.0,
+      value:"("
+    },
+    {
+      type: __GMLC_TokenType.Function,
+      name:"irandom",
+      line:1.0,
+      column:28.0,
+      value:219.0
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"(",
+      line:1.0,
+      column:35.0,
+      value:"("
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"255",
+      line:1.0,
+      column:36.0,
+      value:255.0
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:")",
+      line:1.0,
+      column:39.0,
+      value:")"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:",",
+      line:1.0,
+      column:40.0,
+      value:","
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"255",
+      line:1.0,
+      column:42.0,
+      value:255.0
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:",",
+      line:1.0,
+      column:45.0,
+      value:","
+    },
+    {
+      type: __GMLC_TokenType.Number,
+      name:"255",
+      line:1.0,
+      column:47.0,
+      value:255.0
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:")",
+      line:1.0,
+      column:50.0,
+      value:")"
+    }
+  ],
+});
+#endregion
+#region Test case for multi-line macro definition
+run_tokenize_test("Test multi-line macro tokenization", @'#macro HELLO show_debug_message("Hello" + \
+string(player_name) + \
+", how are you today?")',
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"#",
+      line:1.0,
+      column:1.0,
+      value:"#"
+    },
+    {
+      type: __GMLC_TokenType.Keyword,
+      name:"macro",
+      line:1.0,
+      column:2.0,
+      value:"macro"
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"HELLO",
+      line:1.0,
+      column:8.0,
+      value:"HELLO"
+    },
+    {
+      type: __GMLC_TokenType.Function,
+      name:"show_debug_message",
+      line:1.0,
+      column:14.0,
+      value: real(show_debug_message)
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"(",
+      line:1.0,
+      column:32.0,
+      value:"("
+    },
+    {
+      type: __GMLC_TokenType.String,
+      name:"\"Hello\"",
+      line:1.0,
+      column:33.0,
+      value:"Hello"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"+",
+      line:1.0,
+      column:41.0,
+      value:"+"
+    },
+    {
+      type: __GMLC_TokenType.EscapeOperator,
+      name:"\\",
+      line:1.0,
+      column:43.0,
+      value:"\\"
+    },
+    {
+      type: __GMLC_TokenType.Whitespace,
+      name:"\n",
+      line:1.0,
+      column:45.0,
+      value:"\n"
+    },
+    {
+      type: __GMLC_TokenType.Function,
+      name:"string",
+      line:2.0,
+      column:1.0,
+      value: real(string)
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:"(",
+      line:2.0,
+      column:7.0,
+      value:"("
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"player_name",
+      line:2.0,
+      column:8.0,
+      value:"player_name"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:")",
+      line:2.0,
+      column:19.0,
+      value:")"
+    },
+    {
+      type: __GMLC_TokenType.Operator,
+      name:"+",
+      line:2.0,
+      column:21.0,
+      value:"+"
+    },
+    {
+      type: __GMLC_TokenType.EscapeOperator,
+      name:"\\",
+      line:2.0,
+      column:23.0,
+      value:"\\"
+    },
+    {
+      type: __GMLC_TokenType.Whitespace,
+      name:"\n",
+      line:2.0,
+      column:25.0,
+      value:"\n"
+    },
+    {
+      type: __GMLC_TokenType.String,
+      name:"\", how are you today?\"",
+      line:3.0,
+      column:1.0,
+      value:", how are you today?"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:")",
+      line:3.0,
+      column:23.0,
+      value:")"
+    }
+  ],
+});
+#endregion
+#region Test case for using an enum identifier
+run_tokenize_test("Test Enum Identifier tokenization", "AudioLFOType.Triangle",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"AudioLFOType",
+      line:1.0,
+      column:1.0,
+      value:"AudioLFOType"
+    },
+    {
+      type: __GMLC_TokenType.Punctuation,
+      name:".",
+      line:1.0,
+      column:13.0,
+      value:"."
+    },
+    {
+      type: __GMLC_TokenType.Identifier,
+      name:"Triangle",
+      line:1.0,
+      column:14.0,
+      value:"Triangle"
+    }
+  ],
+});
+#endregion
+#region Test case for a complex template string with expressions embedded
+//run_tokenize_test("Test String Template tokenization", "$\"This is a {variable} with an expression {funcCall()} included\"", [
+//	{type: "TemplateString", name:"$\"This is a {variable} with an expression {funcCall()} included\"", value: [
+//		{type: "TemplateLiteral", value: "This is a ", line: 1, column: 3},
+//		{type: "TemplateExpression", value: "variable", line: 1, column: 15},
+//		{type: "TemplateLiteral", value: " with an expression ", line: 1, column: 25},
+//		{type: "TemplateExpression", value: "funcCall()", line: 1, column: 45},
+//		{type: "TemplateLiteral", value: " included", line: 1, column: 57}
+//	], line: 1, column: 1}
+//]);
+#endregion
+#region Test case for Illegal
+// Test case for Unicode characters in identifiers
+run_tokenize_test("Test Unicode identifiers", "变量",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Illegal,
+      name:"变",
+      line:1.0,
+      column:1.0,
+      value:"Object: {<OBJ>} Event: {<EVENT>} at line 1 : invalid token 变"
+    },
+    {
+      type: __GMLC_TokenType.Illegal,
+      name:"量",
+      line:1.0,
+      column:2.0,
+      value:"Object: {<OBJ>} Event: {<EVENT>} at line 1 : invalid token 量"
+    }
+  ],
+});
+// Test case for incomplete tokens
+run_tokenize_test("Test incomplete tokens", "\"Hello 0x /*",
+{
+  tokens:[
+    {
+      type: __GMLC_TokenType.Illegal,
+      name:"\"Hello 0x \/*",
+      line:1.0,
+      column:1.0,
+      value:"Object: {<OBJ>} Event: {<EVENT>} at line 1 : Error parsing string literal - found newline within string"
+    }
+  ],
+});
+#endregion
+
+log("\n\n\n")
+}
+//run_all_tokenize_test();
+#endregion
+
+
 log("\n\n\n")
 
 #region Interpreter Unit Tests
-function run_interpreter_test(description, input, expectedModule=undefined, expectedReturn=undefined) {
+function run_interpreter_test(description, input, expectedReturn=undefined) {
 	log($"Attempting Interpreter Test :: {description}")
 	
 	var tokenizer = new GML_Tokenizer();
@@ -225,49 +1595,75 @@ var _s = get_timer()
 //	return bar()
 //}
 //);
-run_interpreter_test("Boop",
+run_interpreter_test("Parenting Constructors inherited arguments and Static structs",
 @'
-	var __a = 1
+function a(arg0) constructor {
+	static overwrite = "A Overwrite"
+	static aStatic = "This is A`s Static"
+	aInstance = "This is A`s Instance"
+	argumentChain = arg0;
+	localChain = 0;
+}
+function b(arg0) : a(arg0+1) constructor {
+	static overwrite = "B Overwrite"
+	static bStatic = "This is B`s Static"
+	bInstance = "This is B`s Instance"
+	localChain++;
+}
+function c(arg0) : b(arg0+1) constructor {
+	static overwrite = "C Overwrite"
+	static cStatic = "This is C`s Static"
+	cInstance = "This is C`s Instance"
+	localChain++;
+}
+	
+var _a = new a(1);
+log(_a)
+log(static_get(_a))
+	
+var _b = new b(2);
+log(_b)
+log(static_get(_b))
+	
+var _c = new c(3);
+log(_c)
+log(static_get(_c))
+	
+return string(_c);
 ',
-undefined,
 function(){
 	function a(arg0) constructor {
 		static overwrite = "A Overwrite"
-		static aStatic = "This is A's Static"
-		aInstance = "This is A's Instance"
+		static aStatic = "This is A`s Static"
+		aInstance = "This is A`s Instance"
 		argumentChain = arg0;
 		localChain = 0;
 	}
 	function b(arg0) : a(arg0+1) constructor {
 		static overwrite = "B Overwrite"
-		static bStatic = "This is B's Static"
-		bInstance = "This is B's Instance"
+		static bStatic = "This is B`s Static"
+		bInstance = "This is B`s Instance"
 		localChain++;
 	}
 	function c(arg0) : b(arg0+1) constructor {
 		static overwrite = "C Overwrite"
-		static cStatic = "This is C's Static"
-		cInstance = "This is C's Instance"
+		static cStatic = "This is C`s Static"
+		cInstance = "This is C`s Instance"
 		localChain++;
 	}
 	
-	var _a = new a();
-	log(_a)
+	var _a = new a(1);
 	log(static_get(_a))
 	
-	var _b = new b();
-	log(_b)
+	var _b = new b(2);
 	log(static_get(_b))
 	
-	var _c = new c();
-	log(_c)
+	var _c = new c(3);
 	log(static_get(_c))
 	
 	return string(_c);
 }
 );
-game_end()
-exit;
 
 
 //*
@@ -278,7 +1674,6 @@ var _constructor = function() constructor { }
 var _result = array_create_ext(10, method( { const: _constructor }, function() { return new const(); }));
 assert_array_length(_result, 10, "array_create_ext should create array with correct size (constructor)");
 ',
-undefined,
 function(){
 	var _constructor = function() constructor { }
 	
@@ -294,7 +1689,6 @@ run_interpreter_test("complex expression evaluation",
 y = 4;
 var result = ((x + y) * (x - y)) / 2;
 return result',
-undefined,
 function(){
 	x = 2;
 	y = 4;
@@ -314,7 +1708,6 @@ log(2)
 var test = arr[2];
 log(3)
 return string(arr);',
-undefined,
 function(){
 	var arr = [0, 1, 2];
 	arr[0] = 1;
@@ -332,7 +1725,6 @@ var test = list[| 2];
 var _return = test;
 ds_list_destroy(list);
 return _return;',
-undefined,
 function(){
 	var list = ds_list_create();
 	list[| 0] = 1;
@@ -353,7 +1745,6 @@ var test = grid[# 3, 4];
 var _return = test;
 ds_grid_destroy(grid);
 return _return;',
-undefined,
 function(){
 	var grid = ds_grid_create(5, 5);
 	ds_grid_set_region(grid, 0,0, 4, 4, "example");
@@ -374,7 +1765,6 @@ var test = map[? "two"];
 var _return = test;
 ds_map_destroy(map);
 return _return;',
-undefined,
 function(){
 	var map = ds_map_create();
 	map[? "zero"] = 1;
@@ -392,7 +1782,6 @@ run_interpreter_test("Struct access and modification with error handling",
 struct[$ "zero"] = 1;
 var test = struct[$ "two"];
 return string(struct)',
-undefined,
 function() {
 	var struct = {zero: 0, one: 1, two: 2 };
 	struct[$ "zero"] = 1;
@@ -405,7 +1794,6 @@ run_interpreter_test("Basic Struct hash setting",
 @'var struct = {one: 1};
 struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
 return string(struct)',
-undefined,
 function(){
 	var struct = {one: 1};
 	struct_set_from_hash(struct, variable_get_hash("one"), "oneAgain");
@@ -426,7 +1814,6 @@ var _test2 = struct[$ "two"];
 var _test3 = struct_get(struct, "two");
 var _test4 = struct_get_from_hash(struct, variable_get_hash("two"));
 return string(struct)',
-undefined,
 function(){
 	var two = 2
 	var struct = {one: 1, two};
@@ -451,7 +1838,6 @@ repeat (5) {
 	i++;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	repeat (5) {
@@ -468,7 +1854,6 @@ repeat (10) {
 	if (count == 5) break;
 }
 return count;',
-undefined,
 function(){
 	var count = 0;
 	repeat (10) {
@@ -486,7 +1871,6 @@ repeat (10) {
 	if (sum mod 2 == 0) continue;
 }
 return sum;',
-undefined,
 function(){
 	var sum = 0;
 	repeat (10) {
@@ -507,7 +1891,6 @@ repeat (3) {
 	outer += inner;
 }
 return outer;',
-undefined,
 function(){
 	var outer = 0;
 	repeat (3) {
@@ -526,7 +1909,6 @@ run_interpreter_test("Repeat with Return Inside Loop",
 	return "Exited";
 }
 return "Not Exited";',
-undefined,
 function(){
 	repeat (5) {
 		return "Exited";
@@ -538,7 +1920,6 @@ function(){
 run_interpreter_test("Empty Repeat Loop",
 @'repeat (5) {}
 return "Done";',
-undefined,
 function(){
 	repeat (5) {}
 	return "Done";
@@ -559,7 +1940,6 @@ repeat (10) {
 	}
 }
 return count;',
-undefined,
 function(){
 	var count = 0;
 	repeat (10) {
@@ -583,7 +1963,6 @@ repeat (5) {
 	if (i == 10) break;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	repeat (5) {
@@ -605,7 +1984,6 @@ repeat (10) {
 	if (total == 8) break;
 }
 return total;',
-undefined,
 function(){
 	var total = 0;
 	repeat (10) {
@@ -627,7 +2005,6 @@ repeat (10) {
 	}
 }
 return counter;',
-undefined,
 function(){
 	var flag = true;
 	var counter = 0;
@@ -651,7 +2028,6 @@ repeat (3) {
 	}
 }
 return _depth;',
-undefined,
 function(){
 	var _depth = 0;
 	repeat (3) {
@@ -676,7 +2052,6 @@ try {
 	return error;
 }
 return count;',
-undefined,
 function(){
 	var count = 0;
 	try {
@@ -698,19 +2073,6 @@ run_interpreter_test("Varriable Apply With Postfix",
 @'x=1;
 x++
 return x;',
-{
-  IR:[
-	{ op: ByteOp.LOAD, value:1.0, scope: ScopeType.CONST },
-	{ op: ByteOp.STORE, value:"x", scope: ScopeType.SELF },
-	{ op: ByteOp.LOAD, value:"x", scope: ScopeType.SELF },
-	{ op: ByteOp.DUP },
-	{ op: ByteOp.OPERATOR, operator: OpCode.INC },
-	{ op: ByteOp.STORE, value:"x", scope: ScopeType.SELF },
-	{ op: ByteOp.LOAD, value:"x", scope: ScopeType.SELF },
-	{ op: ByteOp.RETURN },
-	{ op: ByteOp.END }
-  ],
-},
 function(){
 	x=1;
 	x++
@@ -722,19 +2084,6 @@ function(){
 run_interpreter_test("Instance Var Apply", 
 @'y = 1;
 return y',
-{
-  IR:[
-	{ op: ByteOp.LOAD,  value:1.0, scope: ScopeType.CONST },
-	{ op: ByteOp.STORE, value:"y", scope: ScopeType.SELF },
-	{ op: ByteOp.LOAD,  value:"y", scope: ScopeType.SELF },
-	{ op: ByteOp.RETURN },
-	{ op: ByteOp.END }
-  ],
-  GlobalVar:{
-	y:1.0
-  },
-
-},
 function(){
 	y = 1;
 	return y	
@@ -745,7 +2094,6 @@ function(){
 run_interpreter_test("1 + 1;", 
 @'x = 1+1
 return x',
-undefined,
 function(){
 	x = 1+1
 	return x
@@ -757,7 +2105,6 @@ run_interpreter_test("parseAssignmentExpression",
 @'y = 1;
 x = y + 1;
 return x;',
-undefined,
 function(){
 	y = 1;
 	x = y + 1;
@@ -771,7 +2118,6 @@ run_interpreter_test("parseLogicalOrExpression",
 _y = 4,
 _z = _x || _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -786,7 +2132,6 @@ run_interpreter_test("parseLogicalAndExpression",
 _y = 4,
 _z = _x && _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -801,7 +2146,6 @@ run_interpreter_test("parseBitwsieOrExpression",
 _y = 4,
 _z = _x | _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -816,7 +2160,6 @@ run_interpreter_test("parseBitwsieXorExpression",
 _y = 4,
 _z = _x ^ _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -831,7 +2174,6 @@ run_interpreter_test("parseBitwsieAndExpression",
 _y = 4,
 _z = _x & _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -846,7 +2188,6 @@ run_interpreter_test("parseEqualityExpression",
 _y = 4,
 _z = _x == _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -861,7 +2202,6 @@ run_interpreter_test("parseRelationalExpression",
 _y = 4,
 _z = _x < _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -876,7 +2216,6 @@ run_interpreter_test("parseShiftExpression",
 _y = 4,
 _z = _x >> _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -891,7 +2230,6 @@ run_interpreter_test("parseAdditiveExpression",
 _y = 4,
 _z = _x + _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -906,7 +2244,6 @@ run_interpreter_test("parseMultiplicativeExpression",
 _y = 4,
 _z = _x * _y;
 return _z;',
-undefined,
 function(){
 	var _x = 2,
 	_y = 4,
@@ -920,7 +2257,6 @@ run_interpreter_test("parseUnaryExpression",
 @'var _x = 1;
 var _y = !_x;
 return _y',
-undefined,
 function(){
 	var _x = 1;
 	var _y = !_x;
@@ -933,7 +2269,6 @@ run_interpreter_test("parsePostfixExpression",
 @'var _x=0;
 	_x++;
 	return _x++;',
-undefined,
 function(){
 	var _x=0;
 	_x++;
@@ -952,7 +2287,6 @@ f = a++,
 g = a++,
 h = a + b * c - (d & e % f div g)
 return h',
-undefined,
 function(){
 	var a = 1,
 	b = a++,
@@ -972,7 +2306,6 @@ run_interpreter_test("confusingPostfixExpression",
 var _b = 1
 var _c = _a+++_b;
 return _a; //should be 1',
-undefined,
 function(){
 	var _a = 0
 	var _b = 1
@@ -988,7 +2321,6 @@ run_interpreter_test("Array Creation and Direct Assignment",
 @'var arr = [1, 2, 3];
 arr[0] = 10;
 return arr[0];',
-undefined,
 function(){
   var arr = [1, 2, 3];
   arr[0] = 10;
@@ -1002,7 +2334,6 @@ run_interpreter_test("Array Modification Through Function",
 @'var arr = [1, 7, 5, 6];
 array_sort(arr, true);
 return arr[1];',
-undefined,
 function(){
 	var arr = [1, 7, 5, 6];
 	array_sort(arr, true);
@@ -1016,7 +2347,6 @@ run_interpreter_test("Array Element Increment",
 @'var arr = [10, 20, 30];
 arr[2]++;
 return arr[2];',
-undefined,
 function(){
   var arr = [10, 20, 30];
   arr[2]++;
@@ -1031,7 +2361,6 @@ for (var i = 0; i < 5; i++) {
   arr[i] = i * 2;
 }
 return arr[3];',
-undefined,
 function() {
 	var arr = [];
 	for (var i = 0; i < 5; i++) {
@@ -1046,7 +2375,6 @@ run_interpreter_test("Array Access and Function Call",
 @'var arr = [100, 200, 300];
 var result = string(arr[1]);
 return result;',
-undefined,
 function(){
 	var arr = [100, 200, 300];
 	var result = string(arr[1]);
@@ -1064,7 +2392,6 @@ run_interpreter_test("Jump Test Basic If Test",
 @'if (true) return 1;
 return 0;
 ',
-undefined,
 function(){
 	if (true) return 1;
 	return 0;
@@ -1075,7 +2402,6 @@ run_interpreter_test("Jump Test If-Else Test",
 @'if (false) return 0;
 else return 1;
 ',
-undefined,
 function(){
 	if (false) return 0;
 	else return 1;
@@ -1089,7 +2415,6 @@ run_interpreter_test("Jump Test Nested If Test",
 }
 return 2;
 ',
-undefined,
 function(){
 	if (true) {
 	   if (false) return 0;
@@ -1106,7 +2431,6 @@ run_interpreter_test("Jump Test If with Continue",
 }
 return 3;
 ',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		if (i == 1) continue;
@@ -1127,7 +2451,6 @@ else {
 }
 return i
 ',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		if (i == 1) continue;
@@ -1145,7 +2468,6 @@ run_interpreter_test("Jump Test If with Break",
 }
 return 3;
 ',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		if (i == 1) break;
@@ -1159,7 +2481,6 @@ run_interpreter_test("Jump Test If with Return Early Out",
 @'if (true) return 1;
 return 2; // This should never execute
 ',
-undefined,
 function(){
 	if (true) return 1;
 	return 2; // This should never execute
@@ -1179,7 +2500,6 @@ run_interpreter_test("Deeply Nested If Test",
 }
 return 2;
 ',
-undefined,
 function(){
 	if (true) {
 		if (false) {
@@ -1200,7 +2520,6 @@ run_interpreter_test("If with Multiple Continues and Breaks",
 }
 return 5;
 ',
-undefined,
 function(){
 	for (var i = 0; i < 5; i++) {
 		if (i == 2 || i == 3) continue;
@@ -1218,7 +2537,6 @@ if (xx > 5 && yy < 25) {
 }
 return xx - yy;
 ',
-undefined,
 function(){
 	var xx = 10, yy = 20;
 	if (xx > 5 && yy < 25) {
@@ -1236,7 +2554,6 @@ if (arr[1] == 2) {
 }
 return arr[1];
 ',
-undefined,
 function(){
 	var arr = [1, 2, 3];
 	if (arr[1] == 2) {
@@ -1253,7 +2570,6 @@ if (num < 10) return num * 2;
 else if (num > 10 && num < 20) return num / 2;
 else return num + 5;
 ',
-undefined,
 function(){
 	var num = 15;
 	if (num < 10) return num * 2;
@@ -1273,7 +2589,6 @@ run_interpreter_test("Deep Recursion in If Blocks",
 	else return 3;
 }
 ',
-undefined,
 function(){
 	if (true) {
 		if (true) {
@@ -1298,7 +2613,6 @@ run_interpreter_test("Simple For Loop",
 }
 return 3;
 ',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		return i;
@@ -1313,7 +2627,6 @@ run_interpreter_test("Loop with Constant Condition",
 }
 return 0;
 ',
-undefined,
 function(){
 	for (var i = 0; true; i++) {
 		if (i == 2) return i;
@@ -1326,7 +2639,6 @@ run_interpreter_test("Empty Loop Body",
 @'for (var i = 0; i < 5; i++) {}
 return i;
 ',
-undefined,
 function(){
 	for (var i = 0; i < 5; i++) {}
 	return i;
@@ -1340,7 +2652,6 @@ for (var i = 0; i < 3; i++) {
 }
 return 5;
 ',
-undefined,
 function(){
 	var xx = 10;
 	for (var i = 0; i < 3; i++) {
@@ -1356,7 +2667,6 @@ run_interpreter_test("Loop with Redundant Iterations",
 }
 return i;
 ',
-undefined,
 function(){
 	for (var i = 0; i < 10; i++) {
 		if (i > 1) break;
@@ -1371,7 +2681,6 @@ run_interpreter_test("Constant Condition and Break",
 }
 return i;
 ',
-undefined,
 function(){
 	for (var i = 0; true; i++) {
 		if (i == 3) break;
@@ -1386,7 +2695,6 @@ for (var i = 0; i < 3; i++) {
 	sum += i;
 }
 return sum;',
-undefined,
 function(){
 	var sum = 0;
 	for (var i = 0; i < 3; i++) {
@@ -1402,7 +2710,6 @@ for (var i = 10; i > 7; i--) {
 	count++;
 }
 return count;',
-undefined,
 function(){
 	var count = 3;
 	for (var i = 10; i > 7; i--) {
@@ -1417,7 +2724,6 @@ run_interpreter_test("Loop with Break",
 	if (i == 5) break;
 }
 return i;',
-undefined,
 function(){
 	for (var i = 0; i < 10; i++) {
 		if (i == 5) break;
@@ -1433,7 +2739,6 @@ for (var i = 0; i < 5; i++) {
 	sum += i;
 }
 return sum;',
-undefined,
 function(){
 	var sum = 0;
 	for (var i = 0; i < 5; i++) {
@@ -1447,7 +2752,6 @@ function(){
 run_interpreter_test("Empty Loop",
 @'for (var i = 0; i < 3; i++) {}
 return i;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {}
 	return i;
@@ -1462,7 +2766,6 @@ for (var i = 0; i < 3; i++) {
 	}
 }
 return total;',
-undefined,
 function(){
 	var total = 0;
 	for (var i = 0; i < 3; i++) {
@@ -1484,7 +2787,6 @@ run_interpreter_test("For Loop with Early Return",
 	if (i == 3) return i;
 }
 return -1;',
-undefined,
 function(){
 	for (var i = 0; i < 5; i++) {
 		if (i == 3) return i;
@@ -1502,7 +2804,6 @@ run_interpreter_test("For Loop with Nested Conditional Breaks",
 	if (i == 8) break;
 }
 return i;',
-undefined,
 function(){
 	for (var i = 0; i < 10; i++) {
 		for (var j = 0; j < 10; j++) {
@@ -1523,7 +2824,6 @@ for (var i = 0; i < 10; i++) {
 	sum += i;
 }
 return sum;',
-undefined,
 function(){
 	var sum = 0;
 	for (var i = 0; i < 10; i++) {
@@ -1546,7 +2846,6 @@ for (var i = 0; i < 3; i++) {
 	}
 }
 return result;',
-undefined,
 function(){
 	var result = 0;
 	for (var i = 0; i < 3; i++) {
@@ -1572,7 +2871,6 @@ for (var i = 0; i < 5; i++) {
 	count += 10;
 }
 return count;',
-undefined,
 function(){
 	var count = 0;
 	for (var i = 0; i < 5; i++) {
@@ -1594,7 +2892,6 @@ run_interpreter_test("For Loop with Early Exit on a Specific Condition",
 	}
 }
 return -1;',
-undefined,
 function(){
 	for (var i = 0; i < 10; i++) {
 		for (var j = 0; j < 10; j++) {
@@ -1619,7 +2916,6 @@ for (var i=0; i<_img_count; i++) {
 }
 return _return;
 ',
-undefined,
 function(){
   var _img_count = 3;
 	var _return = 0;
@@ -1649,7 +2945,6 @@ while (i < 5) {
 	i++;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	while (i < 5) {
@@ -1666,7 +2961,6 @@ while (true) {
 	if (i == 3) break;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	while (true) {
@@ -1686,7 +2980,6 @@ while (i < 5) {
 	sum += i;
 }
 return sum;',
-undefined,
 function(){
 	var i = 0;
 	var sum = 0;
@@ -1705,7 +2998,6 @@ while (xx > 0) {
 	xx -= 2;
 }
 return xx;',
-undefined,
 function(){
 	var xx = 10;
 	while (xx > 0) {
@@ -1725,7 +3017,6 @@ while (i < 3) {
 	i++;
 }
 return i + j;',
-undefined,
 function(){
 	var i = 0;
 	var j = 0;
@@ -1749,7 +3040,6 @@ while (i < 3) {
 	i++;
 }
 return i + j;',
-undefined,
 function(){
 	var i = 0;
 	var j = 0;
@@ -1770,7 +3060,6 @@ while (i < 10) {
 	i++;
 }
 return -1;',
-undefined,
 function(){
 	var i = 0;
 	while (i < 10) {
@@ -1794,7 +3083,6 @@ while (i < 10) {
 	if (i == 7) break;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	while (i < 10) {
@@ -1818,7 +3106,6 @@ while (outer < 3) {
 	outer++;
 }
 return innerResult;',
-undefined,
 function(){
 	var outer = 0;
 	var innerResult = 0;
@@ -1840,7 +3127,6 @@ while (i < 10 && (i % 2 == 0 || i % 3 == 0)) {
 	i++;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	while (i < 10 && (i % 2 == 0 || i % 3 == 0)) {
@@ -1858,7 +3144,6 @@ while (i < 5) {
 	i++;
 }
 return result;',
-undefined,
 function(){
 	var i = 0;
 	var result = [];
@@ -1878,7 +3163,6 @@ while (i < 10) {
 	i++;
 }
 return "None";',
-undefined,
 function(){
 	var i = 0;
 	while (i < 10) {
@@ -1901,7 +3185,6 @@ try {
 	return error;
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	try {
@@ -1928,7 +3211,6 @@ do {
 	i++;
 } until (i == 5);
 return i;',
-undefined,
 function(){
 	var i = 0;
 	do {
@@ -1945,7 +3227,6 @@ do {
 	if (i == 3) break;
 } until (i == 5);
 return i;',
-undefined,
 function(){
 	var i = 0;
 	do {
@@ -1963,7 +3244,6 @@ do {
 	if (i % 2 == 0) continue;
 } until (i == 5);
 return i;',
-undefined,
 function(){
 	var i = 0;
 	do {
@@ -1984,7 +3264,6 @@ do {
 	outer += inner;
 } until (outer == 6);
 return outer;',
-undefined,
 function(){
 	var outer = 0;
 	do {
@@ -2003,7 +3282,6 @@ run_interpreter_test("Do/Until Loop with Return Inside Loop",
 	return "Exited";
 } until (true);
 return "Not Exited";',
-undefined,
 function(){
 	do {
 		return "Exited";
@@ -2019,7 +3297,6 @@ do {
 	result += local;
 } until (result == 50);
 return result;',
-undefined,
 function(){
 	var result = 0;
 	do {
@@ -2033,7 +3310,6 @@ function(){
 run_interpreter_test("Empty Do/Until Loop",
 @'do {} until (true);
 return "Done";',
-undefined,
 function(){
 	do {} until (true);
 	return "Done";
@@ -2046,7 +3322,6 @@ do {
 	i++;
 } until (i >= 5);
 return i;',
-undefined,
 function(){
 	var i = 0;
 	do {
@@ -2063,7 +3338,6 @@ do {
 	if (count == 5) break;
 } until (count > 10);
 return count;',
-undefined,
 function(){
 	var count = 0;
 	do {
@@ -2081,7 +3355,6 @@ do {
 	if (sum % 2 == 0) continue;
 } until (sum >= 10);
 return sum;',
-undefined,
 function(){
 	var sum = 0;
 	do {
@@ -2102,7 +3375,6 @@ do {
 	outer += inner;
 } until (outer >= 6);
 return outer;',
-undefined,
 function(){
 	var outer = 0;
 	do {
@@ -2121,7 +3393,6 @@ run_interpreter_test("Do/Until with Return Inside Loop",
 	return "Exited";
 } until (true);
 return "Not Exited";',
-undefined,
 function(){
 	do {
 		return "Exited";
@@ -2137,7 +3408,6 @@ do {
 	result += local;
 } until (result >= 50);
 return result;',
-undefined,
 function(){
 	var result = 0;
 	do {
@@ -2151,7 +3421,6 @@ function(){
 run_interpreter_test("Empty Do/Until Loop",
 @'do {} until (true);
 return "Done";',
-undefined,
 function(){
 	do {} until (true);
 	return "Done";
@@ -2173,7 +3442,6 @@ do {
 	if (i == 10) break;
 } until (true);
 return i;',
-undefined,
 function(){
 	var i = 0;
 	do {
@@ -2198,7 +3466,6 @@ do {
 	}
 } until (count >= 30);
 return count;',
-undefined,
 function(){
 	var count = 0;
 	do {
@@ -2224,7 +3491,6 @@ do {
 	if (xx == 5) break;
 } until (xx > 10);
 return xx;',
-undefined,
 function(){
 	var xx = 0;
 	do {
@@ -2248,7 +3514,6 @@ do {
 	if (i == 5) return "Exit at Five";
 } until (i > 10);
 return i;',
-undefined,
 function(){
 	var i = 0;
 	do {
@@ -2270,7 +3535,6 @@ do {
 	if (level == 5) break;
 } until (level > 10);
 return level;',
-undefined,
 function(){
 	var level = 0;
 	do {
@@ -2295,7 +3559,6 @@ run_interpreter_test("With Statement with self",
 	return 1;
 }
 return 0;',
-undefined,
 function(){
 	with (self) {
 		return 1;
@@ -2310,7 +3573,6 @@ run_interpreter_test("With Statement with other",
 	return 1;
 }
 return 0;',
-undefined,
 function(){
 	with (other) {
 		return 1;
@@ -2325,7 +3587,6 @@ run_interpreter_test("With Statement with all",
 	return 1;
 }
 return 0;',
-undefined,
 function(){
 	with (all) {
 		return 1;
@@ -2340,7 +3601,6 @@ run_interpreter_test("With Statement with struct",
 with (myStruct) {
 	return id;
 }',
-undefined,
 function(){
 	var myStruct = {id: 100};
 	with (myStruct) {
@@ -2356,7 +3616,6 @@ run_interpreter_test("With Statement Multiple Commands",
 	return xx;
 }
 return 0;',
-undefined,
 function(){
 	with (self) {
 		var xx = 10;
@@ -2374,7 +3633,6 @@ run_interpreter_test("With Statement Nested",
 	}
 	return 0;
 }',
-undefined,
 function(){
 	with (self) {
 		with (other) {
@@ -2391,7 +3649,6 @@ run_interpreter_test("With Statement Conditional",
 	if (true) return 1;
 	return 0;
 }',
-undefined,
 function(){
 	with (self) {
 		if (true) return 1;
@@ -2413,7 +3670,6 @@ run_interpreter_test("With Statement with Double Nested",
 	}
 	return 0;
 }',
-undefined,
 function(){
 	with (self) {
 		with (other) {
@@ -2431,7 +3687,6 @@ run_interpreter_test("With Statement with Noone",
 	return 1;
 }
 return 0;',
-undefined,
 function(){
 	with (noone) {
 		return 1;
@@ -2449,7 +3704,6 @@ run_interpreter_test("With Statement with Continue in Loop",
 	}
 }
 return 5;',
-undefined,
 function(){
 	for (var i = 0; i < 5; i++) {
 		with (self) {
@@ -2470,7 +3724,6 @@ run_interpreter_test("With Statement with Break in Loop",
 	}
 }
 return 5;',
-undefined,
 function(){
 	for (var i = 0; i < 5; i++) {
 		with (self) {
@@ -2490,7 +3743,6 @@ run_interpreter_test("With Statement Nested with All",
 	}
 	return 0;
 }',
-undefined,
 function(){
 	with (all) {
 		with (self) {
@@ -2507,7 +3759,6 @@ run_interpreter_test("With Statement with Logical Conditions",
 	if (true && false) return 0;
 	else return 1;
 }',
-undefined,
 function(){
 	with (self) {
 		if (true && false) return 0;
@@ -2526,7 +3777,6 @@ run_interpreter_test("With Statement with Multiple Controls",
 	}
 	return 3;
 }',
-undefined,
 function(){
 	with (self) {
 		for (var i = 0; i < 3; i++) {
@@ -2545,7 +3795,6 @@ run_interpreter_test("With Statement with Return Early Out",
 	return 1;
 	return 2; // This should never execute
 }',
-undefined,
 function(){
 	with (self) {
 		return 1;
@@ -2567,7 +3816,6 @@ run_interpreter_test("With Statement Complex Logic",
 	}
 	return yy;
 }',
-undefined,
 function(){
 	with (self) {
 		var xx = 0, yy = 0;
@@ -2593,7 +3841,6 @@ run_interpreter_test("Switch Basic Single Case",
 @'switch (1) {
 	case 1: return 1;
 }',
-undefined,
 function(){
 	switch (1) {
 		case 1: return 1;
@@ -2607,7 +3854,6 @@ run_interpreter_test("Switch Basic Two Cases",
 	case 1: return 1;
 	case 2: return 2;
 }',
-undefined,
 function(){
 	switch (2) {
 		case 1: return 1;
@@ -2621,7 +3867,6 @@ run_interpreter_test("Switch Basic Default Only",
 @'switch (3) {
 	default: return 3;
 }',
-undefined,
 function(){
 	switch (3) {
 		default: return 3;
@@ -2636,7 +3881,6 @@ run_interpreter_test("Switch Basic No Matching Case",
 	case 2: return 2;
 	default: return 0;
 }',
-undefined,
 function(){
 	switch (4) {
 		case 1: return 1;
@@ -2653,7 +3897,6 @@ run_interpreter_test("Switch Basic Fall Through",
 	case 2: return 2;
 	default: return 3;
 }',
-undefined,
 function(){
 	switch (2) {
 		case 1:
@@ -2672,7 +3915,6 @@ run_interpreter_test("Switch Basic Multiple Cases",
 	case 4: return 4;
 	case 5: return 5;
 }',
-undefined,
 function(){
 	switch (5) {
 		case 1: return 1;
@@ -2695,7 +3937,6 @@ run_interpreter_test("Switch Nested",
 		}
 	default: return 0;
 }',
-undefined,
 function(){
 	switch (2) {
 		case 1: return 1;
@@ -2717,7 +3958,6 @@ switch (xx * 2) {
 	case 4: return 2;
 	default: return 3;
 }',
-undefined,
 function(){
 	var xx = 2;
 	switch (xx * 2) {
@@ -2737,7 +3977,6 @@ switch (xx) {
 	case 3: return xx * xx; // 9
 	default: return 0;
 }',
-undefined,
 function(){
 	var xx = 3;
 	switch (xx) {
@@ -2757,7 +3996,6 @@ run_interpreter_test("Switch with Break Statements",
 	case 3: return 3; break;
 	default: return 4;
 }',
-undefined,
 function(){
 	switch (2) {
 		case 1: return 1; break;
@@ -2776,7 +4014,6 @@ run_interpreter_test("Switch with Conditional Returns",
 	case 3: if (true) return 3; else return 0; break;
 	default: return 4;
 }',
-undefined,
 function(){
 	switch (3) {
 		case 1: if (false) return 1; break;
@@ -2795,7 +4032,6 @@ run_interpreter_test("Switch without Matching Case",
 	case 3: return 3;
 }
 return 0',
-undefined,
 function(){
 	switch (10) {
 		case 1: return 1;
@@ -2814,7 +4050,6 @@ run_interpreter_test("Switch Multiple Breaks",
 	default: break;
 }
 return 10',
-undefined,
 function(){
 	switch (1) {
 		case 1: break;
@@ -2834,7 +4069,6 @@ run_interpreter_test("Switch with Continue in Loop",
 		default: continue;
 	}
 }',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		switch (i) {
@@ -2856,7 +4090,6 @@ run_interpreter_test("Switch Nested with Breaks",
 		   break;
 	case 2: return 2;
 }',
-undefined,
 function(){
 	switch (2) {
 		case 1: switch (1) {
@@ -2876,7 +4109,6 @@ switch (xx) {
 	case 1 + 1: return 10;  // Matches x
 	case 2 * 2: return 20;
 }',
-undefined,
 function(){
 	var xx = 2;
 	switch (xx) {
@@ -2895,7 +4127,6 @@ run_interpreter_test("Switch Case Without Break",
 	case 3: return 3;
 	default: return 4;
 }',
-undefined,
 function(){
 	switch (2) {
 		case 1: return 1;
@@ -2914,7 +4145,6 @@ switch (yy) {
 			 else return 200;
 	default: return 0;
 }',
-undefined,
 function(){
 	var yy = 10;
 	switch (yy) {
@@ -2938,7 +4168,6 @@ switch (xx * 2) {
 	case 3 * 3: return 3 * xx;
 	default: return 0;
 }',
-undefined,
 function(){
 	var xx = 3;
 	switch (xx * 2) {
@@ -2961,7 +4190,6 @@ for (i = 0; i < 5; i++) {
 	}
 }
 return i;',
-undefined,
 function(){
 	var i = 0;
 	for (i = 0; i < 5; i++) {
@@ -2989,7 +4217,6 @@ run_interpreter_test("Advanced Nested Switch with Break and Continue",
 	}
 }
 return 4;',
-undefined,
 function(){
 	for (var j = 0; j < 4; j++) {
 		switch (j) {
@@ -3014,7 +4241,6 @@ switch (k) {
 	case 2*2: return 2;
 	default: return -1;
 }',
-undefined,
 function(){
 	var k = 1;
 	switch (k) {
@@ -3033,7 +4259,6 @@ switch (z) {
 	case 2: return 2;
 	default: return 3;
 }',
-undefined,
 function(){
 	var z = 1;
 	switch (z) {
@@ -3052,7 +4277,6 @@ switch (yy) {
 	case 2: return 2;
 	default: if (yy > 3) return 10; else return 5;
 }',
-undefined,
 function(){
 	var yy = 5;
 	switch (yy) {
@@ -3072,7 +4296,6 @@ switch (n) {
 	case 3: return 30; break;
 	default: return 40;
 }',
-undefined,
 function(){
 	var n = 3;
 	switch (n) {
@@ -3092,7 +4315,6 @@ switch (v + 1) {
 	case 3: return 3;
 	default: return 4;
 }',
-undefined,
 function(){
 	var v = 2;
 	switch (v + 1) {
@@ -3111,7 +4333,6 @@ switch (arr[1]) {
 	case 1: return 1;
 	default: return -1;
 }',
-undefined,
 function(){
 	var arr = [0, 1, 2];
 	switch (arr[1]) {
@@ -3134,7 +4355,6 @@ run_interpreter_test("Basic Try without Error",
 } catch (e) {
 	return 2;
 }',
-undefined,
 function(){
 	try {
 		return 1;
@@ -3152,7 +4372,6 @@ run_interpreter_test("Try with Error",
 } catch (e) {
 	return 2;
 }',
-undefined,
 function(){
 	try {
 		throw "Error";
@@ -3171,7 +4390,6 @@ run_interpreter_test("Try with Finally",
 	//return 2;
 }
 return 2;',
-undefined,
 function(){
 	try {
 		return 1;
@@ -3193,7 +4411,6 @@ run_interpreter_test("Try Catch Finally with Error",
 	//return 3;
 }
 return 3;',
-undefined,
 function(){
 	try {
 		throw "Error";
@@ -3217,7 +4434,6 @@ run_interpreter_test("Try without Error with Finally",
 	//return 3;
 }
 return 3;',
-undefined,
 function(){
 	try {
 		return 1;
@@ -3241,7 +4457,6 @@ run_interpreter_test("Nested Try Catch",
 } catch (e) {
 	return 2;
 }',
-undefined,
 function(){
 	try {
 		try {
@@ -3268,7 +4483,6 @@ run_interpreter_test("Nested Try Finally",
 	//return 3;
 }
 return 3;',
-undefined,
 function(){
 	try {
 		try {
@@ -3295,7 +4509,6 @@ run_interpreter_test("Try with Break",
 	}
 }
 return 4;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3320,7 +4533,6 @@ run_interpreter_test("Try with Continue",
 	}
 }
 return 4;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3348,7 +4560,6 @@ run_interpreter_test("Try Catch Finally with Continue",
 	return 4;
 }
 return 5;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3385,7 +4596,6 @@ run_interpreter_test("Advanced Try with Nested Try Catch Finally",
 	//return 4;
 }
 return 5;',
-undefined,
 function(){
 	try {
 		try {
@@ -3419,7 +4629,6 @@ run_interpreter_test("Advanced Try Catch Finally with Continue and Break",
 	return 4;
 }
 return 5;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3452,7 +4661,6 @@ run_interpreter_test("Advanced Try Finally with Nested Loops",
 	return 100 + i;
 }
 return 200;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3481,7 +4689,6 @@ run_interpreter_test("Advanced Try Catch with Return Inside Loop",
 	}
 }
 return 5;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3508,7 +4715,6 @@ run_interpreter_test("Advanced Try Catch Finally with Conditional Return",
 	//return 5;
 }
 return 6;',
-undefined,
 function(){
 	try {
 		if (true) throw "Error";
@@ -3534,7 +4740,6 @@ run_interpreter_test("Advanced Try Finally with Multiple Returns",
 	//return 3;
 }
 return 4;',
-undefined,
 function(){
 	try {
 		return 1;
@@ -3561,7 +4766,6 @@ run_interpreter_test("Advanced Try with Continue and Break in Nested Loops",
 	return 100 + i;
 }
 return 200;',
-undefined,
 function(){
 	for (var i = 0; i < 3; i++) {
 		try {
@@ -3603,7 +4807,6 @@ factorial(3) // result: 6
 factorial(4) // result: 24
 factorial(5) // result: 120
 return factorial(6) // result: 720',
-undefined,
 function(){
 	// compute the factorial of n
 	factorial = function (n) {
@@ -3628,7 +4831,6 @@ run_interpreter_test("parsePreffixExpression",
 @'var _x=0;
 --_x;
 return --_x;',
-undefined,
 function(){
 	var _x=0;
 	--_x;
@@ -3648,7 +4850,6 @@ function recursiveTest() {
 }
 
 return recursiveTest();',
-undefined,
 function(){
 	xx = 0;
 	function recursiveTest() {
@@ -3672,7 +4873,6 @@ run_interpreter_test("Nested If with Functions",
 }
 return check(7);
 ',
-undefined,
 function(){
 	function check(a) {
 		if (a > 5) {
@@ -3691,7 +4891,6 @@ for (i = 0; i < 10; i++) {
 	if (checkBreak(i)) break;
 }
 return i;',
-undefined,
 function(){
 	function checkBreak(_x) { return _x == 4; }
 	var i;
@@ -3709,7 +4908,6 @@ while (checkCondition(i)) {
 	i++;
 }
 return i;',
-undefined,
 function(){
 	function checkCondition(x) { return x < 5; }
 	var i = 0;
@@ -3728,7 +4926,6 @@ run_interpreter_test("While Loop with Recursion",
 	return xx;
 }
 return recursiveFunction(0);',
-undefined,
 function(){
 	function recursiveFunction(xx) {
 		while (xx < 5) {
@@ -3755,7 +4952,6 @@ function recursiveWith() {
 	return xx;
 }
 return recursiveWith();',
-undefined,
 function(){
 	xx = 0;
 	function recursiveWith() {
@@ -3784,7 +4980,6 @@ function increment() {
 }
 __increment();
 return xx;',
-undefined,
 function(){
 	xx = 0;
 	function __increment() {
@@ -3808,7 +5003,6 @@ function increaseDepth() {
 }
 increaseDepth();
 return depth;',
-undefined,
 function(){
 	depth = 0;
 	function increaseDepth() {
@@ -3832,7 +5026,6 @@ do {
 	if (counter >= 25) break;
 } until (false);
 return counter;',
-undefined,
 function(){
 	counter = 0;
 	function modifyCounter() {
@@ -3857,7 +5050,6 @@ do {
 	}
 } until (attempts > 5);
 return attempts;',
-undefined,
 function(){
 	var attempts = 0;
 	do {

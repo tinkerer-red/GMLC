@@ -12,8 +12,8 @@
   "Folders":[
     {"$GMFolder":"","%Name":"GMLCompiler","folderPath":"folders/GMLCompiler.yy","name":"GMLCompiler","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"__Final","folderPath":"folders/GMLCompiler/__Final.yy","name":"__Final","resourceType":"GMFolder","resourceVersion":"2.0",},
-    {"$GMFolder":"","%Name":"Parsers","folderPath":"folders/GMLCompiler/__Final/Parsers.yy","name":"Parsers","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Internal","folderPath":"folders/GMLCompiler/__Final/Internal.yy","name":"Internal","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"Parsers","folderPath":"folders/GMLCompiler/__Final/Parsers.yy","name":"Parsers","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"group1","folderPath":"folders/GMLCompiler/group1.yy","name":"group1","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"internal","folderPath":"folders/GMLCompiler/internal.yy","name":"internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"xUnit","folderPath":"folders/xUnit.yy","name":"xUnit","resourceType":"GMFolder","resourceVersion":"2.0",},
@@ -527,8 +527,8 @@
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},},
     {"roomId":{"name":"GMLCTestRoom","path":"rooms/GMLCTestRoom/GMLCTestRoom.yy",},},
+    {"roomId":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},},
     {"roomId":{"name":"room1","path":"rooms/room1/room1.yy",},},
     {"roomId":{"name":"room0","path":"rooms/room0/room0.yy",},},
     {"roomId":{"name":"rmEmpty","path":"rooms/rmEmpty/rmEmpty.yy",},},

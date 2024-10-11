@@ -23,7 +23,7 @@
 		finished = false;
 		
 		logEnabled = false;
-		should_catch_errors = false;
+		should_catch_errors = true;
 		error_handler = function(_error){ show_debug_message("[ERROR] " + instanceof(self) + " :: " + string(_error)); }
 		
 		async_active = false;
@@ -34,7 +34,7 @@
 		
 		parserSteps = [];  // List to store the indevidual parse operations, order important
 		
-		
+		#region Basic
 		#region jsDoc
 		/// @func    initialize()
 		/// @desc    Initializes the parser with its input data. Executes the custom initialize function.
@@ -90,12 +90,28 @@
 		/// @returns {any} : The result of the finalize function after parsing all tokens
 		#endregion
 		static parseAll = function() {
-			while (array_length(stack)) {
-				nextToken();
+			while (!isFinished()) {
+				var _token = nextToken();
 			}
 			return finalize();
 		}
 		
+		#region jsDoc
+		/// @func    print()
+		/// @desc    Logs a message to the console if logging is enabled.
+		/// @self    ParserBase
+		/// @param   {string} _str : The message to log
+		/// @returns {undefined}
+		#endregion
+		static print = function(_str) {
+		    if (logEnabled) {
+		        show_debug_message("[INFO] Logger :: " + _str);
+		    }
+		};
+		
+		#endregion
+		
+		#region Async
 		#region jsDoc
 		/// @func    parseAsync()
 		/// @desc    Asynchronously parses the tokens in the stack. Parses until it's finished or until time runs out.
@@ -130,100 +146,6 @@
 			time_source_start(async_time_source)
 			
 			return async_time_source
-		}
-		
-		#region jsDoc
-		/// @func    nextToken()
-		/// @desc    Processes the next token from the stack. If errors are to be caught, they will be handled via the error handler.
-		/// @self    ParserBase
-		/// @returns {undefined}
-		#endregion
-		static nextToken = function() {
-			if (should_catch_errors) {
-				try {
-					__nextToken(target);
-				} catch (e) {
-					error_handler(e);
-				}
-			}
-			else {
-				__nextToken(target);
-			}
-		};
-		#region jsDoc
-		/// @func    nextToken()
-		/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
-		/// @self    ParserBase
-		/// @returns {void}
-		#endregion
-		static nextToken = function() {
-			if (should_catch_errors) {
-				try {
-					target = parseNext(target);  // Apply all parser steps to the current token
-					__nextToken(target);  // Call the custom token handler
-				} catch (e) {
-					error_handler(e);
-				}
-			} else {
-				target = parseNext(target);
-				__nextToken(target);
-			}
-		};
-		#region jsDoc
-		/// @func    setErrorHandler()
-		/// @desc    Sets a custom error handler function to handle errors during parsing.
-		/// @self    ParserBase
-		/// @param   {function} _handler : The custom error handler function
-		/// @returns {undefined}
-		#endregion
-		static setErrorHandler = function(_handler) {
-			error_handler = _handler;
-		}
-		
-		#region jsDoc
-		/// @func    setAsyncMaxTime()
-		/// @desc    Sets the maximum time allowed for async parsing within one frame.
-		/// @self    ParserBase
-		/// @param   {number} _max_time : The maximum time (in ms) allowed for async parsing
-		/// @returns {undefined}
-		#endregion
-		static setAsyncMaxTime = function(_max_time) {
-			async_max_time = _max_time;
-		};
-		
-		#region jsDoc
-		/// @func    print()
-		/// @desc    Logs a message to the console if logging is enabled.
-		/// @self    ParserBase
-		/// @param   {string} _str : The message to log
-		/// @returns {undefined}
-		#endregion
-		static print = function(_str) {
-		    if (logEnabled) {
-		        show_debug_message("[INFO] Logger :: " + _str);
-		    }
-		};
-		
-		#region jsDoc
-		/// @func    setLogEnabled()
-		/// @desc    Enables or disables logging for the parser.
-		/// @self    ParserBase
-		/// @param   {boolean} enabled : Whether logging should be enabled
-		/// @returns {undefined}
-		#endregion
-		static setLogEnabled = function(enabled) {
-		    logEnabled = enabled;
-		};
-		
-		#region jsDoc
-		/// @func    setErrorHandler()
-		/// @desc    Sets whether errors should be caught during parsing and handled by the error handler.
-		/// @self    ParserBase
-		/// @param   {boolean} _enabled : Whether error catching should be enabled
-		/// @returns {undefined}
-		#endregion
-		static setErrorHandler = function(_enabled) {
-			should_catch_errors = _enabled;
 		}
 		
 		#region jsDoc
@@ -264,6 +186,108 @@
 				async_time_source = undefined;
 				async_active = false;
 			}
+		};
+		
+		#endregion
+		
+		#region Parsing Steps
+		#region jsDoc
+		/// @func    nextToken()
+		/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
+		/// @self    ParserBase
+		/// @returns {void}
+		#endregion
+		static nextToken = function() {
+			if (should_catch_errors) {
+				try {
+					var _token = __nextToken();
+					parseNext(_token);
+				} catch (e) {
+					error_handler(e);
+				}
+			}
+			else {
+				var _token = __nextToken();
+				parseNext(_token);
+			}
+		};
+		
+		#region jsDoc
+		/// @func    addParserStep()
+		/// @desc    Adds a parser step (function) to the list of steps to be executed during parsing.
+		/// @self    ParserBase
+		/// @param   {function} step : The parser function to be added to the list
+		/// @returns {void}
+		#endregion
+		static addParserStep = function(step) {
+			array_push(parserSteps, step);
+		};
+		
+		#region jsDoc
+		/// @func    parseNext()
+		/// @desc    Runs each parser step function on the current token in sequence.
+		/// @self    ParserBase
+		/// @param   {any} currentToken : The token to be parsed by the registered parser steps
+		/// @returns {any} : The potentially modified token after all steps
+		#endregion
+		static parseNext = function(_inputToken) {
+			var _outputToken = _inputToken
+			for (var i = 0; i < array_length(parserSteps); i++) {
+				
+				_outputToken = parserSteps[i](_inputToken);  // Pass the token through each parser step
+				
+				if (shouldBreakParserSteps(_inputToken, _outputToken)) {
+					break;
+				}
+			}
+			return _outputToken;
+		};
+		
+		#region jsDoc
+		/// @func    clearParserSteps()
+		/// @desc    Clears all parser steps from the list. Useful for resetting or changing the parsing process.
+		/// @self    ParserBase
+		/// @returns {void}
+		#endregion
+		static clearParserSteps = function() {
+			array_resize(parserSteps, 0);
+		};
+		
+		#region jsDoc
+		/// @func    shouldBreakParserSteps()
+		/// @desc    Returns if the parser should stop iterating through the parser steps
+		/// @self    ParserBase
+		/// @param   {any} inputToken : The token to be parsed by the registered parser steps
+		/// @param   {any} outputToken : The token produced after parsing steps
+		/// @returns {bool}
+		#endregion
+		static shouldBreakParserSteps = function(_inputToken, _outputToken) {
+			return __shouldBreakParserSteps(_inputToken, _outputToken);
+		};
+		
+		#endregion
+		
+		#region Builders
+		#region jsDoc
+		/// @func    setErrorHandler()
+		/// @desc    Sets a custom error handler function to handle errors during parsing.
+		/// @self    ParserBase
+		/// @param   {function} _handler : The custom error handler function
+		/// @returns {undefined}
+		#endregion
+		static setErrorHandler = function(_handler) {
+			error_handler = _handler;
+		}
+		
+		#region jsDoc
+		/// @func    setAsyncMaxTime()
+		/// @desc    Sets the maximum time allowed for async parsing within one frame.
+		/// @self    ParserBase
+		/// @param   {number} _max_time : The maximum time (in ms) allowed for async parsing
+		/// @returns {undefined}
+		#endregion
+		static setAsyncMaxTime = function(_max_time) {
+			async_max_time = _max_time;
 		};
 		
 		#region jsDoc
@@ -322,39 +346,28 @@
 		}
 		
 		#region jsDoc
-		/// @func    addParserStep()
-		/// @desc    Adds a parser step (function) to the list of steps to be executed during parsing.
+		/// @func    setLogEnabled()
+		/// @desc    Enables or disables logging for the parser.
 		/// @self    ParserBase
-		/// @param   {function} step : The parser function to be added to the list
-		/// @returns {void}
+		/// @param   {boolean} enabled : Whether logging should be enabled
+		/// @returns {undefined}
 		#endregion
-		static addParserStep = function(step) {
-			parserSteps.push(step);
+		static setLogEnabled = function(enabled) {
+		    logEnabled = enabled;
 		};
 		
 		#region jsDoc
-		/// @func    parseNext()
-		/// @desc    Runs each parser step function on the current token in sequence.
+		/// @func    setErrorHandler()
+		/// @desc    Sets whether errors should be caught during parsing and handled by the error handler.
 		/// @self    ParserBase
-		/// @param   {any} currentToken : The token to be parsed by the registered parser steps
-		/// @returns {any} : The potentially modified token after all steps
+		/// @param   {boolean} _enabled : Whether error catching should be enabled
+		/// @returns {undefined}
 		#endregion
-		static parseNext = function(currentToken) {
-			for (var i = 0; i < array_length(parserSteps); i++) {
-				currentToken = parserSteps[i](currentToken);  // Pass the token through each parser step
-			}
-			return currentToken;
-		};
+		static setErrorHandler = function(_enabled) {
+			should_catch_errors = _enabled;
+		}
 		
-		#region jsDoc
-		/// @func    clearParserSteps()
-		/// @desc    Clears all parser steps from the list. Useful for resetting or changing the parsing process.
-		/// @self    ParserBase
-		/// @returns {void}
 		#endregion
-		static clearParserSteps = function() {
-			array_resize(parserSteps, 0);
-		};
 		
 	}
 #endregion

@@ -16,6 +16,11 @@ ToDo ::
 - - - this will require us to check all parents at compile, and if they have one which is native
 - - - we will need to use the constructor_call function on it, then set that as out currently focused self instance
 
+- currently `log("\sABC")` will print `"ABC"` when it should print `"sABC"` this is because the tokenizer drops the next letter of a escape sequance
+
+- check to see if a template string such as `$"abc{}def"` will throw erros with out having an expression inside of it
+
+- _GMLINE_, _GMFILE_, _GMFUNCTION_
 
 need to test native and gmlc
 - methods
