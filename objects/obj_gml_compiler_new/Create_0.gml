@@ -1406,20 +1406,22 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 	
 	var tokenizer = new GML_Tokenizer();
 	tokenizer.initialize(input);
-	var tokens = tokenizer.parseAsync(method(
+	tokenizer.parseAsync(method(
+	{description, expectedReturn},
+	function(tokens) {
 		
+		var preprocessor = new GML_PreProcessor();
+		preprocessor.initialize(tokens);
+		preprocessor.parseAsync(method(
 		{description, expectedReturn},
-		function(tokens) {
+		function(preprocessedTokens) {
+			
 			log($"Attempting Interpreter Test :: {description}")
 			
-			var preprocessor = new GML_PreProcessor();
-			preprocessor.initialize(tokens);
-			var preprocessedTokens = preprocessor.parseAll();
-		
 			var parser = new GML_Parser();
 			parser.initialize(preprocessedTokens);
 			var ast = parser.parseAll();
-		
+			
 			var postprocessor = new GML_PostProcessor();
 			postprocessor.initialize(ast);
 			var ast = postprocessor.parseAll();
@@ -1435,8 +1437,9 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 				//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 			}
 			
-		}
-	));
+			
+		}));
+	}));
 	
 	
 	

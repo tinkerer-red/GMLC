@@ -14,6 +14,7 @@
     {"$GMFolder":"","%Name":"__Final","folderPath":"folders/GMLCompiler/__Final.yy","name":"__Final","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Internal","folderPath":"folders/GMLCompiler/__Final/Internal.yy","name":"Internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Parsers","folderPath":"folders/GMLCompiler/__Final/Parsers.yy","name":"Parsers","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"_Internal","folderPath":"folders/GMLCompiler/__Final/Parsers/_Internal.yy","name":"_Internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"group1","folderPath":"folders/GMLCompiler/group1.yy","name":"group1","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"internal","folderPath":"folders/GMLCompiler/internal.yy","name":"internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"xUnit","folderPath":"folders/xUnit.yy","name":"xUnit","resourceType":"GMFolder","resourceVersion":"2.0",},
