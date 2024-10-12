@@ -130,13 +130,14 @@
 			var _asyncParse = method(self, function() {
 				async_start_time = current_time;
 				while (current_time-async_start_time < async_max_time) {
-					parseNext();
+					nextToken();
 					
 					if (isFinished()) {
 						async_active = false;
 						async_callback(finalize());
 						time_source_destroy(async_time_source);
 						async_time_source = undefined;
+						break;
 					}
 				}
 			})
@@ -371,3 +372,6 @@
 		
 	}
 #endregion
+
+
+
