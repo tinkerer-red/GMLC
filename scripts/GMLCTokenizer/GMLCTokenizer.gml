@@ -55,18 +55,14 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		bytePos = 0;
 		
 		//destroy old buffer if we were previously parsing
-		if (sourceCodeBuffer != undefined)
-		&& (buffer_exists(sourceCodeBuffer)) {
-			buffer_delete(sourceCodeBuffer);
-		};
+		__cleanup();
+		
 		sourceCodeBuffer = buffer_create(sourceCodeByteLength, buffer_fixed, 1);
 	    buffer_write(sourceCodeBuffer, buffer_text, sourceCodeString);
 		buffer_seek(sourceCodeBuffer, buffer_seek_start, 0);
 		
 		//init the charPos, bytePos, and currentCharCode
-		// we just do this to prevent succeeding in the isFinished check,
-		// the proper token gets set when we first call nextToken
-		currentCharCode = 0x0000
+		__nextUTF8();
 		
 		line = 1;
 		column = 0;
@@ -75,7 +71,10 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 	};
 	
 	static __cleanup = function() {
-		if (sourceCodeBuffer != undefined && buffer_exists(sourceCodeBuffer)) { buffer_delete(sourceCodeBuffer); };
+		if (sourceCodeBuffer != undefined && buffer_exists(sourceCodeBuffer)) {
+			buffer_delete(sourceCodeBuffer);
+			sourceCodeBuffer = undefined;
+		};
 	}
 	
 	static __isFinished = function() {
@@ -91,13 +90,13 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return currentCharCode;
 	}
 	
-	static __shouldBreakParserSteps = function(_input, _output) {
+	static __shouldBreakParserSteps = function(_output) {
 		return (_output != false) || (currentCharCode == undefined)
 	}
 	
 	#region Parser Functions
 	
-	static parseSkipWhitespace = function(_inputToken) {
+	static parseSkipWhitespace = function() {
 		var _startCharCode = currentCharCode;
 		if (__char_is_whitespace(currentCharCode)) {
 			while (currentCharCode != undefined)
@@ -115,7 +114,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseCommentLine = function(_inputToken) {
+	static parseCommentLine = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		if (currentCharCode == ord("/") && _next_char == ord("/")) {
@@ -143,7 +142,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseCommentBlock = function(_inputToken) {
+	static parseCommentBlock = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		if (currentCharCode == ord("/") && _next_char == ord("*")) {
@@ -175,7 +174,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseStringLiteral = function(_inputToken) {
+	static parseStringLiteral = function() {
 		var _startCharCode = currentCharCode;
 		if (currentCharCode == ord(@'"')) {
 			//var _start_pos = charPos;
@@ -297,7 +296,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseHexNumbers = function(_inputToken) {
+	static parseHexNumbers = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		
@@ -364,7 +363,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseStringTemplate = function(_inputToken) {
+	static parseStringTemplate = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		if (currentCharCode == ord("$"))
@@ -385,7 +384,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseBinaryNumber = function(_inputToken) {
+	static parseBinaryNumber = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		if (currentCharCode == ord("0"))
@@ -439,7 +438,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseNumber = function(_inputToken) {
+	static parseNumber = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		if (__char_is_digit(currentCharCode))
@@ -481,7 +480,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseIdentifier = function(_inputToken) {
+	static parseIdentifier = function() {
 		var _startCharCode = currentCharCode;
 		if (__char_is_alphabetic(currentCharCode))
 		{
@@ -715,7 +714,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseRawStringLiteral = function(_inputToken) {
+	static parseRawStringLiteral = function() {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		if (currentCharCode == ord("@"))
@@ -743,7 +742,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseOperator = function(_inputToken) {
+	static parseOperator = function() {
 		var _startCharCode = currentCharCode;
 		if (__char_is_operator(currentCharCode)) {
 			//var _start_pos = charPos;
@@ -1053,7 +1052,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parsePunctuation = function(_inputToken) {
+	static parsePunctuation = function() {
 		var _startCharCode = currentCharCode;
 		if (__char_is_punctuation(currentCharCode)) {
 			var _start_line = line;
@@ -1068,7 +1067,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseEscapeOperator = function(_inputToken) {
+	static parseEscapeOperator = function() {
 		var _startCharCode = currentCharCode;
 		if (currentCharCode == ord(@'\')) {
 			var _token = new __GMLC_create_token(__GMLC_TokenType.EscapeOperator, "\\", "\\", line, column);
@@ -1079,7 +1078,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		return false;
 	};
 	
-	static parseIllegal = function(_inputToken) {
+	static parseIllegal = function() {
 		var _start_line = line;
 		var _start_column = column;
 		

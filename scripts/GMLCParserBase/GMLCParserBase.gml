@@ -18,12 +18,8 @@
 	/// @ignore
 	function GMLCParserBase() constructor {
 		//init variables:
-		target = undefined;
-		stack = [];
-		finished = false;
-		
 		logEnabled = false;
-		should_catch_errors = true;
+		should_catch_errors = false;
 		error_handler = function(_error){ show_debug_message("[ERROR] " + instanceof(self) + " :: " + string(_error)); }
 		
 		async_active = false;
@@ -45,9 +41,7 @@
 		/// @returns {undefined}
 		#endregion
 		static initialize = function(_input) {
-			array_resize(stack, 0);
 			__initialize(_input);
-			currentTarget = undefined;
 		};
 		
 		#region jsDoc
@@ -201,15 +195,15 @@
 		static nextToken = function() {
 			if (should_catch_errors) {
 				try {
-					var _token = __nextToken();
-					parseNext(_token);
+					parseNext();
+					__nextToken();
 				} catch (e) {
 					error_handler(e);
 				}
 			}
 			else {
-				var _token = __nextToken();
-				parseNext(_token);
+				parseNext();
+				__nextToken();
 			}
 		};
 		
@@ -231,17 +225,17 @@
 		/// @param   {any} currentToken : The token to be parsed by the registered parser steps
 		/// @returns {any} : The potentially modified token after all steps
 		#endregion
-		static parseNext = function(_inputToken) {
-			var _outputToken = _inputToken
+		static parseNext = function() {
+			var _output = undefined;
 			for (var i = 0; i < array_length(parserSteps); i++) {
 				
-				_outputToken = parserSteps[i](_inputToken);  // Pass the token through each parser step
+				_output = parserSteps[i]();  // Pass the token through each parser step
 				
-				if (shouldBreakParserSteps(_inputToken, _outputToken)) {
+				if (shouldBreakParserSteps(_output)) {
 					break;
 				}
 			}
-			return _outputToken;
+			return _output;
 		};
 		
 		#region jsDoc
@@ -373,5 +367,113 @@
 	}
 #endregion
 
+
+
+#region ParserBaseChildExample.gml
+//	#region ParserBase
+//	/*
+//	Purpose: The base constructor for all parsers to abide by, helps to standardize function names, and allow for easy logging, debugging, and async execution.
+//	
+//	Methods:
+//	
+//	initialize  :: initialize the parser with it's input data, this will also execute the custom initialize function supplied
+//	cleanup     :: cleans up any active time source, this will also execute the custom cleanup function supplied
+//	isFinished :: returns if the parsing is finished
+//	finalize    :: should not be called externally, it's called as soon as the parsing is finished, this will also execute the custom finalize function supplied
+//	parseAll    :: forcibly parse all, regardless of time or cpu usage.
+//	parseAsync  :: creates a time source which will parse passively until it's finished then execute the callback with the supplied data from your custom finalize function
+//	nextToken   :: this will execute your custom nextToken function with the input being the current token.
+//
+//	*/
+//	#endregion
+//	/// @ignore
+//	function GMLCParserBase() constructor {
+//		
+//		#region Basic
+//		#region jsDoc
+//		/// @func    initialize()
+//		/// @desc    Initializes the parser with its input data. Executes the custom initialize function.
+//		///
+//		///          New stack is resized, and the custom initialization logic is applied.
+//		/// @self    ParserBase
+//		/// @param   {any} _input : The input data to initialize the parser with
+//		/// @returns {undefined}
+//		#endregion
+//		static __initialize = function(_input) {
+//			
+//		};
+//		
+//		#region jsDoc
+//		/// @func    cleanup()
+//		/// @desc    Cleans up any active time source. Also executes the custom cleanup function.
+//		/// @self    ParserBase
+//		/// @returns {undefined}
+//		#endregion
+//		static __cleanup = function() {
+//			
+//		}
+//		
+//		#region jsDoc
+//		/// @func    isFinished()
+//		/// @desc    Checks if the parsing is finished.
+//		/// @self    ParserBase
+//		/// @returns {boolean}
+//		#endregion
+//		static __isFinished = function() {
+//			return finished;
+//		}
+//		
+//		#region jsDoc
+//		/// @func    finalize()
+//		/// @desc    Finalizes the parsing process. Executes the custom finalize function.
+//		/// @self    ParserBase
+//		/// @returns {any}
+//		#endregion
+//		static __finalize = function() {
+//			return false
+//		}
+//		
+//		#endregion
+//		
+//		
+//		#region Parsing Steps
+//		#region jsDoc
+//		/// @func    nextToken()
+//		/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
+//		/// @self    ParserBase
+//		/// @returns {void}
+//		#endregion
+//		static __nextToken = function() {
+//			return _token;
+//		};
+//		
+//		#region jsDoc
+//		/// @func    shouldBreakParserSteps()
+//		/// @desc    Returns if the parser should stop iterating through the parser steps
+//		/// @self    ParserBase
+//		/// @param   {any} inputToken : The token to be parsed by the registered parser steps
+//		/// @param   {any} outputToken : The token produced after parsing steps
+//		/// @returns {bool}
+//		#endregion
+//		static shouldBreakParserSteps = function(_inputToken, _outputToken) {
+//			return __shouldBreakParserSteps(_inputToken, _outputToken);
+//		};
+//		
+//		#region Parsers
+//		
+//		
+//		
+//		//addParserStep(__parseFunction)
+//		//addParserStep(__parseFunction)
+//		//addParserStep(__parseFunction)
+//		//addParserStep(__parseFunction)
+//		//addParserStep(__parseFunction)
+//		
+//		#endregion
+//		
+//		#endregion
+//		
+//	}
+#endregion
 
 
