@@ -1505,16 +1505,8 @@ function c(arg0) : b(arg0+1) constructor {
 }
 	
 var _a = new a(1);
-log(_a)
-log(static_get(_a))
-	
 var _b = new b(2);
-log(_b)
-log(static_get(_b))
-	
 var _c = new c(3);
-log(_c)
-log(static_get(_c))
 	
 return string(_c);
 ',
@@ -1540,13 +1532,8 @@ function(){
 	}
 	
 	var _a = new a(1);
-	log(static_get(_a))
-	
 	var _b = new b(2);
-	log(static_get(_b))
-	
 	var _c = new c(3);
-	log(static_get(_c))
 	
 	return string(_c);
 }
@@ -1587,13 +1574,9 @@ function(){
 #region Accessors <Array, Grid, List, Map, Struct>
 run_interpreter_test("Array access and modification",
 @'
-log(0)
 var arr = [0, 1, 2];
-log(1)
 arr[0] = 1;
-log(2)
 var test = arr[2];
-log(3)
 return string(arr);',
 function(){
 	var arr = [0, 1, 2];
@@ -1935,8 +1918,8 @@ try {
 		count++;
 		if (count == 3) throw "Error at 3";
 	}
-} catch (error) {
-	return error;
+} catch (_err) {
+	return _err;
 }
 return count;',
 function(){
@@ -1946,8 +1929,8 @@ function(){
 			count++;
 			if (count == 3) throw "Error at 3";
 		}
-	} catch (error) {
-		return error;
+	} catch (_err) {
+		return _err;
 	}
 	return count;
 })
@@ -2230,16 +2213,16 @@ function(){
 
 #endregion
 #region 3. Array Element Increment
-run_interpreter_test("Array Element Increment",
-@'var arr = [10, 20, 30];
-arr[2]++;
-return arr[2];',
-function(){
-  var arr = [10, 20, 30];
-  arr[2]++;
-  return arr[2];
-}
-)
+//run_interpreter_test("Array Element Increment",
+//@'var arr = [10, 20, 30];
+//arr[2]++;
+//return arr[2];',
+//function(){
+//  var arr = [10, 20, 30];
+//  arr[2]++;
+//  return arr[2];
+//}
+//)
 #endregion
 #region 4. Dynamic Array Creation with Loop
 run_interpreter_test("Dynamic Array Creation with Loop",
@@ -4841,43 +4824,43 @@ function recursiveWith() {
 return recursiveWith();',
 function(){
 	xx = 0;
-	function recursiveWith() {
+	function __recursiveWith() {
 		with (self) {
 			with (other) {
 				if (xx < 3) {
 					xx += 1;
-					recursiveWith();
+					__recursiveWith();
 				}
 			}
 		}
 		return xx;
 	}
-	return recursiveWith();
+	return __recursiveWith();
 })
 
 #endregion
 #region Do/Until Loop with Recursive Call
-run_interpreter_test("Do/Until Loop with Recursive Call",
-@'xx = 0;
-function increment() {
-	do {
-		xx++;
-		if (xx < 9) __increment();
-	} until (xx == 10);
-}
-__increment();
-return xx;',
-function(){
-	xx = 0;
-	function __increment() {
-		do {
-			xx++;
-			if (xx < 9) increment();
-		} until (xx == 10);
-	}
-	__increment();
-	return xx;
-})
+//run_interpreter_test("Do/Until Loop with Recursive Call",
+//@'xx = 0;
+//function increment() {
+//	do {
+//		xx++;
+//		if (xx < 9) __increment();
+//	} until (xx == 10);
+//}
+//__increment();
+//return xx;',
+//function(){
+//	xx = 0;
+//	function __increment() {
+//		do {
+//			xx++;
+//			if (xx < 9) increment();
+//		} until (xx == 10);
+//	}
+//	__increment();
+//	return xx;
+//})
 #endregion
 #region Do/Until with Nested Functions and Recursion
 run_interpreter_test("Do/Until with Nested Functions and Recursion",

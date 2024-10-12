@@ -1216,7 +1216,7 @@ function __GMLCcompileReturn(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteThrow() {
-	throw_gmlc_error(expression()+$"\n(line {line}) -\t{lineString}")
+	throw expression()
 }
 function __GMLCcompileThrow(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileThrow", "<Missing Error Message>", _node.line, _node.lineString);
