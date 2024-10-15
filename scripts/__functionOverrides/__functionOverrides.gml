@@ -246,10 +246,10 @@ function __script_execute_ext(ind, array=undefined, offset=0, num_args=array_len
 			} // end else
 	
 	
-			var n = offset+num_args-1, i=num_args-1;
+			var n = offset, i=num_args-offset;
 			repeat (num_args) {
 				__argArr[i] = array[n];
-			--i; n-=dir}
+			++i; n+=dir}
 		}
 	}
 	///////////////////////////////////////////
@@ -264,7 +264,7 @@ function __script_execute_ext(ind, array=undefined, offset=0, num_args=array_len
 			return method_call(ind, __argArr);
 		}
 	}
-	pprint([ind, __argArr, offset, num_args])
+	
 	return script_execute_ext(ind, __argArr);
 }
 
