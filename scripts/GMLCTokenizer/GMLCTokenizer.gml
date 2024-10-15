@@ -101,13 +101,16 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 		if (__char_is_whitespace(currentCharCode)) {
 			while (currentCharCode != undefined)
 			&& (__char_is_whitespace(__peekUTF8() ?? 0)) {
+				
+				if (currentCharCode == ord("\n")) {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Whitespace, "\n", "\n", line, column);
+					array_push(tokens, _token);
+					return _token;
+				}
+				
 				__nextUTF8();
 			}
-			if (currentCharCode == ord("\n")) {
-				var _token = new __GMLC_create_token(__GMLC_TokenType.Whitespace, "\n", "\n", line, column);
-				array_push(tokens, _token);
-				return _token;
-			}
+			
 			return true;
 		}
 		//show_debug_message($":: parseSkipWhitespace :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
@@ -190,7 +193,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 			
 			while (currentCharCode != undefined) {
 				var _char = chr(currentCharCode);
-			
+				
 				//convert escape charactors 
 				switch (currentCharCode) {
 					case ord(@'\'): {
@@ -1312,7 +1315,7 @@ function __nextUTF8() {
 		currentCharCode = ((_character & $0F) << 12) | ((_b & $3F) <<  6) | (_c & $3F);
 	}
 	else if ((_character & $F8) == $F0) { //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-		bytePos += 3;
+		bytePos += 4;
 		var _b = buffer_read(sourceCodeBuffer, buffer_u8);
 		var _c = buffer_read(sourceCodeBuffer, buffer_u8);
 		var _d = buffer_read(sourceCodeBuffer, buffer_u8);

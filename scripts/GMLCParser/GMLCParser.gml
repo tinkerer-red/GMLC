@@ -1274,7 +1274,7 @@
 				break;}
 			}
 			
-			throw_gmlc_error($"Unexpected token in expression: {currentToken}\nLast five tokens were:\n{lastFiveTokens}");
+			throw_gmlc_error($"Unexpected token in expression: {currentToken}\nLast five tokens were:\n{json(lastFiveTokens)}");
 		};
 		
 		static parseArrayCreation = function() {

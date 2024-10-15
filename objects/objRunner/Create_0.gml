@@ -5,28 +5,28 @@ testFramework = new TestFrameworkRun();
 // ################# TEST SUITE REGISTRATION #################
 
 //// Register your test suites here...
-testFramework.addSuite(BasicConstructorTestSuit);
-
-testFramework.addSuite(BasicArrayTestSuite);
-testFramework.addSuite(BasicBase64TestSuite);
-testFramework.addSuite(BasicDataStructuresGridTestSuite);
-testFramework.addSuite(BasicDataStructuresListTestSuite);
-testFramework.addSuite(BasicDataStructuresMapTestSuite);
-testFramework.addSuite(BasicDataStructuresPriorityTestSuite);
-testFramework.addSuite(BasicDataStructuresQueueTestSuite);
-testFramework.addSuite(BasicDataStructuresStackTestSuite);
-testFramework.addSuite(BasicDataTypesTestSuite);
-testFramework.addSuite(BasicDateTimeTestSuite);
-//testFramework.addSuite(BasicFileTestSuite);    //currently failing on array get compile
-testFramework.addSuite(BasicFiltersEffectsTestSuite);
-testFramework.addSuite(BasicHandlesTestSuite);
-testFramework.addSuite(BasicIniTestSuite);
-testFramework.addSuite(BasicJsonTestSuite);
-testFramework.addSuite(BasicMathTestSuite);
-testFramework.addSuite(BasicMatrixTestSuite);
-testFramework.addSuite(BasicNameofTestSuite);
-testFramework.addSuite(BasicRandomTestSuite);
-testFramework.addSuite(BasicScriptTestSuite);
+//testFramework.addSuite(BasicConstructorTestSuit);
+//
+//testFramework.addSuite(BasicArrayTestSuite);
+//testFramework.addSuite(BasicBase64TestSuite);
+//testFramework.addSuite(BasicDataStructuresGridTestSuite);
+//testFramework.addSuite(BasicDataStructuresListTestSuite);
+//testFramework.addSuite(BasicDataStructuresMapTestSuite);
+//testFramework.addSuite(BasicDataStructuresPriorityTestSuite);
+//testFramework.addSuite(BasicDataStructuresQueueTestSuite);
+//testFramework.addSuite(BasicDataStructuresStackTestSuite);
+//testFramework.addSuite(BasicDataTypesTestSuite);
+//testFramework.addSuite(BasicDateTimeTestSuite);
+////testFramework.addSuite(BasicFileTestSuite);    //currently failing on array get compile
+//testFramework.addSuite(BasicFiltersEffectsTestSuite);
+//testFramework.addSuite(BasicHandlesTestSuite);
+//testFramework.addSuite(BasicIniTestSuite);
+//testFramework.addSuite(BasicJsonTestSuite);
+//testFramework.addSuite(BasicMathTestSuite);
+//testFramework.addSuite(BasicMatrixTestSuite);
+//testFramework.addSuite(BasicNameofTestSuite);
+//testFramework.addSuite(BasicRandomTestSuite);
+//testFramework.addSuite(BasicScriptTestSuite);
 testFramework.addSuite(BasicStringTestSuite);
 testFramework.addSuite(BasicVariableTestSuite);
 

@@ -262,6 +262,7 @@ function pprint(_thing) {
 }
 
 function throw_gmlc_error(_err) {
+	log(_err)
 	show_error(@'
 ===GMLC===
 '+string(_err)+"\n=========\n\n", true)

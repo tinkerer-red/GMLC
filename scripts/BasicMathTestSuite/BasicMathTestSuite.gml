@@ -2636,7 +2636,6 @@ function BasicMathTestSuite() : TestSuite() constructor {
 		var _vInt = buffer_read(_buffer, buffer_s32);
 		var _vInt64 = buffer_read(_buffer, buffer_u64);
 		
-		log("global.gReal = 99;")
 		global.gReal = 99;
 		global.gInt = _vInt;
 		global.gInt64 = int64(0x12131415161718);
@@ -2677,7 +2676,6 @@ function BasicMathTestSuite() : TestSuite() constructor {
 			
 		// one argument, global	
 		
-		log("#5 max( real global )")
 		//#5 max( real global )
 		_result = max(global.gReal);
 		assert_equals(_result, global.gReal, "#5 max( real global )")
@@ -2758,7 +2756,6 @@ function BasicMathTestSuite() : TestSuite() constructor {
 		_result = max(kReal_MaxTest, _objOther.oReal, global.gReal, _vReal);
 		assert_equals(_result, _objOther.oReal, "#21 max( real const , real const , real const , real const )");
 			
-		log("#22 max( real const , real const , real const , real const )")
 		//#22 max( real const , real const , real const , real const )
 		_result = max(-kReal_MaxTest, -_objOther.oReal, -global.gReal, -_vReal);
 		assert_equals(_result, -kReal_MaxTest, "#22 max( real const , real const , real const , real const )");
