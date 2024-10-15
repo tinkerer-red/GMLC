@@ -11,8 +11,7 @@
 	parseStatement(tokens): Parse a statement from tokens.
 	*/
 	#endregion
-	function GML_Parser() : GMLCParserBase() constructor {
-		
+	function GML_Parser() constructor {
 		finished = false;
 		tokens = undefined;
 		currentTokenIndex = 0;
@@ -20,37 +19,16 @@
 		currentFunction = undefined;
 		scriptAST = undefined;
 		
-		parseStack=[];
-		
 		lastFiveTokens = array_create(5, undefined);
 		
-		
-		#region Basic
-		#region jsDoc
-		/// @func    initialize()
-		/// @desc    Initializes the parser with its input data. Executes the custom initialize function.
-		///
-		///          New stack is resized, and the custom initialization logic is applied.
-		/// @self    ParserBase
-		/// @param   {any} _input : The input data to initialize the parser with
-		/// @returns {undefined}
-		#endregion
-		static __initialize = function(_program) {
-			
+		static initialize = function(_program) {
 			finished = false;
 			
-			scriptAST = new ASTScript(undefined, undefined);
+			scriptAST = new ASTScript();
 			currentScript = scriptAST;
-			currentFunction = undefined;
-			currentBlockStatement = undefined;
 			
 			program = _program;
 			tokens = _program.tokens;
-			
-			//init the parse stack, and push the first thing into it
-			parseStack=[];
-			array_push(parseStack, new __ParseStackEntry(parseBlock, scriptAST, "statements"))
-			
 			
 			//apply the variable names and token streams from program to ast
 			scriptAST.MacroVar      = program.MacroVar;
@@ -68,49 +46,50 @@
 			
 			currentTokenIndex = 0;
 			currentToken = tokens[currentTokenIndex];
+			currentFunction = undefined;
 			
+			operatorStack = []; // Stack for operators
+			operandStack = []; // Stack for operands (AST nodes)
+			
+			replaceAllMacrosAndEnums();
 		};
 		
-		#region jsDoc
-		/// @func    cleanup()
-		/// @desc    Cleans up any active time source. Also executes the custom cleanup function.
-		/// @self    ParserBase
-		/// @returns {undefined}
-		#endregion
-		static __cleanup = function() {
-			// currently nothing to do here
+		static cleanup = function() {
+			// i mean idk, what do you wanna do?
 		}
 		
-		#region jsDoc
-		/// @func    isFinished()
-		/// @desc    Checks if the parsing is finished.
-		/// @self    ParserBase
-		/// @returns {boolean}
-		#endregion
-		static __isFinished = function() {
-			return finished;
-		}
-		
-		#region jsDoc
-		/// @func    finalize()
-		/// @desc    Finalizes the parsing process. Executes the custom finalize function.
-		/// @self    ParserBase
-		/// @returns {any}
-		#endregion
-		static __finalize = function() {
+		static parseAll = function() {
+			while (!finished) {
+				parseNext();
+			}
+			
 			return scriptAST;
-		}
+		};
 		
-		#endregion
+		static parseNext = function() {
+			if (currentToken != undefined) {
+				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
+				var statement = parseStatement();
+				if (statement) {
+					array_push(scriptAST.statements.statements, statement);
+				}
+				
+				if (GML_COMPILER_DEBUG) {
+					static __lastString = ""
+					var _str = string(currentTokenIndex/array_length(tokens)/10)
+					if (__lastString != _str) {
+						do_trace($"{real(_str)*1000}% Finished")
+						__lastString = _str;
+					}
+				}
+			}
+			else {
+				finished = true;
+			}
+		};
 		
-		#region Parsing Steps
-		#region jsDoc
-		/// @func    nextToken()
-		/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
-		/// @self    ParserBase
-		/// @returns {void}
-		#endregion
-		static __nextToken = function() {
+		static nextToken = function() {
 			lastFiveTokens[0] = lastFiveTokens[1];
 			lastFiveTokens[1] = lastFiveTokens[2];
 			lastFiveTokens[2] = lastFiveTokens[3];
@@ -126,38 +105,65 @@
 			}
 		};
 		
-		#region jsDoc
-		/// @func    shouldBreakParserSteps()
-		/// @desc    Returns if the parser should stop iterating through the parser steps
-		/// @self    ParserBase
-		/// @param   {any} inputToken : The token to be parsed by the registered parser steps
-		/// @param   {any} outputToken : The token produced after parsing steps
-		/// @returns {bool}
-		#endregion
-		static __shouldBreakParserSteps = function(_output) {
-			return __shouldBreakParserSteps(_inputToken, _outputToken);
-		};
-		
-		#region Parsers
-		static __parseNext = function() {
-			if (currentToken != undefined) {
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
-				
-				// If the parse stack isn't empty, resume the last saved state
-				if (array_length(parseStack) > 0) {
-					//execute the function, the parser functions will handle the writing as needed
-					var _func = array_last(parseStack).expectedFunction;
-					_func();
-				}
-				else {
-					//we are finished most likely, but just incase lets throw an error if tokens arent done yet
-					throw_gmlc_error($"Why did we stop here? how many tokens are left? {array_length(tokens)-currentTokenIndex} :: {currentToken}")
-				}
-			
-			} else {
-				finished = true;
+		static peekToken = function() {
+			if (currentTokenIndex + 1 < array_length(tokens)) {
+				return tokens[currentTokenIndex + 1];
+			}
+			else {
+				return undefined; // No more tokens
 			}
 		};
+		
+		static replaceAllMacrosAndEnums = function(_tokens) {
+			var _loop_count = 0;
+			var _hasChanged = true;
+			while (_hasChanged) { //recursively ensure all macros and enums have been applied
+				_hasChanged = false;
+				for (var _i = 0; _i < array_length(_tokens); _i++) {
+					var _token = _tokens[_i];
+				
+					if (_token.type == __GMLC_TokenType.Identifier) {
+					
+						var _scopeType = __find_ScopeType_from_string(_token.value);
+					
+						if (_scopeType == ScopeType.MACRO) {
+							
+							var _macroTokens = currentScript.MacroVar[$ _token.value];
+							
+							array_delete(_tokens, _i, 1); //remove the macro from the token array
+							array_insert_ext(_tokens, _i, _macroTokens); //insert the macro definition into the token array
+							
+							_hasChanged = true;
+						}
+					
+						if (_scopeType == ScopeType.ENUM) {
+							var _header = _token.value;
+							
+							if (_i < array_length(_tokens)-2)
+							&& (_tokens[_i+1].type == __GMLC_TokenType.Punctuation)
+							&& (_tokens[_i+1].value == ".")
+							&& (_tokens[_i+2].type == __GMLC_TokenType.Identifier) {
+								
+								var _member = _tokens[_i+2].value;
+								var _enumTokens = currentScript.EnumVar[$ _header][$ _member];
+								
+								array_delete(_tokens, _i, 3); //remove the enum from the token array
+								array_insert_ext(_tokens, _i, _enumTokens); //insert the enum definition into the token array
+								
+								_hasChanged = true;
+							}
+						}
+					
+					}
+				}
+				_loop_count++
+				if (_loop_count > 1000) {
+					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting")
+				}
+			}
+		}
+		
+		#region AST Builder Methods
 		
 		static parseStatement = function() {
 			switch (currentToken.value) {
@@ -182,7 +188,7 @@
 				case "return":		return parseReturnStatement();
 				case "#macro":		return parseReturnStatement();
 				case "enum":		return parseReturnStatement();
-				case "{":			return parseBlock(); // this is actually only used because in GML you can arbitrarily define a block of code with {} as long as that block of code isnt inside an expression.
+				case "{":			return parseBlock();
 				default:			return parseExpressionStatement();  // Assume any other token starts an expression statement
 			}
 		};
@@ -191,34 +197,36 @@
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			optionalToken(__GMLC_TokenType.Punctuation, "{") // Consume the {
-			
-			//write the block to the parent
-			var _statements = [];
-			var _block = new ASTBlockStatement(_statements, line, lineString);
-			
-			
-			while (currentToken != undefined && currentToken.value != "}") {
-				var _statement = parseStatement();
+			if (currentToken.value == "{") {
+				nextToken(); // Consume the {
+				var _statements = [];
+				while (currentToken != undefined && currentToken.value != "}") {
+					var _statement = parseStatement();
+					
+					if (_statement != undefined) {
+						array_push(_statements, _statement);
+					}
+					
+					//consume optional `;`
+					optionalToken(__GMLC_TokenType.Punctuation, ";")
+					
+					// Parse each statement until } is found
+					// Optional: Handle error checking for unexpected end of file
+				}
+				nextToken(); // Consume the }
 				
-				if (_statement != undefined) {
-					array_push(_statements, _statement);
+				//compile better code
+				if (array_length(_statements) == 1) {
+					return _statements[0];
 				}
 				
-				//consume optional `;`
-				optionalToken(__GMLC_TokenType.Punctuation, ";")
-				
-				// Parse each statement until } is found
-				// Optional: Handle error checking for unexpected end of file
+				return new ASTBlockStatement(_statements, line, lineString); // Return a block statement containing all parsed statements
 			}
-			nextToken(); // Consume the }
-			
-			//compile better code
-			if (array_length(_statements) == 1) {
-				return _statements[0];
+			else {
+				// If no {, its a single statement block
+				var singleStatement = parseStatement();
+				return new ASTBlockStatement([singleStatement], line, lineString);
 			}
-			
-			
 		};
 		
 		#region Statements
@@ -235,12 +243,13 @@
 			var _codeBlock = parseBlock();
 			var _elseBlock = undefined;
 			
+			
+			
 			if (currentToken != undefined)
 			&& (currentToken.value == "else") {
 				nextToken(); // Consume else
 				_elseBlock = parseBlock();
 			}
-			
 			return new ASTIfStatement(_condition, _codeBlock, _elseBlock, line, lineString);
 		};
 		
@@ -1453,41 +1462,6 @@
 		
 		#endregion
 		
-		
-		addParserStep(__parseNext)
-		
-		#endregion
-		
-		#endregion
-		
-		static parseNext = function() {
-			if (currentToken != undefined) {
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
-				
-				var statement = parseStatement();
-				if (statement) {
-					array_push(scriptAST.statements.statements, statement);
-				}
-				
-			}
-			else {
-				finished = true;
-			}
-		};
-		
-		static peekToken = function() {
-			if (currentTokenIndex + 1 < array_length(tokens)) {
-				return tokens[currentTokenIndex + 1];
-			}
-			else {
-				return undefined; // No more tokens
-			}
-		};
-		
-		
-		#region AST Builder Methods
-		
-		
 		#region Helper Functions
 		
 		static expectToken = function(expectedType, expectedValue) {
@@ -1529,63 +1503,6 @@
 				default					: return _func;
 			}
 			
-		}
-		
-		static replaceAllMacrosAndEnums = function(_tokens) {
-			var _loop_count = 0;
-			var _hasChanged = true;
-			while (_hasChanged) { //recursively ensure all macros and enums have been applied
-				_hasChanged = false;
-				for (var _i = 0; _i < array_length(_tokens); _i++) {
-					var _token = _tokens[_i];
-				
-					if (_token.type == __GMLC_TokenType.Identifier) {
-					
-						var _scopeType = __find_ScopeType_from_string(_token.value);
-					
-						if (_scopeType == ScopeType.MACRO) {
-							
-							var _macroTokens = currentScript.MacroVar[$ _token.value];
-							
-							array_delete(_tokens, _i, 1); //remove the macro from the token array
-							array_insert_ext(_tokens, _i, _macroTokens); //insert the macro definition into the token array
-							
-							_hasChanged = true;
-						}
-					
-						if (_scopeType == ScopeType.ENUM) {
-							var _header = _token.value;
-							
-							if (_i < array_length(_tokens)-2)
-							&& (_tokens[_i+1].type == __GMLC_TokenType.Punctuation)
-							&& (_tokens[_i+1].value == ".")
-							&& (_tokens[_i+2].type == __GMLC_TokenType.Identifier) {
-								
-								var _member = _tokens[_i+2].value;
-								var _enumTokens = currentScript.EnumVar[$ _header][$ _member];
-								
-								array_delete(_tokens, _i, 3); //remove the enum from the token array
-								array_insert_ext(_tokens, _i, _enumTokens); //insert the enum definition into the token array
-								
-								_hasChanged = true;
-							}
-						}
-					
-					}
-				}
-				_loop_count++
-				if (_loop_count > 1000) {
-					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting")
-				}
-			}
-		}
-		
-		static writeToParent = function(_node) {
-			var _entry = array_last(parseStack)
-			if (_entry.index == undefined)
-				_entry.parent[$ _entry.key] == _node;
-			else
-				_entry.parent[$ _entry.key][_entry.index] == _node;
 		}
 		
 		#endregion
@@ -1656,13 +1573,6 @@ function array_insert_ext(array, index, arr_of_val, offset=0, length=max(array_l
 	array_copy(__args, 0, arr_of_val, offset, length);
 	array_insert(__args, 0, array, index);
 	return script_execute_ext(array_insert, __args);
-}
-/// @ignore
-function __ParseStackEntry(_func, _parent, _key, _index=undefined) constructor {
-	expectedFunction = _func; // Function to resume next frame
-	parent = _parent;         // Parent AST node
-	key = _key;               // The key to assign the parsed block to
-	index = _index;           // If parsing an array of children (optional)
 }
 #endregion
 
