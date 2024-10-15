@@ -23,10 +23,9 @@
 		error_handler = function(_error){ show_debug_message("[ERROR] " + instanceof(self) + " :: " + string(_error)); }
 		
 		async_active = false;
-		async_max_time = (1/gamespeed_fps * 1_000) * (1/8) //the max time to spend parsing, default is 1/8th of a frame time.
-		async_start_time = undefined;
-		async_time_source = undefined;
+		async_max_time = (1/game_get_speed(gamespeed_fps) * 1_000) * (1/8) //the max time to spend parsing, default is 1/8th of a frame time.
 		async_callback = undefined;
+		async_promise = undefined;
 		
 		parserSteps = [];  // List to store the indevidual parse operations, order important
 		
@@ -51,8 +50,8 @@
 		/// @returns {undefined}
 		#endregion
 		static cleanup = function() {
-			if (async_time_source != undefined) {
-				time_source_destroy(async_time_source);
+			if (async_promise != undefined) {
+				async_promise.Cancel()
 			}
 			__cleanup();
 		}
@@ -121,26 +120,20 @@
 			async_callback = _callback;
 			error_handler  = _errback ?? error_handler;
 			
-			var _asyncParse = method(self, function() {
-				async_start_time = current_time;
-				while (current_time-async_start_time < async_max_time) {
+			async_promise = new Promise(method(self, function() {
+				while (!PromiseExceededFrameBudget()) {
 					nextToken();
 					
 					if (isFinished()) {
 						async_active = false;
 						async_callback(finalize());
-						time_source_destroy(async_time_source);
-						async_time_source = undefined;
-						break;
+						return finalize();
 					}
 				}
-			})
+				PromisePostponeTaskRemoval();
+			}));
 			
-			//execute the time source
-			async_time_source = time_source_create(time_source_game, 1, time_source_units_frames, _asyncParse, [], -1)
-			time_source_start(async_time_source)
-			
-			return async_time_source
+			return async_promise
 		}
 		
 		#region jsDoc
@@ -150,10 +143,10 @@
 		/// @returns {undefined}
 		#endregion
 		static asyncPause = function() {
-			if (async_time_source != undefined) {
-				time_source_pause(async_time_source);
-				async_active = false;
+			if (async_promise != undefined) {
+				async_promise.Pause()
 			}
+			async_active = false;
 		};
 		
 		#region jsDoc
@@ -163,8 +156,8 @@
 		/// @returns {undefined}
 		#endregion
 		static asyncResume = function() {
-			if (async_time_source != undefined) {
-				time_source_start(async_time_source);
+			if (async_promise != undefined) {
+				async_promise.Resume()
 				async_active = true;
 			}
 		};
@@ -176,11 +169,10 @@
 		/// @returns {undefined}
 		#endregion
 		static asyncCancel = function() {
-			if (async_time_source != undefined) {
-				time_source_destroy(async_time_source);
-				async_time_source = undefined;
-				async_active = false;
+			if (async_promise != undefined) {
+				async_promise.Cancel()
 			}
+			async_active = false;
 		};
 		
 		#endregion
@@ -455,8 +447,8 @@
 //		/// @param   {any} outputToken : The token produced after parsing steps
 //		/// @returns {bool}
 //		#endregion
-//		static shouldBreakParserSteps = function(_inputToken, _outputToken) {
-//			return __shouldBreakParserSteps(_inputToken, _outputToken);
+//		static __shouldBreakParserSteps = function(_output) {
+//			return (finished || _output == true);
 //		};
 //		
 //		#region Parsers

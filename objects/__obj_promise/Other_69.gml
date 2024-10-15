@@ -1,0 +1,1 @@
+__handleAsyncEvent(ASYNC_EVENT.STEAM, async_load);

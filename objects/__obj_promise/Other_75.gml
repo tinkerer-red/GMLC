@@ -1,0 +1,1 @@
+__handleAsyncEvent(ASYNC_EVENT.SYSTEM, async_load);

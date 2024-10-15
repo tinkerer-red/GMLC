@@ -11,7 +11,8 @@
 	parseStatement(tokens): Parse a statement from tokens.
 	*/
 	#endregion
-	function GML_Parser() constructor {
+	function GML_Parser() : GMLCParserBase() constructor {
+		
 		finished = false;
 		tokens = undefined;
 		currentTokenIndex = 0;
@@ -21,10 +22,22 @@
 		
 		lastFiveTokens = array_create(5, undefined);
 		
-		static initialize = function(_program) {
+		
+		#region Basic
+		#region jsDoc
+		/// @func    initialize()
+		/// @desc    Initializes the parser with its input data. Executes the custom initialize function.
+		///
+		///          New stack is resized, and the custom initialization logic is applied.
+		/// @self    ParserBase
+		/// @param   {any} _input : The input data to initialize the parser with
+		/// @returns {undefined}
+		#endregion
+		static __initialize = function(_program) {
+			
 			finished = false;
 			
-			scriptAST = new ASTScript();
+			scriptAST = new ASTScript(undefined, undefined);
 			currentScript = scriptAST;
 			
 			program = _program;
@@ -48,48 +61,48 @@
 			currentToken = tokens[currentTokenIndex];
 			currentFunction = undefined;
 			
-			operatorStack = []; // Stack for operators
-			operandStack = []; // Stack for operands (AST nodes)
-			
-			replaceAllMacrosAndEnums();
 		};
 		
-		static cleanup = function() {
-			// i mean idk, what do you wanna do?
+		#region jsDoc
+		/// @func    cleanup()
+		/// @desc    Cleans up any active time source. Also executes the custom cleanup function.
+		/// @self    ParserBase
+		/// @returns {undefined}
+		#endregion
+		static __cleanup = function() {
+			// currently nothing to do here
 		}
 		
-		static parseAll = function() {
-			while (!finished) {
-				parseNext();
-			}
-			
+		#region jsDoc
+		/// @func    isFinished()
+		/// @desc    Checks if the parsing is finished.
+		/// @self    ParserBase
+		/// @returns {boolean}
+		#endregion
+		static __isFinished = function() {
+			return finished;
+		}
+		
+		#region jsDoc
+		/// @func    finalize()
+		/// @desc    Finalizes the parsing process. Executes the custom finalize function.
+		/// @self    ParserBase
+		/// @returns {any}
+		#endregion
+		static __finalize = function() {
 			return scriptAST;
-		};
+		}
 		
-		static parseNext = function() {
-			if (currentToken != undefined) {
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
-				
-				var statement = parseStatement();
-				if (statement) {
-					array_push(scriptAST.statements.statements, statement);
-				}
-				
-				if (GML_COMPILER_DEBUG) {
-					static __lastString = ""
-					var _str = string(currentTokenIndex/array_length(tokens)/10)
-					if (__lastString != _str) {
-						do_trace($"{real(_str)*1000}% Finished")
-						__lastString = _str;
-					}
-				}
-			}
-			else {
-				finished = true;
-			}
-		};
+		#endregion
 		
-		static nextToken = function() {
+		#region Parsing Steps
+		#region jsDoc
+		/// @func    nextToken()
+		/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
+		/// @self    ParserBase
+		/// @returns {void}
+		#endregion
+		static __nextToken = function() {
 			lastFiveTokens[0] = lastFiveTokens[1];
 			lastFiveTokens[1] = lastFiveTokens[2];
 			lastFiveTokens[2] = lastFiveTokens[3];
@@ -102,6 +115,47 @@
 			}
 			else {
 				currentToken = undefined; // End of token stream
+			}
+		};
+		
+		#region jsDoc
+		/// @func    shouldBreakParserSteps()
+		/// @desc    Returns if the parser should stop iterating through the parser steps
+		/// @self    ParserBase
+		/// @param   {any} inputToken : The token to be parsed by the registered parser steps
+		/// @param   {any} outputToken : The token produced after parsing steps
+		/// @returns {bool}
+		#endregion
+		static __shouldBreakParserSteps = function(_output) {
+			return __shouldBreakParserSteps(_inputToken, _outputToken);
+		};
+		
+		#region Parsers
+		
+		
+		
+		//addParserStep(__parseFunction)
+		//addParserStep(__parseFunction)
+		//addParserStep(__parseFunction)
+		//addParserStep(__parseFunction)
+		//addParserStep(__parseFunction)
+		
+		#endregion
+		
+		#endregion
+		
+		static parseNext = function() {
+			if (currentToken != undefined) {
+				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
+				var statement = parseStatement();
+				if (statement) {
+					array_push(scriptAST.statements.statements, statement);
+				}
+				
+			}
+			else {
+				finished = true;
 			}
 		};
 		

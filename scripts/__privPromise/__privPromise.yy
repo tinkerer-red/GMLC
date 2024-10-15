@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__privPromise",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__privPromise",
+  "parent":{
+    "name":"Private",
+    "path":"folders/_Libraries/Promise/Private.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

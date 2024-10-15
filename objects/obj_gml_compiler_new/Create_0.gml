@@ -1413,7 +1413,7 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 		var preprocessor = new GML_PreProcessor();
 		preprocessor.initialize(tokens);
 		preprocessor.parseAsync(method(
-		{description, expectedReturn},
+		self,
 		function(preprocessedTokens) {
 			
 			log($"Attempting Interpreter Test :: {description}")
@@ -1436,7 +1436,6 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 				log($"AST ::\n{json_stringify(ast, true)}\n")
 				//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 			}
-			
 			
 		}));
 	}));
