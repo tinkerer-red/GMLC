@@ -605,12 +605,12 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 					var _iterations = _longest - string_length(_identifier) - _peek_length;
 				
 					var _temp_identifier = _identifier
-					var _i=0; repeat(_peek_length) {
+					var _i=1; repeat(_peek_length) {
 						_temp_identifier += chr(__peekUTF8(_i));
 					_i++}
 				
 					//iterate through all and try to find a match
-					var _i=0; repeat(_iterations) {
+					var _i=1; repeat(_iterations) {
 						var _nextIterToken = __peekUTF8(_peek_length+_i);
 						
 						if (_nextIterToken == undefined) {
