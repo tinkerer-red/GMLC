@@ -256,7 +256,6 @@ function GML_PreProcessor() : GMLCParserBase() constructor {
 				skipWhitespaces();
 				
 			}
-			__nextToken(); // Move past }
 			
 			program.EnumVar[$ enumName] = _enum_struct;
 			program.EnumVarNames[$ enumName] = enumMembers;

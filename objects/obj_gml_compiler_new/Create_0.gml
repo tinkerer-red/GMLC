@@ -27,6 +27,7 @@
     
 //_i++}
 
+show_debug_overlay(true)
 
 
 #region Tokenizer Tests
@@ -5075,7 +5076,6 @@ log($"Finished compiling and executing tests in {(get_timer() - _s)/1_000}")
 }
 run_all_interpreter_tests();
 #endregion
-
 
 log("\n\n\n")
 
