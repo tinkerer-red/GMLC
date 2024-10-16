@@ -356,8 +356,11 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 			var _str = string_replace(_raw_string, "$", "0x")
 			_str = string_replace_all(_str, "_", "")
 			var _hex_value = real(_str);
-			if (_hex_value > 2147483647 || _hex_value < -2147483648) _hex_value = int64(_hex_value);
-		
+			
+			static __maxSigned32 = 0x7FFFFFFF
+			if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32-1) _hex_value = __hexTo64Bit(_str);
+			
+			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _hex_value, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -431,7 +434,9 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 			
 			var _str = string_replace_all(_raw_string, "_", "")
 			var _binary_value = real(_str);
-			if (_binary_value > 2147483647 || _binary_value < -2147483648) _binary_value = int64(_binary_value);
+			
+			static __maxSigned32 = 0x7FFFFFFF
+			if (_binary_value > __maxSigned32 || _binary_value < -__maxSigned32-1) _binary_value = __binaryTo64Bit(_str);
 			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _binary_value, _start_line, _start_column);
 			array_push(tokens, _token);
@@ -471,9 +476,9 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 				__nextUTF8();
 			}
 			
-			var _str = real(string_replace_all(_num_string, "_", ""));
+			var _str = string_replace_all(_num_string, "_", "");
 			var _number = real(_str);
-			if (_number > 2147483647 || _number < -2147483648) _number = int64(_number);
+			if (_number > 2147483647 || _number < -2147483648) _number = int64(_str);
 			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _num_string, _number, _start_line, _start_column);
 			array_push(tokens, _token);
@@ -1586,6 +1591,91 @@ function __char_is_whitespace(char) {
     return char >= 0x09 && char <= 0x0D || char == 0x20 || char == 0x85;
 }
 
+/// @ignore
+function __hexTo64Bit(_hexString) {
+    // Strip the "0x" prefix and underscores
+    _hexString = string_replace_all(string_delete(_hexString, 1, 2), "_", "");
+
+    // Convert hex string directly into high and low 32-bit parts
+    var highValue = 0;
+    var lowValue = 0;
+    var len = string_length(_hexString);
+
+    // Parse hex manually
+    for (var i = 0; i < len; i++) {
+        var _char = ord(string_char_at(_hexString, i + 1));
+        
+		var digit = undefined;
+		if (_char >= ord("0") && _char <= ord("9")) {
+			digit = _char - ord("0");
+		}
+		else if (_char >= ord("a") && _char <= ord("f")) {
+			digit = _char - ord("a") + 10;
+		}
+		else if (_char >= ord("A") && _char <= ord("F")) {
+			digit = _char - ord("A") + 10;
+		}
+		else {
+			throw "Invalid character in hex string: " + chr(_char);
+		}
+		
+		
+        if (i < 8) {
+            highValue = highValue * 16 + digit;
+        } else {
+            lowValue = lowValue * 16 + digit;
+        }
+    }
+
+    // Apply 2's complement if necessary
+    if (highValue >= 0x80000000) {
+        highValue -= 0x100000000;  // Convert to signed 32-bit
+    }
+	
+	// Combine the two parts into a 64-bit signed integer
+    return highValue * 0x100000000 + lowValue;
+}
+
+/// @ignore
+function __binaryTo64Bit(_binaryString) {
+    // Strip the "0b" prefix and underscores
+    _binaryString = string_replace_all(string_delete(_binaryString, 1, 2), "_", "");
+
+    // Convert binary string directly into high and low 32-bit parts
+    var highValue = 0;
+    var lowValue = 0;
+    var len = string_length(_binaryString);
+
+    // Parse binary manually
+    for (var i = 0; i < len; i++) {
+        var _char = string_char_at(_binaryString, i + 1);
+
+        var digit = undefined;
+        if (_char == "0") {
+            digit = 0;
+        }
+		else if (_char == "1") {
+            digit = 1;
+        }
+		else {
+            throw "Invalid character in binary string: " + _char;
+        }
+
+        if (i < 32) {
+            highValue = highValue * 2 + digit;  // First 32 bits go to high part
+        } else {
+            lowValue = lowValue * 2 + digit;    // Remaining bits go to low part
+        }
+    }
+
+    // Apply 2's complement if necessary
+    if (highValue >= 0x80000000) {
+        highValue -= 0x100000000;  // Convert to signed 32-bit
+    }
+	
+	// Combine the two parts into a 64-bit signed integer
+    return highValue * 0x100000000 + lowValue;
+}
 #endregion
 #region Constructors
 /// @ignore
