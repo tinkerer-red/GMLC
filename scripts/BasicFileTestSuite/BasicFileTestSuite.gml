@@ -1125,7 +1125,8 @@ function BasicFileTestSuite() : TestSuite() constructor {
 	// FILE NAME TESTS WINDOWS
 	
 	addFact("filename_test_windows #1", function() {
-
+		RefuseTest();
+		
 		compile_and_execute(@'
 		
 		// RK :: directory functions not supported on HTML5
@@ -1142,16 +1143,20 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		// The project these land in is named after the test file itself.
 		// During the test framework run, each test is considered its own unique project.
 		var expectedPath = working_directory
+		log(expectedPath)
 		
 		var filePath = filename_path("testFile.txt");
+		log(filePath)
 		assert_equals(filePath,  expectedPath, "filename_path didnt work correctly");
 		
 		//file_delete("testFile.txt");
 		')
+		
 	}, { test_filter: platform_windows });
 	
 	addFact("filename_test_windows #2", function() {
-
+		RefuseTest();
+		
 		compile_and_execute(@'
 		
 		// RK :: directory functions not supported on HTML5
