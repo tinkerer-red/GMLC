@@ -97,26 +97,26 @@ function compile_and_execute(_string) {
 	var _end = get_timer() - _start;
 	//GC_LOG
 	
-	
-	var _succeeded = (array_length(struct_get_names(global.gCurrentTest.getDiagnostics())) == 0)
-	var _prev_time = global.TestSpeeds[$ global.gCurrentTest.getName()] ?? infinity;
-	var _current_time = _end/1_000
-	if (_succeeded) {
-		if (_current_time < _prev_time*0.5) {
-			log("Current Test is significantly ::FASTER::")
-			global.TestSpeeds[$ global.gCurrentTest.getName()] = _end/1_000;
+	if (global.gCurrentTest != undefined) {
+		var _succeeded = (array_length(struct_get_names(global.gCurrentTest.getDiagnostics())) == 0)
+		var _prev_time = global.TestSpeeds[$ global.gCurrentTest.getName()] ?? infinity;
+		var _current_time = _end/1_000
+		if (_succeeded) {
+			if (_current_time < _prev_time*0.5) {
+				log("Current Test is significantly ::FASTER::")
+				global.TestSpeeds[$ global.gCurrentTest.getName()] = _end/1_000;
+				json_save("PrevTestSpeeds.json", global.TestSpeeds)
+			}
+			if (_current_time > _prev_time/0.5) {
+				log("Current Test is significantly ::SLOWER::")
+			}
+			//we do not log tests which are with in a varying degree of results
+		}
+		else {
+			global.TestFailed[$ global.gCurrentTest.getName()] = global.gCurrentTest.getDiagnostics()
 			json_save("PrevTestSpeeds.json", global.TestSpeeds)
 		}
-		if (_current_time > _prev_time/0.5) {
-			log("Current Test is significantly ::SLOWER::")
-		}
-		//we do not log tests which are with in a varying degree of results
 	}
-	else {
-		global.TestFailed[$ global.gCurrentTest.getName()] = global.gCurrentTest.getDiagnostics()
-		json_save("PrevTestSpeeds.json", global.TestSpeeds)
-	}
-	
 	
 	return _r;
 }
