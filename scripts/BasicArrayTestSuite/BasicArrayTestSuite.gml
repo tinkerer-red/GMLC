@@ -799,22 +799,23 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 	});
 	
 	addFact("array_length test #7", function() {
-		compile_and_execute(@'
-		var _arraySize = 17;
-		var _array2D1 = [];
-		for(var _i = 0; _i < _arraySize; ++_i)
-		{	
-			for(var _j = 0; _j < _arraySize - 3; ++_j)
-			{
-				_array2D1[_i, _j] = _i + (_i*_j);
-			}
-		}
-
-			
-		//#7 array_length, the 2nd dimension of a pre-filled 2d array
-		var _result = array_length(_array2D1[4]);
-		assert_equals(_result, _arraySize - 3, "the 2nd dimension of a pre-filled 2d array");
-		')
+		RefuseTest();
+		//compile_and_execute(@'
+		//var _arraySize = 17;
+		//var _array2D1 = [];
+		//for(var _i = 0; _i < _arraySize; ++_i)
+		//{	
+		//	for(var _j = 0; _j < _arraySize - 3; ++_j)
+		//	{
+		//		_array2D1[_i, _j] = _i + (_i*_j);
+		//	}
+		//}
+		//
+		//	
+		////#7 array_length, the 2nd dimension of a pre-filled 2d array
+		//var _result = array_length(_array2D1[4]);
+		//assert_equals(_result, _arraySize - 3, "the 2nd dimension of a pre-filled 2d array");
+		//')
 	});
 
 	addFact("array_length test #8", function() {

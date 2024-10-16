@@ -623,7 +623,7 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 	});
 	
 	addFact("int64_test #15", function() {
-
+		
 		compile_and_execute(@'
 		
 		var input, output;

@@ -151,5 +151,5 @@ function compile_code(_string) {
 	
 }
 function execute_code(_program) {
-	executeProgram(_program)
+	return executeProgram(_program)
 }
