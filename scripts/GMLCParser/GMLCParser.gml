@@ -745,10 +745,11 @@
 					// a unique check to apply static functions names
 					if (_scope == ScopeType.STATIC) {
 						//if this is a static function assignment, assign the static identifiers name to the functions name
-						if (expr.type == "Identifier")
+						if (expr.type == __GMLC_NodeType.Identifier)
 						&& (expr.scope == ScopeType.GLOBAL) {
-							var _possibleFunc = scriptAST.GlobalVar[$ expr.identifier]
-							if (_possibleFunc.type == "FunctionDeclaration") {
+							var _possibleFunc = scriptAST.GlobalVar[$ expr.value];
+							if (_possibleFunc != undefined) {
+								#region Change Function Name
 								var _newFuncName = $"GMLC@{identifier}@{string_replace(_possibleFunc.functionName, "GMLC@", "")}"
 									
 								//change the global look up
@@ -763,8 +764,21 @@
 									
 								//change the identifier
 								expr.identifier = _newFuncName;
+								#endregion
+								
+								#region Assign as method
+								if (_possibleFunc.type == __GMLC_NodeType.FunctionDeclaration)
+								|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
+									expr = new ASTCallExpression(
+										new ASTFunction( __method, line, lineString ),
+										[ new ASTLiteral(undefined, line, lineString), expr, ],
+										line,
+										lineString)
+								}
+								#endregion
 							}
 						}
+						
 					}
 					
 					switch (_scope) {
