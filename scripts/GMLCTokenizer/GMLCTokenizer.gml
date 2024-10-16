@@ -478,7 +478,8 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 			
 			var _str = string_replace_all(_num_string, "_", "");
 			var _number = real(_str);
-			if (_number > 2147483647 || _number < -2147483648) _number = int64(_str);
+			static __maxSigned32 = 0x7FFFFFFF
+			if (_number > __maxSigned32 || _number < -__maxSigned32-1) _number = int64(_str);
 			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _num_string, _number, _start_line, _start_column);
 			array_push(tokens, _token);
@@ -1643,14 +1644,20 @@ function __hexTo64Bit(_hexString) {
             lowValue = lowValue * 16 + digit;
         }
     }
-
+	
+	// Check if the value fits within 32-bit unsigned range
+    if (len <= 8) {
+        // No need to apply 2's complement, return as unsigned 32-bit
+        return int64(highValue);
+    }
+	
     // Apply 2's complement if necessary
     if (highValue >= 0x80000000) {
         highValue -= 0x100000000;  // Convert to signed 32-bit
     }
 	
 	// Combine the two parts into a 64-bit signed integer
-    return highValue * 0x100000000 + lowValue;
+    return int64(highValue * 0x100000000 + lowValue);
 }
 
 /// @ignore
@@ -1684,14 +1691,20 @@ function __binaryTo64Bit(_binaryString) {
             lowValue = lowValue * 2 + digit;    // Remaining bits go to low part
         }
     }
-
+	
+	// Check if the value fits within 32-bit unsigned range
+    if (len <= 8) {
+        // No need to apply 2's complement, return as unsigned 32-bit
+        return int64(highValue);
+    }
+	
     // Apply 2's complement if necessary
     if (highValue >= 0x80000000) {
         highValue -= 0x100000000;  // Convert to signed 32-bit
     }
 	
 	// Combine the two parts into a 64-bit signed integer
-    return highValue * 0x100000000 + lowValue;
+    return int64(highValue * 0x100000000 + lowValue);
 }
 #endregion
 #region Constructors
