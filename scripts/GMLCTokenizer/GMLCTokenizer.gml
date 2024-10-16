@@ -1614,50 +1614,40 @@ function __hexTo64Bit(_hexString) {
     // Strip the "0x" prefix and underscores
     _hexString = string_replace_all(string_delete(_hexString, 1, 2), "_", "");
 
-    // Convert hex string directly into high and low 32-bit parts
+    // Initialize the high and low 32-bit parts
     var highValue = 0;
     var lowValue = 0;
     var len = string_length(_hexString);
 
-    // Parse hex manually
+    // Parse hex manually and split into high and low 32-bit parts
     for (var i = 0; i < len; i++) {
         var _char = ord(string_char_at(_hexString, i + 1));
         
-		var digit = undefined;
-		if (_char >= ord("0") && _char <= ord("9")) {
-			digit = _char - ord("0");
-		}
-		else if (_char >= ord("a") && _char <= ord("f")) {
-			digit = _char - ord("a") + 10;
-		}
-		else if (_char >= ord("A") && _char <= ord("F")) {
-			digit = _char - ord("A") + 10;
-		}
-		else {
-			throw "Invalid character in hex string: " + chr(_char);
-		}
-		
-		
-        if (i < 8) {
-            highValue = highValue * 16 + digit;
+        var digit;
+        if (_char >= ord("0") && _char <= ord("9")) {
+            digit = _char - ord("0");
+        } else if (_char >= ord("a") && _char <= ord("f")) {
+            digit = _char - ord("a") + 10;
+        } else if (_char >= ord("A") && _char <= ord("F")) {
+            digit = _char - ord("A") + 10;
         } else {
-            lowValue = lowValue * 16 + digit;
+            throw "Invalid character in hex string: " + chr(_char);
+        }
+
+        if (len - i > 8) {  // Assign to highValue if in the first 8 hex digits
+            highValue = (highValue << 4) | digit;
+        } else {  // Assign to lowValue for the last 8 hex digits
+            lowValue = (lowValue << 4) | digit;
         }
     }
-	
-	// Check if the value fits within 32-bit unsigned range
-    if (len <= 8) {
-        // No need to apply 2's complement, return as unsigned 32-bit
-        return int64(highValue);
-    }
-	
-    // Apply 2's complement if necessary
+
+    // Apply 2's complement for highValue if needed
     if (highValue >= 0x80000000) {
         highValue -= 0x100000000;  // Convert to signed 32-bit
     }
-	
-	// Combine the two parts into a 64-bit signed integer
-    return int64(highValue * 0x100000000 + lowValue);
+
+    // Combine high and low parts into a 64-bit signed integer
+    return (highValue << 32 ) | lowValue;
 }
 
 /// @ignore
@@ -1665,47 +1655,40 @@ function __binaryTo64Bit(_binaryString) {
     // Strip the "0b" prefix and underscores
     _binaryString = string_replace_all(string_delete(_binaryString, 1, 2), "_", "");
 
-    // Convert binary string directly into high and low 32-bit parts
+    // Initialize high and low 32-bit parts
     var highValue = 0;
     var lowValue = 0;
     var len = string_length(_binaryString);
 
-    // Parse binary manually
+    // Parse binary manually and split into high and low 32-bit parts
     for (var i = 0; i < len; i++) {
         var _char = string_char_at(_binaryString, i + 1);
 
-        var digit = undefined;
+        var digit;
         if (_char == "0") {
             digit = 0;
-        }
-		else if (_char == "1") {
+        } else if (_char == "1") {
             digit = 1;
-        }
-		else {
+        } else {
             throw "Invalid character in binary string: " + _char;
         }
 
-        if (i < 32) {
-            highValue = highValue * 2 + digit;  // First 32 bits go to high part
-        } else {
-            lowValue = lowValue * 2 + digit;    // Remaining bits go to low part
+        if (len - i > 32) {  // Assign to highValue if in the first 32 bits
+            highValue = (highValue << 1) | digit;
+        } else {  // Assign to lowValue for the remaining bits
+            lowValue = (lowValue << 1) | digit;
         }
     }
-	
-	// Check if the value fits within 32-bit unsigned range
-    if (len <= 8) {
-        // No need to apply 2's complement, return as unsigned 32-bit
-        return int64(highValue);
-    }
-	
-    // Apply 2's complement if necessary
+
+    // Apply 2's complement for highValue if needed
     if (highValue >= 0x80000000) {
         highValue -= 0x100000000;  // Convert to signed 32-bit
     }
-	
-	// Combine the two parts into a 64-bit signed integer
-    return int64(highValue * 0x100000000 + lowValue);
+
+    // Combine high and low parts into a 64-bit signed integer
+    return (highValue << 32 ) | lowValue;
 }
+
 #endregion
 #region Constructors
 /// @ignore
