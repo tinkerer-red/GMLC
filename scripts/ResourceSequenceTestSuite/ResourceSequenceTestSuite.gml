@@ -1,9 +1,9 @@
 
 
 function ResourceSequenceTestSuite() : TestSuite() constructor {
-
+		
 		// SEQUENCES
-
+		
 		addFact("sequence.length_test", function() {
 
 			compile_and_execute(@'
@@ -43,7 +43,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			layer_destroy(_testLayer);
 			')
 		})
-
+		
 		addFact("sequence.loopmode_test", function() {
 
 			compile_and_execute(@'
@@ -134,7 +134,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			layer_destroy(_testLayer);
 			')
 		})
-
+		
 		addFact("sequence.messageEventKeyframes_test", function() {
 
 			compile_and_execute(@'
@@ -183,7 +183,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			assert_array_equals(_output, _seq1messageEventKeyframes, "#4 get/set sequence.messageEventKeyframes, failed to set/get messageEventKeyframes");
 			')
 		})
-
+		
 		addFact("sequence.name_test", function() {
 
 			compile_and_execute(@'
@@ -200,7 +200,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			_elmID = layer_sequence_create(_testLayer, 0, 0, Sequence1);
 			_seqInst = layer_sequence_get_instance(_elmID);
 			_seq = _seqInst.sequence;
-
+			
 			var _valueDetails, _valueDetailsCount, _valueType, _value, _details, _expected;
 			
 			_valueDetails = [
@@ -232,9 +232,10 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			// Clean up
 			layer_sequence_destroy(_elmID);
 			layer_destroy(_testLayer);
+			_seq.name = "Sequence1";
 			')
 		})
-
+		
 		addFact("sequence.playbackSpeed_test", function() {
 
 			compile_and_execute(@'
@@ -1291,6 +1292,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 				[ {},				"struct" ],
 				[ function() {},	"method"] ]; 
 
+			var _pre_name = _track.name;
 			
 			_valueDetailsCount = array_length(_valueDetails);
 			for (var _j = 0; _j < _valueDetailsCount; _j++) {
@@ -1309,6 +1311,7 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			// Clean up
 			layer_sequence_destroy(_elmID);
 			layer_destroy(_testLayer);
+			_track.name = _pre_name;
 			')
 		})
 
