@@ -1417,8 +1417,9 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume .
-		    if (currentToken.type != __GMLC_TokenType.Identifier) {
-		        throw_gmlc_error("Expected identifier after .");
+		    if (currentToken.type != __GMLC_TokenType.Identifier)
+		    && (currentToken.type != __GMLC_TokenType.UniqueVariable) {
+		        throw_gmlc_error($"Expected identifier after .\n{lineString}\n");
 		    }
 			
 			var _expr = new ASTAccessorExpression(
