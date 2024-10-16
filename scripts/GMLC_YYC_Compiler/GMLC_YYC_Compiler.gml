@@ -1490,39 +1490,39 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			
 			
 			//compile the getter
-			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);
-			_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
-			if (_node.left.accessorType != __GMLC_AccessorType.Grid) {
-				_output.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr, _node.left.val1);
+			var _output0 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);
+			_output0.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
+			if (_node.left.accessorType = __GMLC_AccessorType.Grid) {
+				_output0.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
+				_output0.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
 			}
 			else {
-				_output.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
-				_output.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
+				_output0.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 			}
-			var _getter_expression = method(_output, _getter);
+			var _getter_expression = method(_output0, _getter);
 			
 			
 			
 			//compile the additive method
-			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Operator", "<Missing Error Message>", _node.line, _node.lineString);
-			_output.left  = _getter_expression;
-			_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
-			var _expression = method(_output, _func);
+			var _output1 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Operator", "<Missing Error Message>", _node.line, _node.lineString);
+			_output1.left  = _getter_expression;
+			_output1.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
+			var _expression = method(_output1, _func);
 			
 			
 			//compile the actual method we will be calling
 			//compile the getter
-			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
-			_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
-			_output.expression = _expression;
-			if (_node.left.accessorType != __GMLC_AccessorType.Grid) {
-				_output.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr, _node.left.val1);
+			var _output2 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
+			_output2.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
+			_output2.expression = _expression;
+			if (_node.left.accessorType == __GMLC_AccessorType.Grid) {
+				_output2.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
+				_output2.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
 			}
 			else {
-				_output.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
-				_output.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
+				_output2.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 			}
-			return method(_output, _setter);
+			return method(_output2, _setter);
 			
 		}
 	}
