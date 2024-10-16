@@ -846,6 +846,24 @@
 				var operator = currentToken.value;
 				nextToken();
 				var right = parseAssignmentExpression(); // Assignment is right-associative
+				
+				//check if it's a function or constructor
+				if (right.type == __GMLC_NodeType.Identifier)
+				&& (right.scope == ScopeType.GLOBAL) {
+					var _possibleFunc = scriptAST.GlobalVar[$ right.value];
+					if (_possibleFunc != undefined) {
+						if (_possibleFunc.type == __GMLC_NodeType.FunctionDeclaration)
+						|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
+							right = new ASTCallExpression(
+								new ASTFunction( __method, line, lineString ),
+								[ new ASTUniqueIdentifier("self", line, lineString), right, ],
+								line,
+								lineString)
+						}
+					}
+				}
+				
+				
 				expr = new ASTAssignmentExpression(operator, expr, right, line, lineString);
 			}
 			return expr;

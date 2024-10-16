@@ -130,18 +130,6 @@ function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements
 	}
 	
 }
-function ASTArgumentList(_statements, _line, _lineString) : ASTBlockStatement(_statements, _line, _lineString) constructor {
-	type = __GMLC_NodeType.ArgumentList;
-	statements = _statements;
-}
-function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Argument;
-	identifier = _identifier;
-	expr = _expr;
-	argument_index = _arg_index
-	scope = ScopeType.LOCAL;
-}
-
 function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
     // temporarily used during parser
 	GlobalVar = {};
@@ -164,6 +152,18 @@ function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, 
 	
 	statements = _statements; //will be set after body is parsed
 }
+function ASTArgumentList(_statements, _line, _lineString) : ASTBlockStatement(_statements, _line, _lineString) constructor {
+	type = __GMLC_NodeType.ArgumentList;
+	statements = _statements;
+}
+function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+	type = __GMLC_NodeType.Argument;
+	identifier = _identifier;
+	expr = _expr;
+	argument_index = _arg_index
+	scope = ScopeType.LOCAL;
+}
+
 
 //used for better modding support, not actually native gml
 function ASTImportAs(_source, _structName, _line, _lineString) : ASTNode(_line, _lineString) constructor {
