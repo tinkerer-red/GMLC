@@ -26,7 +26,8 @@ function __GMLCexecuteGetPropertyGlobal() {
 //}
 #endregion
 function __GMLCexecuteGetPropertyVarLocal() {
-    return locals[localIndex];
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
+	return locals[localIndex];
 }
 #region //{
 //    key: <expression>
@@ -190,7 +191,8 @@ function __GMLCexecuteSetPropertyGlobal() {
 //}
 #endregion
 function __GMLCexecuteSetPropertyVarLocal() {
-	locals[localIndex] = expression()
+	locals[localIndex] = expression();
+	localsWrittenTo[localIndex] = true;
 }
 #region //{
 //    key: <expression>
@@ -373,15 +375,19 @@ function __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix() {
 #endregion
 #region Local
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix() {
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return ++locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix() {
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return locals[localIndex]++;
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix() {
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return --locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix() {
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return locals[localIndex]--;
 }
 #endregion

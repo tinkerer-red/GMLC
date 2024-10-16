@@ -103,6 +103,9 @@ function __GMLCexecuteFunction() {
         array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);
 		array_resize(locals, 0);
 		array_resize(locals, localCount);
+        array_copy(backupLocalsWrittenTo, array_length(backupLocalsWrittenTo), localsWrittenTo, 0, localCount);
+		array_resize(localsWrittenTo, 0);
+		array_resize(localsWrittenTo, localCount);
         // stash the arguments
         array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
 		array_resize(arguments, 0);
@@ -142,6 +145,9 @@ function __GMLCexecuteFunction() {
 		var _local_offset = array_length(backupLocals)-localCount
         array_copy(locals, 0, backupLocals, _local_offset, localCount);
         array_resize(backupLocals, _local_offset);
+		var _local_offset = array_length(backupLocalsWrittenTo)-localCount
+        array_copy(localsWrittenTo, 0, backupLocalsWrittenTo, _local_offset, localCount);
+        array_resize(backupLocalsWrittenTo, _local_offset);
 		// Un-stash the arguments
 		var _prev_arg_count = array_pop(argCountMemory)
 		var _arg_offset = array_length(backupArguments)-_prev_arg_count
@@ -150,9 +156,11 @@ function __GMLCexecuteFunction() {
     }
 	else {
 		array_resize(locals, 0);
+		array_resize(localsWrittenTo, 0);
         array_resize(arguments, 0);
 		if (array_length(backupArguments))
-		|| (array_length(backupLocals)) {
+		|| (array_length(backupLocals))
+		|| (array_length(backupLocalsWrittenTo)) {
 			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
 		}
 	}
@@ -179,7 +187,9 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_i++}
 	_output.localCount = _i;
 	_output.locals = array_create(_i, undefined);
+	_output.localsWrittenTo = array_create(_i, false); //remember if we ever wrote to those locals, this is used to throw errors incase we are reading from an unwritten local
 	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
+	_output.backupLocalsWrittenTo = [];//if the function is recursive stash the locals back into this array, to<->from
 	
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
 	_output.argumentCount = array_length(_node.arguments.statements);
@@ -208,6 +218,9 @@ function __GMLCexecuteConstructor() {
         array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);
 		array_resize(locals, 0);
 		array_resize(locals, localCount);
+        array_copy(backupLocalsWrittenTo, array_length(backupLocalsWrittenTo), localsWrittenTo, 0, localCount);
+		array_resize(localsWrittenTo, 0);
+		array_resize(localsWrittenTo, localCount);
         // stash the arguments
         array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
 		array_resize(arguments, 0);
@@ -266,6 +279,9 @@ function __GMLCexecuteConstructor() {
 		var _local_offset = array_length(backupLocals)-localCount
         array_copy(locals, 0, backupLocals, _local_offset, localCount);
         array_resize(backupLocals, _local_offset);
+		var _local_offset = array_length(backupLocalsWrittenTo)-localCount
+        array_copy(localsWrittenTo, 0, backupLocalsWrittenTo, _local_offset, localCount);
+        array_resize(backupLocalsWrittenTo, _local_offset);
 		// Un-stash the arguments
 		var _prev_arg_count = array_pop(argCountMemory)
 		var _arg_offset = array_length(backupArguments)-_prev_arg_count
@@ -274,9 +290,11 @@ function __GMLCexecuteConstructor() {
     }
 	else {
 		array_resize(locals, 0);
+		array_resize(localsWrittenTo, 0);
         array_resize(arguments, 0);
 		if (array_length(backupArguments))
-		|| (array_length(backupLocals)) {
+		|| (array_length(backupLocals))
+		|| (array_length(backupLocalsWrittenTo)) {
 			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}\narray_length(backupArguments) == {array_length(backupArguments)}")
 		}
 	}
@@ -308,7 +326,9 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_i++}
 	_output.localCount = _i;
 	_output.locals = array_create(_i, undefined);
+	_output.localsWrittenTo = array_create(_i, false); //remember if we ever wrote to those locals, this is used to throw errors incase we are reading from an unwritten local
 	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
+	_output.backupLocalsWrittenTo = [];//if the function is recursive stash the locals back into this array, to<->from
 	
 	//arguments
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
@@ -356,7 +376,8 @@ function __GMLCexecuteArgumentList() {
 		}
 		
 		//apply to the local array
-		parentNode.locals[_arg.localIndex] = _inputArguments[_i]
+		parentNode.locals[_arg.localIndex] = _inputArguments[_i];
+		parentNode.localsWrittenTo[_arg.localIndex] = true;
 		
 	_i++}
 }
@@ -1409,6 +1430,7 @@ function __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node) {
 	_output.key = _node.identifier; //this is now unused but we keep it around for crash reports and debugging purposes
 	if (_node.scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
+		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
 	else if (_node.scope == ScopeType.GLOBAL) {
@@ -1530,6 +1552,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		_output.key = _node.left.name;
 		if (_node.left.scope == ScopeType.LOCAL) {
 			_output.locals     = _parentNode.locals;
+			_output.localsWrittenTo = _parentNode.localsWrittenTo;
 			_output.localIndex = _parentNode.localLookUps[$ _output.key];
 		}
 		else if (_node.left.scope == ScopeType.GLOBAL) {
@@ -1548,6 +1571,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		_output.key        = _node.left.name;
 		if (_node.left.scope == ScopeType.LOCAL) {
 			_output.locals     = _parentNode.locals;
+			_output.localsWrittenTo = _parentNode.localsWrittenTo;
 			_output.localIndex = _parentNode.localLookUps[$ _output.key];
 		}
 		else if (_node.left.scope == ScopeType.GLOBAL) {
@@ -1944,6 +1968,7 @@ function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _scope, _key, _
 	_output.key = _key;
     if (_scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
+		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
 	else if (_scope == ScopeType.GLOBAL) {
@@ -2095,6 +2120,7 @@ function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _lin
 	_output.key      = _leftKey;
 	if (_scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
+		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
 	else if (_scope == ScopeType.GLOBAL) {
@@ -2120,6 +2146,7 @@ function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightEx
 	_output.key = _key;
 	if (_scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
+		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
 	else if (_scope == ScopeType.GLOBAL) {
@@ -2430,6 +2457,7 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 	_output.key = _node.value;
 	if (_node.scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
+		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
 	else if (_node.scope == ScopeType.GLOBAL) {
