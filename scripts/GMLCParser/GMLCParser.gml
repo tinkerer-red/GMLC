@@ -1109,12 +1109,7 @@
 			while (currentToken != undefined) {
 				switch (currentToken.value) {
 					case "(": {
-						if (expr.name == "nameof") {
-							return new ASTLiteral(expr.name, expr.line, expr.lineString);
-						}
-						else {
-							expr = parseFunctionCall(expr);
-						}
+						expr = parseFunctionCall(expr);
 					break;}
 					case "[": {
 						expr = parseBracketAccessor(expr);

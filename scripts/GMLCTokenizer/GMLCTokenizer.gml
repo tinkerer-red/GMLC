@@ -695,7 +695,24 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 					array_push(tokens, _token);
 					return _token;
 				}
-			
+				
+				if (_identifier == "nameof") {
+					var _start_line = line;
+					var _start_column = column;
+					
+					__nextUTF8();
+					__expectUTF8(ord("(")); //consume @
+					
+					var _raw_string = "nameof(";
+					var _string = __fetchAllUntil(ord(")"));
+					_raw_string += _string+")"
+					
+					var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
+					
+					array_push(tokens, _token);
+					return _token;
+				}
+				
 				#endregion
 			
 				if (_identifier == "true")           var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "true", true, _start_line, _start_column);

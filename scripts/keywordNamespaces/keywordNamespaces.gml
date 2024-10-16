@@ -2052,7 +2052,7 @@ function __ExistingFunctions() {
 	"is_string": is_string,
 	"is_struct": is_struct,
 	"is_undefined": is_undefined,
-//	"nameof": nameof, //this needs to be handled by the compiler, search for ` == "nameof"` if you need to find it, it's in the parser accessExpression
+//	"nameof": nameof, //This is handled by the tokenizer as it essentially creates a raw string literal @''
 	"method": method,
 	"method_get_index": method_get_index,
 	"method_get_self": method_get_self,
