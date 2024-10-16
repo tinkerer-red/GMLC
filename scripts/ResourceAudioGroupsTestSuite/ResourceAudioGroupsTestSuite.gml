@@ -73,8 +73,8 @@ function ResourceAudioGroupsTestSuite() : TestSuite() constructor {
 				
 			}
 			
-			do_trace("audio group numbers: " + string(array_length(audioGroups)));
-			do_trace("loaded groups : " + string(loadedNum));
+			log("audio group numbers: " + string(array_length(audioGroups)));
+			log("loaded groups : " + string(loadedNum));
 			
 			// If all audi groups have been loaded, end test
 			if (loadedNum == array_length(audioGroups)) {

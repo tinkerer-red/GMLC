@@ -426,10 +426,10 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 						
 						if (!assert_equals(_state, time_source_state_active, "Source #" + string(_i) + " failed condition #1 (inactive too early).")) {	
 							
-							do_trace("Current frame: " + string(frameCounter));
-							do_trace("Expected expiry frame: " + string(_config.expectedExpiryFrame));
-							do_trace("Tolerance: " + string(tolerance));
-							do_trace("State: " + string(time_source_get_state(_source)));
+							log("Current frame: " + string(frameCounter));
+							log("Expected expiry frame: " + string(_config.expectedExpiryFrame));
+							log("Tolerance: " + string(tolerance));
+							log("State: " + string(time_source_get_state(_source)));
 							
 							return test_end();
 						}
@@ -439,10 +439,10 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 						
 						if (!assert_equals(_state, time_source_state_initial, "Source #" + string(_i) + " failed condition #2 (active too late).")) {	
 		
-							do_trace("Current frame: " + string(frameCounter));
-							do_trace("Expected expiry frame: " + string(_config.expectedExpiryFrame));
-							do_trace("Tolerance: " + string(tolerance));
-							do_trace("State: " + string(time_source_get_state(_source)));
+							log("Current frame: " + string(frameCounter));
+							log("Expected expiry frame: " + string(_config.expectedExpiryFrame));
+							log("Tolerance: " + string(tolerance));
+							log("State: " + string(time_source_get_state(_source)));
 							
 							return test_end();
 						}	
@@ -452,12 +452,12 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 				}
 			}
 
-			do_trace("{0}/{1}", frameCounter, maxPeriodFrames);
+			log("{0}/{1}", frameCounter, maxPeriodFrames);
 
 			// If weve not failed after our imposed frame limit
 			if (frameCounter > maxTestDurFrames) {
 				
-				do_trace("Test Ended Successfully");
+				log("Test Ended Successfully");
 				
 				return test_end();
 			}
@@ -529,7 +529,7 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 				// Check again that it doesnt exist
 				assert_not_equals(time_source_exists(ts), true, "Time source still appears to exist after its self-destruction");
 				
-				do_trace("Test completed successfully");
+				log("Test completed successfully");
 				
 				test_end();
 			}
@@ -600,7 +600,7 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 				// we should have fewer than we started with (but not necessarily zero)
 				assert_less(_numRemaining, numSources, "Error: No sources were destroyed");
 
-				do_trace("Test completed successfully");
+				log("Test completed successfully");
 				test_end();
 			}
 			')
@@ -657,7 +657,7 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 				}
 				else test_end();
 				
-				do_trace("Test completed successfully");
+				log("Test completed successfully");
 			}
 			')
 		},
