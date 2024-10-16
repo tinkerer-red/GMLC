@@ -1129,8 +1129,9 @@ function __GMLCexecuteNewExpression() {
 		}
 	}
 	else {
+		var _args = arguments;
 		with (global.otherInstance) with (global.selfInstance) {
-			_struct = constructor_call_ext(_func, arguments);
+			var _struct = constructor_call_ext(_func, _args);
 		}
 	}
 	
@@ -1382,9 +1383,17 @@ function __GMLCexecuteCallExpression() {
 		}
 	}
 	else {
-		var _args = arguments;
-		with (global.otherInstance) with (global.selfInstance) {
-			_return = script_execute_ext(_func, _args);
+		try {
+			var _args = arguments;
+			with (global.otherInstance) with (global.selfInstance) {
+				_return = script_execute_ext(_func, _args);
+			}
+		}
+		catch(e) {
+			pprint(self)
+			var _wait = current_time
+			while(current_time-_wait < 1_000) {}
+			throw "fuck you"
 		}
 	}
 	
