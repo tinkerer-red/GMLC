@@ -6,6 +6,8 @@ will not be able to be accessed as `asset_get_index(_string)` will always return
 
 ToDo ::
 
+- dot accessor should rebind self and other
+
 - delete
 
 - better loop statements, break a loop statement down into block statements and exit/return/break/continue statements, parent blocks should account for these and addapt accordingly the same way.
