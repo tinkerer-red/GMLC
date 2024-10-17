@@ -6,24 +6,6 @@ will not be able to be accessed as `asset_get_index(_string)` will always return
 
 ToDo ::
 
-- dot accessor should rebind self and other
-
-- delete
-
-- better loop statements, break a loop statement down into block statements and exit/return/break/continue statements, parent blocks should account for these and addapt accordingly the same way.
-
-- replace literal GMLC methods with direct values when ever possible (maybe make them a struct with "is_literal" so incase we reference undefined)
-
-- add support for gmlc constructors to parent from native constructors
-- - - this will require us to check all parents at compile, and if they have one which is native
-- - - we will need to use the constructor_call function on it, then set that as out currently focused self instance
-
-- currently `log("\sABC")` will print `"ABC"` when it should print `"sABC"` this is because the tokenizer drops the next letter of a escape sequance
-
-- check to see if a template string such as `$"abc{}def"` will throw erros with out having an expression inside of it
-
-- _GMLINE_, _GMFILE_, _GMFUNCTION_
-
 need to test native and gmlc
 - methods
 - constructors

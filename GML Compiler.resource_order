@@ -142,7 +142,7 @@
     {"name":"generate_rect_grid","order":2,"path":"scripts/generate_rect_grid/generate_rect_grid.yy",},
     {"name":"GM14Compatibility","order":3,"path":"scripts/GM14Compatibility/GM14Compatibility.yy",},
     {"name":"GML_Compiler","order":4,"path":"scripts/GML_Compiler/GML_Compiler.yy",},
-    {"name":"GMLC_YYC_Compiler","order":5,"path":"scripts/GMLC_YYC_Compiler/GMLC_YYC_Compiler.yy",},
+    {"name":"GMLC_YYC_Compiler","order":6,"path":"scripts/GMLC_YYC_Compiler/GMLC_YYC_Compiler.yy",},
     {"name":"GMLC_YYC_FastPasses","order":6,"path":"scripts/GMLC_YYC_FastPasses/GMLC_YYC_FastPasses.yy",},
     {"name":"GMLCOptimizer","order":4,"path":"scripts/GMLCOptimizer/GMLCOptimizer.yy",},
     {"name":"GMLCPostProcessor","order":3,"path":"scripts/GMLCPostProcessor/GMLCPostProcessor.yy",},

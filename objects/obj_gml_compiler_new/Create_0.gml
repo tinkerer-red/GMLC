@@ -1472,19 +1472,36 @@ log("~~~~~ Interpreter Unit Tests ~~~~~\n");
 var _s = get_timer()
 #region HIDE
 
-//run_interpreter_test("Boop",
-//@'
-//sound = audio_play_sound(snd_coinpickup_OGG, 1, false);
-//',
-//undefined,
-//function(){
-//	foo = 0;
-//	var bar = method({foo: 1}, function(){
-//		return foo
-//	})
-//	return bar()
-//}
-//);
+run_interpreter_test("Boop",
+@'
+log("\n\n\n")
+
+
+foo = function() constructor {
+	bar = {}
+}
+
+var a0 = new foo();
+
+delete a0.bar;
+
+return a0.bar // should equal undefined
+',
+function(){
+	log("\n\n\n")
+	
+	
+	foo = function() constructor {
+		bar = {}
+	}
+	
+	var a0 = new foo();
+	
+	delete a0.bar;
+	
+	return a0.bar // should equal undefined
+}
+);
 run_interpreter_test("Parenting Constructors inherited arguments and Static structs",
 @'
 function a(arg0) constructor {

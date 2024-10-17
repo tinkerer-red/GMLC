@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_YYC_Compiler",
   "parent":{
-    "name":"internal",
-    "path":"folders/GMLCompiler/internal.yy",
+    "name":"Parsers",
+    "path":"folders/GMLCompiler/__Final/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
