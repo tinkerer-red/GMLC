@@ -1307,13 +1307,15 @@
 					var _arguments = [];
 					var _index = 0;
 					while (currentToken != undefined && currentToken.type != __GMLC_TokenType.TemplateStringEnd) {
-						var _expr = parseExpression()
-						array_push(_arguments, _expr); // Parse each argument as an expression
-						_template_string += "{"+string(_index)+"}"
-						
 						if (currentToken.type == __GMLC_TokenType.TemplateStringMiddle) {
 							_template_string += currentToken.value;
 							nextToken();  // Consume the middle segment
+						}
+						else {
+							var _expr = parseExpression()
+							array_push(_arguments, _expr); // Parse each argument as an expression
+							_template_string += "{"+string(_index)+"}"
+							_index++
 						}
 					}
 					
