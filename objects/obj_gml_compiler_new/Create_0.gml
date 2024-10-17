@@ -1476,6 +1476,7 @@ run_interpreter_test("Boop",
 @'
 log("\n\n\n")
 
+log(_GMLINE_)
 
 foo = function() constructor {
 	bar = {}

@@ -1265,6 +1265,9 @@
 					switch (currentToken.value) {
 						case "function": return parseFunctionDeclaration();
 						case "new": return parseNewExpression()
+						case "_GMFUNCTION_":{
+							
+						break;}
 					}
 				break;}
 				case __GMLC_TokenType.Punctuation:{

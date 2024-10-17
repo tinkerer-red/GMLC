@@ -1385,18 +1385,18 @@ function __GMLCexecuteCallExpression() {
 		}
 	}
 	else {
-		try {
+		//try {
 			var _args = arguments;
 			with (global.otherInstance) with (global.selfInstance) {
 				_return = script_execute_ext(_func, _args);
 			}
-		}
-		catch(e) {
-			pprint(e)
-			var _wait = current_time
-			while(current_time-_wait < 1_000) {}
-			throw "fuck you"
-		}
+		//}
+		//catch(e) {
+		//	pprint(e)
+		//	var _wait = current_time
+		//	while(current_time-_wait < 1_000) {}
+		//	throw "fuck you"
+		//}
 	}
 	
 	if (--recursionCount) {

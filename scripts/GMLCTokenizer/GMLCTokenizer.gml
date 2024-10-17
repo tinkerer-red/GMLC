@@ -40,7 +40,7 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 	"until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return",
 	"global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor",
 	"static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw",
-	"delete"];
+	"delete", "_GMLINE_", "_GMFUNCTION_"];
 	
 	// Initialize tokenizer with source code
 	static __initialize = function(_sourceCode) {
@@ -690,6 +690,15 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
+						break;}
+						case "_GMLINE_":{
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+						case "_GMFUNCTION_":{
+							//this is actually handled later when we parse, for now just return the keyword
+							throw_gmlc_error("_GMFUNCTION_ is currently not supported")
 						break;}
 					}
 				

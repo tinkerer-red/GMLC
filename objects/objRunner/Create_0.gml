@@ -17,7 +17,7 @@ testFramework.addSuite(BasicDataStructuresQueueTestSuite);
 testFramework.addSuite(BasicDataStructuresStackTestSuite);
 testFramework.addSuite(BasicDataTypesTestSuite);
 testFramework.addSuite(BasicDateTimeTestSuite);
-//testFramework.addSuite(BasicFileTestSuite);    //currently failing on array get compile
+testFramework.addSuite(BasicFileTestSuite);
 testFramework.addSuite(BasicFiltersEffectsTestSuite);
 testFramework.addSuite(BasicHandlesTestSuite);
 testFramework.addSuite(BasicIniTestSuite);
@@ -35,27 +35,27 @@ testFramework.addSuite(BasicWeakRefsTestSuite);
 testFramework.addSuite(ResourceAudioEffectsTestSuite);
 testFramework.addSuite(ResourceAudioEmittersTestSuite);
 testFramework.addSuite(ResourceAudioListenersTestSuite);
-//testFramework.addSuite(ResourceCameraTestSuite);    //currently failing on array get compile
+testFramework.addSuite(ResourceCameraTestSuite);
 testFramework.addSuite(ResourceEventsTestSuite);
 testFramework.addSuite(ResourceLayersTestSuite);
 
 
 // Async Tests
-//testFramework.addSuite(BasicNetworkTestSuite);
-//testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
-//testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
-//testFramework.addSuite(BasicTilemapTestSuite);
-//testFramework.addSuite(BasicRoomTestSuite);
-//testFramework.addSuite(BasicBufferTestSuite);
-//testFramework.addSuite(BasicAudioTestSuite);
-//testFramework.addSuite(ResourceAudioBuffersTestSuite);
+testFramework.addSuite(BasicNetworkTestSuite);
+testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
+testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
+testFramework.addSuite(BasicTilemapTestSuite);
+testFramework.addSuite(BasicRoomTestSuite);
+testFramework.addSuite(BasicBufferTestSuite);
+testFramework.addSuite(BasicAudioTestSuite);
+testFramework.addSuite(ResourceAudioBuffersTestSuite);
 
 // unsafe to run currently
-////testFramework.addSuite(ResourceTimeSourceTestSuite);
-//testFramework.addSuite(ResourceSequenceTestSuite);
-////testFramework.addSuite(ResourceAudioGroupsTestSuite);
-////testFramework.addSuite(BasicShaderUniformsTestSuite);
-////testFramework.addSuite(BasicShaderTestSuite);
+testFramework.addSuite(ResourceTimeSourceTestSuite);
+testFramework.addSuite(ResourceSequenceTestSuite);
+//testFramework.addSuite(ResourceAudioGroupsTestSuite);
+//testFramework.addSuite(BasicShaderUniformsTestSuite);
+//testFramework.addSuite(BasicShaderTestSuite);
 
 
 // ###########################################################
