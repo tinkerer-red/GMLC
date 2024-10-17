@@ -186,8 +186,9 @@
 				case "break":		return parseBreakStatement();
 				case "exit":		return parseExitStatement();
 				case "return":		return parseReturnStatement();
-				case "#macro":		return parseReturnStatement();
-				case "enum":		return parseReturnStatement();
+				case "delete":		return parseDeleteStatement();
+				//case "#macro":		return undefined;
+				//case "enum":		return undefined;
 				case "{":			return parseBlock();
 				default:			return parseExpressionStatement();  // Assume any other token starts an expression statement
 			}
@@ -474,6 +475,18 @@
 			
 			return new ASTReturnStatement(expr, line, lineString);
 		};
+		
+		static parseDeleteStatement = function() {
+			var line = currentToken.line;
+			var lineString = currentToken.lineString;
+			
+			nextToken(); // Consume `default`
+			var expr = parseLogicalOrExpression(); // cascades down the tree and across to ternary.
+			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
+			
+			return new ASTAssignmentExpression("=", expr, new ASTLiteral(undefined, line, lineString), line, lineString);
+		};
+		
 		#endregion
 		#region Declarations / Definitions
 		
@@ -868,9 +881,23 @@
 					if (_possibleFunc != undefined) {
 						if (_possibleFunc.type == __GMLC_NodeType.FunctionDeclaration)
 						|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
+							
+							// method bind
+							//NOTE :: This should actually just end up being undefined in many cases,
+							// for instance when it's a static (already handled by static keyword),
+							// when it is in a constructor,
+							// when it is in a script but not inside a function, etc..
+							var _bind = undefined;
+							if (currentFunction == undefined) {
+								_bind = new ASTLiteral(undefined, line, lineString)
+							}
+							else {
+								_bind = new ASTUniqueIdentifier("self", line, lineString)
+							}
+							
 							right = new ASTCallExpression(
 								new ASTFunction( __method, line, lineString ),
-								[ new ASTUniqueIdentifier("self", line, lineString), right, ],
+								[ _bind, right, ], 
 								line,
 								lineString)
 						}

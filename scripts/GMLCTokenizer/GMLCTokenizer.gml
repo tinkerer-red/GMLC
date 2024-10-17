@@ -39,7 +39,8 @@ function GML_Tokenizer() : GMLCParserBase() constructor {
 	keywords = ["globalvar", "var", "if", "then", "else", "begin", "end", "for", "while", "do",
 	"until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return",
 	"global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor",
-	"static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw"];
+	"static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw",
+	"delete"];
 	
 	// Initialize tokenizer with source code
 	static __initialize = function(_sourceCode) {
