@@ -1474,10 +1474,6 @@ var _s = get_timer()
 
 run_interpreter_test("Boop",
 @'
-log("\n\n\n")
-
-log(_GMLINE_)
-
 foo = function() constructor {
 	bar = {}
 }
@@ -1489,9 +1485,6 @@ delete a0.bar;
 return a0.bar // should equal undefined
 ',
 function(){
-	log("\n\n\n")
-	
-	
 	foo = function() constructor {
 		bar = {}
 	}

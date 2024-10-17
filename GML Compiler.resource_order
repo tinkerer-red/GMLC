@@ -53,6 +53,7 @@
     {"name":"sprites","order":8,"path":"folders/xUnit/Tests/TestResources/sprites.yy",},
     {"name":"tilesets","order":9,"path":"folders/xUnit/Tests/TestResources/tilesets.yy",},
     {"name":"TestSuites","order":2,"path":"folders/xUnit/Tests/TestSuites.yy",},
+    {"name":"Red's Tests","order":44,"path":"folders/xUnit/Tests/TestSuites/Red's Tests.yy",},
     {"name":"Utils","order":3,"path":"folders/xUnit/Tests/Utils.yy",},
     {"name":"ShaderTests","order":1,"path":"folders/xUnit/Tests/Utils/ShaderTests.yy",},
     {"name":"3D Mesh Creation","order":1,"path":"folders/xUnit/Tests/Utils/ShaderTests/3D Mesh Creation.yy",},
