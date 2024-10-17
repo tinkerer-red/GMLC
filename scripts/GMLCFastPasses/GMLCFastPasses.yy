@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"ASTNodes",
+  "%Name":"GMLCFastPasses",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"ASTNodes",
+  "name":"GMLCFastPasses",
   "parent":{
     "name":"_Internal",
     "path":"folders/GMLCompiler/__Final/Parsers/_Internal.yy",

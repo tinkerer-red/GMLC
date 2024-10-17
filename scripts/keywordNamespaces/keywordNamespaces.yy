@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"keywordNamespaces",
   "parent":{
-    "name":"internal",
-    "path":"folders/GMLCompiler/internal.yy",
+    "name":"Internal",
+    "path":"folders/GMLCompiler/__Final/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
