@@ -339,7 +339,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
-		
+	
 	_output.returnValue = undefined;
 	_output.shouldReturn = false;
 	_output.shouldBreak = false;
@@ -986,24 +986,24 @@ function __GMLCexecuteWith() {
     // handle the instance
     global.otherInstance = global.selfInstance
     
-	var _self   = self;
+	var _methodself   = self;
 	//var _index  = myIndex;
 	//var _method = myMethod;
 	static __empty_arr = [];
     with (_inst) {
 		global.selfInstance = self;
 		
-		method_call(_self.blockStatement, __empty_arr);
+		method_call(_methodself.blockStatement, __empty_arr);
 		
 		//we break on all three cases here because we would like to run the
 		// rest of the function to return to our previous self/other
-		if (_self.parentNode.shouldReturn) break;
-		if (_self.parentNode.shouldBreak) {
-		    _self.parentNode.shouldBreak = false;
+		if (_methodself.parentNode.shouldReturn) break;
+		if (_methodself.parentNode.shouldBreak) {
+		    _methodself.parentNode.shouldBreak = false;
 		    break;
 		}
-		if (_self.parentNode.shouldContinue) {
-		    _self.parentNode.shouldContinue = false;
+		if (_methodself.parentNode.shouldContinue) {
+		    _methodself.parentNode.shouldContinue = false;
 		    //no need to break or continue we will already be doing that
 		}
 	}
@@ -1041,7 +1041,8 @@ function __GMLCexecuteTryCatchFinally() {
 		if (parentNode.shouldReturn) return;
 		if (catchBlock != undefined) {
 			//locals = variable_clone(parentNode.locals, 1)
-			parentNode.locals[catchVariableIndex] = _e
+			parentNode.locals[catchVariableIndex] = _e;
+			parentNode.localsWrittenTo[catchVariableIndex] = true;
 			catchBlock()
 		}
     }
@@ -1094,7 +1095,6 @@ function __GMLCexecuteNewExpression() {
 	//remember how many the function had
 	prevArgCount = _arg_count;
 	
-	
 	//avoids garbage collection lag spikes
 	array_resize(arguments, argumentCount);
 	var _i=argumentCount-1; repeat(argumentCount) {
@@ -1110,12 +1110,14 @@ function __GMLCexecuteNewExpression() {
 			
 			var _prevOther = global.otherInstance;
 			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance;
+			global.otherInstance = (is_gmlc_method(_func)) ? (__method_get_self(_func) ?? global.selfInstance) : global.selfInstance;
 			global.selfInstance = _struct;
 			
-			
-			with (method_get_self(_func)) {
-				var _return = script_execute_ext(_func, _args)
+			//this with statement isn't needed, in the future we will already know if the constructor will have a parent
+			// to a native function, in which case we can simply if/else into a with statement if needed,
+			// we shouldnt need to do this
+			with (_struct) {
+				var _return = method_call(_func, _args)
 			}
 			
 			global.otherInstance = _prevOther;
@@ -1390,7 +1392,7 @@ function __GMLCexecuteCallExpression() {
 			}
 		}
 		catch(e) {
-			pprint(self)
+			pprint(e)
 			var _wait = current_time
 			while(current_time-_wait < 1_000) {}
 			throw "fuck you"
