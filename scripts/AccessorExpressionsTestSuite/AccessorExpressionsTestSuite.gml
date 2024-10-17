@@ -11,7 +11,7 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
         // Assertions
         assert_equals(arr[0], 1, "Array modification failed at index 0.");
         assert_equals(test, 2, "Array access failed at index 2.");
-        assert_equals(string(arr), "[1, 1, 2]", "Array string conversion failed.");
+        assert_array_equals(arr, [1,1,2], "Array equals failed.");
     });
 
     // Test for List access and modification
@@ -89,8 +89,8 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
         
 		var _value = struct_get_from_hash(struct, variable_get_hash("one"))
         // Assertions
-        assert_equals(_value, 1, "Struct modification using hash failed.");
-        assert_equals(string(struct), "{one:\"oneAgain\"}", "Struct string conversion failed.");
+        assert_equals(_value, "oneAgain", "Struct modification using hash failed.");
+        assert_struct_equals(struct, {one:"oneAgain"}, "Struct equals failed.");
     });
 	
 	
