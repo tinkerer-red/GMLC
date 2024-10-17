@@ -1116,9 +1116,9 @@ function __GMLCexecuteNewExpression() {
 			//this with statement isn't needed, in the future we will already know if the constructor will have a parent
 			// to a native function, in which case we can simply if/else into a with statement if needed,
 			// we shouldnt need to do this
-			with (_struct) {
+			//with (_struct) {
 				var _return = method_call(_func, _args)
-			}
+			//}
 			
 			global.otherInstance = _prevOther;
 			global.selfInstance  = _prevSelf;
