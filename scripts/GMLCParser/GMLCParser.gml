@@ -763,20 +763,18 @@
 							var _possibleFunc = scriptAST.GlobalVar[$ expr.value];
 							if (_possibleFunc != undefined) {
 								#region Change Function Name
-								var _newFuncName = $"GMLC@{identifier}@{string_replace(_possibleFunc.functionName, "GMLC@", "")}"
+								var _newFuncName = $"GMLC@{identifier}@{string_replace(_possibleFunc.name, "GMLC@", "")}"
 									
 								//change the global look up
-								struct_remove(scriptAST.GlobalVar, _possibleFunc.functionName);
+								struct_remove(scriptAST.GlobalVar, _possibleFunc.name);
 								scriptAST.GlobalVar[$ _newFuncName] = _possibleFunc;
-								var _arr_index = array_get_index(scriptAST.GlobalVarNames, _possibleFunc.functionName);
+								var _arr_index = array_get_index(scriptAST.GlobalVarNames, _possibleFunc.name);
 								array_delete(scriptAST.GlobalVarNames, _arr_index, 1);
 								array_push(scriptAST.GlobalVarNames, _newFuncName);
 									
 								//change the functions name
-								_possibleFunc.functionName = _newFuncName;
-									
-								//change the identifier
-								expr.identifier = _newFuncName;
+								_possibleFunc.name = _newFuncName;
+								
 								#endregion
 								
 								#region Assign as method
@@ -784,7 +782,7 @@
 								|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
 									expr = new ASTCallExpression(
 										new ASTFunction( __method, line, lineString ),
-										[ new ASTLiteral(undefined, line, lineString), expr, ],
+										[ new ASTLiteral(undefined, line, lineString), new ASTIdentifier(_newFuncName, ScopeType.GLOBAL, line, lineString) ],
 										line,
 										lineString)
 								}

@@ -3,7 +3,6 @@
 
 /// @ignore
 function __method(_struct, _func) {
-	
 	static __executeMethod = function() {
 		var argArr = array_create(argument_count, undefined);
 		var _i=argument_count-1; repeat(argument_count) {
@@ -15,7 +14,7 @@ function __method(_struct, _func) {
 			var _prevSelf  = global.selfInstance;
 			global.otherInstance = global.selfInstance;
 			global.selfInstance = target;
-		
+			
 			var _return = method_call(func, argArr);
 			
 			global.otherInstance = _prevOther;

@@ -330,6 +330,7 @@ function __GMLCexecuteSetPropertyUnique() {
 #endregion
 
 #region Accessor Getters/Setters
+
 #region Array
 #region //{
 //    target: <expression>,
@@ -534,17 +535,9 @@ function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expressi
 function __GMLCexecuteStructDotAccGet(){
 	var _target = target();
 	
-	log("\n\n\n")
-	pprint(_target)
-	log("\n\n\n")
-	
 	if (is_gmlc_function(_target)) {
 		_target = __static_get(_target)
 	}
-	
-	log("\n\n\n")
-	pprint(_target)
-	log("\n\n\n")
 	
 	if (struct_exists(_target, key)) {
 		return _target[$ key];
@@ -552,8 +545,10 @@ function __GMLCexecuteStructDotAccGet(){
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	if (_target == global) {
-		return _target[$ key];
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
+		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
 	var _static = __static_get(_target)
@@ -613,10 +608,14 @@ function __GMLCexecuteStructDotAccSet(){
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	if (_target == global) {
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
 		_target[$ key] = expression();
 		return
-	}
+	}	
+	
+	
 	
 	var _static = __static_get(_target)
 	
@@ -666,6 +665,7 @@ function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _ex
 #endregion
 
 #region Scope Updatters (++ and --)
+
 #region Self
 function __GMLCexecuteUpdatePropertySelfPlusPlusPrefix() {
     return ++global.selfInstance[$ key];
@@ -1411,8 +1411,10 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	if (_target == global) {
-		return ++_target[$ key];
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
+		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
 	var _static = __static_get(_target)
@@ -1441,8 +1443,10 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	if (_target == global) {
-		return _target[$ key]++;
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
+		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
 	var _static = __static_get(_target)
@@ -1473,8 +1477,10 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	if (_target == global) {
-		return --_target[$ key];
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
+		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
 	var _static = __static_get(_target)
@@ -1503,8 +1509,10 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	if (_target == global) {
-		return _target[$ key]--;
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
+		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
 	var _static = __static_get(_target)
@@ -1550,5 +1558,6 @@ function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _incr
 	return method(_output, __GMLCGetScopeUpdater(_scope, _increment, _prefix));
 }
 #endregion
+
 #endregion
 

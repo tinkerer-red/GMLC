@@ -1420,7 +1420,8 @@ function __GMLCexecuteCallExpression() {
 function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileCallExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee);
-	_output.calleeName = _node.callee.name; // this is actually unneeded, but we would still like to have it for debugging
+	
+	_output.calleeName = (struct_exists(_node.callee, "name")) ? _node.callee.name : "<Call Expression>"
 	
 	_output.recursionCount = 0; 
 	_output.prevArgCount = 0;
