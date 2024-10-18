@@ -1474,6 +1474,32 @@ var _s = get_timer()
 
 run_interpreter_test("Boop",
 @'
+var _func = function(){ static __struct = { x: 0 } }
+_func()
+_func.__struct.x = 0
+assert_equals(_func.__struct.x,   0, "Static external variable get failed.");
+assert_equals(_func.__struct.x++, 0, "Static external variable PlusPlus Suffix failed.");
+assert_equals(++_func.__struct.x, 2, "Static external variable PlusPlus Prefix failed.");
+assert_equals(_func.__struct.x--, 2, "Static external variable MinusMinus Suffix failed.");
+assert_equals(--_func.__struct.x, 0, "Static external variable MinusMinus Prefix failed.");
+assert_equals(_func.__struct.x,   0, "Static external variable get failed.");
+assert_struct_equals(static_get(_func), { __struct: {x : 0} }, "Static handles are not the same")
+assert_equals(static_get(_func).__struct, _func.__struct, "Static handles are not the same")
+',
+function(){
+	foo = function() constructor {
+		bar = {}
+	}
+	
+	var a0 = new foo();
+	
+	delete a0.bar;
+	
+	return a0.bar // should equal undefined
+}
+);
+run_interpreter_test("Boop",
+@'
 foo = function() constructor {
 	bar = {}
 }

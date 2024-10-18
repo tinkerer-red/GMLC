@@ -328,6 +328,341 @@ function __GMLCexecuteSetPropertyUnique() {
 	}
 }
 #endregion
+
+#region Accessor Getters/Setters
+#region Array
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteArrayGet(){
+	var _target = target();
+	return _target[key()]
+}
+function __GMLCcompileArrayGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArrayGet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	
+	return method(_output, __GMLCexecuteArrayGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteArraySet(){
+	var _target = target();
+	_target[key()] = expression()
+}
+function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArraySet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+	
+	return method(_output, __GMLCexecuteArraySet)
+}
+#endregion
+#region List
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteListGet(){
+	var _target = target();
+	return _target[| key()]
+}
+function __GMLCcompileListGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListGet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	
+    return method(_output, __GMLCexecuteListGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteListSet(){
+	var _target = target();
+	_target[| key()] = expression()
+}
+function __GMLCcompileListSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListSet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+	
+    return method(_output, __GMLCexecuteListSet)
+}
+#endregion
+#region Map
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteMapGet(){
+	var _target = target();
+	return _target[? key()]
+}
+function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapGet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	
+    return method(_output, __GMLCexecuteMapGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteMapSet(){
+	var _target = target();
+	_target[? key()] = expression()
+}
+function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapSet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+	
+    return method(_output, __GMLCexecuteMapSet)
+}
+#endregion
+
+#region Grid
+#region //{
+//    target: <expression>,
+//    keyX: <expression>,
+//    keyY: <expression>,
+//}
+#endregion
+function __GMLCexecuteGridGet(){
+	var _target = target();
+	return _target[# keyX(), keyY()]
+}
+function __GMLCcompileGridGet(_rootNode, _parentNode, _target, _keyX, _keyY, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridGet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.keyX       = __GMLCcompileExpression(_rootNode, _parentNode, _keyX);
+	_output.keyY       = __GMLCcompileExpression(_rootNode, _parentNode, _keyY);
+	
+    return method(_output, __GMLCexecuteGridGet)
+}
+#region //{
+//    target: <expression>,
+//    keyX: <expression>,
+//    keyY: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteGridSet(){
+	var _target = target();
+	_target[# keyX(), keyY()] = expression()
+}
+function __GMLCcompileGridSet(_rootNode, _parentNode, _target, _keyX, _keyY, _expression, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridSet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.keyX       = __GMLCcompileExpression(_rootNode, _parentNode, _keyX);
+	_output.keyY       = __GMLCcompileExpression(_rootNode, _parentNode, _keyY);
+	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+	
+    return method(_output, __GMLCexecuteGridSet)
+}
+#endregion
+#region Struct
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteStructGet(){
+	var _target = target();
+	return _target[$ key()]
+}
+function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructGet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	
+    return method(_output, __GMLCexecuteStructGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteStructSet(){
+	var _target = target();
+	_target[$ key()] = expression()
+}
+function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructSet", "<Missing Error Message>", _line, _lineString);
+	
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+	
+    return method(_output, __GMLCexecuteStructSet)
+}
+#endregion
+#region Dot
+#region //{
+//    target: <expression>,
+//    key: <stringLiteral>,
+//}
+#endregion
+function __GMLCexecuteStructDotAccGet(){
+	var _target = target();
+	
+	log("\n\n\n")
+	pprint(_target)
+	log("\n\n\n")
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	log("\n\n\n")
+	pprint(_target)
+	log("\n\n\n")
+	
+	if (struct_exists(_target, key)) {
+		return _target[$ key];
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	if (_target == global) {
+		return _target[$ key];
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			return _static[$ key];
+		}
+		_static = __static_get(_static)
+	}
+	
+	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	
+}
+function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
+	
+	//incase it's a valid scope, lets hoist it to a better fitted function
+	if (_target.type == __GMLC_NodeType.Identifier) {
+		var _getter = __GMLCGetScopeGetter(_target.scope)
+		
+		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
+		_output.key        = _key.value;
+		
+		if (_target.scope == ScopeType.GLOBAL) {
+			_output.globals = _rootNode.globals;
+		}
+		
+		method(_output, _getter)
+	}
+	
+	//leave the following to allow for thing.thing.thing() to be a valid call
+	
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccGet", "<Missing Error Message>", _line, _lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key    = _key.value;
+	
+	return method(_output, __GMLCexecuteStructDotAccGet)
+}
+#region //{
+//    target: <expression>,
+//    key: <stringLiteral>,
+//    expression: <expression>,
+//}
+#endregion
+function __GMLCexecuteStructDotAccSet(){
+	var _target = target();
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		_target[$ key] = expression();
+		return
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	if (_target == global) {
+		_target[$ key] = expression();
+		return
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			_static[$ key] = expression();
+			return
+		}
+		_static = __static_get(_static)
+	}
+	
+	//last resort if no statics contain the key write to target
+	_target[$ key] = expression();
+	return
+}
+function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
+    
+	//incase it's a valid scope, lets hoist it to a better fitted function
+	if (_target.type == __GMLC_NodeType.Identifier) {
+		var _setter = __GMLCGetScopeSetter(_target.scope)
+		
+		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
+		_output.key        = _key.value;
+		_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+		
+		if (_target.scope == ScopeType.GLOBAL) {
+			_output.globals = _rootNode.globals;
+		}
+		
+		method(_output, _setter)
+	}
+	
+	//leave the following to allow for thing.thing.thing() to be a valid call
+	
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
+	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
+	_output.key        = _key.value;
+	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
+	
+    return method(_output, __GMLCexecuteStructDotAccSet)
+}
+#endregion
+
+#endregion
+
 #endregion
 
 #region Scope Updatters (++ and --)
@@ -1062,22 +1397,128 @@ function __GMLCcompileUpdateStruct(_rootNode, _parentNode, _node) {
 	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateStructMinusMinusPostfix);
 }
 #endregion
-#region Struct w/ Errors
+#region Dot
 function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	var _target = target();
-	return ++_target[$ key];
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		return ++_target[$ key];
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	if (_target == global) {
+		return ++_target[$ key];
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			return ++_static[$ key];
+		}
+		_static = __static_get(_static)
+	}
+	
+	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	
 }
 function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
+	var _target = target();
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		return _target[$ key]++;
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	if (_target == global) {
+		return _target[$ key]++;
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			return _static[$ key]++;
+		}
+		_static = __static_get(_static)
+	}
+	
+	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	
 	var _target = target();
 	return _target[$ key]++;
 }
 function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	var _target = target();
-	return --_target[$ key];
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		return --_target[$ key];
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	if (_target == global) {
+		return --_target[$ key];
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			return --_static[$ key];
+		}
+		_static = __static_get(_static)
+	}
+	
+	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	
 }
 function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	var _target = target();
-	return _target[$ key]--;
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		return _target[$ key]--;
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	if (_target == global) {
+		return _target[$ key]--;
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			return _static[$ key]--;
+		}
+		_static = __static_get(_static)
+	}
+	
+	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	
 }
 function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateStructDotAcc", "<Missing Error Message>", _node.line, _node.lineString);
@@ -1110,3 +1551,4 @@ function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _incr
 }
 #endregion
 #endregion
+

@@ -149,8 +149,19 @@ function is_gmlc_program(_program) {
 	if (is_method(_program))
 	&& (_self != undefined)
 	&& (_self != global)
-	&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
+	&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
 			return true;
+	}
+	return false;
+}
+
+function is_gmlc_function(_program) {
+	var _self = method_get_self(_program);
+	if (is_method(_program))
+	&& (_self != undefined)
+	&& (_self != global)
+	&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
+		return true;
 	}
 	return false;
 }
@@ -161,7 +172,7 @@ function is_gmlc_constructor(_program) {
 	if (is_method(_program))
 	&& (_self != undefined)
 	&& (_self != global)
-	&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
+	&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
 			return struct_exists(_self, "__") && struct_exists(_self.__, "__@@is_gmlc_constructed@@__");
 	}
 	return false;
@@ -191,6 +202,19 @@ function is_script(_value) {
 	return script_exists(_value);	
 }
 
+function static_exists(_struct, _name) {
+	var _static = static_get(_struct)
+	
+	//early out
+	if (_static[$ _name] != undefined) return true;
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, _name) { return true; }
+		_static = static_get(_static)
+	}
+	return false;
+}
 
 //debugging
 function __printMethodStructure(_program) {

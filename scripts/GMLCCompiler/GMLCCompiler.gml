@@ -169,6 +169,7 @@ function __GMLCexecuteFunction() {
 }
 function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, undefined, "__GMLCcompileFunction", "<Missing Error Message>", _node.line, _node.lineString);
+	_output[$ "__@@is_gmlc_function@@__"] = true;
 	
 	_output.parentNode = _output;
 	
@@ -303,6 +304,7 @@ function __GMLCexecuteConstructor() {
 }
 function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, undefined, "__GMLCcompileConstructor", "<Missing Error Message>", _node.line, _node.lineString);
+	_output[$ "__@@is_gmlc_function@@__"] = true;
 	
 	_output.parentNode = _output;
 	
@@ -1973,297 +1975,17 @@ function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightEx
 
 #endregion
 
-function __GMLCcompileAccessor(_rootNode, _parentNode, _accessorNode, _line, _lineString) {
-	switch (_accessorNode.accessorType) {
-		case __GMLC_AccessorType.Array:  return __GMLCcompileArrayGet       (_rootNode, _parentNode, _accessorNode.expr, _accessorNode.val1,                     _line, _lineString)
-		case __GMLC_AccessorType.Grid:   return __GMLCcompileGridGet        (_rootNode, _parentNode, _accessorNode.expr, _accessorNode.val1, _accessorNode.val2, _line, _lineString)
-		case __GMLC_AccessorType.List:   return __GMLCcompileListGet        (_rootNode, _parentNode, _accessorNode.expr, _accessorNode.val1,                     _line, _lineString)
-		case __GMLC_AccessorType.Map:    return __GMLCcompileMapGet         (_rootNode, _parentNode, _accessorNode.expr, _accessorNode.val1,                     _line, _lineString)
-		case __GMLC_AccessorType.Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _accessorNode.expr, _accessorNode.val1,                     _line, _lineString)
-		case __GMLC_AccessorType.Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _accessorNode.expr, _accessorNode.val1,                     _line, _lineString)
-		default: throw_gmlc_error($"Unsupported accessor type: {_accessorNode.accessorType}\n{_accessorNode}");
+function __GMLCcompileAccessor(_rootNode, _parentNode, _node) {
+	switch (_node.accessorType) {
+		case __GMLC_AccessorType.Array:  return __GMLCcompileArrayGet       (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType.Grid:   return __GMLCcompileGridGet        (_rootNode, _parentNode, _node.expr, _node.val1, _node.val2, _node.line, _node.lineString)
+		case __GMLC_AccessorType.List:   return __GMLCcompileListGet        (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType.Map:    return __GMLCcompileMapGet         (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType.Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType.Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		default: throw_gmlc_error($"Unsupported accessor type: {_node.accessorType}\n{_node}");
 	}
-	
-	
 }
-#region Accessor Getters/Setters
-#region Array
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteArrayGet(){
-	var _target = target();
-	return _target[key()]
-}
-function __GMLCcompileArrayGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArrayGet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	
-	return method(_output, __GMLCexecuteArrayGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteArraySet(){
-	var _target = target();
-	_target[key()] = expression()
-}
-function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArraySet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-	
-	return method(_output, __GMLCexecuteArraySet)
-}
-#endregion
-#region List
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteListGet(){
-	var _target = target();
-	return _target[| key()]
-}
-function __GMLCcompileListGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListGet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	
-    return method(_output, __GMLCexecuteListGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteListSet(){
-	var _target = target();
-	_target[| key()] = expression()
-}
-function __GMLCcompileListSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListSet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-	
-    return method(_output, __GMLCexecuteListSet)
-}
-#endregion
-#region Map
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteMapGet(){
-	var _target = target();
-	return _target[? key()]
-}
-function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapGet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	
-    return method(_output, __GMLCexecuteMapGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteMapSet(){
-	var _target = target();
-	_target[? key()] = expression()
-}
-function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapSet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-	
-    return method(_output, __GMLCexecuteMapSet)
-}
-#endregion
-
-#region Grid
-#region //{
-//    target: <expression>,
-//    keyX: <expression>,
-//    keyY: <expression>,
-//}
-#endregion
-function __GMLCexecuteGridGet(){
-	var _target = target();
-	return _target[# keyX(), keyY()]
-}
-function __GMLCcompileGridGet(_rootNode, _parentNode, _target, _keyX, _keyY, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridGet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.keyX       = __GMLCcompileExpression(_rootNode, _parentNode, _keyX);
-	_output.keyY       = __GMLCcompileExpression(_rootNode, _parentNode, _keyY);
-	
-    return method(_output, __GMLCexecuteGridGet)
-}
-#region //{
-//    target: <expression>,
-//    keyX: <expression>,
-//    keyY: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteGridSet(){
-	var _target = target();
-	_target[# keyX(), keyY()] = expression()
-}
-function __GMLCcompileGridSet(_rootNode, _parentNode, _target, _keyX, _keyY, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridSet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.keyX       = __GMLCcompileExpression(_rootNode, _parentNode, _keyX);
-	_output.keyY       = __GMLCcompileExpression(_rootNode, _parentNode, _keyY);
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-	
-    return method(_output, __GMLCexecuteGridSet)
-}
-#endregion
-#region Struct
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecuteStructGet(){
-	var _target = target();
-	return _target[$ key()]
-}
-function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructGet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	
-    return method(_output, __GMLCexecuteStructGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteStructSet(){
-	var _target = target();
-	_target[$ key()] = expression()
-}
-function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructSet", "<Missing Error Message>", _line, _lineString);
-	
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-	
-    return method(_output, __GMLCexecuteStructSet)
-}
-#endregion
-#region Struct w/ Error
-#region //{
-//    target: <expression>,
-//    key: <stringLiteral>,
-//}
-#endregion
-function __GMLCexecuteStructDotAccGet(){
-	var _target = target();
-	var _key = key();
-	
-	if (!struct_exists(_target, _key)) {
-		throw_gmlc_error($"Variable <unknown_object>.{_key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
-	
-	return _target[$ _key];
-}
-function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-	
-	//incase it's a valid scope, lets hoist it to a better fitted function
-	if (_target.type == __GMLC_NodeType.Identifier) {
-		var _getter = __GMLCGetScopeGetter(_target.scope)
-		
-		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
-		_output.key        = _key.value;
-		
-		if (_target.scope == ScopeType.GLOBAL) {
-			_output.globals = _rootNode.globals;
-		}
-		
-		method(_output, _getter)
-	}
-	
-	//leave the following to allow for thing.thing.thing() to be a valid call
-	
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccGet", "<Missing Error Message>", _line, _lineString);
-	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _key);
-	
-	return method(_output, __GMLCexecuteStructDotAccGet)
-}
-#region //{
-//    target: <expression>,
-//    key: <stringLiteral>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecuteStructDotAccSet(){
-	var _target = target();
-    //this isnt needed for struct assignment
-	//if (!struct_exists(_target, key)) throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {line}) -\t{lineString}")
-	_target[$ key] = expression();
-}
-function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    
-	//incase it's a valid scope, lets hoist it to a better fitted function
-	if (_target.type == __GMLC_NodeType.Identifier) {
-		var _setter = __GMLCGetScopeSetter(_target.scope)
-		
-		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
-		_output.key        = _key.value;
-		_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-		
-		if (_target.scope == ScopeType.GLOBAL) {
-			_output.globals = _rootNode.globals;
-		}
-		
-		method(_output, _setter)
-	}
-	
-	//leave the following to allow for thing.thing.thing() to be a valid call
-	
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
-	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = _key.value;
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-	
-    return method(_output, __GMLCexecuteStructDotAccSet)
-}
-#endregion
-
-#endregion
-
 
 function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
@@ -2291,7 +2013,7 @@ function __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node) {
 
 #region Util
 function __GMLC_Function(_rootNode, _parentNode, _base, _error, _line, _lineString) constructor {
-	self[$ "__@@is_gmlc_function@@__"] = true;
+	self[$ "__@@is_gmlc_program@@__"] = true;
 	
 	compilerBase = _base;
 	errorMessage = _error;
@@ -2304,7 +2026,7 @@ function __GMLC_Function(_rootNode, _parentNode, _base, _error, _line, _lineStri
 	
 	callstack = debug_get_callstack()
 }
-static_get(__GMLC_Function)[$ "__@@is_gmlc_function@@__"] = true;
+static_get(__GMLC_Function)[$ "__@@is_gmlc_program@@__"] = true;
 
 function __GMLC_Statics() constructor {
 	

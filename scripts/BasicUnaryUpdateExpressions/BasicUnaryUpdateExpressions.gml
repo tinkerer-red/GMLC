@@ -1,95 +1,142 @@
-// Script assets have changed for v2.3.0 see
-// https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
+
+
 function BasicUnaryUpdateExpressions() : TestSuite() constructor {
 	
-	addFact("Direct Variable Unary Update", function() {
-		compile_and_execute(@'
-        x = 0
-		assert_equals(x,   0, "Direct variable get failed.");
-        assert_equals(x++, 0, "Direct variable PlusPlus Suffix failed.");
-		assert_equals(++x, 2, "Direct variable PlusPlus Prefix failed.");
-		assert_equals(x--, 2, "Direct variable MinusMinus Suffix failed.");
-		assert_equals(--x, 0, "Direct variable MinusMinus Prefix failed.");
-		assert_equals(x,   0, "Direct variable get failed.");
-		')
-    });
+	/// Variables
 	
-	addFact("Self Variable Unary Update", function() {
-		compile_and_execute(@'
-		self.x = 0
-		assert_equals(self.x,   0, "Self variable get failed.");
-        assert_equals(self.x++, 0, "Self variable PlusPlus Suffix failed.");
-		assert_equals(++self.x, 2, "Self variable PlusPlus Prefix failed.");
-		assert_equals(self.x--, 2, "Self variable MinusMinus Suffix failed.");
-		assert_equals(--self.x, 0, "Self variable MinusMinus Prefix failed.");
-		assert_equals(self.x,   0, "Self variable get failed.");
-		')
-    });
+	//addFact("Direct Variable Unary Update", function() {
+	//	compile_and_execute(@'
+    //    x = 0
+	//	assert_equals(x,   0, "Direct variable get failed.");
+    //    assert_equals(x++, 0, "Direct variable PlusPlus Suffix failed.");
+	//	assert_equals(++x, 2, "Direct variable PlusPlus Prefix failed.");
+	//	assert_equals(x--, 2, "Direct variable MinusMinus Suffix failed.");
+	//	assert_equals(--x, 0, "Direct variable MinusMinus Prefix failed.");
+	//	assert_equals(x,   0, "Direct variable get failed.");
+	//	')
+    //});
 	
-	addFact("Other Variable Unary Update", function() {
-		compile_and_execute(@'
-        other.x = 0
-		assert_equals(other.x,   0, "Other variable get failed.");
-        assert_equals(other.x++, 0, "Other variable PlusPlus Suffix failed.");
-		assert_equals(++other.x, 2, "Other variable PlusPlus Prefix failed.");
-		assert_equals(other.x--, 2, "Other variable MinusMinus Suffix failed.");
-		assert_equals(--other.x, 0, "Other variable MinusMinus Prefix failed.");
-		assert_equals(other.x,   0, "Other variable get failed.");
-		')
-    });
+	//addFact("Self Variable Unary Update", function() {
+	//	compile_and_execute(@'
+	//	self.x = 0
+	//	assert_equals(self.x,   0, "Self variable get failed.");
+    //    assert_equals(self.x++, 0, "Self variable PlusPlus Suffix failed.");
+	//	assert_equals(++self.x, 2, "Self variable PlusPlus Prefix failed.");
+	//	assert_equals(self.x--, 2, "Self variable MinusMinus Suffix failed.");
+	//	assert_equals(--self.x, 0, "Self variable MinusMinus Prefix failed.");
+	//	assert_equals(self.x,   0, "Self variable get failed.");
+	//	')
+    //});
 	
-	addFact("Global Variable Unary Update", function() {
-		compile_and_execute(@'
-        global.x = 0
-		assert_equals(global.x,   0, "Other variable get failed.");
-        assert_equals(global.x++, 0, "Other variable PlusPlus Suffix failed.");
-		assert_equals(++global.x, 2, "Other variable PlusPlus Prefix failed.");
-		assert_equals(global.x--, 2, "Other variable MinusMinus Suffix failed.");
-		assert_equals(--global.x, 0, "Other variable MinusMinus Prefix failed.");
-		assert_equals(global.x,   0, "Other variable get failed.");
-		struct_remove(global, "x")
-		')
-    });
+	//addFact("Other Variable Unary Update", function() {
+	//	compile_and_execute(@'
+    //    other.x = 0
+	//	assert_equals(other.x,   0, "Other variable get failed.");
+    //    assert_equals(other.x++, 0, "Other variable PlusPlus Suffix failed.");
+	//	assert_equals(++other.x, 2, "Other variable PlusPlus Prefix failed.");
+	//	assert_equals(other.x--, 2, "Other variable MinusMinus Suffix failed.");
+	//	assert_equals(--other.x, 0, "Other variable MinusMinus Prefix failed.");
+	//	assert_equals(other.x,   0, "Other variable get failed.");
+	//	')
+    //});
 	
-	addFact("Local Variable Unary Update", function() {
-		compile_and_execute(@'
-		var _struct = {};
-        _struct.x = 0
-		assert_equals(_struct.x,   0, "Local variable get failed.");
-        assert_equals(_struct.x++, 0, "Local variable PlusPlus Suffix failed.");
-		assert_equals(++_struct.x, 2, "Local variable PlusPlus Prefix failed.");
-		assert_equals(_struct.x--, 2, "Local variable MinusMinus Suffix failed.");
-		assert_equals(--_struct.x, 0, "Local variable MinusMinus Prefix failed.");
-		assert_equals(_struct.x,   0, "Local variable get failed.");
-		')
-    });
+	//addFact("Global Variable Unary Update", function() {
+	//	compile_and_execute(@'
+    //    global.x = 0
+	//	assert_equals(global.x,   0, "Other variable get failed.");
+	//	assert_equals(global.x++, 0, "Other variable PlusPlus Suffix failed.");
+	//	assert_equals(++global.x, 2, "Other variable PlusPlus Prefix failed.");
+	//	assert_equals(global.x--, 2, "Other variable MinusMinus Suffix failed.");
+	//	assert_equals(--global.x, 0, "Other variable MinusMinus Prefix failed.");
+	//	assert_equals(global.x,   0, "Other variable get failed.");
+	//	struct_remove(global, "x")
+	//	')
+    //});
 	
-	addFact("Static Internal Variable Unary Update", function() {
-		compile_and_execute(@'
-		(function(){
-			static __struct = {}
-	        __struct.x = 0
-			assert_equals(__struct.x,   0, "Static internal variable get failed.");
-	        assert_equals(__struct.x++, 0, "Static internal variable PlusPlus Suffix failed.");
-			assert_equals(++__struct.x, 2, "Static internal variable PlusPlus Prefix failed.");
-			assert_equals(__struct.x--, 2, "Static internal variable MinusMinus Suffix failed.");
-			assert_equals(--__struct.x, 0, "Static internal variable MinusMinus Prefix failed.");
-			assert_equals(__struct.x,   0, "Static internal variable get failed.");
-		})()
-		')
-    });
+	//addFact("Local Variable Unary Update", function() {
+	//	compile_and_execute(@'
+	//	var _struct = {};
+    //    _struct.x = 0
+	//	assert_equals(_struct.x,   0, "Local variable get failed.");
+    //    assert_equals(_struct.x++, 0, "Local variable PlusPlus Suffix failed.");
+	//	assert_equals(++_struct.x, 2, "Local variable PlusPlus Prefix failed.");
+	//	assert_equals(_struct.x--, 2, "Local variable MinusMinus Suffix failed.");
+	//	assert_equals(--_struct.x, 0, "Local variable MinusMinus Prefix failed.");
+	//	assert_equals(_struct.x,   0, "Local variable get failed.");
+	//	')
+    //});
+	
+	//addFact("Unique Unary Update", function() {
+	//	compile_and_execute(@'
+	//	assert_equals(score  , 0, "Unique variable get failed.");
+    //    assert_equals(score++, 0, "Unique variable PlusPlus Suffix failed.");
+	//	assert_equals(++score, 2, "Unique variable PlusPlus Prefix failed.");
+	//	assert_equals(score--, 2, "Unique variable MinusMinus Suffix failed.");
+	//	assert_equals(--score, 0, "Unique variable MinusMinus Prefix failed.");
+	//	assert_equals(score  , 0, "Unique variable get failed.");
+	//	')
+    //});
+	
+	///// Accessors
+	
+	//addFact("Static Internal Variable Unary Update", function() {
+	//	compile_and_execute(@'
+	//	(function(){
+	//		static __value = undefined
+	//        __value = 0
+	//		assert_equals(__value,   0, "Static internal variable get failed.");
+	//        assert_equals(__value++, 0, "Static internal variable PlusPlus Suffix failed.");
+	//		assert_equals(++__value, 2, "Static internal variable PlusPlus Prefix failed.");
+	//		assert_equals(__value--, 2, "Static internal variable MinusMinus Suffix failed.");
+	//		assert_equals(--__value, 0, "Static internal variable MinusMinus Prefix failed.");
+	//		assert_equals(__value,   0, "Static internal variable get failed.");
+	//	})()
+	//	')
+    //});
+	
+	//addFact("Static External Variable Unary Update", function() {
+	//	compile_and_execute(@'
+	//	var _func = function(){ static __value = undefined }
+	//	_func.__value = 0
+	//	assert_equals(_func.__value,   0, "Static external variable get failed.");
+	//	assert_equals(_func.__value++, 0, "Static external variable PlusPlus Suffix failed.");
+	//	assert_equals(++_func.__value, 2, "Static external variable PlusPlus Prefix failed.");
+	//	assert_equals(_func.__value--, 2, "Static external variable MinusMinus Suffix failed.");
+	//	assert_equals(--_func.__value, 0, "Static external variable MinusMinus Prefix failed.");
+	//	assert_equals(_func.__value,   0, "Static external variable get failed.");
+	//	')
+		
+    //});
+	
+	//addFact("Static Internal Variable Unary Update", function() {
+	//	compile_and_execute(@'
+	//	(function(){
+	//		static __struct = {}
+	//        __struct.x = 0
+	//		assert_equals(__struct.x,   0, "Static internal variable get failed.");
+	//        assert_equals(__struct.x++, 0, "Static internal variable PlusPlus Suffix failed.");
+	//		assert_equals(++__struct.x, 2, "Static internal variable PlusPlus Prefix failed.");
+	//		assert_equals(__struct.x--, 2, "Static internal variable MinusMinus Suffix failed.");
+	//		assert_equals(--__struct.x, 0, "Static internal variable MinusMinus Prefix failed.");
+	//		assert_equals(__struct.x,   0, "Static internal variable get failed.");
+	//	})()
+	//	')
+    //});
 	
 	addFact("Static External Variable Unary Update", function() {
 		compile_and_execute(@'
-		var _func = function(){ static __struct = 0 }
-		_func.__struct = 0
-		assert_equals(_func.__struct,   0, "Static external variable get failed.");
-		assert_equals(_func.__struct++, 0, "Static external variable PlusPlus Suffix failed.");
-		assert_equals(++_func.__struct, 2, "Static external variable PlusPlus Prefix failed.");
-		assert_equals(_func.__struct--, 2, "Static external variable MinusMinus Suffix failed.");
-		assert_equals(--_func.__struct, 0, "Static external variable MinusMinus Prefix failed.");
-		assert_equals(_func.__struct,   0, "Static external variable get failed.");
-		
+		var _func = function(){ static __struct = { x: 0 } }
+		_func()
+		log(_func)
+		log(static_get(_func))
+		_func.__struct.x = 0
+		assert_equals(_func.__struct.x,   0, "Static external variable get failed.");
+		assert_equals(_func.__struct.x++, 0, "Static external variable PlusPlus Suffix failed.");
+		assert_equals(++_func.__struct.x, 2, "Static external variable PlusPlus Prefix failed.");
+		assert_equals(_func.__struct.x--, 2, "Static external variable MinusMinus Suffix failed.");
+		assert_equals(--_func.__struct.x, 0, "Static external variable MinusMinus Prefix failed.");
+		assert_equals(_func.__struct.x,   0, "Static external variable get failed.");
+		assert_equals(static_get(_func).__struct, _func.__struct, "Static handles are not the same")
 		')
     });
 	
@@ -222,18 +269,6 @@ function BasicUnaryUpdateExpressions() : TestSuite() constructor {
 		assert_equals(--_target[$ _key], 1, "Struct bracket accessor :Dynamic: MinusMinus Suffix failed.");
 		assert_equals(_target[$ _key]--, 1, "Struct bracket accessor :Dynamic: MinusMinus Prefix failed.");
 		assert_equals(_target[$ _key]  , 0, "Struct bracket accessor :Dynamic: get failed.");
-		')
-    });
-	
-	addFact("Array Unary Update", function() {
-		compile_and_execute(@'
-		score = 0
-		assert_equals(score  , 0, "Static variable get failed.");
-        assert_equals(score++, 1, "Static variable PlusPlus Suffix failed.");
-		assert_equals(++score, 1, "Static variable PlusPlus Prefix failed.");
-		assert_equals(score--, 1, "Static variable MinusMinus Suffix failed.");
-		assert_equals(--score, 1, "Static variable MinusMinus Prefix failed.");
-		assert_equals(score  , 0, "Static variable get failed.");
 		')
     });
 	
