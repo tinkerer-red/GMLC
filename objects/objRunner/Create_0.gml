@@ -6,7 +6,9 @@ testFramework = new TestFrameworkRun();
 
 //// Register your test suites here...
 //testFramework.addSuite(BasicConstructorTestSuit);
-testFramework.addSuite(AccessorExpressionsTestSuite);
+testFramework.addSuite(BasicUnaryUpdateExpressions);
+//testFramework.addSuite(BasicAccessorExpressionsTestSuite);
+//testFramework.addSuite(BasicStatementExpressionsTestSuite);
 
 //testFramework.addSuite(BasicArrayTestSuite);
 //testFramework.addSuite(BasicBase64TestSuite);

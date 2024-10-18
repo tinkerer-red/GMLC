@@ -246,7 +246,7 @@
 				case __GMLC_NodeType.UpdateExpression:{
 					if (node.expr.type == __GMLC_NodeType.AccessorExpression) {
 						
-						throw_gmlc_error("updating accessor")
+						//throw_gmlc_error("updating accessor")
 						
 						//var increment = (node.operator == "++");
 						//var prefix = node.prefix; // Since this is a postfix expression

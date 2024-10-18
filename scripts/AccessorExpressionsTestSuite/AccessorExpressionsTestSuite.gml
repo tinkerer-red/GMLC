@@ -1,9 +1,10 @@
 
 
-function AccessorExpressionsTestSuite() : TestSuite() constructor {
+function BasicAccessorExpressionsTestSuite() : TestSuite() constructor {
 
     // Test for Array access and modification
     addFact("Array access and modification", function() {
+		compile_and_execute(@'
         var arr = [0, 1, 2];
         arr[0] = 1;
         var test = arr[2];
@@ -12,10 +13,12 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
         assert_equals(arr[0], 1, "Array modification failed at index 0.");
         assert_equals(test, 2, "Array access failed at index 2.");
         assert_array_equals(arr, [1,1,2], "Array equals failed.");
+		')
     });
 
     // Test for List access and modification
     addFact("List access and modification", function() {
+		compile_and_execute(@'
         var list = ds_list_create();
         list[| 0] = 1;
         list[| 1] = 2;
@@ -29,10 +32,12 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 
         // Cleanup
         ds_list_destroy(list);
+		')
     });
 
     // Test for Grid access and modification
     addFact("Grid access and modification", function() {
+		compile_and_execute(@'
         var grid = ds_grid_create(5, 5);
         ds_grid_set_region(grid, 0, 0, 4, 4, "example");
         grid[# 0, 1] = 2;
@@ -44,10 +49,12 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 
         // Cleanup
         ds_grid_destroy(grid);
+		')
     });
 
     // Test for Map access and modification
     addFact("Map access and modification", function() {
+		compile_and_execute(@'
         var map = ds_map_create();
         map[? "zero"] = 1;
         ds_map_set(map, "zero", 2);
@@ -55,33 +62,57 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
         var test = map[? "two"];
 
         // Assertions
-        assert_equals(map[? "zero"], 2, "Map modification failed for key 'zero'.");
-        assert_equals(test, 3, "Map access failed for key 'two'.");
+        assert_equals(map[? "zero"], 2, "Map modification failed for key `zero`.");
+        assert_equals(test, 3, "Map access failed for key `two`.");
 
         // Cleanup
         ds_map_destroy(map);
+		')
     });
 	
 	// Dot Accessor Test
     addFact("Struct Dot Accessor Test", function() {
+		compile_and_execute(@'
         var struct = {zero: 0, one: 1, two: 2};
         struct.zero = 1;
         var test = struct.two;
-        assert_equals(test, 2, "Dot accessor did not return the expected value for 'two'");
-        assert_equals(struct.zero, 1, "Dot accessor did not modify the 'zero' field correctly");
+        assert_equals(test, 2, "Dot accessor did not return the expected value for `two`");
+        assert_equals(struct.zero, 1, "Dot accessor did not modify the `zero` field correctly");
+		')
     });
 
     // Struct Accessor Test
-    addFact("Struct Bracket Accessor Test", function() {
+    addFact("Struct Bracket Accessor :Const: Test", function() {
+		compile_and_execute(@'
         var struct = {zero: 0, one: 1, two: 2};
         struct[$ "zero"] = 1;
         var test = struct[$ "two"];
-        assert_equals(test, 2, "Bracket accessor did not return the expected value for 'two'");
-        assert_equals(struct[$ "zero"], 1, "Bracket accessor did not modify the 'zero' field correctly");
+        assert_equals(test, 2, "Bracket accessor did not return the expected value for `two`");
+        assert_equals(struct[$ "zero"], 1, "Bracket accessor did not modify the `zero` field correctly");
+		')
+    });
+	
+    // Struct Accessor Test
+    addFact("Struct Bracket Accessor :Dynamic: Test", function() {
+		compile_and_execute(@'
+        var struct = {zero: 0, one: 1, two: 2};
+		
+		var _key = "zero"
+        struct[$ _key] = 1;
+        
+		var _key = "two"
+		var test = struct[$ _key];
+		
+        assert_equals(test, 2, "Bracket accessor did not return the expected value for `two`");
+		
+		var _key = "zero"
+        assert_equals(struct[$ _key], 1, "Bracket accessor did not modify the `zero` field correctly");
+		')
     });
 	
     // Test for Struct hash setting
     addFact("Struct hash setting", function() {
+		compile_and_execute(@'
         var struct = {one: 1};
         
         // Set new value using hash of "one"
@@ -91,10 +122,12 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
         // Assertions
         assert_equals(_value, "oneAgain", "Struct modification using hash failed.");
         assert_struct_equals(struct, {one:"oneAgain"}, "Struct equals failed.");
+		')
     });
 	
 	
 	addFact("Array with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 	    // Initialize the array with various data structures and values
 	    var arr = [
 	        [10, 20, 30],                           // Array for Array access
@@ -138,9 +171,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    arr[4].name = "newDotValue";
 	    assert_equals(arr[4].name, "newDotValue", "Array, Struct Dot write failed.");
 
-	    // Array, Struct Bracket Access - Modify value
+	    // Array, Struct Bracket Access :Const: - Modify value
 	    arr[5][$ "bracketName"] = "newBracketValue";
-	    assert_equals(arr[5][$ "bracketName"], "newBracketValue", "Array, Struct Bracket write failed.");
+	    assert_equals(arr[5][$ "bracketName"], "newBracketValue", "Array, Struct Bracket :Const: write failed.");
+
+	    // Array, Struct Bracket Access :Dynamic: - Modify value
+	    var _key = "bracketName"
+		arr[5][$ _key] = "newBracketValue";
+	    assert_equals(arr[5][$ _key], "newBracketValue", "Array, Struct Bracket :Dynamic: write failed.");
 
 	    // Array, Struct Hash Access - Modify value
 	    struct_set_from_hash(arr[6], variable_get_hash("hashName"), "newHashValue");
@@ -166,12 +204,18 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    // Array, Struct Bracket Access
 	    assert_equals(arr[5][$ "bracketName"], "newBracketValue", "Array, Struct Bracket access failed.");
 
+	    // Array, Struct Bracket Access
+		var _key = "bracketName"
+	    assert_equals(arr[5][$ _key], "newBracketValue", "Array, Struct Bracket access failed.");
+
 	    // Array, Struct Hash Access
 	    assert_equals(struct_get_from_hash(arr[6], variable_get_hash("hashName")), "newHashValue", "Array, Struct Hash access failed.");
 
 	    // Array, Function Call Access (no write)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(arr[7]()[0], 100, "Array, Function Call access failed (first return value).");
 //	    assert_equals(arr[7]()[1], 200, "Array, Function Call access failed (second return value).");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		// Work around for the lines above until a bug is fixed ::  https://github.com/YoYoGames/GameMaker-Bugs/issues/8041
 		var _retArr = arr[7]()
@@ -182,9 +226,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    ds_list_destroy(arr[1]);
 	    ds_grid_destroy(arr[2]);
 	    ds_map_destroy(arr[3]);
+		')
 	});
 	
 	addFact("List with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 	    // Initialize the list with various data structures and values
 	    var list = ds_list_create();
     
@@ -234,9 +280,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    list[| 4].name = "newDotValue";
 	    assert_equals(list[| 4].name, "newDotValue", "List, Struct Dot write failed.");
 
-	    // List, Struct Bracket Access - Modify value
+	    // List, Struct Bracket Access :Const: - Modify value
 	    list[| 5][$ "bracketName"] = "newBracketValue";
-	    assert_equals(list[| 5][$ "bracketName"], "newBracketValue", "List, Struct Bracket write failed.");
+	    assert_equals(list[| 5][$ "bracketName"], "newBracketValue", "List, Struct Bracket :Const: write failed.");
+
+	    // List, Struct Bracket Access :Dynamic: - Modify value
+		var _key = "bracketName"
+	    list[| 5][$ _key] = "newBracketValue";
+	    assert_equals(list[| 5][$ _key], "newBracketValue", "List, Struct Bracket :Dynamic: write failed.");
 
 	    // List, Struct Hash Access - Modify value
 	    struct_set_from_hash(list[| 6], variable_get_hash("hashName"), "newHashValue");
@@ -259,15 +310,21 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    // List, Struct Dot Access
 	    assert_equals(list[| 4].name, "newDotValue", "List, Struct Dot access failed.");
 
-	    // List, Struct Bracket Access
+	    // List, Struct Bracket Access :Const:
 	    assert_equals(list[| 5][$ "bracketName"], "newBracketValue", "List, Struct Bracket access failed.");
+
+	    // List, Struct Bracket Access :Dynamic:
+		var _key = "bracketName"
+	    assert_equals(list[| 5][$ _key], "newBracketValue", "List, Struct Bracket access failed.");
 
 	    // List, Struct Hash Access
 	    assert_equals(struct_get_from_hash(list[| 6], variable_get_hash("hashName")), "newHashValue", "List, Struct Hash access failed.");
 		
 	    // List, Function Call Access (no write)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(list[| 7]()[| 0], 100, "List, Function Call access failed (first return value).");
 //		assert_equals(list[| 7]()[| 1], 200, "List, Function Call access failed (second return value).");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 	    // Work around for the lines above until a bug is fixed ::  https://github.com/YoYoGames/GameMaker-Bugs/issues/8041
 	    var _retList = list[| 7]();
@@ -280,9 +337,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    ds_map_destroy(list[| 3]);
 	    ds_list_destroy(_retList); // Cleanup the list returned by the function
 	    ds_list_destroy(list);
+		')
 	});
 
 	addFact("Grid with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 	    // Initialize the grid (5x5 for simplicity) with various data structures and values
 	    var grid = ds_grid_create(16, 16);
 
@@ -331,9 +390,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    grid[# 8, 9].name = "newDotValue";
 	    assert_equals(grid[# 8, 9].name, "newDotValue", "Grid, Struct Dot write failed.");
 
-	    // Grid, Struct Bracket Access - Modify value
+	    // Grid, Struct Bracket Access :Const: - Modify value
 	    grid[# 10, 11][$ "bracketName"] = "newBracketValue";
-	    assert_equals(grid[# 10, 11][$ "bracketName"], "newBracketValue", "Grid, Struct Bracket write failed.");
+	    assert_equals(grid[# 10, 11][$ "bracketName"], "newBracketValue", "Grid, Struct Bracket :Const: write failed.");
+
+	    // Grid, Struct Bracket Access :Dynamic: - Modify value
+		var _key = "bracketName"
+	    grid[# 10, 11][$ _key] = "newBracketValue";
+	    assert_equals(grid[# 10, 11][$ _key], "newBracketValue", "Grid, Struct Bracket :Dynamic: write failed.");
 
 	    // Grid, Struct Hash Access - Modify value
 	    struct_set_from_hash(grid[# 12, 13], variable_get_hash("hashName"), "newHashValue");
@@ -356,14 +420,20 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    // Grid, Struct Dot Access
 	    assert_equals(grid[# 8, 9].name, "newDotValue", "Grid, Struct Dot access failed.");
 
-	    // Grid, Struct Bracket Access
+	    // Grid, Struct Bracket Access :Const:
 	    assert_equals(grid[# 10, 11][$ "bracketName"], "newBracketValue", "Grid, Struct Bracket access failed.");
+
+	    // Grid, Struct Bracket Access :Dynamic:
+		var _key = "bracketName"
+	    assert_equals(grid[# 10, 11][$ _key], "newBracketValue", "Grid, Struct Bracket access failed.");
 
 	    // Grid, Struct Hash Access
 	    assert_equals(struct_get_from_hash(grid[# 12, 13], variable_get_hash("hashName")), "newHashValue", "Grid, Struct Hash access failed.");
 
 	    // Grid, Function Call Access (no write)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(grid[# 14, 15]()[# 1, 1], 100, "Grid, Function Call access failed.");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		// Work around for the lines above until a bug is fixed ::  https://github.com/YoYoGames/GameMaker-Bugs/issues/8041
 	    var _retGrid = grid[# 14, 15]();
@@ -375,9 +445,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    ds_map_destroy(grid[# 6, 7]);
 	    ds_grid_destroy(_retGrid); // Cleanup the grid returned by the function
 	    ds_grid_destroy(grid);
+		')
 	});
 	
 	addFact("Map with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 	    // Initialize the map with various data structures and values
 	    var map = ds_map_create();
     
@@ -422,9 +494,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    map[? "structDot"].name = "newDotValue";
 	    assert_equals(map[? "structDot"].name, "newDotValue", "Map, Struct Dot write failed.");
 
-	    // Map, Struct Bracket Access - Modify value
+	    // Map, Struct Bracket Access :Const: - Modify value
 	    map[? "structBracket"][$ "bracketName"] = "newBracketValue";
-	    assert_equals(map[? "structBracket"][$ "bracketName"], "newBracketValue", "Map, Struct Bracket write failed.");
+	    assert_equals(map[? "structBracket"][$ "bracketName"], "newBracketValue", "Map, Struct Bracket :Const: write failed.");
+
+	    // Map, Struct Bracket Access :Dynamic: - Modify value
+		var _key = "bracketName"
+	    map[? "structBracket"][$ _key] = "newBracketValue";
+	    assert_equals(map[? "structBracket"][$ _key], "newBracketValue", "Map, Struct Bracket :Dynamic: write failed.");
 
 	    // Map, Struct Hash Access - Modify value
 	    struct_set_from_hash(map[? "structHash"], variable_get_hash("hashName"), "newHashValue");
@@ -447,14 +524,20 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    // Map, Struct Dot Access
 	    assert_equals(map[? "structDot"].name, "newDotValue", "Map, Struct Dot access failed.");
 
-	    // Map, Struct Bracket Access
+	    // Map, Struct Bracket Access :Const:
 	    assert_equals(map[? "structBracket"][$ "bracketName"], "newBracketValue", "Map, Struct Bracket access failed.");
+
+	    // Map, Struct Bracket Access :Dynamic:
+		var _key = "bracketName"
+	    assert_equals(map[? "structBracket"][$ _key], "newBracketValue", "Map, Struct Bracket access failed.");
 
 	    // Map, Struct Hash Access
 	    assert_equals(struct_get_from_hash(map[? "structHash"], variable_get_hash("hashName")), "newHashValue", "Map, Struct Hash access failed.");
 
 	    // Map, Function Call Access (no write)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(map[? "function"]()[? "funcKey"], 100, "Map, Function Call access failed.");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		// Work around for the lines above until a bug is fixed ::  https://github.com/YoYoGames/GameMaker-Bugs/issues/8041
 	    var _retMap = map[? "function"]();
@@ -466,9 +549,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    ds_map_destroy(map[? "map"]);
 	    ds_map_destroy(_retMap); // Cleanup the map returned by the function
 	    ds_map_destroy(map);
+		')
 	});
 	
 	addFact("Struct Dot Accessor with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 		// Initialize the struct with various data structures and values
 		var struct = {
 		    array: [10, 20, 30],                      // Array for Struct, Array access
@@ -514,9 +599,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		struct.structDot.name = "newDotValue";
 		assert_equals(struct.structDot.name, "newDotValue", "Struct, Struct Dot write failed.");
 
-		// Struct Hash, Struct Bracket Access - Modify value
+		// Struct Hash, Struct Bracket Access :Const: - Modify value
 		struct.structBracket[$ "bracketName"] = "newBracketValue";
-		assert_equals(struct.structBracket[$ "bracketName"], "newBracketValue", "Struct, Struct Bracket write failed.");
+		assert_equals(struct.structBracket[$ "bracketName"], "newBracketValue", "Struct, Struct Bracket :Const: write failed.");
+
+		// Struct Hash, Struct Bracket Access :Dynamic: - Modify value
+		var _key = "bracketName"
+		struct.structBracket[$ _key] = "newBracketValue";
+		assert_equals(struct.structBracket[$ _key], "newBracketValue", "Struct, Struct Bracket :Dynamic: write failed.");
 
 		// Struct Hash, Struct Hash Access - Modify value
 		struct_set_from_hash(struct.structHash, variable_get_hash("hashName"), "newHashValue");
@@ -539,8 +629,12 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		// Struct Hash, Struct Dot Access
 		assert_equals(struct.structDot.name, "newDotValue", "Struct, Struct Dot access failed.");
 
-		// Struct Hash, Struct Bracket Access
+		// Struct Hash, Struct Bracket Access :Const:
 		assert_equals(struct.structBracket[$ "bracketName"], "newBracketValue", "Struct, Struct Bracket access failed.");
+
+		// Struct Hash, Struct Bracket Access :Dynamic:
+		var _key = "bracketName"
+		assert_equals(struct.structBracket[$ _key], "newBracketValue", "Struct, Struct Bracket access failed.");
 
 		// Struct Hash, Struct Hash Access
 		assert_equals(struct_get_from_hash(struct.structHash, variable_get_hash("hashName")), "newHashValue", "Struct, Struct Hash access failed.");
@@ -556,9 +650,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		ds_list_destroy(struct.list);
 		ds_grid_destroy(struct.grid);
 		ds_map_destroy(struct.map);
+		')
 	});
 	
 	addFact("Struct Bracket Accessor :Const: with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 		// Initialize the struct with various data structures and values
 		var struct = {
 		    array: [10, 20, 30],                      // Array for Struct, Array access
@@ -604,9 +700,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		struct[$ "structDot"].name = "newDotValue";
 		assert_equals(struct[$ "structDot"].name, "newDotValue",  "Struct Bracket :Const:, Struct Dot write failed.");
 
-		// Struct Hash, Struct Bracket Access - Modify value
+		// Struct Hash, Struct Bracket Access :Const: - Modify value
 		struct[$ "structBracket"][$ "bracketName"] = "newBracketValue";
-		assert_equals(struct[$ "structBracket"][$ "bracketName"], "newBracketValue",  "Struct Bracket :Const:, Struct Bracket write failed.");
+		assert_equals(struct[$ "structBracket"][$ "bracketName"], "newBracketValue",  "Struct Bracket :Const:, Struct Bracket :Const: write failed.");
+
+		// Struct Hash, Struct Bracket Access :Dynamic: - Modify value
+		var _key = "bracketName"
+		struct[$ "structBracket"][$ _key] = "newBracketValue";
+		assert_equals(struct[$ "structBracket"][$ _key], "newBracketValue",  "Struct Bracket :Const:, Struct Bracket :Dynamic: write failed.");
 
 		// Struct Hash, Struct Hash Access - Modify value
 		struct_set_from_hash(struct[$ "structHash"], variable_get_hash("hashName"), "newHashValue");
@@ -629,14 +730,20 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		// Struct Hash, Struct Dot Access
 		assert_equals(struct[$ "structDot"].name, "newDotValue",  "Struct Bracket :Const:, Struct Dot access failed.");
 
-		// Struct Hash, Struct Bracket Access
+		// Struct Hash, Struct Bracket Access :Const:
 		assert_equals(struct[$ "structBracket"][$ "bracketName"], "newBracketValue",  "Struct Bracket :Const:, Struct Bracket access failed.");
+
+		// Struct Hash, Struct Bracket Access :Dynamic:
+		var _key = "bracketName"
+		assert_equals(struct[$ "structBracket"][$ _key], "newBracketValue",  "Struct Bracket :Const:, Struct Bracket access failed.");
 
 		// Struct Hash, Struct Hash Access
 		assert_equals(struct_get_from_hash(struct[$ "structHash"], variable_get_hash("hashName")), "newHashValue",  "Struct Bracket :Const:, Struct Hash access failed.");
 
 		// Struct Hash, Function Call Access (no write)
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(struct[$ "functionCall"]()[$ "key"], "funcValue",  "Struct Bracket :Const:, Function Call access failed.");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		// Work around for the lines above until a bug is fixed ::  https://github.com/YoYoGames/GameMaker-Bugs/issues/8041
 		var _retStruct = struct[$ "functionCall"]();
@@ -646,9 +753,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		ds_list_destroy(struct[$ "list"]);
 		ds_grid_destroy(struct[$ "grid"]);
 		ds_map_destroy(struct[$ "map"]);
+		')
 	});
 	
-	addFact("Struct Bracket Accessor with local string variables (Read/Write)", function() {
+	addFact("Struct Bracket Accessor :Dynamic: string variables (Read/Write)", function() {
+		compile_and_execute(@'
 		// Initialize the struct with various data structures and values
 		var struct = {
 		    array: [10, 20, 30],                      // Array for Struct, Array access
@@ -702,10 +811,16 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		struct[$ _key].name = "newDotValue";
 		assert_equals(struct[$ _key].name, "newDotValue", "Struct Bracket with variable, Struct Dot write failed.");
 
-		// Struct Hash, Struct Bracket Access - Modify value
+		// Struct Hash, Struct Bracket Access :Const: - Modify value
 		_key = "structBracket";
 		struct[$ _key][$ "bracketName"] = "newBracketValue";
-		assert_equals(struct[$ _key][$ "bracketName"], "newBracketValue", "Struct Bracket with variable, Struct Bracket write failed.");
+		assert_equals(struct[$ _key][$ "bracketName"], "newBracketValue", "Struct Bracket with variable, Struct Bracket :Const: write failed.");
+
+		// Struct Hash, Struct Bracket Access :Dynamic: - Modify value
+		_key = "structBracket";
+		var _key2 = "bracketName"
+		struct[$ _key][$ _key2] = "newBracketValue";
+		assert_equals(struct[$ _key][$ _key2], "newBracketValue", "Struct Bracket with variable, Struct Bracket :Dynamic: write failed.");
 
 		// Struct Hash, Struct Hash Access - Modify value
 		_key = "structHash";
@@ -734,9 +849,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		_key = "structDot";
 		assert_equals(struct[$ _key].name, "newDotValue", "Struct Bracket with variable, Struct Dot access failed.");
 
-		// Struct Hash, Struct Bracket Access
+		// Struct Hash, Struct Bracket Access :Const:
 		_key = "structBracket";
 		assert_equals(struct[$ _key][$ "bracketName"], "newBracketValue", "Struct Bracket with variable, Struct Bracket access failed.");
+
+		// Struct Hash, Struct Bracket Access :Dynamic:
+		_key = "structBracket";
+		var _key2 = "bracketName"
+		assert_equals(struct[$ _key][$ _key2], "newBracketValue", "Struct Bracket with variable, Struct Bracket access failed.");
 
 		// Struct Hash, Struct Hash Access
 		_key = "structHash";
@@ -745,7 +865,9 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		// Struct Hash, Function Call Access (no write)
 		_key = "functionCall";
 		var _key2 = "key";
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(struct[$ _key]()[$ _key2], "funcValue", "Struct Bracket with variable, Function Call access failed.");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		// Work around for the lines above until a bug is fixed ::  https://github.com/YoYoGames/GameMaker-Bugs/issues/8041
 		var _retStruct = struct[$ _key]();
@@ -755,9 +877,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 		ds_list_destroy(struct[$ "list"]);
 		ds_grid_destroy(struct[$ "grid"]);
 		ds_map_destroy(struct[$ "map"]);
+		')
 	});
 	
 	addFact("Struct Hash Accessor (Read/Write)", function() {
+		compile_and_execute(@'
 	    // Initialize the struct with various data structures and values
 	    var struct = {
 	        array: [10, 20, 30],                      // Array for Struct, Array access
@@ -812,10 +936,16 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    struct_get_from_hash(struct, _dotHash).name = "newDotValue";
 	    assert_equals(struct_get_from_hash(struct, _dotHash).name, "newDotValue", "Struct Hash, Struct Dot write failed.");
 
-	    // Struct Hash, Struct Bracket Access - Modify value
+	    // Struct Hash, Struct Bracket Access :Const: - Modify value
 	    var _bracketHash = variable_get_hash("structBracket");
 		struct_get_from_hash(struct, _bracketHash)[$ "bracketName"] = "newBracketValue"
-	    assert_equals(struct_get_from_hash(struct, _bracketHash)[$ "bracketName"], "newBracketValue", "Struct Hash, Struct Bracket write failed.");
+	    assert_equals(struct_get_from_hash(struct, _bracketHash)[$ "bracketName"], "newBracketValue", "Struct Hash, Struct Bracket :Const: write failed.");
+
+	    // Struct Hash, Struct Bracket Access :Dynamic: - Modify value
+	    var _bracketHash = variable_get_hash("structBracket");
+		var _key = "bracketName"
+		struct_get_from_hash(struct, _bracketHash)[$ _key] = "newBracketValue"
+	    assert_equals(struct_get_from_hash(struct, _bracketHash)[$ _key], "newBracketValue", "Struct Hash, Struct Bracket :Dynamic: write failed.");
 
 	    // Struct Hash, Struct Hash Access - Modify value
 	    var _hashStructHash = variable_get_hash("structHash");
@@ -844,9 +974,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    _dotHash = variable_get_hash("structDot");
 	    assert_equals(struct_get_from_hash(struct, _dotHash).name, "newDotValue", "Struct Hash, Struct Dot access failed.");
 
-	    // Struct Hash, Struct Bracket Access
+	    // Struct Hash, Struct Bracket Access :Const:
 	    _bracketHash = variable_get_hash("structBracket");
 	    assert_equals(struct_get_from_hash(struct, _bracketHash)[$ "bracketName"], "newBracketValue", "Struct Hash, Struct Bracket access failed.");
+
+	    // Struct Hash, Struct Bracket Access :Dynamic:
+	    _bracketHash = variable_get_hash("structBracket");
+		var _key = "bracketName"
+	    assert_equals(struct_get_from_hash(struct, _bracketHash)[$ _key], "newBracketValue", "Struct Hash, Struct Bracket access failed.");
 
 	    // Struct Hash, Struct Hash Access
 	    _hashStructHash = variable_get_hash("structHash");
@@ -864,9 +999,11 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    ds_list_destroy(struct_get_from_hash(struct, _listHash));
 	    ds_grid_destroy(struct_get_from_hash(struct, _gridHash));
 	    ds_map_destroy(struct_get_from_hash(struct, _mapHash));
+		')
 	});
 	
 	addFact("Function Call with multiple accessors (Read/Write)", function() {
+		compile_and_execute(@'
 	    // Define functions that return various data structures
 	    funcArray = function() {
 			static r = [10, 20, 30]
@@ -915,8 +1052,10 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    assert_equals(funcList()[| 1], 888, "Function Call, List write failed.");
 
 	    // Function Call, Grid Access - Modify value
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //	    funcGrid()[# 2, 2] = 777;
 //	    assert_equals(funcGrid()[# 2, 2], 777, "Function Call, Grid write failed.");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 		//work around for a bug :: https://github.com/YoYoGames/GameMaker-Bugs/issues/7799
 		var _retGrid = funcGrid()
@@ -931,9 +1070,14 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    funcStructDot().name = "newDotValue";
 	    assert_equals(funcStructDot().name, "newDotValue", "Function Call, Struct Dot write failed.");
 
-	    // Function Call, Struct Bracket Access - Modify value
+	    // Function Call, Struct Bracket Access :Const: - Modify value
 	    funcStructBracket()[$ "bracketName"] = "newBracketValue";
-	    assert_equals(funcStructBracket()[$ "bracketName"], "newBracketValue", "Function Call, Struct Bracket write failed.");
+	    assert_equals(funcStructBracket()[$ "bracketName"], "newBracketValue", "Function Call, Struct Bracket :Const: write failed.");
+
+	    // Function Call, Struct Bracket Access :Dynamic: - Modify value
+		var _key = "bracketName"
+	    funcStructBracket()[$ _key] = "newBracketValue";
+	    assert_equals(funcStructBracket()[$ _key], "newBracketValue", "Function Call, Struct Bracket :Dynamic: write failed.");
 
 	    // Function Call, Struct Hash Access - Modify value
 	    struct_set_from_hash(funcStructHash(), variable_get_hash("hashName"), "newHashValue");
@@ -948,7 +1092,9 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    assert_equals(funcList()[| 1], 888, "Function Call, List access failed.");
 
 	    // Function Call, Grid Access
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //		assert_equals(funcGrid()[# 2, 2], 777, "Function Call, Grid access failed.");
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
 	    //work around for a bug :: https://github.com/YoYoGames/GameMaker-Bugs/issues/7799
 		var _retGrid = funcGrid()
@@ -960,8 +1106,12 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    // Function Call, Struct Dot Access
 	    assert_equals(funcStructDot().name, "newDotValue", "Function Call, Struct Dot access failed.");
 
-	    // Function Call, Struct Bracket Access
+	    // Function Call, Struct Bracket Access :Const:
 	    assert_equals(funcStructBracket()[$ "bracketName"], "newBracketValue", "Function Call, Struct Bracket access failed.");
+
+	    // Function Call, Struct Bracket Access :Dynamic:
+		var _key = "bracketName"
+	    assert_equals(funcStructBracket()[$ _key], "newBracketValue", "Function Call, Struct Bracket access failed.");
 
 	    // Function Call, Struct Hash Access
 	    assert_equals(struct_get_from_hash(funcStructHash(), variable_get_hash("hashName")), "newHashValue", "Function Call, Struct Hash access failed.");
@@ -974,9 +1124,8 @@ function AccessorExpressionsTestSuite() : TestSuite() constructor {
 	    ds_list_destroy(funcList());
 	    ds_grid_destroy(funcGrid());
 	    ds_map_destroy(funcMap());
+		')
 	});
 
 
 }
-
-

@@ -879,8 +879,234 @@ function __GMLCexecuteUpdatePropertyUniqueMinusMinusPostfix() {
 	}
 }
 #endregion
+
+#region Arrays
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
 #endregion
-
-#region Call Expressions
-
+function __GMLCexecuteUpdateArrayPlusPlusPrefix() {
+	var _target = target();
+	return ++_target[key()];
+}
+function __GMLCexecuteUpdateArrayPlusPlusPostfix() {
+	var _target = target();
+	return _target[key()]++;
+}
+function __GMLCexecuteUpdateArrayMinusMinusPrefix() {
+	var _target = target();
+	return --_target[key()];
+}
+function __GMLCexecuteUpdateArrayMinusMinusPostfix() {
+	var _target = target();
+	return _target[key()]--;
+}
+function __GMLCcompileUpdateArray(_rootNode, _parentNode, _node) {
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateArray", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
+    
+    var _increment = (_node.operator == "++") ? true : false;
+	var _prefix = _node.prefix;
+	
+	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateArrayPlusPlusPrefix);
+	if (_increment  && !_prefix) return method(_output, __GMLCexecuteUpdateArrayPlusPlusPostfix);
+	if (!_increment &&  _prefix) return method(_output, __GMLCexecuteUpdateArrayMinusMinusPrefix);
+	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateArrayMinusMinusPostfix);
+}
+#endregion
+#region List
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteUpdateListPlusPlusPrefix() {
+	var _target = target();
+	return ++_target[| key()];
+}
+function __GMLCexecuteUpdateListPlusPlusPostfix() {
+	var _target = target();
+	return _target[| key()]++;
+}
+function __GMLCexecuteUpdateListMinusMinusPrefix() {
+	var _target = target();
+	return --_target[| key()];
+}
+function __GMLCexecuteUpdateListMinusMinusPostfix() {
+	var _target = target();
+	return _target[| key()]--;
+}
+function __GMLCcompileUpdateList(_rootNode, _parentNode, _node) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateList", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
+    
+    var _increment = (_node.operator == "++") ? true : false;
+	var _prefix = _node.prefix;
+	
+	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateListPlusPlusPrefix);
+	if (_increment  && !_prefix) return method(_output, __GMLCexecuteUpdateListPlusPlusPostfix);
+	if (!_increment &&  _prefix) return method(_output, __GMLCexecuteUpdateListMinusMinusPrefix);
+	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateListMinusMinusPostfix);
+}
+#endregion
+#region Map
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteUpdateMapPlusPlusPrefix() {
+	var _target = target();
+	return ++_target[? key()];
+}
+function __GMLCexecuteUpdateMapPlusPlusPostfix() {
+	var _target = target();
+	return _target[? key()]++;
+}
+function __GMLCexecuteUpdateMapMinusMinusPrefix() {
+	var _target = target();
+	return --_target[? key()];
+}
+function __GMLCexecuteUpdateMapMinusMinusPostfix() {
+	var _target = target();
+	return _target[? key()]--;
+}
+function __GMLCcompileUpdateMap(_rootNode, _parentNode, _node) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateMap", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
+    
+    var _increment = (_node.operator == "++") ? true : false;
+	var _prefix = _node.prefix;
+	
+	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateMapPlusPlusPrefix);
+	if (_increment  && !_prefix) return method(_output, __GMLCexecuteUpdateMapPlusPlusPostfix);
+	if (!_increment &&  _prefix) return method(_output, __GMLCexecuteUpdateMapMinusMinusPrefix);
+	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateMapMinusMinusPostfix);
+}
+#endregion
+#region Grid
+#region //{
+//    target: <expression>,
+//    keyX: <expression>,
+//    keyY: <expression>,
+//}
+#endregion
+function __GMLCexecuteUpdateGridPlusPlusPrefix() {
+	var _target = target();
+	return ++_target[# keyX(), keyY()];
+}
+function __GMLCexecuteUpdateGridPlusPlusPostfix() {
+	var _target = target();
+	return _target[# keyX(), keyY()]++;
+}
+function __GMLCexecuteUpdateGridMinusMinusPrefix() {
+	var _target = target();
+	return --_target[# keyX(), keyY()];
+}
+function __GMLCexecuteUpdateGridMinusMinusPostfix() {
+	var _target = target();
+	return _target[# keyX(), keyY()]--;
+}
+function __GMLCcompileUpdateGrid(_rootNode, _parentNode, _node) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateGrid", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	_output.keyX   = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
+	_output.keyY   = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val2);
+    
+    var _increment = (_node.operator == "++") ? true : false;
+	var _prefix = _node.prefix;
+	
+	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateGridPlusPlusPrefix);
+	if (_increment  && !_prefix) return method(_output, __GMLCexecuteUpdateGridPlusPlusPostfix);
+	if (!_increment &&  _prefix) return method(_output, __GMLCexecuteUpdateGridMinusMinusPrefix);
+	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateGridMinusMinusPostfix);
+}
+#endregion
+#region Struct
+#region //{
+//    target: <expression>,
+//    key: <expression>,
+//}
+#endregion
+function __GMLCexecuteUpdateStructPlusPlusPrefix() {
+	var _target = target();
+	return ++_target[$ key()];
+}
+function __GMLCexecuteUpdateStructPlusPlusPostfix() {
+	var _target = target();
+	return _target[$ key()]++;
+}
+function __GMLCexecuteUpdateStructMinusMinusPrefix() {
+	var _target = target();
+	return --_target[$ key()];
+}
+function __GMLCexecuteUpdateStructMinusMinusPostfix() {
+	var _target = target();
+	return _target[$ key()]--;
+}
+function __GMLCcompileUpdateStruct(_rootNode, _parentNode, _node) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateStruct", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
+    
+    var _increment = (_node.operator == "++") ? true : false;
+	var _prefix = _node.prefix;
+	
+	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateStructPlusPlusPrefix);
+	if (_increment  && !_prefix) return method(_output, __GMLCexecuteUpdateStructPlusPlusPostfix);
+	if (!_increment &&  _prefix) return method(_output, __GMLCexecuteUpdateStructMinusMinusPrefix);
+	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateStructMinusMinusPostfix);
+}
+#endregion
+#region Struct w/ Errors
+function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
+	var _target = target();
+	return ++_target[$ key];
+}
+function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
+	var _target = target();
+	return _target[$ key]++;
+}
+function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
+	var _target = target();
+	return --_target[$ key];
+}
+function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
+	var _target = target();
+	return _target[$ key]--;
+}
+function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node) {
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateStructDotAcc", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	_output.key    = _node.expr.val1.value
+    
+    var _increment = (_node.operator == "++") ? true : false;
+	var _prefix = _node.prefix;
+	
+	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateStructDotAccPlusPlusPrefix);
+	if (_increment  && !_prefix) return method(_output, __GMLCexecuteUpdateStructDotAccPlusPlusPostfix);
+	if (!_increment &&  _prefix) return method(_output, __GMLCexecuteUpdateStructDotAccMinusMinusPrefix);
+	if (!_increment && !_prefix) return method(_output, __GMLCexecuteUpdateStructDotAccMinusMinusPostfix);
+}
+#endregion
+#region Variable
+function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _increment, _prefix, _line, _lineString) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateVariable", "<Missing Error Message>", _line, _lineString);
+	_output.key = _key;
+    if (_scope == ScopeType.LOCAL) {
+		_output.locals = _parentNode.locals;
+		_output.localsWrittenTo = _parentNode.localsWrittenTo;
+		_output.localIndex = _parentNode.localLookUps[$ _output.key];
+	}
+	else if (_scope == ScopeType.GLOBAL) {
+		_output.globals = _rootNode.globals;
+	}
+	
+	return method(_output, __GMLCGetScopeUpdater(_scope, _increment, _prefix));
+}
+#endregion
 #endregion
