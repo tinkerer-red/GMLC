@@ -854,11 +854,11 @@
 		
 		#region Expressions
 		static parseExpression = function() {
-			return parseAssignmentExpression(); // Start from the highest precedence that is not unary or primary
+			return parseAssignmentExpression();
 		};
 		
 		static parseConditionalExpression = function() {
-			return parseConditionalEqualityExpression(); // Start from the highest precedence that is not unary or primary
+			return parseConditionalEqualityExpression();
 		};
 		
 		static parseAssignmentExpression = function() {
@@ -1328,6 +1328,14 @@
 					var _node = new ASTCallExpression(_literalStringFunction, _arguments, line, lineString);
 					
 					return _node
+				break;}
+				case __GMLC_TokenType.NoOpPragma: {
+					nextToken();
+					if (currentToken == undefined) return undefined;
+					var _node = parseStatement();
+					_node.skipOptimization = true;
+					return _node;
+					
 				break;}
 			}
 			

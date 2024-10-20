@@ -250,7 +250,10 @@ enum __GMLC_TokenType {
 	Enum,
 	Define,
 	
+	NoOpPragma,
+	
 	Illegal,
+	
 	SIZE
 }
 /*/
@@ -280,6 +283,8 @@ function __GMLC_TokenType() {
 	static Region = "__GMLC_TokenType.Region";
 	static Enum = "__GMLC_TokenType.Enum";
 	static Define = "__GMLC_TokenType.Define";
+	
+	static NoOpPragma = "__GMLC_TokenType.NoOpPragma";
 	
 	static Illegal = "__GMLC_TokenType.Illegal";
 	

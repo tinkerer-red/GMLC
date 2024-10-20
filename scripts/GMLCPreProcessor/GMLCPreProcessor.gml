@@ -122,6 +122,17 @@ function GML_PreProcessor() : GMLCParserBase() constructor {
 	#region Parsers
 	
 	static parseWhiteSpaces = function() {
+		if (currentToken.type == __GMLC_TokenType.Comment)
+		{
+			var _str = string_replace_all(string_replace_all(currentToken.value, "\t", ""), " ", "")
+			if string_pos("@NoOp", _str)
+			{
+				//change the token type and mark for processing
+				currentToken.type = __GMLC_TokenType.NoOpPragma;
+				array_push(processedTokens, currentToken);
+				return true;
+			}
+		}
 		if (currentToken.type == __GMLC_TokenType.Whitespace)
 		|| (currentToken.type == __GMLC_TokenType.Comment)
 		|| (currentToken.type == __GMLC_TokenType.Region)

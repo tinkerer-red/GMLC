@@ -190,23 +190,7 @@
 				case __GMLC_NodeType.AssignmentExpression:{
 					
 					if (node.left.type == __GMLC_NodeType.AccessorExpression) {
-						//scope all children
-						//if (node.left.expr.type == __GMLC_NodeType.Identifier) {
-						//	node.left.expr.scope = __determineScopeType(node.left.expr.scope);
-						//}
-						//if (node.left.val1.type == __GMLC_NodeType.Identifier) {
-						//	node.left.val1.scope = __determineScopeType(node.left.val1.scope);
-						//}
-						//if (node.left.val2.type != undefined)
-						//|| (node.left.val2.type == __GMLC_NodeType.Identifier) {
-						//	node.left.val2.scope = __determineScopeType(node.left.val2.scope);
-						//}
-						
-						//do nothing the compiler will handle the funny business with the following code:
-						// var arr;
-						// arr[1,2] = 1;
-						
-						
+						//handled in compiler
 					}
 					else if (node.left.type == __GMLC_NodeType.Identifier) {
 						node.left.scope = __determineScopeType(node.left)
@@ -245,94 +229,7 @@
 				break;}
 				case __GMLC_NodeType.UpdateExpression:{
 					if (node.expr.type == __GMLC_NodeType.AccessorExpression) {
-						
-						//throw_gmlc_error("updating accessor")
-						
-						//var increment = (node.operator == "++");
-						//var prefix = node.prefix; // Since this is a postfix expression
-						
-						//switch (node.expr.accessorType) {
-						//	case __GMLC_AccessorType.Array:{
-						//		node = new ASTCallExpression(
-						//			new ASTFunction(__array_update, node.line, node.lineString),
-						//			[
-						//				node.expr.expr,
-						//				node.expr.val1,
-						//				new ASTLiteral(increment, node.line, node.lineString),
-						//				new ASTLiteral(prefix, node.line, node.lineString)
-						//			],
-						//			node.line,
-						//			node.lineString
-						//		);	
-						//	break;}
-						//	case __GMLC_AccessorType.Grid:{
-						//		node = new ASTCallExpression(
-						//			new ASTFunction(__grid_update, node.line, node.lineString),
-						//			[
-						//				node.expr.expr,
-						//				node.expr.val1,
-						//				node.expr.val2,
-						//				new ASTLiteral(increment, node.line, node.lineString),
-						//				new ASTLiteral(prefix, node.line, node.lineString)
-						//			],
-						//			node.line,
-						//			node.lineString
-						//		);	
-						//	break;}
-						//	case __GMLC_AccessorType.List:{
-						//		node = new ASTCallExpression(
-						//			new ASTFunction(__list_update, node.line, node.lineString),
-						//			[
-						//				node.expr.expr,
-						//				node.expr.val1,
-						//				new ASTLiteral(increment, node.line, node.lineString),
-						//				new ASTLiteral(prefix, node.line, node.lineString)
-						//			],
-						//			node.line,
-						//			node.lineString
-						//		);	
-						//	break;}
-						//	case __GMLC_AccessorType.Map:{
-						//		node = new ASTCallExpression(
-						//			new ASTFunction(__map_update, node.line, node.lineString),
-						//			[
-						//				node.expr.expr,
-						//				node.expr.val1,
-						//				new ASTLiteral(increment, node.line, node.lineString),
-						//				new ASTLiteral(prefix, node.line, node.lineString)
-						//			],
-						//			node.line,
-						//			node.lineString
-						//		);	
-						//	break;}
-						//	case __GMLC_AccessorType.Struct:{
-						//		node = new ASTCallExpression(
-						//			new ASTFunction(__struct_update, node.line, node.lineString),
-						//			[
-						//				node.expr.expr,
-						//				node.expr.val1,
-						//				new ASTLiteral(increment, node.line, node.lineString),
-						//				new ASTLiteral(prefix, node.line, node.lineString)
-						//			],
-						//			node.line,
-						//			node.lineString
-						//		);	
-						//	break;}
-						//	case __GMLC_AccessorType.Dot:{
-						//		node = new ASTCallExpression(
-						//			new ASTFunction(__struct_with_error_update, node.line, node.lineString),
-						//			[
-						//				node.expr.expr,
-						//				node.expr.val1,
-						//				new ASTLiteral(increment, node.line, node.lineString),
-						//				new ASTLiteral(prefix, node.line, node.lineString)
-						//			],
-						//			node.line,
-						//			node.lineString
-						//		);	
-						//	break;}
-						//}
-						
+						// this is handled in the compiler
 					}
 					else if (node.expr.type == __GMLC_NodeType.Identifier) {
 						node.expr.scope = __determineScopeType(node.expr);
