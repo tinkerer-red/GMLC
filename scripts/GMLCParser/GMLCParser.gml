@@ -1254,7 +1254,7 @@
 				break;}
 				case __GMLC_TokenType.Function:{
 					var _func = getReplacementFunction(currentToken.value)
-					var node = new ASTFunction(_func, line, lineString);
+					var node = new ASTLiteral(_func, line, lineString, currentToken.name);
 					nextToken(); // Move past the identifier
 					return node;
 					
@@ -1562,7 +1562,6 @@
 				case typeof             : return __typeof            ;
 				case method_get_index   : return __method_get_index  ;
 				case method_get_self    : return __method_get_self   ;
-				case method_call        : return __method_call       ;
 				case script_execute     : return __script_execute    ;
 				case script_execute_ext : return __script_execute_ext;
 				
