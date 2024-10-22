@@ -16,27 +16,8 @@ function ASTNode(_line, _lineString) constructor {
 	lineString = _lineString; //used for debugging
 	//creationCallstack = debug_get_callstack()
 	
-	static get_children = function() {
-		var _arr = []
-		var _keys = struct_get_names(self);
-		var _i=0; repeat(array_length(_keys)) {
-			var key = _keys[_i];
-			var node = self[$ key];
-			
-			if (is_instanceof(node, ASTNode)) {
-				array_push(_arr, node);
-			}
-			
-			if (is_array(node)) {
-				var _j=0; repeat(array_length(node)) {
-					array_push(_arr, node[_j]);
-				_j++}
-			}
-			
-		_i+=1;}//end repeat loop
-		
-		return _arr;
-	}
+	skipOptimization = false; // for use with `/// @NoOp` programs, typically used for internal testing.
+	
 	static push_children_to_node_stack = function(_nodestack) {
 		var parent = self;
 		var _keys = struct_get_names(self);
@@ -49,23 +30,46 @@ function ASTNode(_line, _lineString) constructor {
 			}
 			
 			if (is_array(node)) {
-				var _j=0; repeat(array_length(node)) {
+				var _j=array_length(node)-1; repeat(array_length(node)) {
 					if (is_instanceof(node[_j], ASTNode)) {
-						array_push(_nodestack, {node: node[_j], parent, key, index: _j});
+						array_push(_nodestack, {node: node[_j], parent: parent, key: key, index: _j});
 					}
-				_j++}
+				_j--}
 			}
 			
 		_i+=1;}//end repeat loop
 	}
+	
 }
 
 #region Structural Nodes
+
+function ASTEmpty(_line="<EmptyNode>", _lineString="<EmptyNode>") : ASTNode(_line, _lineString) constructor {
+	type = __GMLC_NodeType.EmptyNode;
+	static get_children = function(){ return []; };
+}
 
 function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.BlockStatement;
 	statements = _statements
 	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			var _i=0; repeat(array_length(statements)) {
+				array_push(_arr, {node: statemetns[_i], parent: _parent, key: "statements", index: _i});
+			_i++}
+		}
+		else {
+			var _i=array_length(statements)-1; repeat(array_length(statements)) {
+				array_push(_arr, {node: statemetns[_i], parent: _parent, key: "statements", index: _i});
+			_i--}
+		}
+		
+		return _arr;
+	}
 }
 
 
@@ -87,24 +91,21 @@ function ASTScript(_line, _lineString) : ASTNode(_line, _lineString) constructor
 	
 	statements = new ASTBlockStatement([], _line, _lineString);
 	
-}
-
-function ASTObject(_line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Object;
-	
-	GlobalVar = {};
-	
-	// temporarily used during parser
-	GlobalVarNames = [];
-	MacroVar = {};
-	MacroVarNames = [];
-	EnumVar = {};
-	EnumVarNames   = {}; //structure is {HEADER1: [TAIL1, TAIL2, TAIL3], HEADER2: [TAIL1, TAIL2, TAIL3]}
-	LocalVarNames = [];
-	//////////////////////////////////
-	
-	statements = [];
-	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: arguments,  parent: _parent, key: "arguments",  index: undefined});
+			array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
+			array_push(_arr, {node: arguments,  parent: _parent, key: "arguments",  index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -129,6 +130,21 @@ function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements
 		statements = is_instanceof(_statements, ASTBlockStatement) ? _statements : new ASTBlockStatement(_statements, _line, _lineString);
 	}
 	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: arguments,  parent: _parent, key: "arguments",  index: undefined});
+			array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
+			array_push(_arr, {node: arguments,  parent: _parent, key: "arguments",  index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
     // temporarily used during parser
@@ -150,11 +166,32 @@ function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, 
 	arguments = _arguments;
 	parentCall = _parentCall;
 	
-	statements = _statements; //will be set after body is parsed
+	statements = _statements;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: arguments,  parent: _parent, key: "arguments",  index: undefined});
+			array_push(_arr, {node: parentCall,  parent: parentCall, key: "parentCall",  index: undefined});
+			array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
+			array_push(_arr, {node: parentCall,  parent: _parent, key: "parentCall",  index: undefined});
+			array_push(_arr, {node: arguments,  parent: _parent, key: "arguments",  index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 function ASTArgumentList(_statements, _line, _lineString) : ASTBlockStatement(_statements, _line, _lineString) constructor {
 	type = __GMLC_NodeType.ArgumentList;
 	statements = _statements;
+	
+	
+	//static get_children :: inheritade from block statement parent constructor
 }
 function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.Argument;
@@ -162,27 +199,41 @@ function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNo
 	expr = _expr;
 	argument_index = _arg_index
 	scope = ScopeType.LOCAL;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		
+		return _arr;
+	}
 }
 
-
-//used for better modding support, not actually native gml
-function ASTImportAs(_source, _structName, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-    type = __GMLC_NodeType.ImportDeclaration;
-    structName = _structName;
-    source = _source;
-}
-function ASTImport(_source, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-    type = __GMLC_NodeType.ImportDeclaration;
-    source = _source;
-}
 
 #endregion
 
 #region Statements
-function ASTDoUntillStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.DoUntillStatement;
+function ASTDoUntilStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+	type = __GMLC_NodeType.DoUntilStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -191,6 +242,26 @@ function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _l
 	condition = _condition;
 	increment = _increment;
 	codeBlock = _codeBlock;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: initialization, parent: _parent, key: "initialization", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: increment, parent: _parent, key: "increment", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+			array_push(_arr, {node: increment, parent: _parent, key: "increment", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: initialization, parent: _parent, key: "initialization", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTIfStatement(_condition, _consequent, _alternate, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -198,12 +269,46 @@ function ASTIfStatement(_condition, _consequent, _alternate, _line, _lineString)
 	condition = _condition;
 	consequent = _consequent;
 	alternate = _alternate;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: consequent, parent: _parent, key: "consequent", index: undefined});
+			if (alternate != undefined) array_push(_arr, {node: alternate, parent: _parent, key: "alternate", index: undefined});
+		}
+		else {
+			if (alternate != undefined) array_push(_arr, {node: alternate, parent: _parent, key: "alternate", index: undefined});
+			array_push(_arr, {node: consequent, parent: _parent, key: "consequent", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTRepeatStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.RepeatStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -211,16 +316,49 @@ function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : AST
 	switchExpression = _switchExpression;
 	cases = _cases;
 	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: switchExpression, parent: _parent, key: "switchExpression", index: undefined});
+			array_push(_arr, {node: cases, parent: _parent, key: "cases", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: cases, parent: _parent, key: "cases", index: undefined});
+			array_push(_arr, {node: switchExpression, parent: _parent, key: "switchExpression", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 function ASTCaseDefault(_codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.CaseDefault;
 	label = undefined;
 	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		
+		return _arr;
+	}
 }
 function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.CaseExpression;
 	label = _label;
 	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		
+		return _arr;
+	}
 }
 
 function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -229,18 +367,68 @@ function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _
 	exceptionVar = _exceptionVar;
 	catchBlock = _catchBlock;
 	finallyBlock = _finallyBlock;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: tryBlock, parent: _parent, key: "tryBlock", index: undefined});
+			array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
+			array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
+			array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
+			array_push(_arr, {node: tryBlock, parent: _parent, key: "tryBlock", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTWhileStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.WhileStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTWithStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.WithStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 #endregion
 
@@ -262,23 +450,59 @@ function ASTExitStatement(_line, _lineString) : ASTNode(_line, _lineString) cons
 function ASTNewExpression(_expression, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.NewExpression;
 	expression = _expression;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: expression, parent: _parent, key: "expression", index: undefined});
+		
+		return _arr;
+	}
 }
 
 function ASTReturnStatement(_expr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.ReturnStatement;
 	expr = _expr;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		
+		return _arr;
+	}
 }
 
 function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.VariableDeclarationList;
 	statements = new ASTBlockStatement(_statements, _line, _lineString);
 	scope = _scope;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: statemetns, parent: _parent, key: "statements", index: undefined});
+		
+		return _arr;
+	}
 }
 function ASTVariableDeclaration(_identifier, _expr, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.VariableDeclaration;
 	identifier = _identifier;
 	expr = _expr;
 	scope = _scope;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		
+		return _arr;
+	}
 }
 
 function ASTMacroDeclaration(_identifier, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -312,8 +536,26 @@ function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_l
     type = __GMLC_NodeType.CallExpression;
     callee = _callee;
     arguments = _arguments;
-	callstack = debug_get_callstack(3)
 	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: callee, parent: _parent, key: "callee", index: undefined});
+			var _i=0; repeat(array_length(arguments)) {
+				array_push(_arr, {node: arguments[_i], parent: _parent, key: "arguments", index: _i});
+			_i++}
+		}
+		else {
+			var _i=array_length(arguments)-1; repeat(array_length(arguments)) {
+				array_push(_arr, {node: arguments[_i], parent: _parent, key: "arguments", index: _i});
+			_i--}
+			array_push(_arr, {node: callee, parent: _parent, key: "callee", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -323,33 +565,23 @@ function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _line, _lineS
 	val2 = _val2;
 	accessorType = _accessorType;
 	
-}
-
-function ASTTemplateString(_callee, _arguments, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-    type = __GMLC_NodeType.CallExpression;
-    callee = _callee;
-    arguments = _arguments;
-	callstack = debug_get_callstack(3)
-	
-}
-
-function ASTArrayPattern(_elements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-    type = __GMLC_NodeType.ArrayPattern;
-    elements = _elements;
-	length = array_length(_elements);
-	
-}
-function ASTStructPattern(_args, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-    type = __GMLC_NodeType.StructPattern;
-	
-	arguments = new ASTBlockStatement(_args, _line, _lineString)
-	length = array_length(_args);
-	
-}
-
-function ASTThrowExpression(_error, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.ThrowExpression;
-	error = _error;
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+			array_push(_arr, {node: val1, parent: _parent, key: "val1", index: undefined});
+			if (val2 != undefined) array_push(_arr, {node: val2, parent: _parent, key: "val2", index: undefined});
+		}
+		else {
+			if (val2 != undefined) array_push(_arr, {node: val2, parent: _parent, key: "val2", index: undefined});
+			array_push(_arr, {node: val1, parent: _parent, key: "val1", index: undefined});
+			array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 #endregion
@@ -361,6 +593,21 @@ function ASTAssignmentExpression(_operator, _left, _right, _line, _lineString) :
 	left = _left;
 	right = _right;
 	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTBinaryExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -368,6 +615,22 @@ function ASTBinaryExpression(_operator, _left, _right, _line, _lineString) : AST
 	operator = _operator;
 	left = _left;
 	right = _right;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTLogicalExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -375,6 +638,22 @@ function ASTLogicalExpression(_operator, _left, _right, _line, _lineString) : AS
 	operator = _operator;
 	left = _left;
 	right = _right;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTNullishExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -382,12 +661,37 @@ function ASTNullishExpression(_operator, _left, _right, _line, _lineString) : AS
 	operator = _operator;
 	left = _left;
 	right = _right;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTUnaryExpression(_operator, _expr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.UnaryExpression;
 	operator = _operator;
 	expr = _expr;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		
+		return _arr;
+	}
 }
 
 function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -395,6 +699,22 @@ function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lin
 	condition = _condition;
 	trueExpr = _trueExpr;
 	falseExpr = _falseExpr;
+	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		if (_top_down) {
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+		}
+		
+		return _arr;
+	}
 }
 
 function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -404,30 +724,41 @@ function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : AS
     expr = _expr;
     prefix = _prefix;
 	
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+		
+		array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		
+		return _arr;
+	}
 }
 #endregion
 
 #region Identifiers
-function ASTFunction(_func, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Function;
-	value = _func;
-	name = script_get_name(_func);
-}
 function ASTIdentifier(_value, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.Identifier;
 	value = _value;
+	hash = variable_get_hash(_value);
 	name  = _value;
 	scope = _scope;
+	
+	static get_children = function(_top_down) {}
 }
-function ASTLiteral(_value, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTLiteral(_value, _line, _lineString, _name=undefined) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.Literal;
 	value = _value;
 	scope = ScopeType.CONST;
+	name = _name
+	
+	static get_children = function(_top_down) {}
 }
 function ASTUniqueIdentifier(_value, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.UniqueIdentifier;
 	value = _value;
 	scope = ScopeType.UNIQUE;
+	
+	static get_children = function(_top_down) {}
 }
 
 #endregion

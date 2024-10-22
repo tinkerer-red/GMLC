@@ -3137,7 +3137,7 @@ until (x >= 10);',
   line: undefined,
   statements:[
     {
-      type: __GMLC_NodeType.DoUntillStatement,
+      type: __GMLC_NodeType.DoUntilStatement,
       condition:{
         type: __GMLC_NodeType.BinaryExpression,
         line:4.0,
@@ -3773,7 +3773,7 @@ else {
         line:1.0,
         statements:[
           {
-            type: __GMLC_NodeType.DoUntillStatement,
+            type: __GMLC_NodeType.DoUntilStatement,
             condition:{
               left:{
                 type: __GMLC_NodeType.Identifier,

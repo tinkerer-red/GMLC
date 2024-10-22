@@ -138,7 +138,7 @@
 				case __GMLC_NodeType.RepeatStatement:{
 					
 				break;}
-				case __GMLC_NodeType.DoUntillStatement:{
+				case __GMLC_NodeType.DoUntilStatement:{
 					
 				break;}
 				case __GMLC_NodeType.WithStatement:{
@@ -155,10 +155,6 @@
 					
 				break;}
 				
-				case __GMLC_NodeType.ThrowExpression: {
-					
-				break;}
-				
 				case __GMLC_NodeType.BreakStatement:
 				case __GMLC_NodeType.ContinueStatement:{
 					
@@ -171,7 +167,7 @@
 				break;}
 				
 				case __GMLC_NodeType.VariableDeclarationList:{
-					
+					//decompress list into a single block statement, which will be extracted by the parent block statement
 				break;}
 				case __GMLC_NodeType.VariableDeclaration:{
 					
@@ -244,14 +240,6 @@
 					
 				break;}
 				
-				case __GMLC_NodeType.ArrayPattern:{
-					
-				break;}
-				case __GMLC_NodeType.StructPattern:{
-					//loop through all children and post process them aswell
-					
-					//throw_gmlc_error("why havent we stopped")
-				break;}
 				case __GMLC_NodeType.Literal:{
 				    
 			    break;}
@@ -264,9 +252,6 @@
 					
 				break;}
 				
-				case __GMLC_NodeType.Function:{
-					
-				break;}
 				case __GMLC_NodeType.ConstructorDeclaration:{
 					
 				break;}

@@ -308,7 +308,7 @@
 			var _codeBlock = parseBlock();
 			expectToken(__GMLC_TokenType.Keyword, "until");
 			var _condition = parseConditionalExpression();
-			return new ASTDoUntillStatement(_condition, _codeBlock, line, lineString);
+			return new ASTDoUntilStatement(_condition, _codeBlock, line, lineString);
 		};
 		
 		static parseSwitchStatement = function() {
@@ -430,7 +430,7 @@
 			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
-			return new ASTThrowExpression(_err_message, line, lineString);
+			return new ASTCallExpression(new ASTFunction( throw_gmlc_error, line, lineString ), _err_message, line, lineString);
 		};
 		
 		#endregion
@@ -1359,7 +1359,7 @@
 		    }
 		    expectToken(__GMLC_TokenType.Punctuation, "]");
 			
-			return new ASTArrayPattern(elements, line, lineString);
+			return new ASTCallExpression(new ASTFunction( __NewGMLArray, line, lineString ), elements, line, lineString);
 		};
 		
 		static parseStructCreation = function() {
@@ -1410,7 +1410,7 @@
 		    expectToken(__GMLC_TokenType.Punctuation, "}");
 			
 			// Properties are not all constants, use a runtime function to create the struct
-			return new ASTStructPattern(_args, line, lineString)
+			return new ASTCallExpression(new ASTFunction( __NewGMLStruct, line, lineString ), _args, line, lineString);
 		};
 		
 		static parseFunctionCall = function(callee) {

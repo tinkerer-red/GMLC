@@ -122,7 +122,6 @@ function __is_instanceof(_struct, _constructor) {
 }
 
 function __static_get(_struct) {
-	var _json = __printMethodStructure(_struct);
 	
 	if (is_gmlc_constructed(_struct)) {
 		return static_get(_struct)

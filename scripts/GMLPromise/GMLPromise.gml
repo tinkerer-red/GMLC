@@ -378,7 +378,7 @@ function Promise(_executor) constructor {
 		if (state == PROMISE_STATE.REJECTED) {
 			if (on_rejected != undefined) {
 				var _error = (is_struct(reason)) ? reason.message : reason;
-				on_rejected(_error);
+				on_rejected(json( reason ));
 			}
 		}
 			

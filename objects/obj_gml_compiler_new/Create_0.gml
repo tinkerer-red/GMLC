@@ -1427,6 +1427,20 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 			postprocessor.initialize(ast);
 			var ast = postprocessor.parseAll();
 			
+			log("\n\n\n")
+			log(" :: Default AST :: ")
+			pprint(ast)
+			log("\n\n\n")
+			
+			var optimizer = new GML_Optimizer();
+			optimizer.initialize(ast);
+			var ast = optimizer.parseAll();
+			
+			log("\n\n\n")
+			log(" :: Optimized AST :: ")
+			pprint(ast)
+			log("\n\n\n")
+			
 			var _program = compileProgram(ast);
 			var outputReturn = executeProgram(_program)
 			
@@ -1435,7 +1449,6 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 			var _same = __compare_results(description, outputReturn, expectedReturn);
 			if (!_same) {
 				log($"AST ::\n{json_stringify(ast, true)}\n")
-				//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 			}
 			
 		}));
@@ -1447,11 +1460,9 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 	////try {
 	//	//log($"AST ::\n{json_stringify(ast, true)}\n")
 	//	var _program = compileProgram(ast);
-	//	//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 	//	var outputReturn = executeProgram(_program)
 	////}catch(e) {
 	////	log($"AST ::\n{json_stringify(ast, true)}\n")
-	////	log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 	////	log(e)
 	////	return;
 	////}
@@ -1464,12 +1475,27 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 	//var _same = __compare_results(description, outputReturn, expectedReturn);
 	//if (!_same) {
 	//	log($"AST ::\n{json_stringify(ast, true)}\n")
-	//	//log($"Program Method ::\n{json_stringify(__printMethodStructure(_program), true)}\n")
 	//}
 }
 function run_all_interpreter_tests() {
 log("~~~~~ Interpreter Unit Tests ~~~~~\n");
 var _s = get_timer()
+
+run_interpreter_test("Boop",
+@'
+var result1 = 2 + 2;
+/// @NoOp
+var result2 = 2 + 2;
+log(result1)
+log(result2)
+',
+function(){
+	return undefined;
+}
+);
+
+return;
+
 #region HIDE
 
 run_interpreter_test("Boop",
@@ -1524,20 +1550,20 @@ function(){
 );
 run_interpreter_test("Parenting Constructors inherited arguments and Static structs",
 @'
-function a(arg0) constructor {
+function __GMLC_a(arg0) constructor {
 	static overwrite = "A Overwrite"
 	static aStatic = "This is A`s Static"
 	aInstance = "This is A`s Instance"
 	argumentChain = arg0;
 	localChain = 0;
 }
-function b(arg0) : a(arg0+1) constructor {
+function __GMLC_b(arg0) : __GMLC_a(arg0+1) constructor {
 	static overwrite = "B Overwrite"
 	static bStatic = "This is B`s Static"
 	bInstance = "This is B`s Instance"
 	localChain++;
 }
-function c(arg0) : b(arg0+1) constructor {
+function __GMLC_c(arg0) : __GMLC_b(arg0+1) constructor {
 	static overwrite = "C Overwrite"
 	static cStatic = "This is C`s Static"
 	cInstance = "This is C`s Instance"
@@ -1551,29 +1577,29 @@ var _c = new c(3);
 return string(_c);
 ',
 function(){
-	function a(arg0) constructor {
+	function __GML_a(arg0) constructor {
 		static overwrite = "A Overwrite"
 		static aStatic = "This is A`s Static"
 		aInstance = "This is A`s Instance"
 		argumentChain = arg0;
 		localChain = 0;
 	}
-	function b(arg0) : a(arg0+1) constructor {
+	function __GML_b(arg0) : __GML_a(arg0+1) constructor {
 		static overwrite = "B Overwrite"
 		static bStatic = "This is B`s Static"
 		bInstance = "This is B`s Instance"
 		localChain++;
 	}
-	function c(arg0) : b(arg0+1) constructor {
+	function __GML_c(arg0) : __GML_b(arg0+1) constructor {
 		static overwrite = "C Overwrite"
 		static cStatic = "This is C`s Static"
 		cInstance = "This is C`s Instance"
 		localChain++;
 	}
 	
-	var _a = new a(1);
-	var _b = new b(2);
-	var _c = new c(3);
+	var _a = new __GML_a(1);
+	var _b = new __GML_b(2);
+	var _c = new __GML_c(3);
 	
 	return string(_c);
 }

@@ -1,6 +1,6 @@
 #region PreProcessor.gml
 
-function GML_PreProcessor() : GMLCParserBase() constructor {
+function GML_PreProcessor() : FlexiParseBase() constructor {
 	
 	program = undefined;
 	tokens = undefined;

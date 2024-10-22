@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"FlexiParseBase",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"FlexiParseBase",
+  "parent":{
+    "name":"Base",
+    "path":"folders/_Libraries/ParserLibrary/Base.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

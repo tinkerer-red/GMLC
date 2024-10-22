@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"StringParserBase",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"StringParserBase",
+  "parent":{
+    "name":"SubModules",
+    "path":"folders/_Libraries/ParserLibrary/SubModules.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

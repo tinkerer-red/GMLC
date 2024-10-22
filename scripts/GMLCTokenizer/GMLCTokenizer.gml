@@ -12,7 +12,7 @@ peekToken(): Look at the next token without removing it from the stream or advan
 tokenize(sourceCode): Takes the entire source code as input and converts it into tokens until the end of the string.
 */
 #endregion
-function GML_Tokenizer() : GMLCParserBase() constructor {
+function GML_Tokenizer() : FlexiParseBase() constructor {
 	sourceCodeString = "";
 	sourceCodeCharLength = 0;
 	sourceCodeByteLength = 0;

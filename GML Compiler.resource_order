@@ -1,6 +1,9 @@
 {
   "FolderOrderSettings":[
     {"name":"_Libraries","order":10,"path":"folders/_Libraries.yy",},
+    {"name":"ParserLibrary","order":2,"path":"folders/_Libraries/ParserLibrary.yy",},
+    {"name":"Base","order":1,"path":"folders/_Libraries/ParserLibrary/Base.yy",},
+    {"name":"SubModules","order":2,"path":"folders/_Libraries/ParserLibrary/SubModules.yy",},
     {"name":"Promise","order":1,"path":"folders/_Libraries/Promise.yy",},
     {"name":"Private","order":1,"path":"folders/_Libraries/Promise/Private.yy",},
     {"name":"GMLCompiler","order":7,"path":"folders/GMLCompiler.yy",},
@@ -54,6 +57,7 @@
     {"name":"tilesets","order":9,"path":"folders/xUnit/Tests/TestResources/tilesets.yy",},
     {"name":"TestSuites","order":2,"path":"folders/xUnit/Tests/TestSuites.yy",},
     {"name":"Red's Tests","order":44,"path":"folders/xUnit/Tests/TestSuites/Red's Tests.yy",},
+    {"name":"Optimizers","order":3,"path":"folders/xUnit/Tests/TestSuites/Red's Tests/Optimizers.yy",},
     {"name":"Utils","order":3,"path":"folders/xUnit/Tests/Utils.yy",},
     {"name":"ShaderTests","order":1,"path":"folders/xUnit/Tests/Utils/ShaderTests.yy",},
     {"name":"3D Mesh Creation","order":1,"path":"folders/xUnit/Tests/Utils/ShaderTests/3D Mesh Creation.yy",},
@@ -161,6 +165,8 @@
     {"name":"log","order":4,"path":"scripts/log/log.yy",},
     {"name":"LoggerAPI","order":3,"path":"scripts/LoggerAPI/LoggerAPI.yy",},
     {"name":"normalize","order":1,"path":"scripts/normalize/normalize.yy",},
+    {"name":"OptimizerConstantFoldingTestSuite","order":1,"path":"scripts/OptimizerConstantFoldingTestSuite/OptimizerConstantFoldingTestSuite.yy",},
+    {"name":"OptimizerUnreachableCodeTestSuite","order":2,"path":"scripts/OptimizerUnreachableCodeTestSuite/OptimizerUnreachableCodeTestSuite.yy",},
     {"name":"os_type_to_string","order":1,"path":"scripts/os_type_to_string/os_type_to_string.yy",},
     {"name":"platform_filters","order":2,"path":"scripts/platform_filters/platform_filters.yy",},
     {"name":"PropertyHolder","order":3,"path":"scripts/PropertyHolder/PropertyHolder.yy",},

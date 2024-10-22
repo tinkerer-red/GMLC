@@ -7,7 +7,7 @@
 #region NodeType
 /*
 	enum __GMLC_NodeType {
-		ArrayPattern,
+		EmptyNode,
 		AccessorExpression,
 		AssignmentExpression,
 		Base,
@@ -20,30 +20,25 @@
 		ConditionalExpression,
 		ConstructorDeclaration,
 		ContinueStatement,
-		DoUntillStatement,
+		DoUntilStatement,
 		ExitStatement,
 		ExpressionStatement,
 		ForStatement,
-		Function,
 		FunctionDeclaration,
 		ArgumentList,
 		Argument,
 		Identifier,
 		IfStatement,
-		ImportDeclaration,
 		Literal,
 		UniqueIdentifier,
 		LogicalExpression,
 		NewExpression,
 		NullishExpression,
-		Object,
 		PostfixExpression,
 		RepeatStatement,
 		ReturnStatement,
 		Script,
-		StructPattern,
 		SwitchStatement,
-		ThrowExpression,
 		TryStatement,
 		UnaryExpression,
 		UpdateExpression,
@@ -56,7 +51,7 @@
 	}
 /*/
 	function __GMLC_NodeType() {
-		static ArrayPattern = "__GMLC_NodeType.ArrayPattern"
+		static EmptyNode = "__GMLC_NodeType.EmptyNode"
 		static AccessorExpression = "__GMLC_NodeType.AccessorExpression"
 		static AssignmentExpression = "__GMLC_NodeType.AssignmentExpression"
 		static Base = "__GMLC_NodeType.Base"
@@ -69,30 +64,25 @@
 		static ConditionalExpression = "__GMLC_NodeType.ConditionalExpression"
 		static ConstructorDeclaration = "__GMLC_NodeType.ConstructorDeclaration"
 		static ContinueStatement = "__GMLC_NodeType.ContinueStatement"
-		static DoUntillStatement = "__GMLC_NodeType.DoUntillStatement"
+		static DoUntilStatement = "__GMLC_NodeType.DoUntilStatement"
 		static ExitStatement = "__GMLC_NodeType.ExitStatement"
 		static ExpressionStatement = "__GMLC_NodeType.ExpressionStatement"
 		static ForStatement = "__GMLC_NodeType.ForStatement"
-		static Function = "__GMLC_NodeType.Function"
 		static FunctionDeclaration = "__GMLC_NodeType.FunctionDeclaration"
 		static ArgumentList = "__GMLC_NodeType.ArgumentList"
 		static Argument = "__GMLC_NodeType.Argument"
 		static Identifier = "__GMLC_NodeType.Identifier"
 		static IfStatement = "__GMLC_NodeType.IfStatement"
-		static ImportDeclaration = "__GMLC_NodeType.ImportDeclaration"
 		static Literal = "__GMLC_NodeType.Literal"
 		static UniqueIdentifier = "__GMLC_NodeType.UniqueIdentifier"
 		static LogicalExpression = "__GMLC_NodeType.LogicalExpression"
 		static NewExpression = "__GMLC_NodeType.NewExpression"
 		static NullishExpression = "__GMLC_NodeType.NullishExpression"
-		static Object = "__GMLC_NodeType.Object"
 		static PostfixExpression = "__GMLC_NodeType.PostfixExpression"
 		static RepeatStatement = "__GMLC_NodeType.RepeatStatement"
 		static ReturnStatement = "__GMLC_NodeType.ReturnStatement"
 		static Script = "__GMLC_NodeType.Script"
-		static StructPattern = "__GMLC_NodeType.StructPattern"
 		static SwitchStatement = "__GMLC_NodeType.SwitchStatement"
-		static ThrowExpression = "__GMLC_NodeType.ThrowExpression"
 		static TryStatement = "__GMLC_NodeType.TryStatement"
 		static UnaryExpression = "__GMLC_NodeType.UnaryExpression"
 		static UpdateExpression = "__GMLC_NodeType.UpdateExpression"

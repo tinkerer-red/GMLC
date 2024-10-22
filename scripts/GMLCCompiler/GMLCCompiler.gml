@@ -183,7 +183,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	//this assists with converting locals from struct accessors to an array write
 	_output.localLookUps = {};
-	var _i=0; repeat(array_length(_node.LocalVarNames)){
+	var _i=0; repeat(array_length(_node.LocalVarNames)) {
 		_output.localLookUps[$ _node.LocalVarNames[_i]] = _i;
 	_i++}
 	_output.localCount = _i;
@@ -460,7 +460,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		case __GMLC_NodeType.RepeatStatement:{
 			return __GMLCcompileRepeat(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.DoUntillStatement:{
+		case __GMLC_NodeType.DoUntilStatement:{
 			return __GMLCcompileDoUntil(_rootNode, _parentNode, _node);
 		break;}
 		case __GMLC_NodeType.WithStatement:{
@@ -475,10 +475,6 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		case __GMLC_NodeType.CaseExpression:
 		case __GMLC_NodeType.CaseDefault:{
 			return __GMLCcompileCase(_rootNode, _parentNode, _node)
-		break;}
-		
-		case __GMLC_NodeType.ThrowExpression: {
-			return __GMLCcompileThrow(_rootNode, _parentNode, _node)
 		break;}
 		
 		case __GMLC_NodeType.BreakStatement:{
@@ -535,13 +531,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		case __GMLC_NodeType.ConditionalExpression:{
 			return __GMLCcompileTernaryExpression(_rootNode, _parentNode, _node);
 		break;}
-				
-		case __GMLC_NodeType.ArrayPattern:{
-			return __GMLCcompileNewArray(_rootNode, _parentNode, _node.elements)
-		break;}
-		case __GMLC_NodeType.StructPattern:{
-			return __GMLCcompileNewStruct(_rootNode, _parentNode, _node.arguments.statements)
-		break;}
+		
 		case __GMLC_NodeType.Literal:{
 			return __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node);
 		break;}
@@ -556,10 +546,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		case __GMLC_NodeType.AccessorExpression:{
 			return __GMLCcompileAccessor(_rootNode, _parentNode, _node)
 		break;}
-				
-		case __GMLC_NodeType.Function:{
-			return __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node);
-		break;}
+		
 		/*
 		case __GMLC_NodeType.PropertyAccessor:{
 			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
@@ -635,7 +622,7 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
 	_output.size = array_length(_output.blockStatements)
     
 	if (_output.size == 1) {
-		//return an empty function so we dont need to enter a method
+		//directly return the single statement if there is only one.
 		return _output.blockStatements[0];
 	}
 	
@@ -1236,85 +1223,10 @@ function __GMLCcompileReturn(_rootNode, _parentNode, _node) {
 	
     return method(_output, __GMLCexecuteReturn);
 }
-#region //{
-// used to execute gmlc compiled `throw` statement
-//    expression: <exprettion> // expects a string as result
-//}
-#endregion
-function __GMLCexecuteThrow() {
-	throw expression()
-}
-function __GMLCcompileThrow(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileThrow", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.error);
-    
-    
-    return method(_output, __GMLCexecuteThrow);
-}
-
 
 #endregion
 
 #region Expressions
-
-#region //{
-// used to build a new array
-//    expressionsArray: array<expressions>
-//    size: array_length(expressionsArray),
-//}
-#endregion
-function __GMLCexecuteNewArray() {
-    var _arr = array_create(size);
-    var _i=0; repeat(size) {
-		_arr[_i] = expressionsArray[_i]();
-    _i++}
-    return _arr;
-}
-function __GMLCcompileNewArray(_rootNode, _parentNode, _expressionsArray, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileNewArray", "<Missing Error Message>", _line, _lineString);
-	_output.expressionsArray = [];
-	_output.size = undefined;
-    
-    
-    var _i=0; repeat(array_length(_expressionsArray)) {
-		_output.expressionsArray[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _expressionsArray[_i]);
-    _i++}
-    
-    _output.size = array_length(_output.expressionsArray)
-    
-    return method(_output, __GMLCexecuteNewArray);
-}
-
-#region //{
-// used to build a new array
-//    array: array<expressions>
-//    size: array_length(expressionsArray) / 2,
-//}
-#endregion
-function __GMLCexecuteNewStruct() {
-    var _struct = {}
-    var _i=0; repeat(size/2) {
-		var _key = array[_i];
-		var _value = array[_i+1];
-		struct_set(_struct, _key(), _value())
-    _i+=2}
-    return _struct;
-}
-function __GMLCcompileNewStruct(_rootNode, _parentNode, _arr, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileNewStruct", "<Missing Error Message>", _line, _lineString);
-	_output.array = [];
-	_output.size = undefined;
-    
-    
-    var _i=0; repeat(array_length(_arr)) {
-		//should probably all be literal strings, but i dont care otherwise
-		_output.array[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _arr[_i])
-    _i++}
-    
-    _output.size = array_length(_output.array)
-    
-    return method(_output, __GMLCexecuteNewStruct);
-}
 
 #region //{
 // used to fetch Literal values
