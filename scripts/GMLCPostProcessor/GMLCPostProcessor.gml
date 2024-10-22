@@ -168,6 +168,7 @@
 				
 				case __GMLC_NodeType.VariableDeclarationList:{
 					//decompress list into a single block statement, which will be extracted by the parent block statement
+					
 				break;}
 				case __GMLC_NodeType.VariableDeclaration:{
 					

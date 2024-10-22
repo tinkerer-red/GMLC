@@ -115,95 +115,170 @@
 				if (_node.operator == "=")
 				&& (_node.left.type == __GMLC_NodeType.Identifier)
 				&& (_node.right.type == __GMLC_NodeType.Literal) {
-					__propagateConstants(_parent, {
+					
+					var _constant_data = {
 						identifier : _node.left.value,
 						value : _node.right.value,
 						known : false, //we only know it when we find this same node inside the parent
 						assignment_node : _node,
-					})
+					}
+					var _children = _parent.get_children(false)
+					var _i = 0; repeat(array_length(_children)) {
+						__propagateConstants(_children[_i].node, _constant_data)
+						
+						//if we found the node which assigns, we can now leave.
+						if (_children == _node) {
+							return;
+						}
+					_i++}
+					
+					
 				}
 			}
 			
 		    return _node;  // Return the updated AST node
 		}
-		static __propagateConstants = function(_node, _constant_data) {
+		static __propagateConstants = function(_node, _constant_data, _has_identifier) {
 			var _constant_identifier = _constant_data.identifier;
 			var _constant_value = _constant_data.value;
 			var _constant_known = _constant_data.known;
 			var _constant_node  = _constant_data.assignment_node;
 			
-			_node.get_children(false)
+			log("\n\n\nNODE :: ")
+			pprint(_node);
 			
-		    switch (_node.type) {
+			
+			switch (_node.type) {
 		        case __GMLC_NodeType.AssignmentExpression: {
 		            var _left = _node.left;
 		            var _right = _node.right;
 						
 					if (_left.type == __GMLC_NodeType.Identifier)
-					&& (_left.value == identifier)
+					&& (_left.value == _constant_identifier)
 					{
-						var _const = constantMap[$ _left.value]
-							
 						if (_right.type == __GMLC_NodeType.Literal)
 						{
 							if (_node.operator == "=")
 							{
+								//this actually should already be handled as the parser is bottom up, and propigation is top down, so instead we are just going to return
+								
 								//update the constant map with the new literal value
-								_const.constant_known = true;
-								_const.constant_value = _right.value;
+								//_constant_data.known = true;
+								//_constant_data.value = _right.value;
 									
 							}
 							else
 							{
-								if (_const.constant_known)
+								if (_constant_data.known)
 								{
 									switch (_node.operator) {
-										case "+=":  _const.constant_value +=  _right.value break;
-										case "-=":  _const.constant_value -=  _right.value break;
-										case "*=":  _const.constant_value *=  _right.value break;
-										case "/=":  _const.constant_value /=  _right.value break;
-										case "^=":  _const.constant_value ^=  _right.value break;
-										case "&=":  _const.constant_value &=  _right.value break;
-										case "|=":  _const.constant_value |=  _right.value break;
-										case "??=": _const.constant_value ??= _right.value break;
+										case "+=":  _constant_value +=  _right.value break;
+										case "-=":  _constant_value -=  _right.value break;
+										case "*=":  _constant_value *=  _right.value break;
+										case "/=":  _constant_value /=  _right.value break;
+										case "^=":  _constant_value ^=  _right.value break;
+										case "&=":  _constant_value &=  _right.value break;
+										case "|=":  _constant_value |=  _right.value break;
+										case "??=": _constant_value ??= _right.value break;
 									}
-										
+									_node.operator = "=";
+									_node.right = new ASTLiteral(_constant_value, _node.line, _node.lineString);
+									
 								}
 							}
 						}
 						else {
 							//update the constant map with unknown info
-							_const.constant_known = false;
-							_const.constant_value = undefined;
+							_constant_data.known = false;
+							_constant_data.value = undefined;
 						}
 					}
 		        break;}
                     
 				case __GMLC_NodeType.Identifier: {
-		            // If the identifier is in the constant map, replace it with the constant value
-		            if (struct_exists(constantMap, _node.value))
-					{
-			            var _const = constantMap[$ _left.value]
-							
-						if (_const.constant_known)
-						{
-			                return new ASTLiteral(_const.constant_value, _node.line, _node.lineString);
-			            }
+		            
+		            return new ASTLiteral(_constant_data.value, _node.line, _node.lineString);
+			        
+		        break;}
+                
+				case __GMLC_NodeType.BlockStatement: {
+					//get stack of children top down
+					var _children = _node.get_children(true)
+					var _i = 0; repeat(array_length(_children)) {
+						__propagateConstants(_children[_i].node, _constant_data, _has_identifier)
+						
+						//if we found the node which assigns, we can now leave.
+						if (_children == _constant_node) {
+							return;
+						}
+					_i++}
+				break;}
+				
+		        case __GMLC_NodeType.IfStatement:
+		        case __GMLC_NodeType.SwitchStatement:
+		        case __GMLC_NodeType.TryStatement: {
+					if (_has_identifier ?? __hasIdentifierAssignment(_node, _constant_identifier)) {
+						//if it has an assignment to it, then we know we can not ensure safety of constant propigation any longer, and its time to back out.
+						//we could how wever still propigate top down until we run into the assignment 
+					}
+					else {
+						//get stack of children bottom up
+						var _children = _node.get_children(true)
+						var _i = 0; repeat(array_length(_children)) {
+							__propagateConstants(_children[_i].node, _constant_data, _has_identifier)
+						_i++}
+					}
+				break;}
+		        
+				case __GMLC_NodeType.DoUntilStatement:
+		        case __GMLC_NodeType.ForStatement:
+		        case __GMLC_NodeType.RepeatStatement:
+		        case __GMLC_NodeType.WhileStatement:
+		        case __GMLC_NodeType.WithStatement:
+		        {
+					if (_has_identifier ?? __hasIdentifierAssignment(_node, _constant_identifier)) {
+						//if it has an assignment to it, then we know we can not ensure safety of constant propigation any longer, and its time to back out.
+						//specifically for `ForStatement`s we can still apply a to the `initialization` for example `var _i = _length` _length could still be propigated to.
+					}
+					else {
+						//get stack of children bottom up
+						var _children = _node.get_children(true)
+						var _i = 0; repeat(array_length(_children)) {
+							__propagateConstants(_children[_i].node, _constant_data, _has_identifier)
+						_i++}
 					}
 		        break;}
-                    
-		        case __GMLC_NodeType.RepeatStatement:
-		        case __GMLC_NodeType.ForStatement:
-		        case __GMLC_NodeType.DoUntilStatement:
-		        //case __GMLC_NodeType.Statement:
-		        //case __GMLC_NodeType.Statement:
-		        case __GMLC_NodeType.Statement: {
-		                
-		        break;}
-                // Add more cases as needed for propagation through different node types
+				
+				default: {
+					//get stack of children bottom up
+					var _children = _node.get_children(true)
+					var _i = 0; repeat(array_length(_children)) {
+						__propagateConstants(_children[_i].node, _constant_data, _has_identifier)
+					_i++}
+				break}
 		    }
                 
-		    return _node;  // Return the updated node
+		    return _has_identifier ?? __hasIdentifierAssignment(_node, _constant_identifier);
+		}
+		static __hasIdentifierAssignment = function(_node, _identifier) {
+			log("\n\n\n__hasIdentifierAssignment")
+			pprint(_node)
+			
+			if (_node.type == __GMLC_NodeType.AssignmentExpression)
+			&& (_node.left.type == __GMLC_NodeType.Identifier)
+			&& (_node.left.value == _identifier) {
+				return true;
+			}
+			
+			var _children = _node.get_children(true);
+			var _i=0; repeat(array_length(_children)) {
+				
+				if (__hasIdentifierAssignment(_children[_i].node, _identifier)) {
+					return true;
+				}
+				
+			_i++}
+			return false;
 		}
 		
 		#region JSDocs
@@ -218,8 +293,6 @@
 			var _key    = _node_data.key;
 			var _index  = _node_data.index;
 		    
-			log("\n\n\nNODE :: ")
-			pprint(_node);
 			
 			switch (_node.type) {
 				case __GMLC_NodeType.BinaryExpression:{

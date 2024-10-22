@@ -59,12 +59,12 @@ function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _li
 		
 		if (_top_down) {
 			var _i=0; repeat(array_length(statements)) {
-				array_push(_arr, {node: statemetns[_i], parent: _parent, key: "statements", index: _i});
+				array_push(_arr, {node: statements[_i], parent: _parent, key: "statements", index: _i});
 			_i++}
 		}
 		else {
 			var _i=array_length(statements)-1; repeat(array_length(statements)) {
-				array_push(_arr, {node: statemetns[_i], parent: _parent, key: "statements", index: _i});
+				array_push(_arr, {node: statements[_i], parent: _parent, key: "statements", index: _i});
 			_i--}
 		}
 		
@@ -484,7 +484,7 @@ function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : A
 		var _arr = [];
 		var _parent = self;
 		
-		array_push(_arr, {node: statemetns, parent: _parent, key: "statements", index: undefined});
+		array_push(_arr, {node: statements, parent: _parent, key: "statements", index: undefined});
 		
 		return _arr;
 	}
