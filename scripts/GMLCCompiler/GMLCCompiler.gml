@@ -384,7 +384,7 @@ function __GMLCexecuteArgumentList() {
 	_i++}
 }
 function __GMLCcompileArgumentList(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArgumentList", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileArgumentList", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.statements = [];
 	_output.size = undefined;
 	
@@ -406,7 +406,7 @@ function __GMLCexecuteArgument() {
 	throw_gmlc_error("ERROR :: __GMLCexecuteArgument should never actually be run, this should be handled by ArgumentList")
 }
 function __GMLCcompileArgument(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArgument", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileArgument", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.index = _node.argument_index;
 	_output.localIndex = _parentNode.localLookUps[$ _node.identifier];
 	_output.identifier = _node.identifier;
@@ -425,7 +425,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		throw_gmlc_error("Red forgot to add the `rootNode` and `parentNode` when calling `__GMLCcompileExpression`!")
 	}
 	if (!is_instanceof(_node, ASTNode)) {
-		throw_gmlc_error($"Supplied Node is not a valid AST - Red's fault\ninstanceof(_node) == {instanceof(_node)}\nlineString == {method_get_self(_node).lineString}")
+		throw_gmlc_error($"Supplied Node is not a valid AST - Red's fault\ninstanceof(_node) == {instanceof(_node)}")
 	}
 	
 	//check every different ast node, and see how it should be compiled,
@@ -547,6 +547,11 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 			return __GMLCcompileAccessor(_rootNode, _parentNode, _node)
 		break;}
 		
+		case __GMLC_NodeType.EmptyNode:{
+			//dont do shit! We expect this to never actually be needed and could safely be undefined, this is typically used when we remove unreachable code.
+			return undefined;
+		}
+		
 		/*
 		case __GMLC_NodeType.PropertyAccessor:{
 			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
@@ -563,7 +568,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		//*/
 		default:
 			
-			do_trace(json_stringify(_node, true))
+			trace(json_stringify(_node, true))
 			throw_gmlc_error($"Current Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}")
 		break;
 				
@@ -594,7 +599,7 @@ function __GMLCexecuteBlockStatement() {
 	_i++}
 }
 function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileBlockStatement", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBlockStatement", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.blockStatements = [];
 	_output.size = undefined;
     
@@ -604,17 +609,21 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
 	}
 	
 	
+	
 	var _blockStatements = _node.statements
 	var _i=0; repeat(array_length(_blockStatements)) {
 		var _expression = __GMLCcompileExpression(_rootNode, _parentNode, _blockStatements[_i])
 		
-		//prevent pushing a block statement into a block statement
-		var _expr_struct = method_get_self(_expression)
-		if (_expr_struct.compilerBase == "__compileBlockStatement") {
-			array_copy(_output.blockStatements, array_length(_output.blockStatements), _expr_struct.blockStatements, 0, array_length(_expr_struct.blockStatements))
-		}
-		else {
-			array_push(_output.blockStatements, _expression)
+		//account for empty statements
+		if (_expression != undefined) {
+			//prevent pushing a block statement into a block statement
+			var _expr_struct = method_get_self(_expression)
+			if (_expr_struct.compilerBase == "__GMLCcompileBlockStatement") {
+				array_copy(_output.blockStatements, array_length(_output.blockStatements), _expr_struct.blockStatements, 0, array_length(_expr_struct.blockStatements))
+			}
+			else {
+				array_push(_output.blockStatements, _expression)
+			}
 		}
 		
     _i++}
@@ -642,7 +651,7 @@ function __GMLCexecuteBlockStatementBreakable() {
 	_i++}
 }
 function __GMLCcompileBlockStatementBreakable(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileBlockStatementBreakable", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBlockStatementBreakable", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.blockStatements = [];
 	_output.size = undefined;
     
@@ -674,7 +683,7 @@ function __GMLCexecuteLoopStatementEndless() {
     }
 }
 function __GMLCcompileLoopStatementEndless(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileLoopStatementEndless", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLoopStatementEndless", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.blockStatements = __GMLCcompileExpression(_rootNode, _parentNode, _blockStatement);
     
     
@@ -699,7 +708,7 @@ function __GMLCexecuteLoopStatement() {
 	_i++}
 }
 function __GMLCcompileLoopStatement(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileLoopStatement", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLoopStatement", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.blockStatements = [];
 	_output.size = undefined;
     
@@ -709,8 +718,13 @@ function __GMLCcompileLoopStatement(_rootNode, _parentNode, _node) {
 		return __GMLCcompileExpression(_rootNode, _parentNode, _node)
 	}
 	
-	var _i=0; repeat(array_length(_node.statements)) {
-		_output.blockStatements[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _node.statements[_i])
+	var _i=0; repeat(array_length(_node.statements))
+	{
+		var _return = __GMLCcompileExpression(_rootNode, _parentNode, _node.statements[_i]);
+		if (_return != undefined) {
+			array_push(_output.blockStatements, _return)
+		}
+		
     _i++}
     
     _output.size = array_length(_output.blockStatements)
@@ -756,7 +770,7 @@ function __GMLCexecuteIfElse() {
     }
 }
 function __GMLCcompileIf(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileIf", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileIf", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.trueBlock = __GMLCcompileExpression(_rootNode, _parentNode, _node.consequent);
     
@@ -789,7 +803,7 @@ function __GMLCexecuteRepeat() {
     }
 }
 function __GMLCcompileRepeat(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileRepeat", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileRepeat", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
     
@@ -817,7 +831,7 @@ function __GMLCexecuteWhile() {
     }
 }
 function __GMLCcompileWhile(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileWhile", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileWhile", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
     
@@ -846,7 +860,7 @@ function __GMLCexecuteDoUntil() {
     until condition()
 }
 function __GMLCcompileDoUntil(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileDoUntil", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileDoUntil", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
     
@@ -876,7 +890,7 @@ function __GMLCexecuteFor() {
     }
 }
 function __GMLCcompileFor(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileFor", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileFor", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.assignment = __GMLCcompileExpression(_rootNode, _parentNode, _node.initialization);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.operation = __GMLCcompileExpression(_rootNode, _parentNode, _node.increment);
@@ -915,7 +929,7 @@ function __GMLCexecuteSwitch() {
 	parentNode.shouldBreak = false;
 }
 function __GMLCcompileSwitch(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileSwitch", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileSwitch", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.switchExpression);
 	_output.cases = [];
 	_output.caseDefault = undefined;
@@ -947,7 +961,7 @@ function __GMLCexecuteCase() {
     throw_gmlc_error("This code should be unreachable")
 }
 function __GMLCcompileCase(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileCase", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCase", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.isDefault = (_node.label == undefined);
 	_output.expression = (_node.label == undefined) ? undefined : __GMLCcompileExpression(_rootNode, _parentNode, _node.label);
 	_output.blockStatement = __GMLCcompileBlockStatementBreakable(_rootNode, _parentNode, _node.codeBlock);
@@ -1003,7 +1017,7 @@ function __GMLCexecuteWith() {
     global.otherInstance = _other;
 }
 function __GMLCcompileWith(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileWith", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileWith", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
     //_output.mySelf  = _output;
@@ -1041,7 +1055,7 @@ function __GMLCexecuteTryCatchFinally() {
 	}
 }
 function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileTryCatchFinally", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileTryCatchFinally", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.tryBlock = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.tryBlock);
 	_output.catchVariableName = _node.exceptionVar;
 	_output.catchVariableIndex = _parentNode.localLookUps[$ _node.exceptionVar];
@@ -1145,7 +1159,7 @@ function __GMLCexecuteNewExpression() {
 	
 }
 function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileNewExpression", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileNewExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.expression.callee);
 	_output.calleeName = _node.expression.callee.name; // this is actually unneeded, but we would still like to have it for debugging
 	
@@ -1173,7 +1187,7 @@ function __GMLCexecuteBreak() {
     parentNode.shouldBreak = true;
 }
 function __GMLCcompileBreak(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileBreak", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBreak", "<Missing Error Message>", _node.line, _node.lineString);
 	
     return method(_output, __GMLCexecuteBreak);
 }
@@ -1186,7 +1200,7 @@ function __GMLCexecuteContinue() {
     parentNode.shouldContinue = true;
 }
 function __GMLCcompileContinue(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileContinue", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileContinue", "<Missing Error Message>", _node.line, _node.lineString);
 	
     return method(_output, __GMLCexecuteContinue);
 }
@@ -1200,7 +1214,7 @@ function __GMLCexecuteExit() {
     parentNode.returnValue = undefined;
 }
 function __GMLCcompileExit(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileExit", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileExit", "<Missing Error Message>", _node.line, _node.lineString);
 	
     return method(_output, __GMLCexecuteExit);
 }
@@ -1218,7 +1232,7 @@ function __GMLCcompileReturn(_rootNode, _parentNode, _node) {
 		return __GMLCcompileExit(_rootNode, _parentNode, _node);
 	}
 	
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileReturn", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileReturn", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr)
 	
     return method(_output, __GMLCexecuteReturn);
@@ -1237,7 +1251,7 @@ function __GMLCexecuteLiteralExpression() {
     return value;
 }
 function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileLiteralExpression", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLiteralExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.value = _node.value;
     
     
@@ -1330,7 +1344,7 @@ function __GMLCexecuteCallExpression() {
 	return _return;
 }
 function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileCallExpression", "<Missing Error Message>", _node.line, _node.lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCallExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee);
 	
 	_output.calleeName = (struct_exists(_node.callee, "name")) ? _node.callee.name : "<Call Expression>"
@@ -1674,7 +1688,7 @@ function __GMLCexecuteTernaryExpression() {
     return condition() ? left() : right();
 }
 function __GMLCcompileTernaryExpression(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileTernaryExpression", "<Missing Error Message>", _node.line, _node.lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileTernaryExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.left = __GMLCcompileExpression(_rootNode, _parentNode, _node.trueExpr);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.falseExpr);
@@ -1844,7 +1858,7 @@ function __GMLCexecutePropertyGet() {
 	return struct_get(target(), key());
 }
 function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _line, _lineString){
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compilePropertyGet", "<Missing Error Message>", _line, _lineString);	
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePropertyGet", "<Missing Error Message>", _line, _lineString);	
 	_output.key      = _leftKey;
 	if (_scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
@@ -1870,7 +1884,7 @@ function __GMLCexecutePropertySet() {
 	struct_set(target(), key(), expression());
 }
 function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightExpression, _line, _lineString){
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compilePropertySet", "<Missing Error Message>", _line, _lineString);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePropertySet", "<Missing Error Message>", _line, _lineString);
 	_output.key = _key;
 	if (_scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
