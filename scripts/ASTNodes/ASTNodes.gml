@@ -40,6 +40,7 @@ function ASTNode(_line, _lineString) constructor {
 		_i+=1;}//end repeat loop
 	}
 	
+	static get_children = function(){ throw_gmlc_error($"{instanceof(self)}.get_children method does not exist and needs to manually be added to the constructor") }
 }
 
 #region Structural Nodes
@@ -435,16 +436,17 @@ function ASTWithStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(
 #region Keyword Statements
 function ASTBreakStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.BreakStatement;
+	static get_children = function(){}
 }
 
 function ASTContinueStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.ContinueStatement;
-	
+	static get_children = function(){}
 }
 
 function ASTExitStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
 	type = __GMLC_NodeType.ExitStatement;
-	
+	static get_children = function(){}
 }
 
 function ASTNewExpression(_expression, _line, _lineString) : ASTNode(_line, _lineString) constructor {
@@ -705,12 +707,14 @@ function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lin
 		var _parent = self;
 		
 		if (_top_down) {
-			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
-			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: trueExpr, parent: _parent, key: "trueExpr", index: undefined});
+			array_push(_arr, {node: falseExpr, parent: _parent, key: "falseExpr", index: undefined});
 		}
 		else {
-			array_push(_arr, {node: right, parent: _parent, key: "right", index: undefined});
-			array_push(_arr, {node: left, parent: _parent, key: "left", index: undefined});
+			array_push(_arr, {node: falseExpr, parent: _parent, key: "falseExpr", index: undefined});
+			array_push(_arr, {node: trueExpr, parent: _parent, key: "trueExpr", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
 		}
 		
 		return _arr;
