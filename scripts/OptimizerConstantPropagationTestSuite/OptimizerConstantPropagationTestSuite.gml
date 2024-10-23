@@ -3,7 +3,7 @@
 function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 
     // Test 1: Basic constant propagation
-    addFact("Basic Constant Propagation", function() {
+    addFact("Variable Declaration Constant Propagation", function() {
         var PI = 3.14;
         /// @NoOp
         var r = 2;
@@ -12,126 +12,525 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
         assert_equals(area, 12.56, "The area should be calculated with the constant PI.");
     });
     
-    // Test 2: Multiple occurrences of a constant
-    addFact("Multiple Occurrences of Constant", function() {
-        var GRAVITY = 9.8;
+	addFact("Assignmnet Constant Propagation", function() {
+        var PI, r, area;
+		PI = 3.14;
         /// @NoOp
-        var time = 10;
-        var fallTime = GRAVITY * time;
-        var force = 5 * GRAVITY;
-
-        assert_equals(fallTime, 98, "Fall time should be calculated with the constant GRAVITY.");
-        assert_equals(force, 49, "Force should be calculated with the constant GRAVITY.");
-    });
-
-    // Test 3: Constant used in a loop
-    addFact("Constant in Loop", function() {
-        var MAX_ITERATIONS = 3;
-        var sum = 0;
-        for (var i = 0; i < MAX_ITERATIONS; i++) {
-            sum += i;
-        }
-
-        assert_equals(sum, 3, "Sum should be the result of adding all loop iterations with a constant MAX_ITERATIONS.");
-    });
-
-    // Test 4: Propagation across multiple statements
-    addFact("Constant Propagation Across Statements", function() {
-        var THRESHOLD = 50;
-        /// @NoOp
-        var value = 60;
-        var result;
-        if (value > THRESHOLD) {
-            result = THRESHOLD + 10;
-        }
-
-        assert_equals(result, 60, "Result should be calculated based on THRESHOLD constant.");
-    });
-
-    // Test 5: Constant with function calls
-    addFact("Constant Propagation with Function Call", function() {
-        var SPEED = 5;
-        /// @NoOp
-        var _direction = 90;
-        var result = move_object(SPEED, _direction);
-
-        assert_true(is_function_executed(result), "Constant SPEED should be propagated in the function call.");
-    });
-
-    // Test 6: No Optimization for dynamic values
-    addFact("No Constant Propagation for Dynamic Values", function() {
-        /// @NoOp
-        var value = get_random_value();
-        var result = value * 10;
-
-        assert_true(is_dynamic(result), "Dynamic values should not be propagated.");
-    });
-
-    // Test 7: No Optimization for Shadowed Variables
-    addFact("No Constant Propagation for Shadowed Variables", function() {
-        var MAX_SPEED = 100;
-        /// @NoOp
-        var MAX_SPEED = 50;  // Shadowing the constant
-        var currentSpeed = MAX_SPEED;
-
-        assert_equals(currentSpeed, 50, "Shadowed local variable should prevent constant propagation.");
-    });
-
-    // Test 8: No Optimization for Function Parameters
-    addFact("No Constant Propagation for Function Parameters", function() {
-        var LIMIT = 10;
-        function check_limit(LIMIT) {
-            return LIMIT + 1;
-        }
+        r = 2;
+        area = PI * r * r;
         
-        /// @NoOp
-        var result = check_limit(5);
-
-        assert_equals(result, 6, "Function parameter should prevent constant propagation.");
+        assert_equals(area, 12.56, "The area should be calculated with the constant PI.");
     });
-
-    // Test 9: No Optimization for Mutable Variables
-    addFact("No Constant Propagation for Mutable Variables", function() {
-        var INITIAL_HEALTH = 100;
-        /// @NoOp
-        var _health = INITIAL_HEALTH;
-        _health -= 20;
-
-        assert_equals(_health, 80, "Mutable variables should not be affected by constant propagation.");
-    });
-
-    // Test 10: @NoOp example for constant propagation on complex cases
-    addFact("NoOp Test Case", function() {
-        var PI = 3.14;
+    
+	addFact("Variable Re-Declaration Constant Propagation", function() {
+        var PI, r, area;
+		var PI = 3.14;
         /// @NoOp
         var r = 2;
-        /// @NoOp
-        var area = PI * r * r;  // This node should not be optimized
-
-        assert_true(is_expression_executed(area), "The expression should still be executed even with @NoOp and not just folded.");
-    });
-
-    // Test 11: Function not optimized due to dynamic parameter
-    addFact("No Constant Propagation for Dynamic Function Arguments", function() {
-        var SPEED = 5;
-        function dynamicMove(_speed, dir) {
-            return _speed * dir;
-        }
+        var area = PI * r * r;
         
+        assert_equals(area, 12.56, "The area should be calculated with the constant PI.");
+    });
+    
+	#region Single Statements
+	#region Do Until
+	addFact("Do Until - Propagate all", function() {
+	    var _x = 1;
+		/// @NoOp
+		var _i = 0;
+		var _y;
+		
+		do {
+			_y = _x * 2; // _x should propagate
+		} until (_i++ >= 10);
+		
+		var _z = _x + 1; // _x should propagate
+		
+	    assert_equals(_y, 2, "Constant propagation failed");
+	});
+	addFact("Do Until - Propagate inside", function() {
+	    var _x = 1;
+		/// @NoOp
+		var _i = 0;
+		var _y;
+		
+		do {
+			_y = _x * 2; // _x should propagate
+		} until (_i++ >= 10);
+		
+		_x = irandom(1);
+		var _z = _x + 1; // _x should not propagate
+		
+	    assert_equals(_y, 2, "Constant propagation failed");
+	});
+	addFact("Do Until - Propagate none", function() {
+	    var _x = 1;
+		/// @NoOp
+		var _i = 0;
+		var _y;
+		
+		do {
+			_x = _i;
+			_y = _x * 2; // _x should not propagate
+		} until (_i++ >= 10);
+		
+		var _z = _x + 1; // _x should not propagate
+		
+	    assert_equals(_y, 20, "Constant propagation failed");
+	});
+	#endregion
+    #region For
+	addFact("For - Propagate all", function() {
+        var _x = 1;
+        var _y = 0;
+        
+		for (
+			var _i = _x; // _x should propagate
+			_i < _x+100; // _x should propagate
+			_i += _x; // _x should propagate
+		) {
+		    _y += _x // _x should propagate
+		}
+		
+		var _z = _x + 1; // _x should propagate
+		
+        assert_equals(_y, 100, "Constant propagation failed");
+    });
+    addFact("For - Propagate initializer", function() {
+        var _x = 1;
+        var _y = 0;
+        
+		for (
+			var _i = _x; // _x should propagate
+			_i < _x+100; // _x should not propagate
+			_i += _x; // _x should not propagate
+		) {
+			_x += _i;
+		    _y += _x; // _x should not propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 376, "Constant propagation failed");
+    });
+    addFact("For - Propagate inside", function() {
+        var _x = 1;
+        var _y = 0;
+        
+		for (
+			var _i = _x; // _x should propagate
+			_i < _x+100; // _x should propagate
+			_i += _x; // _x should propagate
+		) {
+		    _y += _x // _x should propagate
+		}
+		
+		var _x = irandom(1)
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 100, "Constant propagation failed");
+    });
+    addFact("For - Propagate none", function() {
+        var _x = 1;
+        var _y = 0;
+        
+		/// @NoOp
+		var _temp = 1;
+		_x = _temp;
+		
+		for (
+			var _i = _x; // _x should not propagate
+			_i < _x+100; // _x should not propagate
+			_i += _x; // _x should not propagate
+		) {
+		    _y += _x // _x should not propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 100, "Constant propagation failed");
+    });
+    #endregion
+	#region If
+	addFact("If - Propagate all", function() {
+        var _x = 1;
+        var _y;
         /// @NoOp
-        var _direction = 90;
-        var result = dynamicMove(SPEED, _direction);
-
-        assert_equals(result, 450, "Dynamic function arguments should prevent constant propagation.");
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_y = _x; // _x should propagate
+		}
+		else {
+			_y = -_x; // _x should propagate
+		}
+		
+		var _z = _x + 1; // _x should propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
     });
-
-    // Test 12: Constant Folding in Complex Expressions
-    addFact("Constant Propagation with Folding", function() {
-        var A = 5;
-        var B = 3;
-        var result = (A + B) * 2;
-
-        assert_equals(result, 16, "Result should be calculated using constant propagation and folding.");
+    addFact("If - Propagate inside 1", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_y = _x; // _x should propagate
+		}
+		else {
+			_y = -_x; // _x should propagate
+		}
+		
+		_x = _temp
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
     });
-
+    addFact("If - Propagate inside 2", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_y = _x; // _x should propagate
+			_x = _temp
+		}
+		else {
+			_y = -_x; // _x should propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("If - Propagate inside 3", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_y = _x; // _x should propagate
+		}
+		else {
+			_y = -_x; // _x should propagate
+			_x = _temp
+		}
+		
+		_x = _temp
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("If - Propagate inside 4", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_x = _temp
+			_y = _x; // _x should not propagate
+		}
+		else {
+			_y = -_x; // _x should propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("If - Propagate inside 5", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_y = _x; // _x should propagate
+		}
+		else {
+			_x = _temp
+			_y = -_x; // _x should not propagate
+		}
+		
+		_x = _temp
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("If - Propagate condition", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        
+		if (_x) { // _x should propagate
+			_x = _temp
+			_y = _x; // _x should not propagate
+		}
+		else {
+			_x = _temp
+			_y = -_x; // _x should not propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("If - Propagate none", function() {
+        var _x = 1;
+        var _y;
+        /// @NoOp
+        var _temp = 1;
+        _x = _temp;
+		
+		if (_x) { // _x should not propagate
+			_y = _x; // _x should not propagate
+		}
+		else {
+			_y = -_x; // _x should not propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    #endregion
+	#region Repeat
+	addFact("Repeat - Propagate all", function() {
+        var _x = 10;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		repeat(_x) { // _x should propagate
+			_y += _x; // _x should propagate
+		}
+		
+		var _z = _x + 1; // _x should propagate
+		
+        assert_equals(_y, 100, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+	addFact("Repeat - Propagate inside", function() {
+        var _x = 10;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		repeat(_x) { // _x should propagate
+			_y += _x; // _x should propagate
+		}
+		
+		_x = _temp;
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 100, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+	addFact("Repeat - Propagate condition", function() {
+        var _x = 10;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		repeat(_x) { // _x should propagate
+			_x = _temp;
+			_y += _x; // _x should not propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 100, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+	addFact("Repeat - Propagate none", function() {
+        var _x = 10;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		_x = _temp;
+		
+		repeat(_x) { // _x should not propagate
+			_y += _x; // _x should not propagate
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 100, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+	#endregion
+    #region Switch
+	addFact("Switch - Propagate all", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _x: // _x should propagate
+		        _y = _x; // _x should propagate
+		    break;
+		    default:
+		        _y = -_x; // _x should propagate
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate inside 1", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _x: // _x should propagate
+		        _y = _x; // _x should propagate
+		    break;
+		    default:
+		        _y = -_x; // _x should propagate
+		    break;
+		}
+		
+		_x = _temp;
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate inside 2", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _x: // _x should propagate
+		        _y = _x; // _x should propagate
+		    break;
+		    default:
+		        _y = -_x; // _x should propagate
+				_x = _temp;
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate inside 3", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _x: // _x should propagate
+		        _y = _x; // _x should propagate
+				_x = _temp;
+		    break;
+		    default:
+		        _y = -_x; // _x should not propagate
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate inside 4", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _x: // _x should propagate
+		        _y = _x; // _x should propagate
+		    break;
+		    default:
+				_x = _temp;
+		        _y = -_x; // _x should not propagate
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate case", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _x: // _x should propagate
+		        _x = _temp;
+		        _y = _x; // _x should not propagate
+		    break;
+		    default:
+				_y = -_x; // _x should not propagate
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate condition", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		switch (_x) { // _x should propagate
+		    case _temp:
+		        _x = _temp;
+		    break;
+		    case _x: // _x should not propagate
+		        _x = _temp;
+		        _y = _x; // _x should not propagate
+		    break;
+		    default:
+				_y = -_x; // _x should not propagate
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    addFact("Switch - Propagate none", function() {
+        var _x = 1;
+        var _y = 0;
+        /// @NoOp
+        var _temp = 1;
+        
+		_x = _temp
+		
+		switch (_x) { // _x should not propagate
+		    case _x: // _x should not propagate
+				_y = _x; // _x should not propagate
+		    break;
+		    default:
+		        _x = _temp
+		        _y = -_x; // _x should not propagate
+		    break;
+		}
+		
+		var _z = _x + 1; // _x should not propagate
+		
+        assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+    });
+    #endregion
+	
+	#endregion
+	
 }
+
+
+
