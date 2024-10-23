@@ -83,20 +83,22 @@
 		};
 		
 		static optimize = function(_node_data) {
-			var _orig_node_data = undefined;
+			var _start_node = undefined;
 			
 			//keep optimizing until there are no optimizers which change the node.
-			while (_node_data != _orig_node_data) { // bruh.. wtf is this code? it doesnt even do anything, its literally only ever going to repeat once.
-				var _orig_node_data = _node_data;
+			while (_node_data.node != _start_node) {
 				var _start_node = _node_data.node;
-				//_node_data.node = constantFolding(_node_data);
+				
+				_node_data.node = constantFolding(_node_data);
 				//_node_data.node = constantPropagation(_node_data);
 				_node_data.node = removeUnreachableCode(_node_data);
 				//_node_data.node = optimizeAlternateFunctions(_node_data);
 				
-				if (_start_node != _node_data.node) {
-					//log("Input Node :: ", json(__reStruct(_start_node)))
-					//log("Output Node :: ", json(__reStruct(_node_data.node)))
+				if (!optimization_occured)
+				&& (_start_node != _node_data.node) {
+					optimization_occured = true
+					log("Input Node :: ", json(__reStruct(_start_node)))
+					log("Output Node :: ", json(__reStruct(_node_data.node)))
 				}
 			}
 			
