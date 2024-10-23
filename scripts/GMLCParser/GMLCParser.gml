@@ -430,7 +430,7 @@
 			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
-			return new ASTCallExpression(new ASTFunction( throw_gmlc_error, line, lineString ), _err_message, line, lineString);
+			return new ASTCallExpression(new ASTLiteral(throw_gmlc_error, line, lineString, "throw_gmlc_error"), _err_message, line, lineString);
 		};
 		
 		#endregion
@@ -781,7 +781,7 @@
 								if (_possibleFunc.type == __GMLC_NodeType.FunctionDeclaration)
 								|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
 									expr = new ASTCallExpression(
-										new ASTFunction( __method, line, lineString ),
+										new ASTLiteral(__method, line, lineString, "__method"),
 										[ new ASTLiteral(undefined, line, lineString), new ASTIdentifier(_newFuncName, ScopeType.GLOBAL, line, lineString) ],
 										line,
 										lineString)
@@ -894,7 +894,7 @@
 							}
 							
 							right = new ASTCallExpression(
-								new ASTFunction( __method, line, lineString ),
+								new ASTLiteral(__method, line, lineString, "__method"),
 								[ _bind, right, ], 
 								line,
 								lineString)
@@ -1324,7 +1324,7 @@
 					//push the template string into the beginning of the arguments
 					array_insert(_arguments, 0, new ASTLiteral(_template_string, line, lineString));
 					
-					var _literalStringFunction = new ASTFunction(string, line, lineString);
+					var _literalStringFunction = new ASTLiteral(string, line, lineString, "string");
 					var _node = new ASTCallExpression(_literalStringFunction, _arguments, line, lineString);
 					
 					return _node
@@ -1359,7 +1359,7 @@
 		    }
 		    expectToken(__GMLC_TokenType.Punctuation, "]");
 			
-			return new ASTCallExpression(new ASTFunction( __NewGMLArray, line, lineString ), elements, line, lineString);
+			return new ASTCallExpression(new ASTLiteral(__NewGMLArray, line, lineString, "__NewGMLArray"), elements, line, lineString);
 		};
 		
 		static parseStructCreation = function() {
@@ -1410,7 +1410,7 @@
 		    expectToken(__GMLC_TokenType.Punctuation, "}");
 			
 			// Properties are not all constants, use a runtime function to create the struct
-			return new ASTCallExpression(new ASTFunction( __NewGMLStruct, line, lineString ), _args, line, lineString);
+			return new ASTCallExpression(new ASTLiteral(__NewGMLStruct, line, lineString, "__NewGMLStruct"), _args, line, lineString);
 		};
 		
 		static parseFunctionCall = function(callee) {

@@ -305,64 +305,6 @@
 			return new ASTLiteral(script_execute_ext(_script, _new_arr), node.line, node.lineString);
 		}
 		
-		static handleAccessorFunctionCall = function(accessorType, _args) {
-		    //var _getterFunc, _setterFunc;
-			
-			//// Getter context
-		    //switch (accessorType) {
-			//	case __GMLC_AccessorType.Array:  _getterFunc = new ASTFunction(array_get,               node.line, node.lineString); _setterFunc = new ASTFunction(array_set,   node.line, node.lineString); break;
-			//	case __GMLC_AccessorType.List:   _getterFunc = new ASTFunction(ds_list_find_value,      node.line, node.lineString); _setterFunc = new ASTFunction(ds_list_set, node.line, node.lineString); break;
-			//	case __GMLC_AccessorType.Map:    _getterFunc = new ASTFunction(ds_map_find_value,       node.line, node.lineString); _setterFunc = new ASTFunction(ds_map_set,  node.line, node.lineString); break;
-			//	case __GMLC_AccessorType.Grid:   _getterFunc = new ASTFunction(ds_grid_get,             node.line, node.lineString); _setterFunc = new ASTFunction(ds_grid_set, node.line, node.lineString); break;
-			//	case __GMLC_AccessorType.Struct: _getterFunc = new ASTFunction(struct_get,              node.line, node.lineString); _setterFunc = new ASTFunction(struct_set,  node.line, node.lineString); break;
-			//	case __GMLC_AccessorType.Dot:    _getterFunc = new ASTFunction(__struct_get_with_error, node.line, node.lineString); _setterFunc = new ASTFunction(struct_set,  node.line, node.lineString); break;
-			//	default: throw_gmlc_error($"Unexpected entry into handleAccessorFunctionCall with accessorType: {accessorType}") break;
-			//}
-			
-			//var _get_expr = new ASTCallExpression(_getterFunc, _args, node.line, node.lineString);
-			////var expr = parseLogicalOrExpression();
-			
-			//if (currentToken != undefined) {
-			//	var _op = currentToken.value;
-			//	var _new_args = variable_clone(_args);
-			//	var right;
-				
-			//	// Handle compound assignments
-			//	static __op_arr = ["+=", "-=", "*=", "/=", "^=", "&=", "|=", "++", "--"];
-			//	if (_op == "=") {
-			//		nextToken(); // Consume the operator
-					
-			//		var expr = parseLogicalOrExpression();
-			//		array_push(_new_args, expr);
-			//		return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
-			//	}
-			//	else if (array_contains(__op_arr, _op)) {
-			//		nextToken(); // Consume the operator
-					
-			//		// Determine the right-hand side expression based on the operator
-			//		switch (_op) {
-			//			case "+=": case "-=": case "*=": case "/=":
-			//			case "^=": case "&=": case "|=":
-			//			    right = parseLogicalOrExpression(); break;
-			//			case "++": case "--":
-			//			    right = new ASTNodes("Literal", {value: 1, scope: ScopeType.CONST}); break;
-			//		}
-					
-			//		// Create binary expression node
-			//		var adjustedOperator = string_copy(_op, 1, 1); // Remove = or adjust for ++/--
-			//		var expr = new ASTNodes("BinaryExpression", {operator: adjustedOperator, left: _get_expr, right: right});
-			//		array_push(_new_args, expr);
-					
-			//		// Return the setter function call with updated arguments
-			//		return new ASTNodes("FunctionCall", {callee: _setterFunc, arguments: _new_args});
-			//	}
-			//	else {
-			//		return _get_expr; // For unsupported operators or when no assignment is detected
-			//	}
-			//}
-			
-		    //return _get_expr;
-		};
 		#endregion
 	}
 #endregion
