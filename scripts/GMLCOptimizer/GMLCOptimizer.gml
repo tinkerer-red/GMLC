@@ -39,8 +39,15 @@
 		
 		static nextNode = function() {
 			if (!array_length(nodeStack)) {
-				finished = true;
-				return;
+				
+				//re push everything all over again and continue optimizing
+				if (optimization_occured) {
+					array_push(nodeStack, {node: ast, parent: undefined, key: undefined, index: undefined}) // Start with the root node
+				}
+				else {
+					finished = true;
+					return;
+				}
 			}
 		
 		    // Get current node from the stack
@@ -66,8 +73,17 @@
 						throw_gmlc_error($"We still have nodes in the nodeStack, we shouldnt be finished")
 					}
 					
-					finished = true;
 					ast = _node;
+					
+					//re push everything all over again and continue optimizing
+					if (optimization_occured) {
+						optimization_occured = false;
+						array_push(nodeStack, {node: ast, parent: undefined, key: undefined, index: undefined}) // Start with the root node
+					}
+					else {
+						finished = true;
+						return;
+					}
 				}
 				else {
 					//reset the visit so the next module can make use of it
@@ -94,11 +110,10 @@
 				_node_data.node = removeUnreachableCode(_node_data);
 				//_node_data.node = optimizeAlternateFunctions(_node_data);
 				
-				if (!optimization_occured)
-				&& (_start_node != _node_data.node) {
+				if (_start_node != _node_data.node) {
 					optimization_occured = true
-					log("Input Node :: ", json(__reStruct(_start_node)))
-					log("Output Node :: ", json(__reStruct(_node_data.node)))
+					//log("Input Node :: ", json(__reStruct(_start_node)))
+					//log("Output Node :: ", json(__reStruct(_node_data.node)))
 				}
 			}
 			
@@ -131,14 +146,36 @@
 						assignment_node : _node,
 					}
 					
-					var _children = _parent.get_children(false)
-					var _i = 0; repeat(array_length(_children)) {
-						__propagateConstants(_children[_i].node, _constant_data)
+					var _should_be_propagating = false; // set to true when we found our assignment op
+					
+					var _children = _parent.get_children(true);
+					var _i = 0; repeat(array_length(_children))
+					{
+						var _child_data = _children[_i];
+						var _child = _child_data.node;
+						
+						if (_should_be_propagating) {
+							var _return = __propagateConstants(_child, _constant_data)
+							if (is_instanceof(_return, ASTNode))
+							{
+								if (_child_data.index == undefined)
+								{
+									_node[$ _child_data.key] = _return;
+								}
+								else {
+									_node[$ _child_data.key][_child_data.index] = _return;
+								}
+							}
+							else if (_return == true) {
+								break;
+							}
+						}
 						
 						//if we found the node which assigns, we can now leave.
-						if (_children == _node) {
-							break;
+						if (_child == _node) {
+							_should_be_propagating = true;
 						}
+						
 					_i++}
 					
 					// dont do this because it has internal checks to early out, and is top down and not bottom up
@@ -149,7 +186,9 @@
 			
 		    return _node;  // Return the updated AST node
 		}
-		static __propagateConstants = function(_node, _constant_data, _has_identifier) {
+		static __propagateConstants = function(_node, _constant_data) {
+			log($"__propagateConstants :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
+			
 			var _constant_identifier = _constant_data.identifier;
 			var _constant_value = _constant_data.value;
 			var _constant_known = _constant_data.known;
@@ -213,7 +252,7 @@
 				case __GMLC_NodeType.Identifier: {
 		            
 					if (_node.value == _constant_identifier) {
-						log($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` in line ({_node.line}) `{_node.lineString}`")
+						log($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` with `{_constant_data.value}` in line ({_node.line}) `{_node.lineString}`")
 						return new ASTLiteral(_constant_data.value, _node.line, _node.lineString, _node.name);
 					}
 					
@@ -222,7 +261,7 @@
 				case __GMLC_NodeType.IfStatement:
 		        case __GMLC_NodeType.SwitchStatement:
 		        case __GMLC_NodeType.TryStatement: {
-					if (_has_identifier ?? __hasIdentifierAssignment(_node, _constant_identifier)) {
+					if (__hasIdentifierAssignment(_node, _constant_data)) {
 						//if it has an assignment to it, then we know we can not ensure safety of constant propigation any longer, and its time to back out.
 						//we could how wever still propigate top down until we run into the assignment 
 					}
@@ -238,7 +277,7 @@
 		        case __GMLC_NodeType.WhileStatement:
 		        case __GMLC_NodeType.WithStatement:
 		        {
-					if (_has_identifier ?? __hasIdentifierAssignment(_node, _constant_identifier)) {
+					if (__hasIdentifierAssignment(_node, _constant_data)) {
 						//if it has an assignment to it, then we know we can not ensure safety of constant propigation any longer, and its time to back out.
 						//specifically for `ForStatement`s we can still apply a to the `initialization` for example `var _i = _length` _length could still be propigated to.
 					}
@@ -246,7 +285,21 @@
 						//get stack of children bottom up
 						var _children = _node.get_children(true)
 						var _i = 0; repeat(array_length(_children)) {
-							__propagateConstants(_children[_i].node, _constant_data, _has_identifier)
+							var _return = __propagateConstants(_children[_i].node, _constant_data)
+							if (is_instanceof(_return, ASTNode))
+							{
+								if (_child_data.index == undefined)
+								{
+									_node[$ _child_data.key] = _return;
+								}
+								else {
+									_node[$ _child_data.key][_child_data.index] = _return;
+								}
+							}
+							else if (_return == true) {
+								//inform parent we are done propigating
+								return true;
+							}
 						_i++}
 					}
 		        break;}
@@ -265,7 +318,9 @@
 			return __propagateToChildren(_node, _constant_data)
 		}
 		static __propagateToChildren = function(_node, _constant_data) {
-			if (__shouldStopPropagation(_node, _constant_data.identifier)) {
+			log($"__propagateToChildren :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
+			
+			if (__shouldStopPropagation(_node, _constant_data)) {
 				//inform parent we are done propigating
 				return true;
 			}
@@ -287,7 +342,7 @@
 					}
 				}
 				else if (_return == true) {
-					//ifnorm parent we are done propigating
+					//inform parent we are done propigating
 					return true;
 				}
 			_i++}
@@ -295,26 +350,35 @@
 			//it is still safe to continue propigating
 			return false;
 		}
-		static __hasIdentifierAssignment = function(_node, _identifier) {
+		static __hasIdentifierAssignment = function(_node, _constant_data) {
+			log($"__hasIdentifierAssignment :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
 			
 			if (_node.type == __GMLC_NodeType.AssignmentExpression)
 			&& (_node.left.type == __GMLC_NodeType.Identifier)
-			&& (_node.left.value == _identifier) {
+			&& (_node.left.value == _constant_data.identifier) {
+				return true;
+			}
+			
+			//skip any constructors which dont have children
+			if (_node.type == __GMLC_NodeType.AssignmentExpression)
+			&& (_node.left.type == __GMLC_NodeType.Identifier)
+			&& (_node.left.value == _constant_data.identifier) {
 				return true;
 			}
 			
 			var _children = _node.get_children(true);
 			var _i=0; repeat(array_length(_children)) {
 				
-				if (__hasIdentifierAssignment(_children[_i].node, _identifier)) {
+				if (__hasIdentifierAssignment(_children[_i].node, _constant_data)) {
 					return true;
 				}
 				
 			_i++}
 			return false;
 		}
-		static __shouldStopPropagation = function(_node, _identifier) {
-			if (__hasIdentifierAssignment(_node, _identifier)) {
+		static __shouldStopPropagation = function(_node, _constant_data) {
+			log($"__shouldStopPropagation :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
+			if (__hasIdentifierAssignment(_node, _constant_data)) {
 				return true; // Stop early if reassignment found
 			}
 			
@@ -326,7 +390,7 @@
 				case __GMLC_NodeType.WhileStatement:
 				case __GMLC_NodeType.DoUntilStatement:
 					// Recursively check for reassignments deeper in the tree
-					return __hasIdentifierAssignment(_node, _identifier);
+					return __hasIdentifierAssignment(_node, _constant_data);
 			}
 			
 			return false;
