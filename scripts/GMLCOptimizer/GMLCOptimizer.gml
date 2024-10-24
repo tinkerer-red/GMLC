@@ -112,9 +112,9 @@
 			while (_node_data.node != _start_node) {
 				var _start_node = _node_data.node;
 				
-				//_node_data.node = constantFolding(_node_data);
+				_node_data.node = constantFolding(_node_data);
 				_node_data.node = constantPropagation(_node_data);
-				//_node_data.node = removeUnreachableCode(_node_data);
+				_node_data.node = removeUnreachableCode(_node_data);
 				//_node_data.node = optimizeAlternateFunctions(_node_data);
 				
 				if (_start_node != _node_data.node) {
@@ -174,6 +174,21 @@
 			
 			if (_found) {
 				
+				switch (_parent.type) {
+					case __GMLC_NodeType.DoUntilStatement:
+			        case __GMLC_NodeType.ForStatement:
+					case __GMLC_NodeType.RepeatStatement:
+					case __GMLC_NodeType.WhileStatement:
+					case __GMLC_NodeType.WithStatement:
+					case __GMLC_NodeType.UpdateExpression: {
+						//break propigation
+						return _node;
+						
+						/// Note: Block statements inside of these will still get propigated, this just mostly avoids conditionals and initializers
+						
+					break;}
+				}
+				
 				var _should_be_propagating = false; // set to true when we found our assignment op
 				
 				var _children = _parent.get_children(true);
@@ -184,34 +199,32 @@
 					
 					if (_should_be_propagating)
 					{
-						pprint($"Attempting propagation o child of type ::  {_child.type}")
 						var _return = __propagateConstants(_child, _constant_data)
 						if (is_instanceof(_return, ASTNode))
 						{
-							try {
-								print($"Optimizer :: constantPropagation :: Could us literal assignment of `{_return.value}`, to `{_constant_data.value}` in line ({_child.line}) `{_child.lineString}`")
-							}
-							catch(err) {
-								pprint(_node.type)
-								pprint(_child.type)
-								pprint(_return)
-								throw json(err)
-							}
 							if (_child_data.index == undefined)
 							{
-								_node[$ _child_data.key] = _return;
+								_parent[$ _child_data.key] = _return;
 							}
 							else {
-								_node[$ _child_data.key][_child_data.index] = _return;
+								//try {
+								_parent[$ _child_data.key][_child_data.index] = _return;
+								//}
+								//catch(err) {
+								//	pprint(_node)
+								//	pprint(_child_data)
+								//	pprint(_node[$ _child_data.key])
+								//	pprint(_return)
+								//	throw "fuck it"
+								//}
 							}
 						}
 						else if (_return == true) {
-							log("break 0")
 							break;
 						}
 					}
 					
-					//if we found the node which assigns, we can now leave.
+					//if we found the node which assigns, we can begin propagating.
 					if (_child == _node) {
 						print($"Optimizer :: constantPropagation :: Has found Constant `{_constant_data.identifier}` in line ({_node.line}) `{_node.lineString}`")
 						_should_be_propagating = true;
@@ -257,7 +270,6 @@
 								//this actually should already be handled as the parser is bottom up, and propigation is top down, so instead we are just going to return
 								
 								/// should break propagation
-								log("break 1")
 								return true;
 							}
 							else
@@ -276,7 +288,6 @@
 									}
 								}
 								
-								pprint(debug_get_callstack())
 								print($"Optimizer :: constantPropagation :: Could us literal assignment of `{_constant_value}` in line ({_node.line}) `{_node.lineString}`")
 								
 								_constant_data.value = _constant_value
@@ -287,7 +298,6 @@
 						}
 						
 						/// should break propagation
-						log("break 2")
 						return true;
 					}
 					
@@ -308,7 +318,6 @@
 					if (_node.identifier == _constant_identifier)
 					{
 						/// should break propagation
-						log("break 3")
 						return true;
 					}
 					
@@ -320,8 +329,7 @@
 				case __GMLC_NodeType.Identifier: {
 		            
 					if (_node.value == _constant_identifier) {
-						//pprint(debug_get_callstack())
-						log($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` with `{_constant_data.value}` in line ({_node.line}) `{_node.lineString}`")
+						print($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` with `{_constant_data.value}` in line ({_node.line}) `{_node.lineString}`")
 						return new ASTLiteral(_constant_data.value, _node.line, _node.lineString, _node.name);
 					}
 					
@@ -418,8 +426,6 @@
 				break;}
 		    }
 			
-			log($"PROPIGATING DEFAULT = = = = = {_node.type}")
-			
 			return __propagateToChildren(_node, _constant_data)
 		}
 		static __propagateToChildren = function(_node, _constant_data) {
@@ -443,7 +449,6 @@
 				}
 				else if (_return == true) {
 					//inform parent we are done propigating
-					log("break 6")
 					return true;
 				}
 			_i++}
@@ -452,24 +457,20 @@
 			return false;
 		}
 		static __hasIdentifierAssignment = function(_node, _constant_data) {
-			//log($"__hasIdentifierAssignment :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
 			
 			if (_node.type == __GMLC_NodeType.AssignmentExpression)
 			&& (_node.left.type == __GMLC_NodeType.Identifier)
 			&& (_node.left.value == _constant_data.identifier) {
-				log("break 7")
 				return true;
 			}
 			
 			if (_node.type == __GMLC_NodeType.VariableDeclaration)
 			&& (_node.identifier == _constant_data.identifier) {
-				log("break 8")
 				return true;
 			}
 			
 			if (_node.type == __GMLC_NodeType.UpdateExpression)
 			&& (_node.expr.type == __GMLC_NodeType.Identifier) {
-				log("break 9")
 				return true;
 			}
 			
@@ -477,7 +478,6 @@
 			var _i=0; repeat(array_length(_children)) {
 				
 				if (__hasIdentifierAssignment(_children[_i].node, _constant_data)) {
-					log("break 10")
 					return true;
 				}
 				
@@ -716,8 +716,6 @@
 					}
 				break;}
 				case __GMLC_NodeType.CallExpression:{
-					//log("\n\n\nNODE :: ")
-					//pprint(_node)
 					if (_node.callee.type == __GMLC_NodeType.Literal) {
 						switch (_node.callee.value) {
 							case abs:{

@@ -250,14 +250,14 @@ function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _l
 		
 		if (_top_down) {
 			array_push(_arr, {node: initialization, parent: _parent, key: "initialization", index: undefined});
-			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
-			array_push(_arr, {node: increment, parent: _parent, key: "increment", index: undefined});
 			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+			array_push(_arr, {node: increment, parent: _parent, key: "increment", index: undefined});
+			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
 		}
 		else {
-			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
-			array_push(_arr, {node: increment, parent: _parent, key: "increment", index: undefined});
 			array_push(_arr, {node: condition, parent: _parent, key: "condition", index: undefined});
+			array_push(_arr, {node: increment, parent: _parent, key: "increment", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
 			array_push(_arr, {node: initialization, parent: _parent, key: "initialization", index: undefined});
 		}
 		
@@ -323,10 +323,15 @@ function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : AST
 		
 		if (_top_down) {
 			array_push(_arr, {node: switchExpression, parent: _parent, key: "switchExpression", index: undefined});
-			array_push(_arr, {node: cases, parent: _parent, key: "cases", index: undefined});
+			var _i=0; repeat(array_length(cases)) {
+				array_push(_arr, {node: cases[_i], parent: _parent, key: "cases", index: _i});
+			_i++}
+			
 		}
 		else {
-			array_push(_arr, {node: cases, parent: _parent, key: "cases", index: undefined});
+			var _i=array_length(cases)-1; repeat(array_length(statements)) {
+				array_push(_arr, {node: cases[_i], parent: _parent, key: "cases", index: _i});
+			_i--}
 			array_push(_arr, {node: switchExpression, parent: _parent, key: "switchExpression", index: undefined});
 		}
 		
@@ -356,7 +361,15 @@ function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_li
 		var _arr = [];
 		var _parent = self;
 		
-		array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		if (_top_down) {
+			array_push(_arr, {node: label, parent: _parent, key: "label", index: undefined});
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+		}
+		else {
+			array_push(_arr, {node: codeBlock, parent: _parent, key: "codeBlock", index: undefined});
+			array_push(_arr, {node: label, parent: _parent, key: "label", index: undefined});
+		}
+		
 		
 		return _arr;
 	}
@@ -373,14 +386,16 @@ function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _
 		var _arr = [];
 		var _parent = self;
 		
+		pprint(self)
+		
 		if (_top_down) {
 			array_push(_arr, {node: tryBlock, parent: _parent, key: "tryBlock", index: undefined});
-			array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
-			array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
+			if (catchBlock != undefined) array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
+			if (finallyBlock != undefined) array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
 		}
 		else {
-			array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
-			array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
+			if (finallyBlock != undefined) array_push(_arr, {node: finallyBlock, parent: _parent, key: "finallyBlock", index: undefined});
+			if (catchBlock != undefined) array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
 			array_push(_arr, {node: tryBlock, parent: _parent, key: "tryBlock", index: undefined});
 		}
 		
@@ -471,7 +486,9 @@ function ASTReturnStatement(_expr, _line, _lineString) : ASTNode(_line, _lineStr
 		var _arr = [];
 		var _parent = self;
 		
-		array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		if (expr != undefined) {
+			array_push(_arr, {node: expr, parent: _parent, key: "expr", index: undefined});
+		}
 		
 		return _arr;
 	}
