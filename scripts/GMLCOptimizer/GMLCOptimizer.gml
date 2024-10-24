@@ -152,6 +152,7 @@
 			
 			if (_node.type == __GMLC_NodeType.VariableDeclaration)
 			&& (_node.expr.type == __GMLC_NodeType.Literal)
+			&& (_node.expr.scope == ScopeType.LOCAL)
 			{
 				_found = true;
 				
