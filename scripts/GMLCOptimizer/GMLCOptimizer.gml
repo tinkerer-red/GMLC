@@ -18,6 +18,8 @@
 		finished = false;
 		optimization_occured = false; //used so all optimizers can register if a change has occured and we should re attempt optimizers
 		
+		static print = log;
+		
 		static initialize = function(_ast) {
 			ast = _ast;
 			nodeStack = [];  // Stack to keep track of nodes to visit
@@ -52,6 +54,11 @@
 		
 		    // Get current node from the stack
 			var currentNode = array_pop(nodeStack);
+			
+			//skip nodes from optimization
+			while (currentNode.node.skipOptimization) {
+				var currentNode = array_pop(nodeStack);
+			}
 			
 			// Process children first (post-order traversal)
 			if (currentNode.node.visited == false) {
@@ -105,9 +112,9 @@
 			while (_node_data.node != _start_node) {
 				var _start_node = _node_data.node;
 				
-				_node_data.node = constantFolding(_node_data);
-				//_node_data.node = constantPropagation(_node_data);
-				_node_data.node = removeUnreachableCode(_node_data);
+				//_node_data.node = constantFolding(_node_data);
+				_node_data.node = constantPropagation(_node_data);
+				//_node_data.node = removeUnreachableCode(_node_data);
 				//_node_data.node = optimizeAlternateFunctions(_node_data);
 				
 				if (_start_node != _node_data.node) {
@@ -134,60 +141,89 @@
 			var _key    = _node_data.key;
 			var _index  = _node_data.index;
 			
-			if (_node.type == __GMLC_NodeType.AssignmentExpression) {
-				if (_node.operator == "=")
-				&& (_node.left.type == __GMLC_NodeType.Identifier)
-				&& (_node.right.type == __GMLC_NodeType.Literal) {
+			var _found = false;
+			var _constant_data = {
+				identifier : undefined,
+				value : undefined,
+				known : false, //we only know it when we find this same node inside the parent
+				assignment_node : undefined,
+			}
+			
+			if (_node.type == __GMLC_NodeType.VariableDeclaration)
+			&& (_node.expr.type == __GMLC_NodeType.Literal)
+			{
+				_found = true;
+				
+				_constant_data.identifier = _node.identifier;
+				_constant_data.value = _node.expr.value;
+				_constant_data.known = false; //we only know it when we find this same node inside the parent
+				_constant_data.assignment_node = _node;
+			}
+			if (_node.type == __GMLC_NodeType.AssignmentExpression)
+			&& (_node.operator == "=")
+			&& (_node.left.type == __GMLC_NodeType.Identifier)
+			&& (_node.right.type == __GMLC_NodeType.Literal)
+			{
+				_found = true;
+				
+				_constant_data.identifier = _node.left.value;
+				_constant_data.value = _node.right.value;
+				_constant_data.known = false; //we only know it when we find this same node inside the parent
+				_constant_data.assignment_node = _node;
+			}
+			
+			if (_found) {
+				
+				var _should_be_propagating = false; // set to true when we found our assignment op
+				
+				var _children = _parent.get_children(true);
+				var _i = 0; repeat(array_length(_children))
+				{
+					var _child_data = _children[_i];
+					var _child = _child_data.node;
 					
-					var _constant_data = {
-						identifier : _node.left.value,
-						value : _node.right.value,
-						known : false, //we only know it when we find this same node inside the parent
-						assignment_node : _node,
+					if (_should_be_propagating)
+					{
+						pprint($"Attempting propagation o child of type ::  {_child.type}")
+						var _return = __propagateConstants(_child, _constant_data)
+						if (is_instanceof(_return, ASTNode))
+						{
+							try {
+								print($"Optimizer :: constantPropagation :: Could us literal assignment of `{_return.value}`, to `{_constant_data.value}` in line ({_child.line}) `{_child.lineString}`")
+							}
+							catch(err) {
+								pprint(_node.type)
+								pprint(_child.type)
+								pprint(_return)
+								throw json(err)
+							}
+							if (_child_data.index == undefined)
+							{
+								_node[$ _child_data.key] = _return;
+							}
+							else {
+								_node[$ _child_data.key][_child_data.index] = _return;
+							}
+						}
+						else if (_return == true) {
+							log("break 0")
+							break;
+						}
 					}
 					
-					var _should_be_propagating = false; // set to true when we found our assignment op
+					//if we found the node which assigns, we can now leave.
+					if (_child == _node) {
+						print($"Optimizer :: constantPropagation :: Has found Constant `{_constant_data.identifier}` in line ({_node.line}) `{_node.lineString}`")
+						_should_be_propagating = true;
+					}
 					
-					var _children = _parent.get_children(true);
-					var _i = 0; repeat(array_length(_children))
-					{
-						var _child_data = _children[_i];
-						var _child = _child_data.node;
-						
-						if (_should_be_propagating) {
-							var _return = __propagateConstants(_child, _constant_data)
-							if (is_instanceof(_return, ASTNode))
-							{
-								if (_child_data.index == undefined)
-								{
-									_node[$ _child_data.key] = _return;
-								}
-								else {
-									_node[$ _child_data.key][_child_data.index] = _return;
-								}
-							}
-							else if (_return == true) {
-								break;
-							}
-						}
-						
-						//if we found the node which assigns, we can now leave.
-						if (_child == _node) {
-							_should_be_propagating = true;
-						}
-						
-					_i++}
-					
-					// dont do this because it has internal checks to early out, and is top down and not bottom up
-					//__propagateToChildren(_node.parent, _constant_data)
-					
-				}
+				_i++}
 			}
 			
 		    return _node;  // Return the updated AST node
 		}
 		static __propagateConstants = function(_node, _constant_data) {
-			log($"__propagateConstants :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
+			//log($"__propagateConstants :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
 			
 			var _constant_identifier = _constant_data.identifier;
 			var _constant_value = _constant_data.value;
@@ -200,6 +236,17 @@
 		            var _left = _node.left;
 		            var _right = _node.right;
 						
+					if (_left.type == __GMLC_NodeType.Identifier) {
+						//propigate to children incase the expression contains it's self and could be constant folded on additional optimize steps
+						// example :: xx = xx + 1;
+						var _return = __propagateConstants(_node.right, _constant_data)
+						if (is_instanceof(_return, ASTNode))
+						{
+							_node.right = _return;
+						}
+						
+					}
+					
 					if (_left.type == __GMLC_NodeType.Identifier)
 					&& (_left.value == _constant_identifier)
 					{
@@ -209,52 +256,77 @@
 							{
 								//this actually should already be handled as the parser is bottom up, and propigation is top down, so instead we are just going to return
 								
-								//update the constant map with the new literal value
-								//_constant_data.known = true;
-								//_constant_data.value = _right.value;
-								
+								/// should break propagation
+								log("break 1")
 								return true;
 							}
 							else
 							{
-								if (_constant_data.known)
-								{
-									switch (_node.operator) {
-										case "+=":  _constant_value +=  _right.value break;
-										case "-=":  _constant_value -=  _right.value break;
-										case "*=":  _constant_value *=  _right.value break;
-										case "/=":  _constant_value /=  _right.value break;
-										case "^=":  _constant_value ^=  _right.value break;
-										case "&=":  _constant_value &=  _right.value break;
-										case "|=":  _constant_value |=  _right.value break;
-										case "??=": _constant_value ??= _right.value break;
-										default: {
-											throw $"[ERROR] Optimizer :: constantPropagation :: Unexpected operator in line ({_node.line}) `{_node.lineString}`"
-										}
+								switch (_node.operator) {
+									case "+=":  _constant_value +=  _right.value break;
+									case "-=":  _constant_value -=  _right.value break;
+									case "*=":  _constant_value *=  _right.value break;
+									case "/=":  _constant_value /=  _right.value break;
+									case "^=":  _constant_value ^=  _right.value break;
+									case "&=":  _constant_value &=  _right.value break;
+									case "|=":  _constant_value |=  _right.value break;
+									case "??=": _constant_value ??= _right.value break;
+									default: {
+										throw $"[ERROR] Optimizer :: constantPropagation :: Unexpected operator in line ({_node.line}) `{_node.lineString}`"
 									}
-									log($"Optimizer :: constantPropagation :: Could us literal assignment of `{_constant_value}` in line ({_node.line}) `{_node.lineString}`")
-									
-									_node.operator = "=";
-									_node.right = new ASTLiteral(_constant_value, _node.line, _node.lineString);
-									
-									_constant_data.value = _constant_value
 								}
+								
+								pprint(debug_get_callstack())
+								print($"Optimizer :: constantPropagation :: Could us literal assignment of `{_constant_value}` in line ({_node.line}) `{_node.lineString}`")
+								
+								_constant_data.value = _constant_value
+								var _new_ast = new ASTAssignmentExpression("=", _left, new ASTLiteral(_constant_value, _node.right.line, _node.right.lineString), _node.line, _node.lineString)
+								_new_ast.skipOptimization = _node.skipOptimization;
+								return _new_ast;
 							}
 						}
-						else {
-							//update the constant map with unknown info
-							_constant_data.known = false;
-							_constant_data.value = undefined;
-						}
+						
+						/// should break propagation
+						log("break 2")
+						return true;
 					}
+					
+					// safe to keep propagating
+					return false;
+					
+		        break;}
+                case __GMLC_NodeType.VariableDeclaration: {
+					
+					//propigate to children incase the expression contains it's self and could be constant folded on additional optimize steps
+					// example :: var xx = xx + 1;
+					var _return = __propagateConstants(_node.expr, _constant_data)
+					if (is_instanceof(_return, ASTNode))
+					{
+						_node.expr = _return;
+					}
+					
+					if (_node.identifier == _constant_identifier)
+					{
+						/// should break propagation
+						log("break 3")
+						return true;
+					}
+					
+					// safe to continue propagation
+					return false;
+					
 		        break;}
                 
 				case __GMLC_NodeType.Identifier: {
 		            
 					if (_node.value == _constant_identifier) {
+						//pprint(debug_get_callstack())
 						log($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` with `{_constant_data.value}` in line ({_node.line}) `{_node.lineString}`")
 						return new ASTLiteral(_constant_data.value, _node.line, _node.lineString, _node.name);
 					}
+					
+					//safe to continue
+					return false;
 					
 		        break;}
                 
@@ -271,59 +343,87 @@
 					}
 				break;}
 		        
-				case __GMLC_NodeType.DoUntilStatement:
-		        case __GMLC_NodeType.ForStatement:
-		        case __GMLC_NodeType.RepeatStatement:
-		        case __GMLC_NodeType.WhileStatement:
-		        case __GMLC_NodeType.WithStatement:
-		        {
+				case __GMLC_NodeType.DoUntilStatement: {
 					if (__hasIdentifierAssignment(_node, _constant_data)) {
-						//if it has an assignment to it, then we know we can not ensure safety of constant propigation any longer, and its time to back out.
-						//specifically for `ForStatement`s we can still apply a to the `initialization` for example `var _i = _length` _length could still be propigated to.
+						//break propigation
+						return true;
 					}
-					else {
-						//get stack of children bottom up
-						var _children = _node.get_children(true)
-						var _i = 0; repeat(array_length(_children)) {
-							var _return = __propagateConstants(_children[_i].node, _constant_data)
-							if (is_instanceof(_return, ASTNode))
-							{
-								if (_child_data.index == undefined)
-								{
-									_node[$ _child_data.key] = _return;
-								}
-								else {
-									_node[$ _child_data.key][_child_data.index] = _return;
-								}
-							}
-							else if (_return == true) {
-								//inform parent we are done propigating
-								return true;
-							}
-						_i++}
+					//this will return false
+					return __propagateToChildren(_node, _constant_data)
+				break;}
+		        case __GMLC_NodeType.ForStatement:{
+					if (__hasIdentifierAssignment(_node, _constant_data)) {
+						//we can still safely propaget to the variable declaration
+						var _return = __propagateConstants(_node.initialization, _constant_data)
+						if (is_instanceof(_return, ASTNode))
+						{
+							_node.initialization = _return;
+						}
+						
+						//break propigation
+						return true;
 					}
-		        break;}
-				
+					//this will return false
+					return __propagateToChildren(_node, _constant_data)
+				break;}
+		        case __GMLC_NodeType.RepeatStatement:{
+					if (__hasIdentifierAssignment(_node.codeBlock, _constant_data)) {
+						//we can still safely propagate to the condition
+						var _return = __propagateConstants(_node.condition, _constant_data)
+						if (is_instanceof(_return, ASTNode))
+						{
+							_node.condition = _return;
+						}
+						
+						//break propigation
+						return true;
+					}
+					//this will return false
+					return __propagateToChildren(_node, _constant_data)
+				break;}
+		        case __GMLC_NodeType.WhileStatement:{
+					if (__hasIdentifierAssignment(_node.codeBlock, _constant_data)) {
+						//there is no additional propagation possible
+						
+						//break propigation
+						return true;
+					}
+					//this will return false
+					return __propagateToChildren(_node, _constant_data)
+				break;}
+		        case __GMLC_NodeType.WithStatement:{
+					if (__hasIdentifierAssignment(_node.codeBlock, _constant_data)) {
+						//we can still safely propagate to the condition
+						var _return = __propagateConstants(_node.condition, _constant_data)
+						if (is_instanceof(_return, ASTNode))
+						{
+							_node.condition = _return;
+						}
+						
+						//break propigation
+						return true;
+					}
+					//this will return false
+					return __propagateToChildren(_node, _constant_data)
+				break;}
+		        
 				case __GMLC_NodeType.UpdateExpression: {
 					if (_node.expr.type == __GMLC_NodeType.Identifier) {
 						_constant_data.value += (_node.operator == "++") ? 1 : -1;
 						return false;
 					}
 					else {
-						return __propagateToChildren(_node, _constant_data)
+						return __propagateToChildren(_node.expr, _constant_data)
 					}
 				break;}
 		    }
 			
+			log($"PROPIGATING DEFAULT = = = = = {_node.type}")
+			
 			return __propagateToChildren(_node, _constant_data)
 		}
 		static __propagateToChildren = function(_node, _constant_data) {
-			log($"__propagateToChildren :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
-			
-			if (__shouldStopPropagation(_node, _constant_data)) {
-				//inform parent we are done propigating
-				return true;
-			}
+			//log($"__propagateToChildren :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
 			
 			var _children = _node.get_children(true)
 			var _i=0; repeat(array_length(_children)) {
@@ -343,6 +443,7 @@
 				}
 				else if (_return == true) {
 					//inform parent we are done propigating
+					log("break 6")
 					return true;
 				}
 			_i++}
@@ -351,18 +452,24 @@
 			return false;
 		}
 		static __hasIdentifierAssignment = function(_node, _constant_data) {
-			log($"__hasIdentifierAssignment :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
+			//log($"__hasIdentifierAssignment :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
 			
 			if (_node.type == __GMLC_NodeType.AssignmentExpression)
 			&& (_node.left.type == __GMLC_NodeType.Identifier)
 			&& (_node.left.value == _constant_data.identifier) {
+				log("break 7")
 				return true;
 			}
 			
-			//skip any constructors which dont have children
-			if (_node.type == __GMLC_NodeType.AssignmentExpression)
-			&& (_node.left.type == __GMLC_NodeType.Identifier)
-			&& (_node.left.value == _constant_data.identifier) {
+			if (_node.type == __GMLC_NodeType.VariableDeclaration)
+			&& (_node.identifier == _constant_data.identifier) {
+				log("break 8")
+				return true;
+			}
+			
+			if (_node.type == __GMLC_NodeType.UpdateExpression)
+			&& (_node.expr.type == __GMLC_NodeType.Identifier) {
+				log("break 9")
 				return true;
 			}
 			
@@ -370,28 +477,11 @@
 			var _i=0; repeat(array_length(_children)) {
 				
 				if (__hasIdentifierAssignment(_children[_i].node, _constant_data)) {
+					log("break 10")
 					return true;
 				}
 				
 			_i++}
-			return false;
-		}
-		static __shouldStopPropagation = function(_node, _constant_data) {
-			log($"__shouldStopPropagation :: typeof(_node) == {typeof(_node)} :: instanceof(_node) == {instanceof(_node)}")
-			if (__hasIdentifierAssignment(_node, _constant_data)) {
-				return true; // Stop early if reassignment found
-			}
-			
-			// Check for nested conditionals or loops
-			switch (_node.type) {
-				case __GMLC_NodeType.IfStatement:
-				case __GMLC_NodeType.SwitchStatement:
-				case __GMLC_NodeType.ForStatement:
-				case __GMLC_NodeType.WhileStatement:
-				case __GMLC_NodeType.DoUntilStatement:
-					// Recursively check for reassignments deeper in the tree
-					return __hasIdentifierAssignment(_node, _constant_data);
-			}
 			
 			return false;
 		}
@@ -415,61 +505,95 @@
 					    // Both _nodes are literals, perform constant folding
 					    switch (_node.operator) {
 							case "|":{
-								return new ASTLiteral(_node.left.value | _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value | _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "^":{
-								return new ASTLiteral(_node.left.value ^ _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value ^ _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "&":{
-								return new ASTLiteral(_node.left.value & _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value & _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "==":{
-								return new ASTLiteral(_node.left.value == _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value == _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "!=":{
-								return new ASTLiteral(_node.left.value != _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value != _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "<":{
-								return new ASTLiteral(_node.left.value < _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value < _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "<=":{
-								return new ASTLiteral(_node.left.value <= _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value <= _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case ">":{
-								return new ASTLiteral(_node.left.value > _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value > _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case ">=":{
-								return new ASTLiteral(_node.left.value >= _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value >= _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "<<":{
-								return new ASTLiteral(_node.left.value << _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value << _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case ">>":{
-								return new ASTLiteral(_node.left.value >> _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value >> _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "+":{
-								return new ASTLiteral(_node.left.value + _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value + _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "-":{
-								return new ASTLiteral(_node.left.value - _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value - _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "*":{
-								return new ASTLiteral(_node.left.value * _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value * _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "/":{
-								return new ASTLiteral(_node.left.value / _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value / _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "mod":{
 								if (_node.right.value == 0) {
 									throw_gmlc_error($"DoMod :: Divide by zero")
 								}
-								return new ASTLiteral(_node.left.value mod _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value mod _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "div":{
 								if (_node.right.value == 0) {
 									throw_gmlc_error($"DoRem :: Divide by zero")
 								}
-								return new ASTLiteral(_node.left.value div _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value div _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 						}
 					}
@@ -478,25 +602,47 @@
 					if (_node.left.type == __GMLC_NodeType.Literal && _node.right.type == __GMLC_NodeType.Literal) {
 					    switch (_node.operator) {
 							case "||":{
-								return new ASTLiteral(_node.left.value || _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value || _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "&&":{
-								return new ASTLiteral(_node.left.value && _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value && _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "^^":{
-								return new ASTLiteral(_node.left.value ^^ _node.right.value, _node.line, _node.lineString);
+								var _value = _node.left.value ^^ _node.right.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 					    }
 					}
 					else if (_node.left.type == __GMLC_NodeType.Literal || _node.right.type == __GMLC_NodeType.Literal) {
 					    switch (_node.operator) {
 							case "||":{
-								if (_node.left.type  == __GMLC_NodeType.Literal && _node.left.value ) return new ASTLiteral(true, _node.line, _node.lineString);
-								if (_node.right.type == __GMLC_NodeType.Literal && _node.right.value) return new ASTLiteral(true, _node.line, _node.lineString);
+								if (_node.left.type  == __GMLC_NodeType.Literal && _node.left.value ) {
+									var _value = true
+									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type == __GMLC_NodeType.Literal && _node.right.value) {
+									var _value = true
+									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
 							break;}
 							case "&&":{
-								if (_node.left.type  == __GMLC_NodeType.Literal && !_node.left.value ) return new ASTLiteral(false, _node.line, _node.lineString);
-								if (_node.right.type == __GMLC_NodeType.Literal && !_node.right.value) return new ASTLiteral(false, _node.line, _node.lineString);
+								if (_node.left.type  == __GMLC_NodeType.Literal && !_node.left.value ) {
+									var _value = false;
+									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type == __GMLC_NodeType.Literal && !_node.right.value) {
+									var _value = false;
+									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
 							break;}
 					    }
 					}
@@ -504,9 +650,11 @@
 				case __GMLC_NodeType.NullishExpression:{
 					if (_node.left.type == __GMLC_NodeType.Literal) {
 						if (_node.left.value == undefined) {
+							print($"Optimizer :: constantFolding :: Could collapse nullish express to right side only in line ({_node.line}) `{_node.lineString}`")
 							return _node.right;
 						}
 						else {
+							print($"Optimizer :: constantFolding :: Could collapse nullish express to left side only in line ({_node.line}) `{_node.lineString}`")
 							return _node.left;
 						}
 					}
@@ -515,22 +663,34 @@
 					if (_node.expr.type == __GMLC_NodeType.Literal) {
 					    switch (_node.operator) {
 							case "!":{
-								return new ASTLiteral(!_node.expr.value, _node.line, _node.lineString);
+								var _value = !_node.expr.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "+":{
-								return new ASTLiteral(+_node.expr.value, _node.line, _node.lineString);
+								var _value = +_node.expr.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "-":{
-								return new ASTLiteral(-_node.expr.value, _node.line, _node.lineString);
+								var _value = -_node.expr.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "~":{
-								return new ASTLiteral(~_node.expr.value, _node.line, _node.lineString);
+								var _value = ~_node.expr.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "++":{
-								return new ASTLiteral(++_node.expr.value, _node.line, _node.lineString);
+								var _value = ++_node.expr.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "--":{
-								return new ASTLiteral(--_node.expr.value, _node.line, _node.lineString);
+								var _value = --_node.expr.value
+								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 					    }
 					}
@@ -539,9 +699,11 @@
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 					    // If the condition is a literal, determine which branch to take
 						if (_node.condition.value) {
+							print($"Optimizer :: constantFolding :: Could collapse ternary expression to right side in line ({_node.line}) `{_node.lineString}`")
 							return _node.trueExpr;
 						}
 						else {
+							print($"Optimizer :: constantFolding :: Could collapse ternary expression to right side in line ({_node.line}) `{_node.lineString}`")
 							return _node.falseExpr;
 						}
 					}
@@ -549,6 +711,7 @@
 				case __GMLC_NodeType.ExpressionStatement:{
 					if (_node.expr.type == __GMLC_NodeType.Literal) {
 					    // If the condition is a literal, determine which branch to take
+						throw "\n\nWhy is this running, we shouldnt have any expression statements anymore\n\n"
 						return new ASTLiteral(_node.expr.value, _node.line, _node.lineString);
 					}
 				break;}
@@ -1342,8 +1505,8 @@
 								}
 								return __build_literal_from_function_call_constant_folding(make_colour_hsv, _node);
 							break;}
-						
-						
+							
+							
 							//all of the ones above use the same code
 							case string:{
 								//Remove these if the request for change has been approved
@@ -1382,6 +1545,7 @@
 								
 									if (_changed) {
 										array_insert(_new_arr, 0, new ASTLiteral(script_execute_ext(string, _exec_arr), _node.line, _node.lineString))
+										print($"Optimizer :: constantFolding :: Could us optimize `string` first argument to `{_new_arr[0].value}` in line ({_node.line}) `{_node.lineString}`")
 										return new ASTCallExpression(_node.callee, _new_arr);
 									}
 								}
@@ -1402,7 +1566,11 @@
 										if (_arr[_i].type == __GMLC_NodeType.Literal)
 										&& (_arr[_i+1].type == __GMLC_NodeType.Literal) {
 											_changed = true;
-											var _struct = new ASTLiteral(string_concat(_arr[_i].value, _arr[_i+1].value), _arr[_i].line, _arr[_i].lineString)
+											
+											var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
+											print($"Optimizer :: constantFolding :: Could us optimize a `string_concat` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
+											var _struct = new ASTLiteral(_value, _arr[_i].line, _arr[_i].lineString)
+											
 											array_delete(_arr, _i, 2)
 											array_insert(_arr, _i, _struct);
 											continue;
@@ -1432,7 +1600,11 @@
 										if (_arr[_i].type == __GMLC_NodeType.Literal)
 										&& (_arr[_i+1].type == __GMLC_NodeType.Literal) {
 											_changed = true;
-											var _struct = new ASTLiteral(string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value), _arr[_i].line, _arr[_i].lineString);
+											
+											var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
+											print($"Optimizer :: constantFolding :: Could us optimize a `string_join` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
+											var _struct = new ASTLiteral(_value, _arr[_i].line, _arr[_i].lineString);
+											
 											array_delete(_arr, _i, 2)
 											array_insert(_arr, _i, _struct);
 											continue;
@@ -1446,7 +1618,7 @@
 								}
 							
 							break;}
-						
+							
 						}
 						//end switch
 					}
@@ -1474,13 +1646,16 @@
 				case __GMLC_NodeType.IfStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (_node.condition.value) {
+							print($"Optimizer :: removeUnreachableCode :: Could optimize `if` statement to `true` block only in line ({_node.line}) `{_node.lineString}`")
 							return _node.consequent;
 						}
 						else {
 							if (_node.alternate != undefined) {
+								print($"Optimizer :: removeUnreachableCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
 								return _node.alternate;
 							}
 							else {
+								print($"Optimizer :: removeUnreachableCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
 								return new ASTEmpty(_node.line, _node.lineString);
 							}
 						}
@@ -1489,6 +1664,7 @@
 				case __GMLC_NodeType.ForStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (!_node.condition.value) {
+							print($"Optimizer :: removeUnreachableCode :: Could optimize `for` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
@@ -1496,6 +1672,7 @@
 				case __GMLC_NodeType.WhileStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (!_node.condition.value) {
+							print($"Optimizer :: removeUnreachableCode :: Could optimize `while` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
@@ -1503,69 +1680,79 @@
 				case __GMLC_NodeType.RepeatStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (!_node.condition.value) {
+							print($"Optimizer :: removeUnreachableCode :: Could optimize `repeat` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
 				break;}
 				case __GMLC_NodeType.DoUntilStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
-						if (!_node.condition.value) {
-							return new ASTEmpty(_node.line, _node.lineString);
-						}
+						
+						/// There isnt really a way to optimizer this on the AST level, we can convert this into a breakable block statement on compile level, however if we want to re export as a string we dont want to mess with this on the AST optimization level.
+						
+						//if (_node.condition.value) {
+						//	print($"Optimizer :: removeUnreachableCode :: Could optimize `do` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
+						//	return new ASTEmpty(_node.line, _node.lineString);
+						//}
 					}
 				break;}
 				case __GMLC_NodeType.WithStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (_node.condition.value == noone) {
+							print($"Optimizer :: removeUnreachableCode :: Could optimize `with` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
 				break;}
 				case __GMLC_NodeType.SwitchStatement:{
 					if (_node.switchExpression.type == __GMLC_NodeType.Literal) {
-						var _val = _node.switchExpression.value;
-						var _found_case = false;
-						var _found_break = false;
-						var _return = _node;
 						
-						var _i=0; repeat(array_length(_node.cases)) {
-							var _case = _node.cases[_i]
-							
-							if (_case.type == "CaseExpression" && _case.label == _val)
-							|| (_case.type == "CaseDefault")
-							{
-								_found_case = true;
-								_return = new ASTBlockStatement([], _node.line, _node.lineString);
-								break;
-							}
-							
-							if (_found_case) {
-								var _arr = _case.codeBlock.statements;
-								var _j=0; repeat(array_length(_arr)) {
-									var _statement = _arr[_j]
-									if (_statement.type == "BreakStatement") {
-										_found_break = true;
-										break;
-									}
-									
-									array_push(_statements, _statement);
-									
-								_j+=1;}//end repeat loop
-								
-								if (_found_break) {
-									break;
-								}
-								
-							}
-							
-						_i+=1;}//end repeat loop
+						/// this was trash and doesnt account for inner statements breaking out, additionally it complicates break statements, and re exporting the code.
 						
-						return _return;
+						//var _val = _node.switchExpression.value;
+						//var _found_case = false;
+						//var _found_break = false;
+						//var _return = _node;
+						
+						//var _i=0; repeat(array_length(_node.cases)) {
+						//	var _case = _node.cases[_i]
+							
+						//	if (_case.type == "CaseExpression" && _case.label == _val)
+						//	|| (_case.type == "CaseDefault")
+						//	{
+						//		_found_case = true;
+						//		_return = new ASTBlockStatement([], _node.line, _node.lineString);
+						//		break;
+						//	}
+							
+						//	if (_found_case) {
+						//		var _arr = _case.codeBlock.statements;
+						//		var _j=0; repeat(array_length(_arr)) {
+						//			var _statement = _arr[_j]
+						//			if (_statement.type == "BreakStatement") {
+						//				_found_break = true;
+						//				break;
+						//			}
+									
+						//			array_push(_statements, _statement);
+									
+						//		_j+=1;}//end repeat loop
+								
+						//		if (_found_break) {
+						//			break;
+						//		}
+								
+						//	}
+							
+						//_i+=1;}//end repeat loop
+						
+						//return _return;
 					}
 				break;}
 				case __GMLC_NodeType.ConditionalExpression:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 					    // If the condition is a literal, determine which branch to take
+						print($"Optimizer :: removeUnreachableCode :: Could optimize ternary expression given a condition of {_node.condition.value} in line ({_node.line}) `{_node.lineString}`")
 						return (_node.condition.value) ? _node.trueExpr : _node.falseExpr;
 					}
 				break;}
@@ -1931,27 +2118,25 @@
 			return true;
 		}
 		
-		static __build_literal_from_function_call_constant_folding = function(_script, node) {
-			if (!__argumentsAreLiteral(node.arguments)) return node;
+		static __build_literal_from_function_call_constant_folding = function(_script, _node) {
+			if (!__argumentsAreLiteral(_node.arguments)) return _node;
 			
 			//remap the arguments
-			var _arr = node.arguments;
+			var _arr = _node.arguments;
 			var _new_arr = [];
 			var _i=0; repeat(array_length(_arr)) {
 				_new_arr[_i] = _arr[_i].value;
 			_i+=1;}//end repeat loop
 			
-			var _success = false;
 			try {
 				var _value = script_execute_ext(_script, _new_arr)
-				_success = true;
 			}
 			catch (err) {
-				log(err.message)
-				throw_gmlc_error($"Argument count for {_node.callee.name} is incorrect!\nArgument Count : {array_length(_node.arguments)}\nline ({_node.line}) {_node.lineString}")
+				throw_gmlc_error($"{err.message}\nline ({_node.line}) {_node.lineString}")
 			}
 			
-			return (_success) ? new ASTLiteral(_value, node.line, node.lineString) : undefined;
+			print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+			return new ASTLiteral(_value, _node.line, _node.lineString);
 		}
 		
 		#endregion
