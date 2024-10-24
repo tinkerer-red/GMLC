@@ -140,7 +140,7 @@
 							case __GMLC_NodeType.BlockStatement: {
 								
 								var _statements = _child.statements
-								var _j=0; repeat(array_length(_declarations)) {
+								var _j=0; repeat(array_length(_statements)) {
 									array_push(_new_arr, _statements[_j]);
 								_j++}
 								
