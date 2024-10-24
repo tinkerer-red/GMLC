@@ -26,7 +26,7 @@ function __GMLCexecuteGetPropertyGlobal() {
 //}
 #endregion
 function __GMLCexecuteGetPropertyVarLocal() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.\nin line ({line}) `{lineString}`")
 	return locals[localIndex];
 }
 #region //{
@@ -710,19 +710,19 @@ function __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix() {
 #endregion
 #region Local
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.\nin line ({line}) `{lineString}`")
     return ++locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.\nin line ({line}) `{lineString}`")
     return locals[localIndex]++;
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.\nin line ({line}) `{lineString}`")
     return --locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.\nin line ({line}) `{lineString}`")
     return locals[localIndex]--;
 }
 #endregion
