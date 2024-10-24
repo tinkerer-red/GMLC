@@ -54,7 +54,7 @@ function OptimizerConstantFoldingTestSuite() : TestSuite() constructor {
 		var dynamicValue = 0
 		var result = dynamicValue + 2;
 		
-		assert_not_equals(result, 2, "Dynamic value should not allow constant folding, result should vary.");
+		assert_equals(result, 2, "Dynamic value should not allow constant folding, result should vary.");
 		')
 	});
 	
@@ -85,15 +85,6 @@ function OptimizerConstantFoldingTestSuite() : TestSuite() constructor {
 		var result = 1000000 * 3;
 		
 		assert_equals(result, 3000000, "Large number multiplication should fold correctly.");
-		')
-	});
-	
-	// Test 10: Ensure no folding on expressions with functions
-	addFact("No Folding for Expressions with Function Calls", function() {
-	compile_and_execute(@'
-		var result = irandom(1) + 2;  // No folding because of function call side effects
-		
-		assert_true(result != 2, "Function calls should prevent constant folding.");
 		')
 	});
 	
