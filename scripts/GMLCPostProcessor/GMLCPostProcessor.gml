@@ -124,7 +124,33 @@
 				break;}
 				
 				case __GMLC_NodeType.BlockStatement:{
-					
+					//iterate through children, and stack block statements together, this includes variable lists.
+					var _new_arr = [];
+					var _i=0; repeat(array_length(node.statements)) {
+						var _child = node.statements[_i];
+						switch (_child.type) {
+							case __GMLC_NodeType.VariableDeclarationList: {
+								
+								var _declarations = _child.statements.statements
+								var _j=0; repeat(array_length(_declarations)) {
+									array_push(_new_arr, _declarations[_j]);
+								_j++}
+								
+							break}
+							case __GMLC_NodeType.BlockStatement: {
+								
+								var _statements = _child.statements
+								var _j=0; repeat(array_length(_declarations)) {
+									array_push(_new_arr, _statements[_j]);
+								_j++}
+								
+							break}
+							default: {
+								array_push(_new_arr, _child);
+							break;}
+						}
+					_i++}
+					node.statements = _new_arr;
 				break;}
 				case __GMLC_NodeType.IfStatement:{
 					
