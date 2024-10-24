@@ -8,7 +8,7 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 		var PI = 3.14;
 		/// @NoOp
 		var r = 2;
-		var area = PI * r * r;
+		var area = PI * r * r; // PI should propigate
 		
 		assert_equals(area, 12.56, "The area should be calculated with the constant PI.");
 		')
@@ -20,7 +20,7 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 		PI = 3.14;
 		/// @NoOp
 		r = 2;
-		area = PI * r * r;
+		area = PI * r * r; // PI should propigate
 		
 		assert_equals(area, 12.56, "The area should be calculated with the constant PI.");
 		')
@@ -32,9 +32,41 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 		var PI = 3.14;
 		/// @NoOp
 		var r = 2;
-		var area = PI * r * r;
+		var area = PI * r * r; // PI should propigate
 		
 		assert_equals(area, 12.56, "The area should be calculated with the constant PI.");
+		')
+	});
+	
+	addFact("Assignmnet With self referential expression", function() {
+		compile_and_execute(@'
+		var xx, yy, temp;
+		xx = 1;
+		yy = 1;
+		/// @NoOp
+		temp = 2;
+		
+		xx = xx + 1; // xx should propigate
+		
+		yy = xx; // xx should propagate
+		
+		assert_equals(yy, 2, "The area should be calculated with the constant PI.");
+		')
+	});
+	
+	addFact("Assignmnet With self referential expression - No Prop", function() {
+		compile_and_execute(@'
+		var xx, yy, temp;
+		xx = 1;
+		yy = 1;
+		/// @NoOp
+		temp = 2;
+		
+		xx = xx + temp; // should propagate
+		
+		yy = xx; // should not propagate
+		
+		assert_equals(yy, 3, "The area should be calculated with the constant PI.");
 		')
 	});
 	
@@ -95,6 +127,7 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 	addFact("For - Propagate all", function() {
 		compile_and_execute(@'
 		var _x = 1;
+		/// @NoOp
 		var _y = 0;
 		
 		for (
@@ -383,7 +416,7 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 		
 		var _z = _x + 1; // _x should not propagate
 		
-		assert_equals(_y, 100, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+		assert_equals(_y, 10, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
 		')
 	});
 	addFact("Repeat - Propagate none", function() {
@@ -401,7 +434,7 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 		
 		var _z = _x + 1; // _x should not propagate
 		
-		assert_equals(_y, 100, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+		assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
 		')
 	});
 	#endregion
@@ -559,7 +592,7 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 		
 		var _z = _x + 1; // _x should not propagate
 		
-		assert_equals(_y, 1, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
+		assert_equals(_y, 0, "<ERROR MESSAGE HERE EXPLAINING WHY IT FAILED>");
 		')
 	});
 	addFact("Switch - Propagate none", function() {
