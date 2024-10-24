@@ -114,7 +114,8 @@
 				
 				_node_data.node = constantFolding(_node_data);
 				_node_data.node = constantPropagation(_node_data);
-				_node_data.node = removeUnreachableCode(_node_data);
+				_node_data.node = eliminateDeadCode(_node_data);
+				_node_data.node = strengthReduction(_node_data);
 				//_node_data.node = optimizeAlternateFunctions(_node_data);
 				
 				if (_start_node != _node_data.node) {
@@ -456,7 +457,8 @@
 			//it is still safe to continue propigating
 			return false;
 		}
-		static __hasIdentifierAssignment = function(_node, _constant_data) {
+		static __hasIdentifierAssignment = function(_node, _constant_data, _break_on_first=true) {
+			var _count = 0;
 			
 			if (_node.type == __GMLC_NodeType.AssignmentExpression)
 			&& (_node.left.type == __GMLC_NodeType.Identifier)
@@ -478,12 +480,18 @@
 			var _i=0; repeat(array_length(_children)) {
 				
 				if (__hasIdentifierAssignment(_children[_i].node, _constant_data)) {
-					return true;
+					if (_break_on_first) {
+						return true;
+					}
+					else {
+						_count += 1;
+					}
+					
 				}
 				
 			_i++}
 			
-			return false;
+			return _count;
 		}
 		
 		#region JSDocs
@@ -506,77 +514,77 @@
 					    switch (_node.operator) {
 							case "|":{
 								var _value = _node.left.value | _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "^":{
 								var _value = _node.left.value ^ _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "&":{
 								var _value = _node.left.value & _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "==":{
 								var _value = _node.left.value == _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "!=":{
 								var _value = _node.left.value != _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "<":{
 								var _value = _node.left.value < _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "<=":{
 								var _value = _node.left.value <= _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case ">":{
 								var _value = _node.left.value > _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case ">=":{
 								var _value = _node.left.value >= _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "<<":{
 								var _value = _node.left.value << _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case ">>":{
 								var _value = _node.left.value >> _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "+":{
 								var _value = _node.left.value + _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "-":{
 								var _value = _node.left.value - _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "*":{
 								var _value = _node.left.value * _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "/":{
 								var _value = _node.left.value / _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "mod":{
@@ -584,7 +592,7 @@
 									throw_gmlc_error($"DoMod :: Divide by zero")
 								}
 								var _value = _node.left.value mod _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "div":{
@@ -592,10 +600,131 @@
 									throw_gmlc_error($"DoRem :: Divide by zero")
 								}
 								var _value = _node.left.value div _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 						}
+					}
+					else if (_node.left.type == __GMLC_NodeType.Literal || _node.right.type == __GMLC_NodeType.Literal) {
+					    switch (_node.operator) {
+							case "+":{
+								//adding zero
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (_node.left.value == 0) {
+									print($"Optimizer :: constantFolding :: Could remove addtion of `0` in line ({_node.line}) `{_node.lineString}`")
+									return _node.right;
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (_node.right.value == 0) {
+									print($"Optimizer :: constantFolding :: Could remove addtion of `0` in line ({_node.line}) `{_node.lineString}`")
+									return _node.left;
+								}
+								//adding infinity
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (is_infinity(_node.left.value)) {
+									var _value = _node.left.value
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (is_infinity(_node.right.value)) {
+									var _value = _node.right.value
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								
+							break;}
+							case "-":{
+								//subtracting zero
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (_node.left.value == 0) {
+									print($"Optimizer :: constantFolding :: Could remove subtraction of `0` in line ({_node.line}) `{_node.lineString}`")
+									return _node.right;
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (_node.right.value == 0) {
+									print($"Optimizer :: constantFolding :: Could remove subtraction of `0` in line ({_node.line}) `{_node.lineString}`")
+									return _node.left;
+								}
+								//subtracting infinity
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (is_infinity(_node.left.value)) {
+									var _value = -_node.left.value
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (is_infinity(_node.right.value)) {
+									var _value = -_node.right.value
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								
+							break;}
+							case "*":{
+								//multiply by zero
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (_node.left.value == 0) {
+									var _value = 0;
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (_node.right.value == 0) {
+									var _value = 0;
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								//multiply by 1
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (_node.left.value == 1) {
+									print($"Optimizer :: constantFolding :: Could remove unneeded multiplication of `1` in line ({_node.line}) `{_node.lineString}`")
+									return _node.right;
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (_node.right.value == 1) {
+									print($"Optimizer :: constantFolding :: Could remove unneeded multiplication of `1` in line ({_node.line}) `{_node.lineString}`")
+									return _node.left;
+								}
+								
+							break;}
+							case "/":{
+								//infinity
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (is_infinity(_node.left.value)) {
+									var _value = 0;
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (is_infinity(_node.right.value)) {
+									var _value = 0;
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								//divide by zero
+								if (_node.left.type  == __GMLC_NodeType.Literal)
+								&& (_node.left.value == 0) {
+									var _value = 0;
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (_node.right.value == 0) {
+									var _value = 0;
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									return new ASTLiteral(_value, _node.line, _node.lineString);
+								}
+								//divide by 1
+								if (_node.right.type  == __GMLC_NodeType.Literal)
+								&& (_node.right.value == 1) {
+									print($"Optimizer :: constantFolding :: Could remove unneeded division of `1` in line ({_node.line}) `{_node.lineString}`")
+									return _node.left;
+								}
+								
+							break;}
+							
+					    }
 					}
 				break;}
 				case __GMLC_NodeType.LogicalExpression:{
@@ -603,17 +732,17 @@
 					    switch (_node.operator) {
 							case "||":{
 								var _value = _node.left.value || _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "&&":{
 								var _value = _node.left.value && _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "^^":{
 								var _value = _node.left.value ^^ _node.right.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 					    }
@@ -623,24 +752,24 @@
 							case "||":{
 								if (_node.left.type  == __GMLC_NodeType.Literal && _node.left.value ) {
 									var _value = true
-									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 								if (_node.right.type == __GMLC_NodeType.Literal && _node.right.value) {
 									var _value = true
-									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 							break;}
 							case "&&":{
 								if (_node.left.type  == __GMLC_NodeType.Literal && !_node.left.value ) {
 									var _value = false;
-									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 								if (_node.right.type == __GMLC_NodeType.Literal && !_node.right.value) {
 									var _value = false;
-									print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+									print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 							break;}
@@ -664,32 +793,32 @@
 					    switch (_node.operator) {
 							case "!":{
 								var _value = !_node.expr.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "+":{
 								var _value = +_node.expr.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "-":{
 								var _value = -_node.expr.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "~":{
 								var _value = ~_node.expr.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "++":{
 								var _value = ++_node.expr.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 							case "--":{
 								var _value = --_node.expr.value
-								print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 								return new ASTLiteral(_value, _node.line, _node.lineString);
 							break;}
 					    }
@@ -1543,7 +1672,7 @@
 								
 									if (_changed) {
 										array_insert(_new_arr, 0, new ASTLiteral(script_execute_ext(string, _exec_arr), _node.line, _node.lineString))
-										print($"Optimizer :: constantFolding :: Could us optimize `string` first argument to `{_new_arr[0].value}` in line ({_node.line}) `{_node.lineString}`")
+										print($"Optimizer :: constantFolding :: Could use optimize `string` first argument to `{_new_arr[0].value}` in line ({_node.line}) `{_node.lineString}`")
 										return new ASTCallExpression(_node.callee, _new_arr);
 									}
 								}
@@ -1566,7 +1695,7 @@
 											_changed = true;
 											
 											var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
-											print($"Optimizer :: constantFolding :: Could us optimize a `string_concat` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
+											print($"Optimizer :: constantFolding :: Could use optimize a `string_concat` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
 											var _struct = new ASTLiteral(_value, _arr[_i].line, _arr[_i].lineString)
 											
 											array_delete(_arr, _i, 2)
@@ -1600,7 +1729,7 @@
 											_changed = true;
 											
 											var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
-											print($"Optimizer :: constantFolding :: Could us optimize a `string_join` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
+											print($"Optimizer :: constantFolding :: Could use optimize a `string_join` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
 											var _struct = new ASTLiteral(_value, _arr[_i].line, _arr[_i].lineString);
 											
 											array_delete(_arr, _i, 2)
@@ -1629,12 +1758,12 @@
 		}
 		
 		#region JSDocs
-		/// @function    removeUnreachableCode(_node)
+		/// @function    eliminateDeadCode(_node)
 		/// @description Removes code that is never executed, such as code following a `return` or `break` statement.
 		/// @param       {ASTNode}    _astNode    The AST node representing the block of code.
 		/// @return      {ASTNode}    _astNode    The AST node with unreachable code removed.
 		#endregion
-		static removeUnreachableCode = function(_node_data) {
+		static eliminateDeadCode = function(_node_data) {
 			var _node   = _node_data.node;
 			var _parent = _node_data.parent;
 			var _key    = _node_data.key;
@@ -1644,16 +1773,16 @@
 				case __GMLC_NodeType.IfStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (_node.condition.value) {
-							print($"Optimizer :: removeUnreachableCode :: Could optimize `if` statement to `true` block only in line ({_node.line}) `{_node.lineString}`")
+							print($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `true` block only in line ({_node.line}) `{_node.lineString}`")
 							return _node.consequent;
 						}
 						else {
 							if (_node.alternate != undefined) {
-								print($"Optimizer :: removeUnreachableCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
 								return _node.alternate;
 							}
 							else {
-								print($"Optimizer :: removeUnreachableCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
+								print($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
 								return new ASTEmpty(_node.line, _node.lineString);
 							}
 						}
@@ -1662,7 +1791,7 @@
 				case __GMLC_NodeType.ForStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (!_node.condition.value) {
-							print($"Optimizer :: removeUnreachableCode :: Could optimize `for` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
+							print($"Optimizer :: eliminateDeadCode :: Could optimize `for` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
@@ -1670,7 +1799,7 @@
 				case __GMLC_NodeType.WhileStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (!_node.condition.value) {
-							print($"Optimizer :: removeUnreachableCode :: Could optimize `while` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
+							print($"Optimizer :: eliminateDeadCode :: Could optimize `while` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
@@ -1678,7 +1807,7 @@
 				case __GMLC_NodeType.RepeatStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (!_node.condition.value) {
-							print($"Optimizer :: removeUnreachableCode :: Could optimize `repeat` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
+							print($"Optimizer :: eliminateDeadCode :: Could optimize `repeat` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
@@ -1689,7 +1818,7 @@
 						/// There isnt really a way to optimizer this on the AST level, we can convert this into a breakable block statement on compile level, however if we want to re export as a string we dont want to mess with this on the AST optimization level.
 						
 						//if (_node.condition.value) {
-						//	print($"Optimizer :: removeUnreachableCode :: Could optimize `do` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
+						//	print($"Optimizer :: eliminateDeadCode :: Could optimize `do` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 						//	return new ASTEmpty(_node.line, _node.lineString);
 						//}
 					}
@@ -1697,7 +1826,7 @@
 				case __GMLC_NodeType.WithStatement:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 						if (_node.condition.value == noone) {
-							print($"Optimizer :: removeUnreachableCode :: Could optimize `with` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
+							print($"Optimizer :: eliminateDeadCode :: Could optimize `with` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
@@ -1750,7 +1879,7 @@
 				case __GMLC_NodeType.ConditionalExpression:{
 					if (_node.condition.type == __GMLC_NodeType.Literal) {
 					    // If the condition is a literal, determine which branch to take
-						print($"Optimizer :: removeUnreachableCode :: Could optimize ternary expression given a condition of {_node.condition.value} in line ({_node.line}) `{_node.lineString}`")
+						print($"Optimizer :: eliminateDeadCode :: Could optimize ternary expression given a condition of {_node.condition.value} in line ({_node.line}) `{_node.lineString}`")
 						return (_node.condition.value) ? _node.trueExpr : _node.falseExpr;
 					}
 				break;}
@@ -1758,6 +1887,73 @@
 			
 			return _node;
 		}
+		
+		#region JSDocs
+		/// @function    strengthReduction(_astNode)
+		/// @description Replaces existing functions with slightly optimized varients which prerform better for the specific task. IE: converting a value to a string is faster with `string_concat` then `string`, as `string` has several additional checks, and `string_concat` already converts a value to a string
+		/// @param       {ASTNode}    _astNode    The AST node representing a small code block.
+		/// @return      {ASTNode}    _astNode    The optimized AST node after peephole optimizations.
+		#endregion
+		static strengthReduction = function(_node_data) {
+			var _node   = _node_data.node;
+			var _parent = _node_data.parent;
+			var _key    = _node_data.key;
+			var _index  = _node_data.index;
+			
+			// Convert struct access using literals to hashed access
+			//new ASTNode(Function, {value: currentToken.value, name: currentToken.name})
+			if (_node.type == __GMLC_NodeType.CallExpression) {
+				switch (_node.callee.value) {
+					case struct_get:
+					case variable_struct_get:{
+						// Convert struct access using literals to hashed access
+						var _arg = _node.arguments[1];
+						if (_arg.type == __GMLC_NodeType.Literal) 
+						&& (typeof(_arg.value) == "string") {
+							return new ASTNode(__GMLC_NodeType.CallExpression, {
+								callee: new ASTLiteral(struct_get_from_hash, _node.line, _node.lineString, "struct_get_from_hash"),
+								arguments: [
+									_node.arguments[0],
+									new ASTNode(__GMLC_NodeType.Literal, {value: variable_get_hash(_arg.value), scope: ScopeType.CONST})
+								]
+							});
+						}
+					break;}
+						
+					case struct_set:
+					case variable_struct_set:{
+						// Convert struct access using literals to hashed access
+						var _arg = _node.arguments[1];
+						if (_arg.type == __GMLC_NodeType.Literal) 
+						&& (typeof(_arg.value) == "string") {
+							return new ASTNode(__GMLC_NodeType.CallExpression, {
+								callee: new ASTLiteral(struct_set_from_hash, _node.line, _node.lineString, "struct_set_from_hash"),
+								arguments: [
+									_node.arguments[0],
+									new ASTNode(__GMLC_NodeType.Literal, {value: variable_get_hash(_arg.value), scope: ScopeType.CONST}),
+									_node.arguments[2]
+								]
+							});
+						}
+					break;}
+					
+					case string:{
+						// String with single argument is faster to use string_concat
+						if (array_length(_node.arguments) == 1) {
+							var _arg = _node.arguments[0]
+							if (_arg.type != __GMLC_NodeType.Literal) {
+								return new ASTNode(__GMLC_NodeType.CallExpression, {
+									callee: new ASTLiteral(string_concat, _node.line, _node.lineString, "string_concat"),
+									arguments: _node.arguments
+								});
+							}
+						}
+					break;}
+				}
+			}
+			
+			return _node;
+		};
 		
 		
 		
@@ -1946,22 +2142,6 @@
 		}
 		
 		#region JSDocs
-		/// @function    strengthReduction(_node)
-		/// @description Replaces costly operations (like multiplication or division) with equivalent, cheaper bit-shift operations.
-		/// @param       {ASTNode}    _astNode    The AST node containing the arithmetic expression.
-		/// @return      {ASTNode}    _astNode    The optimized AST node with reduced-strength operations.
-		#endregion
-		static strengthReduction = function(_node) {
-		    // Pseudocode:
-		    // 1. Identify operations that can be replaced with bit-shifting.
-		    //    Example:
-		    //      Before: a * 2
-		    //      After: a << 1
-		    // 2. Ensure that the optimization is applied carefully, especially for large numbers and edge cases like negative numbers or decimals.
-		    // 3. Return the updated AST node.
-		}
-		
-		#region JSDocs
 		/// @function    loopUnrolling(_node)
 		/// @description Unrolls loops if the number of iterations is small and known at compile time, improving performance by reducing loop overhead.
 		/// @param       {ASTNode}    _astNode    The AST node representing a loop.
@@ -2009,72 +2189,6 @@
 		    // 3. Return the optimized AST node.
 		}
 		
-		#region JSDocs
-		/// @function    optimizeAlternateFunctions(_astNode)
-		/// @description Replaces existing functions with slightly optimized varients which prerform better for the specific task. IE: converting a value to a string is faster with `string_concat` then `string`, as `string` has several additional checks, and `string_concat` already converts a value to a string
-		/// @param       {ASTNode}    _astNode    The AST node representing a small code block.
-		/// @return      {ASTNode}    _astNode    The optimized AST node after peephole optimizations.
-		#endregion
-		static optimizeAlternateFunctions = function(_node_data) {
-			var _node   = _node_data.node;
-			var _parent = _node_data.parent;
-			var _key    = _node_data.key;
-			var _index  = _node_data.index;
-			
-			// Convert struct access using literals to hashed access
-			//new ASTNode(Function, {value: currentToken.value, name: currentToken.name})
-			if (_node.type == __GMLC_NodeType.CallExpression) {
-				switch (_node.callee.value) {
-					case struct_get:
-					case variable_struct_get:{
-						// Convert struct access using literals to hashed access
-						var _arg = _node.arguments[1];
-						if (_arg.type == __GMLC_NodeType.Literal) 
-						&& (typeof(_arg.value) == "string") {
-							return new ASTNode(__GMLC_NodeType.CallExpression, {
-								callee: new ASTLiteral(struct_get_from_hash, _node.line, _node.lineString, "struct_get_from_hash"),
-								arguments: [
-									_node.arguments[0],
-									new ASTNode(__GMLC_NodeType.Literal, {value: variable_get_hash(_arg.value), scope: ScopeType.CONST})
-								]
-							});
-						}
-					break;}
-						
-					case struct_set:
-					case variable_struct_set:{
-						// Convert struct access using literals to hashed access
-						var _arg = _node.arguments[1];
-						if (_arg.type == __GMLC_NodeType.Literal) 
-						&& (typeof(_arg.value) == "string") {
-							return new ASTNode(__GMLC_NodeType.CallExpression, {
-								callee: new ASTLiteral(struct_set_from_hash, _node.line, _node.lineString, "struct_set_from_hash"),
-								arguments: [
-									_node.arguments[0],
-									new ASTNode(__GMLC_NodeType.Literal, {value: variable_get_hash(_arg.value), scope: ScopeType.CONST}),
-									_node.arguments[2]
-								]
-							});
-						}
-					break;}
-					
-					case string:{
-						// String with single argument is faster to use string_concat
-						if (array_length(_node.arguments) == 1) {
-							var _arg = _node.arguments[0]
-							if (_arg.type != __GMLC_NodeType.Literal) {
-								return new ASTNode(__GMLC_NodeType.CallExpression, {
-									callee: new ASTLiteral(string_concat, _node.line, _node.lineString, "string_concat"),
-									arguments: _node.arguments
-								});
-							}
-						}
-					break;}
-				}
-			}
-			
-			return _node;
-		};
 		
 		
 		//array_push(parserSteps, constantFolding);
@@ -2082,13 +2196,10 @@
 		//array_push(parserSteps, removeRedundantTypeChecks);
 		//array_push(parserSteps, simplifyIncrementExpressions);
 		//array_push(parserSteps, optimizeInfinityExpressions);
-		//array_push(parserSteps, removeUnreachableCode);
 		//array_push(parserSteps, inlineSimpleFunctions);
-		//array_push(parserSteps, eliminateDeadCode);
 		//array_push(parserSteps, simplifyConditionalExpressions);
 		//array_push(parserSteps, optimizeVariableScope);
 		//array_push(parserSteps, optimizePickOneFunctions);
-		//array_push(parserSteps, eliminateDeadCode);
 		//array_push(parserSteps, improveLoopIterations);
 		//array_push(parserSteps, loopInvariantCodeMotion);
 		//array_push(parserSteps, constantPropagation);
@@ -2133,7 +2244,7 @@
 				throw_gmlc_error($"{err.message}\nline ({_node.line}) {_node.lineString}")
 			}
 			
-			print($"Optimizer :: constantFolding :: Could us literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
+			print($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 			return new ASTLiteral(_value, _node.line, _node.lineString);
 		}
 		
