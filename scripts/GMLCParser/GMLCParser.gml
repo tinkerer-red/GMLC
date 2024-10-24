@@ -822,7 +822,12 @@
 				return undefined;
 			}
 			
-			return new ASTVariableDeclarationList(declarations, _scope, line, lineString);
+			if (array_length(declarations) == 1) {
+				return declarations[0];
+			}
+			else {
+				return new ASTVariableDeclarationList(declarations, _scope, line, lineString);
+			}
 		};
 		
 		#endregion
