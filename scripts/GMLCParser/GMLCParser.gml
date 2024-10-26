@@ -430,7 +430,7 @@
 			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
-			return new ASTCallExpression(new ASTLiteral(throw_gmlc_error, line, lineString, "throw_gmlc_error"), _err_message, line, lineString);
+			return new ASTCallExpression(new ASTLiteral(throw_gmlc_error, line, lineString, "throw_gmlc_error"), [_err_message], line, lineString);
 		};
 		
 		#endregion
