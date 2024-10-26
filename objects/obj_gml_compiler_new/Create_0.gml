@@ -2016,7 +2016,7 @@ log("\n\n\n")
 
 function attempt_file_parsing(_fname) {
 	log($"Attempting to execute file: {_fname}")
-	var _str = file_text_read_all(_fname);
+	var _str = file_read_all_text(_fname);
 	
 	//log(_str)
 	
@@ -2074,7 +2074,7 @@ function attempt_file_parsing(_fname) {
 }
 function compile_file(_fname) {
 	log($"Attempting to execute file: {_fname}")
-	var _str = file_text_read_all(_fname);
+	var _str = file_read_all_text(_fname);
 	
 	//log(_str)
 	

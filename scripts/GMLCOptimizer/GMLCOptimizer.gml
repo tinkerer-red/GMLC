@@ -1124,6 +1124,12 @@
 								}
 								return __build_literal_from_function_call_constant_folding(is_ptr, _node);
 							break;}
+							case is_string:{
+								if (array_length(_node.arguments) != 1) {
+									throw_gmlc_error($"Argument count for is_string is incorrect!\nArgument Count : {array_length(_node.arguments)}\nline ({_node.line}) {_node.lineString}")
+								}
+								return __build_literal_from_function_call_constant_folding(is_string, _node);
+							break;}
 							case is_struct:{
 								if (array_length(_node.arguments) != 1) {
 									throw_gmlc_error($"Argument count for is_struct is incorrect!\nArgument Count : {array_length(_node.arguments)}\nline ({_node.line}) {_node.lineString}")

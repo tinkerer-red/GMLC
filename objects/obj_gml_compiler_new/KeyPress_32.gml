@@ -1,7 +1,7 @@
 run_game = true;
 show_debug_overlay(true)
 /*
-var _str = file_text_read_all("Nallebeorn.gml")
+var _str = file_read_all_text("Nallebeorn.gml")
 var _start = get_timer();
 attempt_file_parsing("Mike - Mega Super Smash Track Buggy Racer.gml")
 log($"SI Time: {(get_timer()-_start)/1000}ms")
