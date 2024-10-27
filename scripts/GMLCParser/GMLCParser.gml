@@ -1435,13 +1435,22 @@
 			
 			//early out
 			if (currentToken != undefined && currentToken.value != ")") {
-				while (currentToken != undefined && currentToken.value != ")") {
+				var _found_closing_bracket = false;
+				while (currentToken != undefined) {
 					var _expr = parseExpression()
 					
 					array_push(_arguments, _expr); // Parse each argument as an expression
 					if (currentToken.value == ",") {
 						nextToken();  // Consume the comma to continue to the next argument
 					}
+					else if (currentToken.value == ")") {
+						break;
+					}
+					else {
+						pprint("lastFiveTokens :: ",lastFiveTokens)
+						throw_gmlc_error($"Syntax Error: Expected ',' or ')' at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.");
+					}
+					
 				}
 			}
 			
