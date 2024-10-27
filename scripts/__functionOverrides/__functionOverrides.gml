@@ -286,12 +286,14 @@ function __NewGMLArray() {
 function __NewGMLStruct() {
 	var _struct = {};
 	var _i=0; repeat(argument_count/2) {
-		if (is_method(argument[_i+1])) {
+		if (is_method(argument[_i+1]))
+		&& (!is_gmlc_method(argument[_i+1])) {
 			_struct[$ argument[_i]] = __method(_struct, argument[_i+1])
 		}
 		else {
 			_struct[$ argument[_i]] = argument[_i+1];
 		}
+		_struct[$ argument[_i]] = argument[_i+1];
 	_i+=2;}//end repeat loop
 	
 	return _struct;
