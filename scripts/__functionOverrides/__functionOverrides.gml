@@ -258,7 +258,7 @@ function __script_execute_ext(ind, array=undefined, offset=0, num_args=array_len
 			var _func = _self.func;
 			return method_call(_func, __argArr);
 		}
-		if (is_gmlc_program(ind)) {
+		else if (is_gmlc_program(ind)) {
 			return method_call(ind, __argArr);
 		}
 	}
@@ -286,7 +286,12 @@ function __NewGMLArray() {
 function __NewGMLStruct() {
 	var _struct = {};
 	var _i=0; repeat(argument_count/2) {
-		_struct[$ argument[_i]] = argument[_i+1];
+		if (is_method(argument[_i+1])) {
+			_struct[$ argument[_i]] = __method(_struct, argument[_i+1])
+		}
+		else {
+			_struct[$ argument[_i]] = argument[_i+1];
+		}
 	_i+=2;}//end repeat loop
 	
 	return _struct;
