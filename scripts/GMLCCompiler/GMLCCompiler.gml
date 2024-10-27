@@ -336,7 +336,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
 	_output.argumentCount = method_get_self(_output.argumentsDefault).size;
 	_output.prevArgCount = 0;
-	_output.arguments = array_create(_output.argumentCount);
+	_output.arguments = [];
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
@@ -360,7 +360,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 
 function __GMLCexecuteArgumentList() {
 	var _inputArguments = parentNode.arguments
-	var _inputLength = parentNode.prevArgCount; //at this current stage these are actually our current arguments, hopefully this does cause issues in the furst.. :/
+	var _inputLength = array_length(_inputArguments);
 	
 	var _i=0; repeat(size) {
 		var _arg = statements[_i]
@@ -1293,7 +1293,6 @@ function __GMLCexecuteCallExpression() {
 		var _prevUpdateSelf  = global.selfInstance;
 		global.otherInstance = _prevUpdateSelf;
 		global.selfInstance = updateScopingTarget();
-		log("changed scope from dot accessor")
 	}
 	
 	var _return = undefined;
