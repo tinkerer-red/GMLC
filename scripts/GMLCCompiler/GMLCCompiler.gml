@@ -1288,6 +1288,14 @@ function __GMLCexecuteCallExpression() {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 	
+	if (shouldUpdateInstanceScoping) {
+		var _prevUpdateOther = global.otherInstance;
+		var _prevUpdateSelf  = global.selfInstance;
+		global.otherInstance = _prevUpdateSelf;
+		global.selfInstance = updateScopingTarget();
+		log("changed scope from dot accessor")
+	}
+	
 	var _return = undefined;
 	if (is_method(_func)) {
 		if (is_gmlc_program(_func))
@@ -1327,6 +1335,11 @@ function __GMLCexecuteCallExpression() {
 		//}
 	}
 	
+	if (shouldUpdateInstanceScoping) {
+		global.otherInstance = _prevUpdateOther;
+		global.selfInstance  = _prevUpdateSelf;
+	}
+	
 	if (--recursionCount) {
         // Un-stash the arguments
 		var _prev_arg_count = array_pop(argCountMemory)
@@ -1356,6 +1369,14 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	_output.arguments = array_create(_output.argumentCount);
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
+	
+	_output.shouldUpdateInstanceScoping = false;
+	_output.updateScopingTarget = undefined;
+	if (_node.callee.type == __GMLC_NodeType.AccessorExpression) 
+	&& (_node.callee.accessorType == __GMLC_AccessorType.Dot) {
+		_output.shouldUpdateInstanceScoping = true;
+		_output.updateScopingTarget = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee.expr);
+	}
 	
 	var _argArr = _node.arguments
 	var _i=0; repeat(array_length(_argArr)) {
