@@ -195,7 +195,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
 	_output.argumentCount = array_length(_node.arguments.statements);
 	_output.prevArgCount = 0;
-	_output.arguments = array_create(_output.argumentCount);
+	_output.arguments = [];
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
