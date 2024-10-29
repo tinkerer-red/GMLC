@@ -28,8 +28,8 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 		tokens = _programTokens.tokens;
 		processedTokens = [];
 		program.tokens = processedTokens;
-		currentTokenIndex = 0;
-		currentToken = tokens[currentTokenIndex];
+		currentTokenIndex = -1;
+		currentToken = undefined; // tokens[currentTokenIndex];
 		finished = false;
 		
 	};
@@ -149,7 +149,9 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 			var _length = array_length(tokens)
 			while (currentTokenIndex < _length) {
 				// Check for line break not preceded by a backslash escape
-				if (currentToken.type == __GMLC_TokenType.Whitespace && currentToken.value == "\n" && !previousTokenWasEscape) {
+				if (currentToken.type == __GMLC_TokenType.Whitespace)
+				&& (currentToken.value == "\n")
+				&& (!previousTokenWasEscape) {
 					break;  // End of macro body
 				}
 				
