@@ -44,12 +44,12 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 	
 	// Initialize tokenizer with source code
 	static __initialize = function(_sourceCode) {
-		sourceCodeString = _sourceCode;
+		sourceCodeString = string_replace_all(string_replace_all(_sourceCode, "\r\n", "\n"), "\r", "\n");
 		sourceCodeCharLength = string_length(sourceCodeString);
 		tokens = [];
 		program = new __GMLC_ProgramTokens(tokens);
 		
-		sourceCodeLineArray = string_split(string_replace_all(_sourceCode, "\r", ""), "\n");
+		sourceCodeLineArray = string_split(sourceCodeString, "\n");
 		
 		sourceCodeByteLength = string_byte_length(sourceCodeString);
 		charPos = 0;
@@ -61,9 +61,6 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 		sourceCodeBuffer = buffer_create(sourceCodeByteLength, buffer_fixed, 1);
 	    buffer_write(sourceCodeBuffer, buffer_text, sourceCodeString);
 		buffer_seek(sourceCodeBuffer, buffer_seek_start, 0);
-		
-		//init the charPos, bytePos, and currentCharCode
-		__nextUTF8();
 		
 		line = 1;
 		column = 0;
@@ -98,15 +95,16 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 	#region Parser Functions
 	
 	static parseSkipWhitespace = function() {
-		var _startCharCode = currentCharCode;
 		if (__char_is_whitespace(currentCharCode)) {
-			while (currentCharCode != undefined)
-			&& (__char_is_whitespace(__peekUTF8() ?? 0)) {
-				
+			while (currentCharCode != undefined) {
 				if (currentCharCode == ord("\n")) {
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Whitespace, "\n", "\n", line, column);
 					array_push(tokens, _token);
 					return _token;
+				}
+				
+				if (!__char_is_whitespace(__peekUTF8() ?? 0)) {
+					break;
 				}
 				
 				__nextUTF8();
