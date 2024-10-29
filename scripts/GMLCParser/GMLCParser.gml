@@ -42,7 +42,7 @@
 			
 			// Note this function isnt actually async, so if there is a module with tons of lines of code its possible for this to cause lag.
 			// For development i just said fuck it though.
-			replaceAllMacrosAndEnums(_program.tokens);
+			replaceAllMacrosAndEnums(tokens);
 			
 			currentTokenIndex = 0;
 			currentToken = tokens[currentTokenIndex];
@@ -51,7 +51,6 @@
 			operatorStack = []; // Stack for operators
 			operandStack = []; // Stack for operands (AST nodes)
 			
-			replaceAllMacrosAndEnums();
 		};
 		
 		static cleanup = function() {
@@ -157,7 +156,7 @@
 					}
 				}
 				_loop_count++
-				if (_loop_count > 1000) {
+				if (_loop_count > 10_000) {
 					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting")
 				}
 			}
