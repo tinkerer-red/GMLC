@@ -4,6 +4,7 @@ testFramework = new TestFrameworkRun();
 
 // ################# TEST SUITE REGISTRATION #################
 
+
 //// Register your test suites here...
 testFramework.addSuite(OptimizerConstantFoldingTestSuite);
 testFramework.addSuite(OptimizerConstantPropagationTestSuite);

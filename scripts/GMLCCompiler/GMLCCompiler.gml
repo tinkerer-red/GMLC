@@ -593,9 +593,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 function __GMLCexecuteBlockStatement() {
 	var _i=0 repeat(size) {
 		blockStatements[_i]();
-		if (parentNode.shouldReturn) {
-			return undefined;
-		}
+		if (parentNode.shouldReturn) return undefined;
 	_i++}
 }
 function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
@@ -663,31 +661,6 @@ function __GMLCcompileBlockStatementBreakable(_rootNode, _parentNode, _node) {
     _output.size = array_length(_output.blockStatements)
     
     return method(_output, __GMLCexecuteBlockStatementBreakable);
-}
-
-#region //{
-// used for gmlc compiled loops which have no exit condition except break or return
-// for instance `repeat(infinity)` or `while(true)`
-//    blockStatements: [],
-//}
-#endregion
-function __GMLCexecuteLoopStatementEndless() {
-    //NOTE: Benchmark the different ways for this `repeat(infinity)` `do{ }until(false)` `while(true)`
-    while(true){
-		blockStatements();
-		if (parentNode.shouldReturn) return undefined;
-		if (parentNode.shouldBreak) {
-		    parentNode.shouldBreak = false;
-		    return undefined;
-		}
-    }
-}
-function __GMLCcompileLoopStatementEndless(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLoopStatementEndless", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.blockStatements = __GMLCcompileExpression(_rootNode, _parentNode, _blockStatement);
-    
-    
-    return method(_output, __GMLCexecuteEndlessLoop);
 }
 
 #region //{
