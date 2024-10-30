@@ -199,7 +199,7 @@ function is_gmlc_constructed(_struct) {
 
 function is_script(_value) {
 	if !is_handle(_value) return false;
-	return script_exists(_value);	
+	return script_exists(_value);
 }
 
 function static_exists(_struct, _name) {
