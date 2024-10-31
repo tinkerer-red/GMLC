@@ -102,13 +102,20 @@ function __reStruct(_struct) {
 /// @param   {string} str : The string you wish to log
 /// @returns {undefined}
 #endregion
-#macro trace  __trace(_GMFILE_, _GMFUNCTION_, _GMLINE_)
-function __trace(_file, _func, _line) {
-		static __struct = {};
-		
-		__struct.__location = $"{_file}/{_func}:{_line}";
-		return method(__struct, function(_str)
-    {
-        show_debug_message(__location + ": " + string(_str));
-    });
+#macro trace repeat (__trace_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __trace
+/// @param ...args
+function __trace() {
+    var _str = $"{__trace.__trace_file}/{__trace.__trace_func}:{__trace.__trace_line}:"
+	
+	for (var i = 0; i < argument_count; i++) {
+        _str += $" {argument[i]}"
+    }
+    
+	show_debug_message(_str);
+}
+function __trace_pre(_file, _func, _line) {
+    __trace.__trace_file = _file;
+    __trace.__trace_func = _func;
+    __trace.__trace_line = _line;
+	return 1;
 }
