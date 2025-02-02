@@ -17,6 +17,8 @@
 		currentTokenIndex = 0;
 		currentToken = undefined;
 		currentFunction = undefined;
+		currentLoop = false; //keeps track of `for`, `repeat`, `while`, `do/until`, and `with`
+		currentBreakable = false; //keeps track of `for`, `repeat`, `while`, `do/until`, `switch/case`, and `with`
 		scriptAST = undefined;
 		
 		lastFiveTokens = array_create(5, undefined);
@@ -267,12 +269,30 @@
 				var _initialization = parseExpression();
 			}
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
+			
 			var _condition = parseConditionalExpression();
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
-			var _increment = parseExpression();
+			
+			// Save previous context and set new context for loop
+			// This is important to do before the increment as you can manually break inside an increment block, for use with defered statements.
+			var oldLoop = currentLoop;
+			var oldBreakable = currentBreakable;
+			currentLoop = true;
+			currentBreakable = true;
+			////
+			
+			var _increment = parseBlock();
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
+			
 			expectToken(__GMLC_TokenType.Punctuation, ")");
+			
 			var _codeBlock = parseBlock();
+			
+			// Restore previous context
+			currentLoop = oldLoop;
+			currentBreakable = oldBreakable;
+			///
+			
 			return new ASTForStatement(_initialization, _condition, _increment, _codeBlock, line, lineString);
 		};
 		
@@ -283,7 +303,19 @@
 			// Assume currentToken is while
 			nextToken(); // Move past while
 			var _condition = parseConditionalExpression();
+			
+			// Save context and set loop contexts
+			var oldLoop = currentLoop;
+			var oldBreakable = currentBreakable;
+			currentLoop = true;
+			currentBreakable = true;
+			
 			var _codeBlock = parseBlock();
+			
+			// Restore context
+			currentLoop = oldLoop;
+			currentBreakable = oldBreakable;
+			
 			return new ASTWhileStatement(_condition, _codeBlock, line, lineString);
 		};
 		
@@ -294,7 +326,20 @@
 			// Assume currentToken is repeat
 			nextToken(); // Move past repeat
 			var _condition = parseExpression();
+			
+			// Save context and set loop contexts
+			var oldLoop = currentLoop;
+			var oldBreakable = currentBreakable;
+			currentLoop = true;
+			currentBreakable = true;
+			
 			var _codeBlock = parseBlock();
+			
+			// Restore context
+			currentLoop = oldLoop;
+			currentBreakable = oldBreakable;
+			
+			
 			return new ASTRepeatStatement(_condition, _codeBlock, line, lineString);
 		};
 		
@@ -304,7 +349,20 @@
 			
 			// Assume currentToken is do
 			nextToken(); // Move past do
+			
+			// Save context and set loop contexts
+			var oldLoop = currentLoop;
+			var oldBreakable = currentBreakable;
+			currentLoop = true;
+			currentBreakable = true;
+			
 			var _codeBlock = parseBlock();
+			
+			// Restore context
+			currentLoop = oldLoop;
+			currentBreakable = oldBreakable;
+			
+			
 			expectToken(__GMLC_TokenType.Keyword, "until");
 			var _condition = parseConditionalExpression();
 			return new ASTDoUntilStatement(_condition, _codeBlock, line, lineString);
@@ -318,6 +376,10 @@
 		    var switchExpression = parseExpression(); // Parse the switch expression
 		    
 			expectToken(__GMLC_TokenType.Punctuation, "{"); // Ensure { and consume it
+			
+			// Save the current breakable context; no loop context is needed for a switch.
+			var oldBreakable = currentBreakable;
+			currentBreakable = true;
 			
 			var cases = [];
 		    var statements = undefined;
@@ -374,7 +436,10 @@
 		    }
 
 		    expectToken(__GMLC_TokenType.Punctuation, "}"); // Ensure } and consume it
-
+			
+			// Restore the previous breakable context
+			currentBreakable = oldBreakable;
+			
 		    return new ASTSwitchStatement(switchExpression, cases, line, lineString);
 		};
 		
@@ -385,7 +450,19 @@
 			// Assume currentToken is with
 			nextToken(); // Move past with
 			var _condition = parseExpression();
+			
+			// Save context and set both loop and breakable flags for "with"
+			var oldLoop = currentLoop;
+			var oldBreakable = currentBreakable;
+			currentLoop = true;
+			currentBreakable = true;
+			
 			var _codeBlock = parseBlock();
+			
+			// Restore previous context values
+			currentLoop = oldLoop;
+			currentBreakable = oldBreakable;
+			
 			return new ASTWithStatement(_condition, _codeBlock, line, lineString);
 		};
 		
@@ -438,16 +515,26 @@
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume break
+			// Ensure that 'continue' is used only inside a loop.
+			if (!currentLoop) {
+				throw_gmlc_error("Syntax Error: 'continue' statement used outside of a loop at line " + string(line) + ". " + lineString);
+			}
+			
+			nextToken(); // Consume "continue"
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTContinueStatement(line, lineString);
 		};
-		
+
 		static parseBreakStatement = function() {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			nextToken(); // Consume break
+			// Ensure that 'break' is used only inside a breakable context.
+			if (!currentBreakable) {
+				throw_gmlc_error("Syntax Error: 'break' statement used outside of a breakable construct at line " + string(line) + ". " + lineString);
+			}
+			
+			nextToken(); // Consume "break"
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTBreakStatement(line, lineString);
 		};

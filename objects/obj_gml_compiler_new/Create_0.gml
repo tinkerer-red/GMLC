@@ -1,3 +1,4 @@
+
 show_debug_overlay(true)
 
 log("\n\n\n")
@@ -11,8 +12,6 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 	tokenizer.parseAsync(method(
 	{description, expectedReturn},
 	function(tokens) {
-		
-		pprint(tokens)
 		
 		var preprocessor = new GML_PreProcessor();
 		preprocessor.initialize(tokens);
@@ -30,19 +29,19 @@ function run_interpreter_test(description, input, expectedReturn=undefined) {
 			postprocessor.initialize(ast);
 			var ast = postprocessor.parseAll();
 			
-			//log("\n\n\n")
-			//log(" :: Default AST :: ")
-			//pprint(ast)
-			//log("\n\n\n")
+			log("\n\n\n")
+			log(" :: Default AST :: ")
+			pprint(ast)
+			log("\n\n\n")
 			
 			var optimizer = new GML_Optimizer();
 			optimizer.initialize(ast);
 			var ast = optimizer.parseAll();
 			
-			//log("\n\n\n")
-			//log(" :: Optimized AST :: ")
-			//pprint(ast)
-			//log("\n\n\n")
+			log("\n\n\n")
+			log(" :: Optimized AST :: ")
+			pprint(ast)
+			log("\n\n\n")
 			
 			var _program = compileProgram(ast);
 			var outputReturn = executeProgram(_program)
@@ -85,11 +84,14 @@ log("~~~~~ Interpreter Unit Tests ~~~~~\n");
 var _s = get_timer()
 
 run_interpreter_test("Boop",
-@'#macro FOR for (var _i = 0; _i < array_length(_things); _i++)
-var _things = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-FOR {
-    show_debug_message(_things[_i])    
+@'function example(arg0="000", arg1="111", arg2="222") {
+  show_debug_message(arg0);
+  show_debug_message(arg1);
+  show_debug_message(arg2);
 }
+///example(,,69) //doesnt parse
+example(undefined, 420)
+example("hows this all work?")
 ',
 function(){
 	return undefined;

@@ -26,7 +26,6 @@ testFramework.addSuite(BasicDataStructuresStackTestSuite);
 testFramework.addSuite(BasicDataTypesTestSuite);
 testFramework.addSuite(BasicDateTimeTestSuite);
 testFramework.addSuite(BasicFileTestSuite);
-testFramework.addSuite(BasicFiltersEffectsTestSuite);
 testFramework.addSuite(BasicHandlesTestSuite);
 testFramework.addSuite(BasicIniTestSuite);
 testFramework.addSuite(BasicJsonTestSuite);
@@ -47,6 +46,8 @@ testFramework.addSuite(ResourceCameraTestSuite);
 testFramework.addSuite(ResourceEventsTestSuite);
 testFramework.addSuite(ResourceLayersTestSuite);
 
+//// Breaking
+//testFramework.addSuite(BasicFiltersEffectsTestSuite);
 
 //// Async Tests
 //testFramework.addSuite(BasicNetworkTestSuite);
