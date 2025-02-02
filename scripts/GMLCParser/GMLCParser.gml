@@ -260,18 +260,51 @@
 			nextToken(); // Move past for
 			expectToken(__GMLC_TokenType.Punctuation, "(");
 			
-			if (currentToken.value == "var") {
-				var _initialization = parseVariableDeclaration();
+			//example of a really cursed for statement, but it is valid syntax
+			//////////////////////////////////////////////////////////////
+			//for (;; {
+			//  show_message("me second!");
+			//  break;
+			//}) {
+			//  show_message("me first!");
+			//}
+			/////////////////////////////////////////////////////////////
+			
+			
+			
+			//it's possible to make a for statement with no initializer variable
+			if (currentToken.value != ";") {
+				if (currentToken.value == "var") {
+					var _initialization = parseVariableDeclaration();
+				}
+				else {
+					var _initialization = parseExpression();
+				}
 			}
 			else {
-				var _initialization = parseExpression();
+				var _initialization = undefined;
 			}
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
-			var _condition = parseConditionalExpression();
+			
+			//it's possible to make a for statement with no conditional statement
+			if (currentToken.value != ";") {
+				var _condition = parseConditionalExpression();
+			}
+			else {
+				var _condition = undefined;
+			}
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
-			var _increment = parseExpression();
+			
+			if (currentToken.value != ")" && currentToken.value != ";") {
+				var _increment = parseBlock();
+			}
+			else {
+				var _increment = undefined;
+			}
 			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
+			
 			expectToken(__GMLC_TokenType.Punctuation, ")");
+			
 			var _codeBlock = parseBlock();
 			return new ASTForStatement(_initialization, _condition, _increment, _codeBlock, line, lineString);
 		};

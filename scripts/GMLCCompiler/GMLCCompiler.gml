@@ -816,12 +816,12 @@ function __GMLCexecuteFor() {
 }
 function __GMLCcompileFor(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileFor", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.assignment = __GMLCcompileExpression(_rootNode, _parentNode, _node.initialization);
-	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
-	_output.operation = __GMLCcompileExpression(_rootNode, _parentNode, _node.increment);
-	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
+	_output.assignment = (_node.initialization == undefined) ? function(){} : __GMLCcompileExpression(_rootNode, _parentNode, _node.initialization);
+	_output.condition = (_node.condition == undefined) ? function(){return true} : __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
+	_output.operation = (_node.increment == undefined) ? function(){} : __GMLCcompileExpression(_rootNode, _parentNode, _node.increment);
+	_output.blockStatement = (_node.codeBlock == undefined) ? function(){} : __GMLCcompileExpression(_rootNode, _parentNode, _node.codeBlock);
     
-    return method(_output, __GMLCexecuteFor);
+	return method(_output, __GMLCexecuteFor);
 }
 
 #region //{
