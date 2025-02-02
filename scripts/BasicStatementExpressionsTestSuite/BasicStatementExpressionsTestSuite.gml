@@ -829,6 +829,42 @@ function BasicStatementExpressionsTestSuite() : TestSuite() constructor {
 		')
     });
 	
+	//testing For loops with block statements
+    addFact("For loop block statemetns", function() {
+		compile_and_execute(@'
+        for (var i = 0, j = 10; i < j; { i += 2; j += 1 }) {
+		  show_message(string(i) + " < " + string(j));
+		}
+		assert_equals(i, 20, "For Loop block statemetns failing");
+		')
+    });
+	addFact("For loop empty conditions", function() {
+		compile_and_execute(@'
+        for (var i = 0; ; { i += 1; break; }) {
+		  i += 2
+		}
+		assert_equals(i, 3, "For loops with empty conditions should auto succeed");
+		')
+    });
+	addFact("For loop defer/after macro", function() {
+		compile_and_execute(@'
+        #macro for_defer for (;; {
+		#macro for_after ; break; })
+		
+		var i = 0;
+		for_defer {
+			assert_equals(i, 1, "For Loop defer failing");
+			i += 1;
+		} for_after {
+			assert_equals(i, 0, "For loop defer/after failing at after");
+			i += 1;
+		}
+		
+        // Assertions
+        assert_equals(i, 2, "For Loop defer/after failed");
+		')
+    });
+	
 	#endregion
 	
 	#region Switch Case Default
