@@ -2,6 +2,13 @@
 ///NOTE: all of these should be build into the parent programs struct, and all children should
 // have a reference to that struct to access the locals and arguments when ever needed
 
+enum FLOW_MASK {
+    EMPTY    = 0, // 0b000
+	BREAK    = 1, // 0b001
+    CONTINUE = 2, // 0b010
+    RETURN   = 4, // 0b100
+}
+
 global.selfInstance = undefined;
 global.otherInstance = undefined;
 //global.callStack = [];
@@ -202,9 +209,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
 		
 	_output.returnValue = undefined;
-	_output.shouldReturn = false;
-	_output.shouldBreak = false;
-	_output.shouldContinue = false;
+	_output.flowMask = FLOW_MASK.EMPTY;
 	
 	
 	return method(_output, __GMLCexecuteFunction)
@@ -343,9 +348,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
 	
 	_output.returnValue = undefined;
-	_output.shouldReturn = false;
-	_output.shouldBreak = false;
-	_output.shouldContinue = false;
+	_output.flowMask = FLOW_MASK.EMPTY;
 	
 	if (_node.parentCall != undefined) {
 		_output.hasParentConstructor = true;
@@ -583,135 +586,44 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 
 #region Block Statements
 
-#region //{
-// used for gmlc compiled block statements, these are non-breakable, typically used
-// for if/else statements, functions bodies, etc
-//    blockStatements: [],
-//    size: undefined,
-//}
-#endregion
 function __GMLCexecuteBlockStatement() {
-	var _i=0 repeat(size) {
-		blockStatements[_i]();
-		if (parentNode.shouldReturn) return undefined;
-	_i++}
+    var i = 0;
+    repeat(size) {
+        blockStatements[i]();
+		// Check for jump conditions.
+		if (parentNode.flowMask) {
+			return;
+		}
+	i++;}
 }
 function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBlockStatement", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.blockStatements = [];
-	_output.size = undefined;
+    // If the node is not a block, simply compile it as an expression.
+    if (_node.type != __GMLC_NodeType.BlockStatement) {
+        return __GMLCcompileExpression(_rootNode, _parentNode, _node);
+    }
     
-	//this happens when a block statement consists of a single expression
-	if (_node.type != __GMLC_NodeType.BlockStatement) {
-		return __GMLCcompileExpression(_rootNode, _parentNode, _node)
-	}
-	
-	
-	
-	var _blockStatements = _node.statements
-	var _i=0; repeat(array_length(_blockStatements)) {
-		var _expression = __GMLCcompileExpression(_rootNode, _parentNode, _blockStatements[_i])
-		
-		//account for empty statements
-		if (_expression != undefined) {
-			//prevent pushing a block statement into a block statement
-			var _expr_struct = method_get_self(_expression)
-			if (_expr_struct.compilerBase == "__GMLCcompileBlockStatement") {
-				array_copy(_output.blockStatements, array_length(_output.blockStatements), _expr_struct.blockStatements, 0, array_length(_expr_struct.blockStatements))
-			}
-			else {
-				array_push(_output.blockStatements, _expression)
-			}
-		}
-		
-    _i++}
-	
-	_output.size = array_length(_output.blockStatements)
+    // First, compile all children into a temporary output.
+    var output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBlockStatement", "<Missing Error Message>", _node.line, _node.lineString);
+    output.blockStatements = [];
+    var _statements = _node.statements;
     
-	if (_output.size == 1) {
-		//directly return the single statement if there is only one.
-		return _output.blockStatements[0];
-	}
-	
-	return method(_output, __GMLCexecuteBlockStatement);
-}
-
-#region //{
-// used for gmlc compiled switch statements blocks, as they can be broken, and returned from, but can not be used with continue
-//    blockStatements: [],
-//}
-#endregion
-function __GMLCexecuteBlockStatementBreakable() {
-	var _i=0 repeat(array_length(blockStatements)) {
-		blockStatements[_i]();
-		if (parentNode.shouldReturn) return undefined;
-		if (parentNode.shouldBreak) return undefined;
-	_i++}
-}
-function __GMLCcompileBlockStatementBreakable(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBlockStatementBreakable", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.blockStatements = [];
-	_output.size = undefined;
-    
-	
-    var _i=0; repeat(array_length(_node.statements)) {
-		_output.blockStatements[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _node.statements[_i])
+	var _i = 0; repeat(array_length(_statements)) {
+        var _expr = __GMLCcompileExpression(_rootNode, _parentNode, _statements[_i]);
+        if (_expr != undefined) {
+            var _exprStruct = method_get_self(_expr);
+            array_push(output.blockStatements, _expr);
+        }
     _i++}
     
-    _output.size = array_length(_output.blockStatements)
+    output.size = array_length(output.blockStatements);
     
-    return method(_output, __GMLCexecuteBlockStatementBreakable);
-}
-
-#region //{
-// used for gmlc compiled block statements, these are non-breakable, typically used
-// for if/else statements, functions bodies, etc
-//    blockStatements: {},
-//}
-#endregion
-function __GMLCexecuteLoopStatement() {
-	var _i=0 repeat(size) {
-		blockStatements[_i]();
-		if (parentNode.shouldReturn) return undefined;
-		if (parentNode.shouldBreak) return undefined;
-		if (parentNode.shouldContinue) {
-		    parentNode.shouldContinue = false;
-		    return undefined;
-		}
-	_i++}
-}
-function __GMLCcompileLoopStatement(_rootNode, _parentNode, _node) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLoopStatement", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.blockStatements = [];
-	_output.size = undefined;
+    // If there’s only one statement, return that single statement.
+    if (output.size == 1) {
+        return output.blockStatements[0];
+    }
     
-	
-	//this happens when a block statement consists of a single expression
-	if (_node.type != __GMLC_NodeType.BlockStatement) {
-		return __GMLCcompileExpression(_rootNode, _parentNode, _node)
-	}
-	
-	var _i=0; repeat(array_length(_node.statements))
-	{
-		var _return = __GMLCcompileExpression(_rootNode, _parentNode, _node.statements[_i]);
-		if (_return != undefined) {
-			array_push(_output.blockStatements, _return)
-		}
-		
-    _i++}
+    return method(output, __GMLCexecuteBlockStatement);
     
-    _output.size = array_length(_output.blockStatements)
-    
-	if (_output.size == 0) {
-		//return an empty function so we dont need to enter a method
-		return function(){}
-	}
-	if (_output.size == 1) {
-		//return an empty function so we dont need to enter a method
-		return _output.blockStatements[0];
-	}
-	
-    return method(_output, __GMLCexecuteLoopStatement);
 }
 
 #endregion
@@ -765,20 +677,26 @@ function __GMLCcompileIf(_rootNode, _parentNode, _node) {
 function __GMLCexecuteRepeat() {
     repeat(condition()) {
 		blockStatement();
-		if (parentNode.shouldReturn) return undefined
-		if (parentNode.shouldBreak) {
-		    parentNode.shouldBreak = false;
-		    return undefined;
-		}
-		if (parentNode.shouldContinue) {
-		    parentNode.shouldContinue = false;
+		if (parentNode.flowMask) {
+			if (parentNode.flowMask & FLOW_MASK.CONTINUE) {
+				// Clear the continue bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.CONTINUE;
+			}
+			if (parentNode.flowMask & FLOW_MASK.BREAK) {
+				// Clear the break bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.BREAK;
+				return undefined;
+			}
+			if (parentNode.flowMask & FLOW_MASK.RETURN) {
+				return undefined;
+			}
 		}
     }
 }
 function __GMLCcompileRepeat(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileRepeat", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
-	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
+	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
     
     return method(_output, __GMLCexecuteRepeat);
 }
@@ -792,21 +710,26 @@ function __GMLCcompileRepeat(_rootNode, _parentNode, _node) {
 function __GMLCexecuteWhile() {
     while(condition()) {
 		blockStatement();
-		if (parentNode.shouldReturn) return undefined
-		if (parentNode.shouldBreak) {
-		    parentNode.shouldBreak = false;
-		    return undefined;
-		}
-		if (parentNode.shouldContinue) {
-		    parentNode.shouldContinue = false;
-		    //no need to break or continue we will already be doing that
+		if (parentNode.flowMask) {
+			if (parentNode.flowMask & FLOW_MASK.CONTINUE) {
+				// Clear the continue bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.CONTINUE;
+			}
+			if (parentNode.flowMask & FLOW_MASK.BREAK) {
+				// Clear the break bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.BREAK;
+				return undefined;
+			}
+			if (parentNode.flowMask & FLOW_MASK.RETURN) {
+				return undefined;
+			}
 		}
     }
 }
 function __GMLCcompileWhile(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileWhile", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
-	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
+	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
     
     return method(_output, __GMLCexecuteWhile);
 }
@@ -820,14 +743,19 @@ function __GMLCcompileWhile(_rootNode, _parentNode, _node) {
 function __GMLCexecuteDoUntil() {
     do {
 		blockStatement();
-		if (parentNode.shouldReturn) return undefined
-		if (parentNode.shouldBreak) {
-		    parentNode.shouldBreak = false;
-		    return undefined;
-		}
-		if (parentNode.shouldContinue) {
-		    parentNode.shouldContinue = false;
-		    //no need to break or continue we will already be doing that
+		if (parentNode.flowMask) {
+			if (parentNode.flowMask & FLOW_MASK.CONTINUE) {
+				// Clear the continue bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.CONTINUE;
+			}
+			if (parentNode.flowMask & FLOW_MASK.BREAK) {
+				// Clear the break bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.BREAK;
+				return undefined;
+			}
+			if (parentNode.flowMask & FLOW_MASK.RETURN) {
+				return undefined;
+			}
 		}
     }
     until condition()
@@ -835,7 +763,7 @@ function __GMLCexecuteDoUntil() {
 function __GMLCcompileDoUntil(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileDoUntil", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
-	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
+	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
     
     return method(_output, __GMLCexecuteDoUntil);
 }
@@ -849,16 +777,40 @@ function __GMLCcompileDoUntil(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteFor() {
-    for (assignment(); condition(); operation()) {
-		blockStatement();
-		if (parentNode.shouldReturn) return undefined
-		if (parentNode.shouldBreak) {
-		    parentNode.shouldBreak = false;
-		    return undefined;
+    for (
+		assignment();
+		condition();
+		{operation();
+			if (parentNode.flowMask) {
+				if (parentNode.flowMask & FLOW_MASK.CONTINUE) {
+					// Clear the continue bit so that subsequent iterations or parent blocks see it as cleared.
+					parentNode.flowMask &= ~FLOW_MASK.CONTINUE;
+				}
+				if (parentNode.flowMask & FLOW_MASK.BREAK) {
+					// Clear the break bit so that subsequent iterations or parent blocks see it as cleared.
+					parentNode.flowMask &= ~FLOW_MASK.BREAK;
+					return undefined;
+				}
+				if (parentNode.flowMask & FLOW_MASK.RETURN) {
+					return undefined;
+				}
+			}
 		}
-		if (parentNode.shouldContinue) {
-		    parentNode.shouldContinue = false;
-		    //no need to break or continue we will already be doing that
+	) {
+		blockStatement();
+		if (parentNode.flowMask) {
+			if (parentNode.flowMask & FLOW_MASK.CONTINUE) {
+				// Clear the continue bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.CONTINUE;
+			}
+			if (parentNode.flowMask & FLOW_MASK.BREAK) {
+				// Clear the break bit so that subsequent iterations or parent blocks see it as cleared.
+				parentNode.flowMask &= ~FLOW_MASK.BREAK;
+				return undefined;
+			}
+			if (parentNode.flowMask & FLOW_MASK.RETURN) {
+				return undefined;
+			}
 		}
     }
 }
@@ -867,7 +819,7 @@ function __GMLCcompileFor(_rootNode, _parentNode, _node) {
 	_output.assignment = __GMLCcompileExpression(_rootNode, _parentNode, _node.initialization);
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.operation = __GMLCcompileExpression(_rootNode, _parentNode, _node.increment);
-	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
+	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
     
     return method(_output, __GMLCexecuteFor);
 }
@@ -889,17 +841,19 @@ function __GMLCexecuteSwitch() {
 		|| (_case.expression() == _value) {
 		    _passing = true
 		    _case.blockStatement()
-		    if (parentNode.shouldReturn) return undefined
-		    if (parentNode.shouldBreak) break;
+		    if (parentNode.flowMask) {
+				if (parentNode.flowMask & FLOW_MASK.RETURN) return undefined;
+				if (parentNode.flowMask & FLOW_MASK.BREAK) break;
+			}
 		}
     _i++}
 	
-	if (!parentNode.shouldBreak)
+	if (!(parentNode.flowMask & FLOW_MASK.BREAK))
 	&& (caseDefault != undefined) {
 		caseDefault.blockStatement()
 	}
 	
-	parentNode.shouldBreak = false;
+	parentNode.flowMask &= ~FLOW_MASK.BREAK;
 }
 function __GMLCcompileSwitch(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileSwitch", "<Missing Error Message>", _node.line, _node.lineString);
@@ -937,7 +891,7 @@ function __GMLCcompileCase(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCase", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.isDefault = (_node.label == undefined);
 	_output.expression = (_node.label == undefined) ? undefined : __GMLCcompileExpression(_rootNode, _parentNode, _node.label);
-	_output.blockStatement = __GMLCcompileBlockStatementBreakable(_rootNode, _parentNode, _node.codeBlock);
+	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
     
     
     return _output;
@@ -963,6 +917,8 @@ function __GMLCexecuteWith() {
     global.otherInstance = global.selfInstance
     
 	var _methodself   = self;
+	var _parentNode   = parentNode;
+	
 	//var _index  = myIndex;
 	//var _method = myMethod;
 	static __empty_arr = [];
@@ -973,15 +929,22 @@ function __GMLCexecuteWith() {
 		
 		//we break on all three cases here because we would like to run the
 		// rest of the function to return to our previous self/other
-		if (_methodself.parentNode.shouldReturn) break;
-		if (_methodself.parentNode.shouldBreak) {
-		    _methodself.parentNode.shouldBreak = false;
-		    break;
+		if (_parentNode.flowMask) {
+			if (_parentNode.flowMask & FLOW_MASK.CONTINUE) {
+				// Clear the continue bit so that subsequent iterations or parent blocks see it as cleared.
+				_parentNode.flowMask &= ~FLOW_MASK.CONTINUE;
+			}
+			if (_parentNode.flowMask & FLOW_MASK.BREAK) {
+				// Clear the break bit so that subsequent iterations or parent blocks see it as cleared.
+				_parentNode.flowMask &= ~FLOW_MASK.BREAK;
+				break;
+			}
+			if (_parentNode.flowMask & FLOW_MASK.RETURN) {
+				// Clear the return bit so that subsequent iterations or parent blocks see it as cleared.
+				break;
+			}
 		}
-		if (_methodself.parentNode.shouldContinue) {
-		    _methodself.parentNode.shouldContinue = false;
-		    //no need to break or continue we will already be doing that
-		}
+		
 	}
 	
     
@@ -992,7 +955,7 @@ function __GMLCexecuteWith() {
 function __GMLCcompileWith(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileWith", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
-	_output.blockStatement = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.codeBlock);
+	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.codeBlock);
     //_output.mySelf  = _output;
     //_output.myIndex = __GMLCexecuteWith;
     //_output.myMethod = method(_output, __GMLCexecuteWith);
@@ -1014,7 +977,7 @@ function __GMLCexecuteTryCatchFinally() {
 		tryBlock()
     }
     catch(_e) {
-		if (parentNode.shouldReturn) return;
+		if (parentNode.flowMask & FLOW_MASK.RETURN) return;
 		if (catchBlock != undefined) {
 			//locals = variable_clone(parentNode.locals, 1)
 			parentNode.locals[catchVariableIndex] = _e;
@@ -1029,7 +992,7 @@ function __GMLCexecuteTryCatchFinally() {
 }
 function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileTryCatchFinally", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.tryBlock = __GMLCcompileLoopStatement(_rootNode, _parentNode, _node.tryBlock);
+	_output.tryBlock = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.tryBlock);
 	_output.catchVariableName = _node.exceptionVar;
 	_output.catchVariableIndex = _parentNode.localLookUps[$ _node.exceptionVar];
 	_output.catchBlock = undefined;
@@ -1038,6 +1001,11 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
 	
 	if (_node.catchBlock != undefined)   _output.catchBlock   = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.catchBlock)
 	if (_node.finallyBlock != undefined) _output.finallyBlock = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.finallyBlock)
+	
+	if (_node.catchBlock = undefined)
+	&& (_node.finallyBlock = undefined) {
+		return _output.tryBlock;
+	}
 	
     return method(_output, __GMLCexecuteTryCatchFinally);
 }
@@ -1157,7 +1125,7 @@ function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteBreak() {
-    parentNode.shouldBreak = true;
+    parentNode.flowMask |= FLOW_MASK.BREAK;
 }
 function __GMLCcompileBreak(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBreak", "<Missing Error Message>", _node.line, _node.lineString);
@@ -1170,7 +1138,7 @@ function __GMLCcompileBreak(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteContinue() {
-    parentNode.shouldContinue = true;
+    parentNode.flowMask |= FLOW_MASK.CONTINUE;
 }
 function __GMLCcompileContinue(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileContinue", "<Missing Error Message>", _node.line, _node.lineString);
@@ -1183,7 +1151,7 @@ function __GMLCcompileContinue(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteExit() {
-    parentNode.shouldReturn = true;
+    parentNode.flowMask |= FLOW_MASK.RETURN;
     parentNode.returnValue = undefined;
 }
 function __GMLCcompileExit(_rootNode, _parentNode, _node) {
@@ -1198,7 +1166,7 @@ function __GMLCcompileExit(_rootNode, _parentNode, _node) {
 #endregion
 function __GMLCexecuteReturn() {
     parentNode.returnValue = expression();
-	parentNode.shouldReturn = true;
+	parentNode.flowMask |= FLOW_MASK.RETURN;
 }
 function __GMLCcompileReturn(_rootNode, _parentNode, _node) {
 	if (_node.expr == undefined) {

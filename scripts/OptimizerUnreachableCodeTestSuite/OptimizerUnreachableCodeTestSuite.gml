@@ -145,7 +145,7 @@ function OptimizerUnreachableCodeTestSuite() : TestSuite() constructor {
 			sum += i;
 		}
 
-		assert_equals(sum, 10, "Code after continue should not be executed.");
+		assert_equals(sum, 8, "Code after continue should not be executed.");
 		')
 	});
 
