@@ -6,6 +6,8 @@ testFramework = new TestFrameworkRun();
 
 
 //// Register your test suites here...
+testFramework.addSuite(BasicEscapeCharacterTestSuite);
+
 testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
 
 testFramework.addSuite(OptimizerConstantFoldingTestSuite);

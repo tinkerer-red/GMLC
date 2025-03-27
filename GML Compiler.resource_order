@@ -115,6 +115,7 @@
     {"name":"BasicDataStructuresStackTestSuite","order":9,"path":"scripts/BasicDataStructuresStackTestSuite/BasicDataStructuresStackTestSuite.yy",},
     {"name":"BasicDataTypesTestSuite","order":10,"path":"scripts/BasicDataTypesTestSuite/BasicDataTypesTestSuite.yy",},
     {"name":"BasicDateTimeTestSuite","order":11,"path":"scripts/BasicDateTimeTestSuite/BasicDateTimeTestSuite.yy",},
+    {"name":"BasicEscapeCharacterTestSuite","order":5,"path":"scripts/BasicEscapeCharacterTestSuite/BasicEscapeCharacterTestSuite.yy",},
     {"name":"BasicFileTestSuite","order":12,"path":"scripts/BasicFileTestSuite/BasicFileTestSuite.yy",},
     {"name":"BasicFiltersEffectsTestSuite","order":13,"path":"scripts/BasicFiltersEffectsTestSuite/BasicFiltersEffectsTestSuite.yy",},
     {"name":"BasicHandlesTestSuite","order":14,"path":"scripts/BasicHandlesTestSuite/BasicHandlesTestSuite.yy",},

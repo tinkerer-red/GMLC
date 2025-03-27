@@ -238,7 +238,7 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 									var _len = 0;
 									while (currentCharCode != undefined)
 									&& (__char_is_hex(currentCharCode))
-									&& (currentCharCode != "_")
+									&& (currentCharCode != ord("_"))
 									&& (_len <= 5)
 									{
 										_len += 1;
@@ -254,6 +254,39 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 										
 										__nextUTF8();
 									}
+								}
+								
+								_char = chr(real(_char))
+							
+							break;}
+							case ord(@'x'): { // \xFF
+								_char = "0x";
+								if (__char_is_hex(__peekUTF8() ?? 0)) {
+									__nextUTF8();
+									
+									var _len = 0;
+									while (currentCharCode != undefined)
+									&& (__char_is_hex(currentCharCode))
+									&& (currentCharCode != ord("_"))
+									&& (_len < 2)
+									{
+										_len += 1;
+										_char += chr(currentCharCode);
+										
+										//if the next char is not hex back out
+										var _nextToken = __peekUTF8();
+										if (!__char_is_hex(_nextToken)) 
+										|| (_nextToken == "_")
+										{
+											break;
+										}
+										
+										__nextUTF8();
+									}
+								}
+								
+								if (string_length(_char) == 2) {
+									throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\x HEX value. 2 digits required.")
 								}
 								
 								_char = chr(real(_char))
@@ -1228,7 +1261,7 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 								var _len = 0;
 								while (currentCharCode != undefined)
 								&& (__char_is_hex(currentCharCode))
-								&& (currentCharCode != "_")
+								&& (currentCharCode != ord("_"))
 								&& (_len <= 5)
 								{
 									_len += 1;
@@ -1244,6 +1277,39 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 										
 									__nextUTF8();
 								}
+							}
+								
+							_char = chr(real(_char))
+							
+						break;}
+						case ord(@'x'): { // \xFF
+							_char = "0x";
+							if (__char_is_hex(__peekUTF8() ?? 0)) {
+								__nextUTF8();
+									
+								var _len = 0;
+								while (currentCharCode != undefined)
+								&& (__char_is_hex(currentCharCode))
+								&& (currentCharCode != ord("_"))
+								&& (_len < 2)
+								{
+									_len += 1;
+									_char += chr(currentCharCode);
+										
+									//if the next char is not hex back out
+									var _nextToken = __peekUTF8();
+									if (!__char_is_hex(_nextToken)) 
+									|| (_nextToken == "_")
+									{
+										break;
+									}
+										
+									__nextUTF8();
+								}
+							}
+								
+							if (string_length(_char) == 2) {
+								throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\x HEX value. 2 digits required.")
 							}
 								
 							_char = chr(real(_char))
