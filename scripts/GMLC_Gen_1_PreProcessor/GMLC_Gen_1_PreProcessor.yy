@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLCOptimizer",
+  "%Name":"GMLC_Gen_1_PreProcessor",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLCOptimizer",
+  "name":"GMLC_Gen_1_PreProcessor",
   "parent":{
     "name":"Parsers",
     "path":"folders/GMLCompiler/__Final/Parsers.yy",

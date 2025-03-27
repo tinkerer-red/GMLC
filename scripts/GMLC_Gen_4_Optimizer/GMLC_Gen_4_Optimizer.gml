@@ -284,6 +284,7 @@
 									case "^=":  _constant_value ^=  _right.value break;
 									case "&=":  _constant_value &=  _right.value break;
 									case "|=":  _constant_value |=  _right.value break;
+									case "%=":  _constant_value %=  _right.value break;
 									case "??=": _constant_value ??= _right.value break;
 									default: {
 										throw $"[ERROR] Optimizer :: constantPropagation :: Unexpected operator in line ({_node.line}) `{_node.lineString}`"

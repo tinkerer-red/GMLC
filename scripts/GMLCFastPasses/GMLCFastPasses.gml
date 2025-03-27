@@ -433,6 +433,8 @@ function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key, _line, _line
 #endregion
 function __GMLCexecuteMapSet(){
 	var _target = target();
+	var _key = key();
+	var _exp = expression();
 	_target[? key()] = expression()
 }
 function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {

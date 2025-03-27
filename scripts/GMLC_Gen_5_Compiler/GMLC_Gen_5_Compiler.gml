@@ -1375,6 +1375,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 				case "^=":  _func = __GMLCexecuteOpBitwiseXOR; break;
 				case "&=":  _func = __GMLCexecuteOpBitwiseAND; break;
 				case "|=":  _func = __GMLCexecuteOpBitwiseOR;  break;
+				case "%=":  _func = __GMLCexecuteOpMod;        break;
 				case "??=": _func = __GMLCexecuteOpNullish;	   break;
 			}
 			
@@ -1396,6 +1397,9 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			if (_node.left.accessorType = __GMLC_AccessorType.Grid) {
 				_output0.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 				_output0.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
+			}
+			else if (_node.left.accessorType = __GMLC_AccessorType.Dot) {
+				_output0.key = _node.left.val1.value;
 			}
 			else {
 				_output0.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
@@ -1420,9 +1424,13 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 				_output2.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 				_output2.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
 			}
+			else if (_node.left.accessorType = __GMLC_AccessorType.Dot) {
+				_output2.key = _node.left.val1.value;
+			}
 			else {
 				_output2.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 			}
+			
 			return method(_output2, _setter);
 			
 		}
@@ -1450,6 +1458,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			case "^=":  _func = __GMLCexecuteOpBitwiseXOR; break;
 			case "&=":  _func = __GMLCexecuteOpBitwiseAND; break;
 			case "|=":  _func = __GMLCexecuteOpBitwiseOR;  break;
+			case "%=":  _func = __GMLCexecuteOpMod;        break;
 			case "??=": _func = __GMLCexecuteOpNullish;	   break;
 		}
 		

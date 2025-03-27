@@ -65,7 +65,6 @@ global.TestFailed = {};
 function compile_and_execute(_string) {
 	static __faster = 0;
 	
-	
 	static tokenizer = new GML_Tokenizer();
 	tokenizer.initialize(_string);
 	var tokens = tokenizer.parseAll();

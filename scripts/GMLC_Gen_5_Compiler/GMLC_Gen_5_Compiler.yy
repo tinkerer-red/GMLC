@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLCPreProcessor",
+  "%Name":"GMLC_Gen_5_Compiler",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLCPreProcessor",
+  "name":"GMLC_Gen_5_Compiler",
   "parent":{
     "name":"Parsers",
     "path":"folders/GMLCompiler/__Final/Parsers.yy",

@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLCTokenizer",
+  "%Name":"GMLC_Gen_2_Parser",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLCTokenizer",
+  "name":"GMLC_Gen_2_Parser",
   "parent":{
     "name":"Parsers",
     "path":"folders/GMLCompiler/__Final/Parsers.yy",

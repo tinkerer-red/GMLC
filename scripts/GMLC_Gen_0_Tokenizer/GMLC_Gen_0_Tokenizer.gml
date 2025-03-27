@@ -818,6 +818,17 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 				break;};
 				case ord("%"): { // %
 					_op_string += chr(currentCharCode);
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): { // %=
+							__nextUTF8();
+							_op_string += chr(currentCharCode);
+							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+					_op_string += chr(currentCharCode);
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "mod", _start_line, _start_column);
 					array_push(tokens, _token);
 					return _token;
@@ -1408,10 +1419,10 @@ function __optionalUTF8(_ord) {
 	if is_string(_ord) {
 		throw_gmlc_error("please use character code instead of a string")
 	}
-		
+	
 	var _character = buffer_read(sourceCodeBuffer, buffer_u8);
 	var _charCode = 0;
-		
+	
 	//Basic Latin
 	if ((_character & 0x80) == 0x00) {
 		_charCode = _character;
@@ -1430,7 +1441,7 @@ function __optionalUTF8(_ord) {
 		var _d = buffer_read(sourceCodeBuffer, buffer_u8);
 		_charCode = ((_character & $07) << 18) | ((_b & $3F) << 12) | ((_c & $3F) <<  6) | (_d & $3F);
 	}
-		
+	
 	buffer_seek(sourceCodeBuffer, buffer_seek_start, bytePos);
 	return (_charCode == _ord);
 }

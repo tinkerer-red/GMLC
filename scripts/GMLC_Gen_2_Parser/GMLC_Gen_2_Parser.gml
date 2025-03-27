@@ -67,9 +67,12 @@
 		
 		static parseNext = function() {
 			if (currentToken != undefined) {
+				
 				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				if (currentToken == undefined) return;
 				
 				var statement = parseStatement();
+				optionalToken(__GMLC_TokenType.Punctuation, ";")
 				if (statement) {
 					array_push(scriptAST.statements.statements, statement);
 				}
@@ -213,6 +216,7 @@
 					// Parse each statement until } is found
 					// Optional: Handle error checking for unexpected end of file
 				}
+				optionalToken(__GMLC_TokenType.Punctuation, ";")
 				nextToken(); // Consume the }
 				
 				//compile better code
@@ -225,6 +229,7 @@
 			else {
 				// If no {, its a single statement block
 				var singleStatement = parseStatement();
+				optionalToken(__GMLC_TokenType.Punctuation, ";")
 				return new ASTBlockStatement([singleStatement], line, lineString);
 			}
 		};
@@ -284,7 +289,7 @@
 			else {
 				var _initialization = undefined;
 			}
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
+			expectToken(__GMLC_TokenType.Punctuation, ";");
 			
 			//it's possible to make a for statement with no conditional statement
 			if (currentToken.value != ";") {
@@ -293,7 +298,7 @@
 			else {
 				var _condition = undefined;
 			}
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
+			expectToken(__GMLC_TokenType.Punctuation, ";");
 			
 			if (currentToken.value != ")" && currentToken.value != ";") {
 				var _increment = parseBlock();
@@ -301,7 +306,7 @@
 			else {
 				var _increment = undefined;
 			}
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseExpression
+			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseBlock
 			
 			expectToken(__GMLC_TokenType.Punctuation, ")");
 			
@@ -393,6 +398,7 @@
 					}
 					else {
 						array_push(statements, parseStatement());
+						optionalToken(__GMLC_TokenType.Punctuation, ";")
 						if (_expectClosingCurly && optionalToken(__GMLC_TokenType.Punctuation, "}")) {
 							_expectClosingCurly = false;
 						}
@@ -400,6 +406,7 @@
 				}
 				else {
 					array_push(statements, parseStatement());
+					optionalToken(__GMLC_TokenType.Punctuation, ";")
 					if (_expectClosingCurly && optionalToken(__GMLC_TokenType.Punctuation, "}")) {
 						_expectClosingCurly = false;
 					}
@@ -472,7 +479,6 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume break
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTContinueStatement(line, lineString);
 		};
 		
@@ -481,7 +487,6 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume break
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTBreakStatement(line, lineString);
 		};
 		
@@ -490,7 +495,6 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume exit
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			return new ASTExitStatement(line, lineString);
 		};
 		
@@ -503,7 +507,6 @@
 			if (currentToken.value != ";") {
 				expr = parseExpression(); // Parse the return expression if any
 			}
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			
 			return new ASTReturnStatement(expr, line, lineString);
 		};
@@ -514,7 +517,6 @@
 			
 			nextToken(); // Consume `default`
 			var expr = parseLogicalOrExpression(); // cascades down the tree and across to ternary.
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Optionally consume the semicolon
 			
 			return new ASTAssignmentExpression("=", expr, new ASTLiteral(undefined, line, lineString), line, lineString);
 		};
@@ -840,7 +842,7 @@
 					
 				}
 				
-				if (optionalToken(__GMLC_TokenType.Punctuation, ";")) {
+				if (currentToken.value == ";") {
 					break
 				}
 		        if (currentToken == undefined || currentToken.value != ",") {
@@ -883,7 +885,6 @@
 			if (expr == undefined) {
 				throw_gmlc_error($"Getting an error parsing expression, current token is:\n{currentToken}\nLast Five Tokens:\n{lastFiveTokens}")
 			}
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); // Handle the optional semicolon
 			return expr;
 		}
 		
@@ -900,7 +901,7 @@
 		
 		static parseAssignmentExpression = function() {
 			var expr = parseLogicalOrExpression();
-			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|="];
+			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|=", "%="];
 			if (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
@@ -1370,6 +1371,7 @@
 					nextToken();
 					if (currentToken == undefined) return undefined;
 					var _node = parseStatement();
+					optionalToken(__GMLC_TokenType.Punctuation, ";")
 					_node.skipOptimization = true;
 					return _node;
 					

@@ -833,7 +833,7 @@ function BasicStatementExpressionsTestSuite() : TestSuite() constructor {
     addFact("For loop block statemetns", function() {
 		compile_and_execute(@'
         for (var i = 0, j = 10; i < j; { i += 2; j += 1 }) {
-		  show_message(string(i) + " < " + string(j));
+		  //do nothing
 		}
 		assert_equals(i, 20, "For Loop block statemetns failing");
 		')
