@@ -5,7 +5,36 @@
 //}
 #endregion
 function __GMLCexecuteGetPropertySelf() {
-    return global.selfInstance[$ key];
+    var _target = global.selfInstance;
+	
+	if (is_gmlc_function(_target)) {
+		_target = __static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		return _target[$ key];
+	}
+	
+	// this is a safety check for a bug in GML
+	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
+	var _inst_of = instanceof(_target);
+	if (_inst_of == "Object")
+	|| (_inst_of == undefined) {
+		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	}
+	
+	var _static = __static_get(_target)
+	
+	//check each static parent
+	while (_static != undefined) {
+		if struct_exists(_static, key) {
+			return _static[$ key];
+		}
+		_static = __static_get(_static)
+	}
+	
+	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	
 }
 #region //{
 //    key: <expression>
