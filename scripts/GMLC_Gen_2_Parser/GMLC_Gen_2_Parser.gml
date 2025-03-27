@@ -901,7 +901,7 @@
 		
 		static parseAssignmentExpression = function() {
 			var expr = parseLogicalOrExpression();
-			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|=", "%="];
+			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|=", "%=", "??="];
 			if (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
