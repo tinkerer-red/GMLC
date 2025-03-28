@@ -52,36 +52,7 @@ function __method(_struct, _func) {
 }
 
 function __new(_func, argArr=[]) {
-	if (is_method(_func))
-	&& (is_gmlc_program(_func)) {
-		if (is_gmlc_method(_func)) {
-			//a gmlc method
-			throw_gmlc_error("target function for 'new' must be a constructor, this one is a gmlc method")
-		}
-		else {
-			var _struct = {};
-			
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance ?? other;
-			global.selfInstance = _struct;
-						
-			//run our body
-			static_set(_struct, method_get_self(_func).statics)
-			_func();
-			
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
-			
-			return _struct;
-		}
-	}
-	else {
-		//a native gml constructor
-		with (global.otherInstance) with (global.selfInstance) {
-			return constructor_call_ext(_func, argArr);
-		}
-	}	
+	return constructor_call_ext(_func, argArr);
 }
 
 function __instanceof(_struct) {

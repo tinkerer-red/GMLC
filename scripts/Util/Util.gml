@@ -137,11 +137,10 @@ function constructor_call_ext(_func, _args) {
 	var _exe = (_length < array_length(__executors)) ? __executors[_length] : undefined;
 	
 	if (_exe == undefined) {
-		throw_gmlc_error("Attempting to create a constructor with more then 128 arguments, this is not dynamically possible, bring it up with YoYoGames"+@'¯\_(ツ)_/¯'+$"\nCurrent argument count :: {array_length(_args)}")
+		throw_gmlc_error("Attempting to create a constructor with more then 128 arguments, this is not dynamically possible, bring it up with YoYoGames "+@'¯\_(ツ)_/¯'+$"\nCurrent argument count :: {array_length(_args)}")
 	}
 	
-	return _exe(_func, _args)
-	
+	return _exe(_func, _args);
 }
 
 function is_gmlc_program(_program) {

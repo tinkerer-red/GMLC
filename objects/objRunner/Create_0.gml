@@ -17,15 +17,15 @@ t.bar();
 tokenizer = new GML_Tokenizer();
 tokenizer.initialize(_string);
 var tokens = tokenizer.parseAll();
-	
+
 preprocessor = new GML_PreProcessor();
 preprocessor.initialize(tokens);
 var preprocessedTokens = preprocessor.parseAll();
-	
+
 parser = new GML_Parser();
 parser.initialize(preprocessedTokens);
 var ast = parser.parseAll();
-	
+
 postprocessor = new GML_PostProcessor();
 postprocessor.initialize(ast);
 var ast = postprocessor.parseAll();

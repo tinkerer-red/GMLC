@@ -211,17 +211,19 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCexecuteConstructor() constructor {
+	//check to see if this is a `new` expression, or some `script_execute` equivalent
+	var _is_new_expression = is_instanceof(self, __GMLCexecuteConstructor);
+	
 	with other {
-		global.otherInstance ??= global.selfInstance ?? rootNode.globals;
-		global.selfInstance ??= other;
-		__GMLC_PRE_FUNC
+		__GMLC_DEFAULT_SELF_AND_OTHER;
+		__GMLC_PRE_FUNC;
 		var _program = program;
 		var _arguments = arguments;
 		var _statics = statics;
 	}
 	
 	//run the body
-	static_set(self, _statics)
+	if (_is_new_expression) static_set(self, _statics)
 	method_call(_program, _arguments);
 	
 	with other {
