@@ -6,68 +6,36 @@ testFramework = new TestFrameworkRun();
 
 
 //// Register your test suites here...
-testFramework.addSuite(BasicEscapeCharacterTestSuite);
+//testFramework.addSuite(OptimizerConstantFoldingTestSuite);
+//testFramework.addSuite(OptimizerConstantPropagationTestSuite);
+//testFramework.addSuite(OptimizerUnreachableCodeTestSuite);
+//testFramework.addSuite(BasicEscapeCharacterTestSuite);
+//testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
+//testFramework.addSuite(BasicConstructorTestSuit);
+//testFramework.addSuite(BasicStatementExpressionsTestSuite);
 
-testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
-
-testFramework.addSuite(OptimizerConstantFoldingTestSuite);
-testFramework.addSuite(OptimizerConstantPropagationTestSuite);
-testFramework.addSuite(OptimizerUnreachableCodeTestSuite);
-
-testFramework.addSuite(BasicConstructorTestSuit);
-testFramework.addSuite(BasicUnaryUpdateExpressions);
-testFramework.addSuite(BasicAccessorExpressionsTestSuite);
-testFramework.addSuite(BasicStatementExpressionsTestSuite);
-
-testFramework.addSuite(BasicArrayTestSuite);
-testFramework.addSuite(BasicBase64TestSuite);
-testFramework.addSuite(BasicDataStructuresGridTestSuite);
-testFramework.addSuite(BasicDataStructuresListTestSuite);
-testFramework.addSuite(BasicDataStructuresMapTestSuite);
-testFramework.addSuite(BasicDataStructuresPriorityTestSuite);
-testFramework.addSuite(BasicDataStructuresQueueTestSuite);
-testFramework.addSuite(BasicDataStructuresStackTestSuite);
-testFramework.addSuite(BasicDataTypesTestSuite);
-testFramework.addSuite(BasicDateTimeTestSuite);
-testFramework.addSuite(BasicFileTestSuite);
-//testFramework.addSuite(BasicFiltersEffectsTestSuite);
-testFramework.addSuite(BasicHandlesTestSuite);
-testFramework.addSuite(BasicIniTestSuite);
-testFramework.addSuite(BasicJsonTestSuite);
-testFramework.addSuite(BasicMathTestSuite);
-testFramework.addSuite(BasicMatrixTestSuite);
-testFramework.addSuite(BasicNameofTestSuite);
-testFramework.addSuite(BasicRandomTestSuite);
-testFramework.addSuite(BasicScriptTestSuite);
-testFramework.addSuite(BasicStringTestSuite);
-testFramework.addSuite(BasicVariableTestSuite);
-
-testFramework.addSuite(BasicSurfaceTestSuite);
-testFramework.addSuite(BasicWeakRefsTestSuite);
-testFramework.addSuite(ResourceAudioEffectsTestSuite);
-testFramework.addSuite(ResourceAudioEmittersTestSuite);
-testFramework.addSuite(ResourceAudioListenersTestSuite);
-testFramework.addSuite(ResourceCameraTestSuite);
-testFramework.addSuite(ResourceEventsTestSuite);
-testFramework.addSuite(ResourceLayersTestSuite);
-
-
-//// Async Tests
-//testFramework.addSuite(BasicNetworkTestSuite);
-//testFramework.addSuite(ResourceAudioSynchronisationTestSuite);
-//testFramework.addSuite(ResourceAudioLoopPointsTestSuite);
-//testFramework.addSuite(BasicTilemapTestSuite);
-//testFramework.addSuite(BasicRoomTestSuite);
-//testFramework.addSuite(BasicBufferTestSuite);
-//testFramework.addSuite(BasicAudioTestSuite);
-//testFramework.addSuite(ResourceAudioBuffersTestSuite);
-
-//// unsafe to run currently
-//testFramework.addSuite(ResourceTimeSourceTestSuite);
-//testFramework.addSuite(ResourceSequenceTestSuite);
-////testFramework.addSuite(ResourceAudioGroupsTestSuite);
-////testFramework.addSuite(BasicShaderUniformsTestSuite);
-////testFramework.addSuite(BasicShaderTestSuite);
+// Add all of the official test suites from their .gml files in included folder \__TEST\*.gml
+var _file_names = file_find_all("__TESTS/*gml");
+for(var i=0; i<array_length(_file_names); i++) {
+	log(_file_names[i]);
+	var _script_str = file_read_all_text("__TESTS/"+_file_names[i]);
+	log(string_replace_all(string_replace_all(string_copy(_script_str, 0, 200), "\t", ""), "\n", ""));
+	var _program = compile_code(_script_str);
+	//pprint(_program)
+	var _program_data = method_get_self(_program);
+	var _global_names = struct_get_names(_program_data.globals);
+	
+	for(var j=0; j<array_length(_file_names); j++) {
+		var _global_name = _global_names[j];
+		
+		if (!string_starts_with(_global_name, "GMLC"))
+		&& (string_pos("TestSuite", _global_name))
+		{
+			var _func = _program_data.globals[$ _global_name];
+			testFramework.addSuite(_func);
+		}
+	}
+}
 
 
 // ###########################################################

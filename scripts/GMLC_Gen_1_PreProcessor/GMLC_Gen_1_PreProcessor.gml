@@ -295,6 +295,72 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 		return false;
 	}
 	
+	static parseRegion = function() {
+		static parseRegionTitle = function() {
+			var title = "";
+			var _length = array_length(tokens)
+			while (currentTokenIndex < _length) {
+				// Check for line break not preceded by a backslash escape
+				if (currentToken.type == __GMLC_TokenType.Whitespace)
+				&& (currentToken.value == "\n") {
+					break;  // End of macro body
+				}
+				
+				title += currentToken.name;
+				
+				__nextToken();
+			}
+			
+			return title;
+		};
+		
+		if (currentToken.type == __GMLC_TokenType.Operator)
+		&& (currentToken.value == "#")
+		{
+			var _next_token = __peekToken();
+			if (_next_token.type == __GMLC_TokenType.Keyword) {
+				if (_next_token.value == "region")
+				{
+					expectToken(__GMLC_TokenType.Operator, "#")
+					expectToken(__GMLC_TokenType.Keyword, "region")
+				
+					var name = currentToken.value; // Assuming next token is the macro name
+					array_push(program.MacroVarNames, name);
+				
+					__nextToken();
+				
+					var regionTitle = parseRegionTitle(); // Collect the macro body starting after the name
+					
+					//maybe in the future we will include these, but for now lets not worry about it
+					//var _token = new __GMLC_create_token(__GMLC_TokenType.RegionStart, "#region", "#region", _start_line, _start_column);
+					//array_push(tokens, _token);
+					//var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
+					//array_push(tokens, _token);
+					
+					return true;
+				}
+				if (_next_token.value == "endregion")
+				{
+					expectToken(__GMLC_TokenType.Operator, "#")
+					expectToken(__GMLC_TokenType.Keyword, "endregion")
+				
+					var name = currentToken.value; // Assuming next token is the macro name
+					array_push(program.MacroVarNames, name);
+				
+					__nextToken();
+					
+					//maybe in the future we will include these, but for now lets not worry about it
+					//var _token = new __GMLC_create_token(__GMLC_TokenType.RegionStart, "#endregion", "#endregion", _start_line, _start_column);
+					//array_push(tokens, _token);
+					
+					return true;
+				}
+			}
+		}
+		
+		return false;
+	}
+	
 	static parseAcceptance = function() {
 		//push everything back in
 		array_push(processedTokens, currentToken);
@@ -305,11 +371,12 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 	addParserStep(parseWhiteSpaces)
 	addParserStep(parseMacro)
 	addParserStep(parseEnum)
+	addParserStep(parseRegion)
 	//addParserStep(parseDefine) //this should only be active when gms1.4 support is enabled
 	addParserStep(parseAcceptance)
 		
 	#endregion
-		
+	
 	#endregion
 	
 	#region Helper Functions
@@ -317,7 +384,7 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 	static expectToken = function(expectedType, expectedValue=undefined) {
 		if (currentToken.type != expectedType)
 		|| (expectedValue != undefined && currentToken.value != expectedValue) {
-			throw_gmlc_error($"Expected {expectedValue}, got {currentToken}");
+			throw_gmlc_error($"Expected {expectedValue}, got {currentToken}\n({currentToken.line}){currentToken.lineString}");
 		}
 		__nextToken();
 	};

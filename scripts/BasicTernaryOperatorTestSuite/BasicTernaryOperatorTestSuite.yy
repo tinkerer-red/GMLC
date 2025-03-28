@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"BasicConstructorTestSuit",
+  "%Name":"BasicTernaryOperatorTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"BasicConstructorTestSuit",
+  "name":"BasicTernaryOperatorTestSuite",
   "parent":{
     "name":"Red's Tests",
     "path":"folders/xUnit/Tests/TestSuites/Red's Tests.yy",

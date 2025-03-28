@@ -258,7 +258,13 @@ function __GMLCexecuteConstructor() {
 		
 		if (hasParentConstructor) {
 			var _parent_constuct = rootNode.globals[$ parentConstructorName]
-			static_set(statics, static_get(method_get_self(_parent_constuct)))
+			if (is_gmlc_program(_parent_constuct)) {
+				static_set(statics, static_get(method_get_self(_parent_constuct)))
+			}
+			else {
+				
+			}
+			
 		}
 		else {
 			//set it to the default struct's statics
@@ -1613,8 +1619,8 @@ function __GMLCexecuteOpXOR() {
 
 function __GMLCcompileNullishExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileNullishExpression", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _left);
-	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _right);
+	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
+	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
     
     
     return method(_output, __GMLCexecuteOpNullish);

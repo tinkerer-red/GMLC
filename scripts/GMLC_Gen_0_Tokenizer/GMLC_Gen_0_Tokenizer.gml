@@ -156,15 +156,17 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 			var _raw_string = "/*";
 		
 			while (currentCharCode != undefined)
-			&& (currentCharCode != ord("*"))
-			&& (__peekUTF8() != ord("/"))
 			{
+				if (currentCharCode == ord("*"))
+				&& (__peekUTF8() == ord("/")) {
+					break;
+				}
 				_raw_string += chr(currentCharCode);
 				__nextUTF8();
 			}
 		
 			__expectUTF8(ord("*")); //consume *
-			//__expectUTF8(ord("/")); //consume /
+			__expectUTF8(ord("/")); //consume /
 		
 			_raw_string += "*/";
 		
@@ -1474,7 +1476,7 @@ function __expectUTF8(_ord) {
 	}
 		
 	if (currentCharCode != _ord) {
-		throw_gmlc_error($"Expected {_ord} ({chr(_ord)}), got {currentCharCode} ({chr(currentCharCode)})");
+		throw_gmlc_error($"Expected {_ord} ({chr(_ord)}), got {currentCharCode} ({chr(currentCharCode)})\n({line}){sourceCodeLineArray[line-1]}");
 	}
 		
 	__nextUTF8();

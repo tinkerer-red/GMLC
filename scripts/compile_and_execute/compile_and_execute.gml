@@ -1,4 +1,21 @@
 #region JSDocs
+/// @function file_find_all(filename)
+/// @description Reads entire content of a given file as a string, or returns undefined if the file doesn't exist.
+/// @param {string} mask        The mask to use for searching.
+/// @return {array<string>}
+#endregion
+function file_find_all(_file_mask) {
+    var file_names = [];
+	var file_name = file_find_first(_file_mask, fa_none);
+	while (file_name != "") {
+	    array_push(file_names, file_name);
+	    file_name = file_find_next();
+	}
+	file_find_close();
+	return file_names;
+}
+
+#region JSDocs
 /// @function file_read_all_text(filename)
 /// @description Reads entire content of a given file as a string, or returns undefined if the file doesn't exist.
 /// @param {string} filename        The path of the file to read the content of.

@@ -539,6 +539,9 @@
 				//consume the function's identifier
 				nextToken();
 			}
+			else if (currentToken.type == __GMLC_TokenType.Function) {
+				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}\nline({line}) {lineString}")
+			}
 			else {
 				static __anon_id = 0;
 				var functionName = $"GMLC@anon@{__anon_id++}";
@@ -567,15 +570,21 @@
 				var _identifier = parsePrimaryExpression();
 				var _parent = parseFunctionCall(_identifier);
 				
-				if (_parent.type != __GMLC_NodeType.CallExpression)
-				|| (_identifier.type != __GMLC_NodeType.Identifier) {  ///////////////////////// This line might cause errors, maybe the preprocessor should evaluate function name declarations
-					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}")
+				//if its an internally defined function, like a function defined in the same program we're parsing
+				if (_parent.type != __GMLC_NodeType.CallExpression) {
+					//see if we will be looking into our own program or searching global space
+					if (_identifier.type != __GMLC_NodeType.Identifier) {
+						//check if it's an existing built in function not in the program
+						if (!is_callable(_identifier.value)) {
+							throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}")
+						}
+					}
 				}
 				
 				#endregion
 				
 				_parentCall = _parent;
-				_parentName = _parent.callee.value;
+				_parentName = _parent.callee.name;
 			}
 			#endregion
 			#region function foo() `constructor` :: parse constructor keyword (if provided)
