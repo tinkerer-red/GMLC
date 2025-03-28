@@ -17,6 +17,7 @@
 		currentTokenIndex = 0;
 		currentToken = undefined;
 		currentFunction = undefined;
+		currentScope = ScopeType.GLOBAL; //used to change `function(){}` into `method(self, function(){}` when applicable
 		scriptAST = undefined;
 		
 		lastFiveTokens = array_create(5, undefined);
@@ -598,43 +599,79 @@
 			// Register function as a global variable and move its body to GlobalVar
 			if (!_isConstructor) {
 				var globalFunctionNode = new ASTFunctionDeclaration(
-												functionName,
-												_argList,
-												_local_var_names,
-												undefined, //will be set after body is parsed
-												line,
-												lineString
-										)
+					functionName,
+					_argList,
+					_local_var_names,
+					undefined, //will be set after body is parsed
+					line,
+					lineString
+				)
 			}
 			else {
 				var globalFunctionNode = new ASTConstructorDeclaration(
-												functionName,
-												_parentName,
-												_argList,
-												_parentCall,
-												_local_var_names,
-												undefined, //will be set after body is parsed
-												line,
-												lineString
-										)
+					functionName,
+					_parentName,
+					_argList,
+					_parentCall,
+					_local_var_names,
+					undefined, //will be set after body is parsed
+					line,
+					lineString
+				)
 			}
+			
 			
 			//cache the old current function, incase we are declaring a function inside a function
 			var _old_function = currentFunction;
+			var _old_scope = currentScope;
 			currentFunction = globalFunctionNode;
 			
-			// Parse the function body
+			//change the scope if needed
+			if (_isConstructor) currentScope = ScopeType.SELF
+			
+			// Parse the function body and apply it
 			globalFunctionNode.statements = parseBlock();
 			
 			//reset the current function
 			currentFunction = _old_function;
+			currentScope = _old_scope;
 			
 			// Add to GlobalVar mapping of the Program node
 			scriptAST.GlobalVar[$ functionName] = globalFunctionNode;
 			array_push(scriptAST.GlobalVarNames, functionName);
 			
+			// now correctly set the assignment, either a global lookup, or a method call, depending on if it's inside a constructor or not
+			switch (currentScope) {
+				case ScopeType.GLOBAL: {
+					var _func = new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
+				break;}
+				case ScopeType.STATIC: {
+					var _func = new ASTCallExpression(
+						new ASTLiteral(__method, line, lineString, "__method"),
+						[
+							new ASTLiteral(undefined, line, lineString, "undefined"),
+							globalFunctionNode
+						], 
+						line,
+						lineString
+					)
+				break;}
+				case ScopeType.SELF  : {
+					var _func = new ASTCallExpression(
+						new ASTLiteral(__method, line, lineString, "__method"),
+						[
+							new ASTUniqueIdentifier("self", line, lineString),
+							globalFunctionNode
+						], 
+						line,
+						lineString
+					)
+				break;}
+			}
+			
+			
 			// Return a reference to the function in the global scope
-			return new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
+			return _func;
 		};
 		static parseArgumentDefaultList = function() {
 			var line = currentToken.line;
@@ -726,29 +763,68 @@
 			var lineString = currentToken.lineString;
 			var _should_hoist = false
 			var type = currentToken.value;  // var, globalvar, or static
+			var _variable_scope = undefined;
 			
-			var _scope = undefined;
+			// convert string to scope type
 			switch (type) {
 				//case "let":{
 				//	//dont to nuttin`!
 				//break;}
 				case "var":{
-					_scope = ScopeType.LOCAL;
+					_variable_scope = ScopeType.LOCAL;
 				break;}
 				case "static":{
 					_should_hoist = true;
-					_scope = ScopeType.STATIC;
+					_variable_scope = ScopeType.STATIC;
 				break;}
 				case "globalvar":{
-					_scope = ScopeType.GLOBAL;
+					_variable_scope = ScopeType.GLOBAL;
 				break;}
 				default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
 			}
+			
+			
+			// Fetch the array containing variable names
+			var _tableArr = undefined
+			if (currentFunction == undefined) {
+				//script scrope
+				switch (_variable_scope) {
+					//case "let":{
+					//	//dont to nuttin`!
+					//break;}
+					case ScopeType.LOCAL: _tableArr = scriptAST.LocalVarNames; break;
+					case ScopeType.STATIC: throw_gmlc_error($"Script: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"); break;
+					case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
+					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
+				}
+					
+			}
+			else {
+				//function scope
+				switch (_variable_scope) {
+					//case "let":{
+					//	//dont to nuttin`!
+					//break;}
+					case ScopeType.LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
+					case ScopeType.STATIC: _tableArr = currentFunction.StaticVarNames; break;
+					case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
+					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
+				}
+			}
+			
+			
+			// Cache the scoping and update if needed
+			var _old_scope = currentScope;
+			if (_variable_scope = ScopeType.STATIC) {
+				currentScope = _variable_scope;
+			}
+			
 			
 			nextToken();
 			
 			var declarations = [];
 			
+			//parse all declarations
 		    while (true) {
 				// optionally skip redeclarations
 				var varLine = currentToken.line;
@@ -761,90 +837,28 @@
 		        var identifier = currentToken.value;
 				nextToken();
 				
-				//mark the variable tables
-				var _tableArr = undefined
-				if (currentFunction == undefined) {
-					//script scrope
-					switch (_scope) {
-						//case "let":{
-						//	//dont to nuttin`!
-						//break;}
-						case ScopeType.LOCAL: _tableArr = scriptAST.LocalVarNames; break;
-						case ScopeType.STATIC: throw_gmlc_error($"Script: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"); break;
-						case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
-					}
-					
-				}
-				else {
-					//function scope
-					switch (_scope) {
-						//case "let":{
-						//	//dont to nuttin`!
-						//break;}
-						case ScopeType.LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
-						case ScopeType.STATIC: _tableArr = currentFunction.StaticVarNames; break;
-						case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
-					}
-				}
+				//push to the table array
 				if (!array_contains(_tableArr, identifier)) {
 					array_push(_tableArr, identifier);
 				}
-				
 				
 				//fetch expression
 				var expr = undefined;
 				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
 					expr = parseConditionalExpression();
+					var _declaration = new ASTVariableDeclaration(identifier, expr, _variable_scope, varLine, varLineString);
 					
-					// a unique check to apply static functions names
-					if (_scope == ScopeType.STATIC) {
-						//if this is a static function assignment, assign the static identifiers name to the functions name
-						if (expr.type == __GMLC_NodeType.Identifier)
-						&& (expr.scope == ScopeType.GLOBAL) {
-							var _possibleFunc = scriptAST.GlobalVar[$ expr.value];
-							if (_possibleFunc != undefined) {
-								#region Change Function Name
-								var _newFuncName = $"GMLC@{identifier}@{string_replace(_possibleFunc.name, "GMLC@", "")}"
-									
-								//change the global look up
-								struct_remove(scriptAST.GlobalVar, _possibleFunc.name);
-								scriptAST.GlobalVar[$ _newFuncName] = _possibleFunc;
-								var _arr_index = array_get_index(scriptAST.GlobalVarNames, _possibleFunc.name);
-								array_delete(scriptAST.GlobalVarNames, _arr_index, 1);
-								array_push(scriptAST.GlobalVarNames, _newFuncName);
-									
-								//change the functions name
-								_possibleFunc.name = _newFuncName;
-								
-								#endregion
-								
-								#region Assign as method
-								if (_possibleFunc.type == __GMLC_NodeType.FunctionDeclaration)
-								|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
-									expr = new ASTCallExpression(
-										new ASTLiteral(__method, line, lineString, "__method"),
-										[ new ASTLiteral(undefined, line, lineString), new ASTIdentifier(_newFuncName, ScopeType.GLOBAL, line, lineString) ],
-										line,
-										lineString)
-								}
-								#endregion
-							}
-						}
-						
-					}
-					
-					switch (_scope) {
+					// either push it to the declarations array, or push it to the statics array
+					switch (_variable_scope) {
 						//case "let":{
 						//	//dont to nuttin`!
 						//break;}
 						case ScopeType.LOCAL:
 						case ScopeType.GLOBAL:{
-							array_push(declarations, new ASTVariableDeclaration(identifier, expr, _scope, varLine, varLineString));
+							array_push(declarations, _declaration);
 						break;}
 						case ScopeType.STATIC:{
-							array_push(currentFunction.StaticVarArray, new ASTVariableDeclaration(identifier, expr, ScopeType.STATIC, varLine, varLineString))
+							array_push(currentFunction.StaticVarArray, _declaration)
 						break;}
 						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
 					}
@@ -861,6 +875,9 @@
 		        nextToken(); // Consume , and move to the next identifier
 		    }
 			
+			//reset the current scope
+			currentScope = _old_scope;
+			
 			if (_should_hoist) {
 				return undefined;
 			}
@@ -869,7 +886,7 @@
 				return declarations[0];
 			}
 			else {
-				return new ASTVariableDeclarationList(declarations, _scope, line, lineString);
+				return new ASTVariableDeclarationList(declarations, _variable_scope, line, lineString);
 			}
 		};
 		
@@ -918,37 +935,6 @@
 				var operator = currentToken.value;
 				nextToken();
 				var right = parseAssignmentExpression(); // Assignment is right-associative
-				
-				//check if it's a function or constructor
-				if (right.type == __GMLC_NodeType.Identifier)
-				&& (right.scope == ScopeType.GLOBAL) {
-					var _possibleFunc = scriptAST.GlobalVar[$ right.value];
-					if (_possibleFunc != undefined) {
-						if (_possibleFunc.type == __GMLC_NodeType.FunctionDeclaration)
-						|| (_possibleFunc.type == __GMLC_NodeType.ConstructorDeclaration) {
-							
-							// method bind
-							//NOTE :: This should actually just end up being undefined in many cases,
-							// for instance when it's a static (already handled by static keyword),
-							// when it is in a constructor,
-							// when it is in a script but not inside a function, etc..
-							var _bind = undefined;
-							if (currentFunction == undefined) {
-								_bind = new ASTLiteral(undefined, line, lineString)
-							}
-							else {
-								_bind = new ASTUniqueIdentifier("self", line, lineString)
-							}
-							
-							right = new ASTCallExpression(
-								new ASTLiteral(__method, line, lineString, "__method"),
-								[ _bind, right, ], 
-								line,
-								lineString)
-						}
-					}
-				}
-				
 				
 				expr = new ASTAssignmentExpression(operator, expr, right, line, lineString);
 			}

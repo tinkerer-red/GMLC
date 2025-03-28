@@ -4,6 +4,35 @@ testFramework = new TestFrameworkRun();
 
 // ################# TEST SUITE REGISTRATION #################
 
+var _string = @'
+function foo() constructor {
+	show_debug_message(function(){
+		show_debug_message(self)
+	});
+}
+var t = new foo();
+t.bar();
+'
+
+tokenizer = new GML_Tokenizer();
+tokenizer.initialize(_string);
+var tokens = tokenizer.parseAll();
+	
+preprocessor = new GML_PreProcessor();
+preprocessor.initialize(tokens);
+var preprocessedTokens = preprocessor.parseAll();
+	
+parser = new GML_Parser();
+parser.initialize(preprocessedTokens);
+var ast = parser.parseAll();
+	
+postprocessor = new GML_PostProcessor();
+postprocessor.initialize(ast);
+var ast = postprocessor.parseAll();
+
+var _program = compileProgram(ast);
+
+_program();
 
 //// Register your test suites here...
 //testFramework.addSuite(OptimizerConstantFoldingTestSuite);

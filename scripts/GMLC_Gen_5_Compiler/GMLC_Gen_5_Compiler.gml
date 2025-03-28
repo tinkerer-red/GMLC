@@ -156,6 +156,7 @@ function __GMLCcompileProgram(_node, _globalsStruct) {
 }
 
 function __GMLCexecuteFunction() {
+	show_debug_message("doot doot")
 	__GMLC_DEFAULT_SELF_AND_OTHER
 	__GMLC_PRE_FUNC
 	
@@ -210,18 +211,17 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCexecuteConstructor() constructor {
-	var _this = self;
 	with other {
 		global.otherInstance ??= global.selfInstance ?? rootNode.globals;
-		global.selfInstance ??= _this;
+		global.selfInstance ??= other;
 		__GMLC_PRE_FUNC
 		var _program = program;
 		var _arguments = arguments;
 		var _statics = statics;
 	}
-	show_debug_message(global.selfInstance)
+	
 	//run the body
-	static_set(_this, _statics)
+	static_set(self, _statics)
 	method_call(_program, _arguments);
 	
 	with other {
