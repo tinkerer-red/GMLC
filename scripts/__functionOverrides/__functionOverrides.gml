@@ -59,25 +59,27 @@ function __new(_func, argArr=[]) {
 			throw_gmlc_error("target function for 'new' must be a constructor, this one is a gmlc method")
 		}
 		else {
-			//init our arguments
+			var _struct = {};
 			
-			//run the parent
-			var _constructor = method_get_self(_func);
-			if (_constructor.parentCall != undefined) {
-				var _struct = __new(parentCall.callee(), _args)
-			}
-			else {
-				var _struct = {};
-			}
-			
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
+			global.otherInstance = global.selfInstance ?? other;
+			global.selfInstance = _struct;
+						
 			//run our body
-			_constructor.statements();
+			static_set(_struct, method_get_self(_func).statics)
+			_func();
+			
+			global.otherInstance = _prevOther;
+			global.selfInstance  = _prevSelf;
+			
+			return _struct;
 		}
 	}
 	else {
 		//a native gml constructor
 		with (global.otherInstance) with (global.selfInstance) {
-			return constructor_call_ext(_func, _argArr);
+			return constructor_call_ext(_func, argArr);
 		}
 	}	
 }
@@ -264,13 +266,6 @@ function __script_execute_ext(ind, array=undefined, offset=0, num_args=array_len
 	}
 	
 	return script_execute_ext(ind, __argArr);
-}
-
-function __struct_get_with_error(struct, name) {
-	if (struct_exists(struct, name)) return struct_get(struct, name);
-	
-	throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.")
-	//throw_gmlc_error($"Variable <unknown_object>.{name} not set before reading it.\n at gmlc_{objectType}_{objectName}_{eventType}_{eventNumber} (line {lineNumber}) - {lineString}")
 }
 
 

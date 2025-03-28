@@ -1,3 +1,9 @@
+enum RainbowColors {
+	Red, Orange, Yellow,
+	Green, Blue, Indigo,
+	Violet
+}
+
 
 
 function BasicDataTypesTestSuite() : TestSuite() constructor {
@@ -1290,7 +1296,7 @@ function BasicDataTypesTestSuite() : TestSuite() constructor {
 		}, "ptr ( array:local ), should not throw an error, valid convertion");
 			
 	}, {
-		test_filter: platform_not_browser
+		platformFilter: platform_not_browser
 		
 	});
 	

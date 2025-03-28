@@ -360,7 +360,7 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	},
 	{ 
 		// This will end the test if the test runs for 3 seconds without a change in frame being detected
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	// Test for tilemap_get_tile_width()
@@ -791,7 +791,7 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	
 	},
 	{ 
-		test_timeout_millis: 3000,
+		timeoutMillis: 3000,
 	});
 	
 	// Test for tile_set_empty() and tile_get_empty()
@@ -1038,6 +1038,6 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	
 	},
 	{ 
-		test_timeout_millis: 3000,
+		timeoutMillis: 3000,
 	});
 }

@@ -19,6 +19,6 @@ function BasicHandlesTestSuite() : TestSuite() constructor {
         var output = is_handle(asset);
         assert_true(output, $"is_handle({name}) should be true");
     }, {
-		test_filter: runtime_not_gmrt
+		platformFilter: runtime_not_gmrt
 	});
 }

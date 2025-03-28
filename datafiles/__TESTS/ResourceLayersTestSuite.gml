@@ -498,7 +498,7 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 		layer_destroy(testLayer);
 
 	}, {
-		test_filter: runtime_not_gmrt
+		platformFilter: runtime_not_gmrt
 	})
 
 	addFact("layer_instance_test", function() {

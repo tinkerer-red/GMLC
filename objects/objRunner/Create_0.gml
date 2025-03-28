@@ -25,12 +25,13 @@ for(var i=0; i<array_length(_file_names); i++) {
 	var _program_data = method_get_self(_program);
 	var _global_names = struct_get_names(_program_data.globals);
 	
-	for(var j=0; j<array_length(_file_names); j++) {
+	for(var j=0; j<array_length(_global_names); j++) {
 		var _global_name = _global_names[j];
 		
 		if (!string_starts_with(_global_name, "GMLC"))
 		&& (string_pos("TestSuite", _global_name))
 		{
+			show_debug_message(_global_name);
 			var _func = _program_data.globals[$ _global_name];
 			testFramework.addSuite(_func);
 		}

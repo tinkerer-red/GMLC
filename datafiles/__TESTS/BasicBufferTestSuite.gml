@@ -674,7 +674,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         file_delete("Buffer.sav");
         buffer_delete(testBuffer);
         
-    }, { test_filter: platform_not_console });
+    }, { platformFilter: platform_not_console });
     
     addFact("buffer_save_ext_test", function() {
         // Create a buffer and fill the second half of it with 8-bit integers with a value of 10
@@ -690,7 +690,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         file_delete("BufferExt.sav");
         buffer_delete(testBuffer);
         
-    }, { test_filter: platform_not_console });
+    }, { platformFilter: platform_not_console });
     
     addFact("buffer_load_test #1", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save it to a file called "Buffer.sav"
@@ -712,7 +712,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { test_filter: platform_not_console });
+    }, { platformFilter: platform_not_console });
     
     addFact("buffer_load_test #2", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save that half to a file called "BufferExt.sav"
@@ -734,7 +734,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { test_filter: platform_not_console });
+    }, { platformFilter: platform_not_console });
     
     addFact("buffer_load_ext_test", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save it to a file called "Buffer.sav"
@@ -755,7 +755,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { test_filter: platform_not_console });
+    }, { platformFilter: platform_not_console });
     
     addFact("buffer_load_partial_test", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save it to a file called "Buffer.sav"
@@ -776,7 +776,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { test_filter: platform_not_console });
+    }, { platformFilter: platform_not_console });
 
 	// #### ASYNC ####
 
@@ -806,7 +806,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
 			test_end();
 		},
 		
-	}, { test_filter: platform_not_console, test_timeout_millis: 3000 });
+	}, { platformFilter: platform_not_console, timeoutMillis: 3000 });
 		
 	addTestAsync("buffer_save_async_group_test", objTestAsyncSaveLoad, {
 			
@@ -842,7 +842,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
 			test_end();
 		}
 			
-    }, { test_filter: platform_not_console, test_timeout_millis: 3000 });
+    }, { platformFilter: platform_not_console, timeoutMillis: 3000 });
 		
 	addTestAsync("buffer_load_async_test", objTestAsyncSaveLoad, {
 			
@@ -871,10 +871,10 @@ function BasicBufferTestSuite() : TestSuite() constructor {
 			test_end();
 		}
 			
-    }, { test_filter: platform_not_console, test_timeout_millis: 3000 });
+    }, { platformFilter: platform_not_console, timeoutMillis: 3000 });
 		
 	config({
-		suite_filter: platform_not_browser
+		platformFilter: platform_not_browser
 	})
 		
 	addFact("buffer_get_used_size", function() {

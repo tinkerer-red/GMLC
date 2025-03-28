@@ -31,7 +31,7 @@ function BasicRoomTestSuite() : TestSuite() constructor {
 		},
 	}, {
 		// Make sure we give this test a timeout (1 second is enough for this test)
-		test_timeout_millis: 1000 
+		timeoutMillis: 1000 
 	});
 }
 

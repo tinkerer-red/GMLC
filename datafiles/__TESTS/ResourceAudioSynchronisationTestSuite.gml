@@ -199,7 +199,7 @@ function ResourceAudioSynchronisationTestSuite() : TestSuite() constructor {
 	});
 
 	config({
-		suite_filter: runtime_not_gmrt
+		platformFilter: runtime_not_gmrt
 	});
 
 }

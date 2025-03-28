@@ -154,8 +154,8 @@ function BasicSurfaceTestSuite() : TestSuite() constructor {
     }, 
         {
         // Doesn't work on HTML5 or console
-        test_filter: platform_not_browser,
-        test_filter: platform_not_console
+        platformFilter: platform_not_browser,
+        platformFilter: platform_not_console
     });
     
     addFact("surface_reset_target #1", function() {
@@ -213,7 +213,7 @@ function BasicSurfaceTestSuite() : TestSuite() constructor {
     }, 
     {
         // Doesn't work on HTML5
-        test_filter: platform_not_browser
+        platformFilter: platform_not_browser
     });
     
     addFact("surface_save_part", function() {
@@ -233,7 +233,7 @@ function BasicSurfaceTestSuite() : TestSuite() constructor {
     }, 
     {
         // Doesn't work on HTML5
-        test_filter: platform_not_browser
+        platformFilter: platform_not_browser
     });
     
     addFact("surface_depth_disable #1", function() {
@@ -265,7 +265,7 @@ function BasicSurfaceTestSuite() : TestSuite() constructor {
     }, 
         { 
         // Only works on HTML5
-        test_filter: platform_browser
+        platformFilter: platform_browser
     });
     
 }

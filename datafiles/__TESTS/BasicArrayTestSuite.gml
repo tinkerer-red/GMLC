@@ -1,3 +1,8 @@
+enum RainbowColors {
+	Red, Orange, Yellow,
+	Green, Blue, Indigo,
+	Violet
+}
 
 function BasicArrayTestSuite() : TestSuite() constructor {
 

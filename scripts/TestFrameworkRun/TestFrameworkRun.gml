@@ -16,12 +16,7 @@ function TestFrameworkRun() : TestBatch() constructor {
 	/// @description Adds a new test suite to the FrameworkRun process.
 	/// @param {Function} suite
 	static addSuite = function(_suite) {
-		if (is_gmlc_constructor(_suite)) {
-			add(_suite());
-		}
-		else {
-			add(new _suite());
-		}
+		add(new _suite());
 	}
 
 	/// @function addWithName(name)

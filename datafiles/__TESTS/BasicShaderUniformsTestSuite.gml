@@ -62,7 +62,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_matrix_view", objTestAsyncDraw, {
@@ -146,7 +146,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_matrix_projection", objTestAsyncDraw, {
@@ -230,7 +230,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_matrix_world", objTestAsyncDraw, {
@@ -314,7 +314,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_matrix_world_view", objTestAsyncDraw, {
@@ -401,7 +401,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_matrix_world_view_projection", objTestAsyncDraw, {
@@ -511,7 +511,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("matrix_max", objTestAsyncDraw, {
@@ -543,7 +543,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_vs_fog_enabled", objTestAsyncDraw, { 
@@ -602,7 +602,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_ps_fog_enabled", objTestAsyncDraw, {
@@ -661,7 +661,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_fog_colour", objTestAsyncDraw, {
@@ -720,7 +720,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_fog_start", objTestAsyncDraw, {
@@ -779,7 +779,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_rcp_fog_range", objTestAsyncDraw, {
@@ -838,7 +838,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("max_vs_lights", objTestAsyncDraw, {
@@ -870,7 +870,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_lighting_enabled", objTestAsyncDraw, {
@@ -929,7 +929,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_lights_direction", objTestAsyncDraw, {
@@ -990,7 +990,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_lights_pos_range", objTestAsyncDraw, {
@@ -1051,7 +1051,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_lights_colour", objTestAsyncDraw, {
@@ -1110,7 +1110,7 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 	
 	addTestAsync("gm_ambient_colour", objTestAsyncDraw, {
@@ -1169,6 +1169,6 @@ function BasicShaderUniformsTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		test_timeout_millis: 3000
+		timeoutMillis: 3000
 	});
 }

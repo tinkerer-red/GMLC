@@ -11,7 +11,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		value = directory_exists(directory);
 		assert_false(value, "directory_exists( 'NONEXISTENT_DIRECTORY' ), should not exist");
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	addFact("directory_test #2", function() {
 			
@@ -20,7 +20,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		value = directory_exists(working_directory);
 		assert_true(value, "directory_exists( working_directory ), should exist");
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	addFact("directory_test #3", function() {
 			
@@ -33,7 +33,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		value = directory_exists(directory);
 		assert_true(value, "directory_create( directory ), failed to create simple directory");
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	addFact("directory_test #4", function() {
 			
@@ -46,7 +46,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		value = directory_exists(directory);
 		assert_false(value, "directory_destroy( directory ), failed to destroy simple directory");
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	addFact("directory_test #5", function() {
 			
@@ -59,7 +59,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		value = directory_exists(directory);
 		assert_true(value, "directory_create( direcotry ), failed to create nested directory");
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	addFact("directory_test #6", function() {
 			
@@ -72,7 +72,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		value = directory_exists(directory);
 		assert_false(value, "directory_destroy( directory ), failed to destroy nested directory");
 			
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	// FILE TESTS
 	
@@ -94,7 +94,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 			
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #2", function() {
 
@@ -114,7 +114,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 			
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #3", function() {
 
@@ -140,7 +140,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 			
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #4", function() {
 
@@ -166,7 +166,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 			
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #5", function() {
 
@@ -216,7 +216,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 			
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #6", function() {
 
@@ -242,7 +242,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #7", function() {
 
@@ -273,7 +273,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		if (platform_not_browser()) directory_destroy(directory);
 
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_test #8", function() {
 
@@ -316,7 +316,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		//file_attributes(fname,fa_volumeid);
 		//file_attributes(fname,fa_archive);
 
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	// FILE EXISTS TESTS
 
@@ -334,7 +334,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			assert_false(_output, "file_exists( 'c:/windows/explorer.exe' ), should not find the file on HTML5");
 		}			
 			
-	}, { test_filter: function() { return platform_windows() && !GM_is_sandboxed } });
+	}, { platformFilter: function() { return platform_windows() && !GM_is_sandboxed } });
 
 	// BINARY FILES TESTS
 	
@@ -357,7 +357,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		file_bin_close(_fileHandle);
 		directory_destroy(directory);
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_bin_test #2", function() {
 
@@ -388,7 +388,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		file_bin_close(_fileHandle);
 		directory_destroy(directory);
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_bin_test #3", function() {
 
@@ -423,7 +423,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		file_bin_close(_fileHandle);
 		directory_destroy(directory);
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_bin_test #4", function() {
 
@@ -457,7 +457,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		file_bin_close(_fileHandle);
 		directory_destroy(directory);
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_bin_test #5", function() {
 
@@ -492,7 +492,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		file_bin_close(_fileHandle);
 		directory_destroy(directory);
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 	
 	addFact("file_bin_test #6", function() {
 
@@ -527,7 +527,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		file_bin_close(_fileHandle);
 		directory_destroy(directory);
 		
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	addFact("file_bin_test #7", function() {
 
@@ -569,7 +569,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			
 		directory_destroy(directory);
 	
-	}, { test_filter: platform_not_browser });
+	}, { platformFilter: platform_not_browser });
 
 	// TEXT FILES TESTS
 	
@@ -1011,7 +1011,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		//file_delete("testFile.txt");
 		
-	}, { test_filter: platform_windows });
+	}, { platformFilter: platform_windows });
 	
 	addFact("filename_test_windows #2", function() {
 		
@@ -1035,7 +1035,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		file_delete("testFile.txt");
 		
-	}, { test_filter: platform_windows });
+	}, { platformFilter: platform_windows });
 	
 	addFact("filename_test_windows #3", function() {
 		
@@ -1060,7 +1060,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		file_delete("testFile.txt");
 		
-	}, { test_filter: platform_windows });
+	}, { platformFilter: platform_windows });
 	
 	addFact("filename_test_windows #4", function() {
 		
@@ -1085,7 +1085,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 		
 		file_delete("testFile.txt");
 		
-	}, { test_filter: platform_windows });
+	}, { platformFilter: platform_windows });
 	
 	addFact("filename_test_windows #5", function() {
 		
@@ -1113,7 +1113,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			
 		file_delete("testFile.txt");
 
-	}, { test_filter: platform_windows });
+	}, { platformFilter: platform_windows });
 
 	addFact("filename_test_macos #1", function() {
 		
@@ -1140,7 +1140,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			
 		file_delete("testFile.txt");
 
-	}, { test_filter: platform_macosx });
+	}, { platformFilter: platform_macosx });
 
 	addFact("filename_test_macos #2", function() {
 		
@@ -1167,7 +1167,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			
 		file_delete("testFile.txt");
 
-	}, { test_filter: platform_macosx });
+	}, { platformFilter: platform_macosx });
 
 	addFact("filename_test_macos #3", function() {
 		
@@ -1194,7 +1194,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			
 		file_delete("testFile.txt");
 
-	}, { test_filter: platform_macosx });
+	}, { platformFilter: platform_macosx });
 
 	addFact("filename_test_macos #4", function() {
 		
@@ -1224,7 +1224,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 			
 		file_delete("testFile.txt");
 
-	}, { test_filter: platform_macosx });
+	}, { platformFilter: platform_macosx });
 
 	// CSV FILES
 	
@@ -1345,7 +1345,7 @@ function BasicFileTestSuite() : TestSuite() constructor {
 
 	});
 
-	config({ suite_filter: platform_not_console });
+	config({ platformFilter: platform_not_console });
 
 }
 
