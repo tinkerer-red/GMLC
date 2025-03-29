@@ -56,7 +56,7 @@ function TestBatch() : Test() constructor {
 	/// @param {Struct.Test} test The test to be added to the batch.
 	static add = function(_test) {
 		
-		if (!__is_instanceof(_test, Test)) {
+		if (!is_instanceof(_test, Test)) {
 			throw log_error("add :: trying to add an element that is not a Test to {0}.", instanceof(self));
 		}
 		
