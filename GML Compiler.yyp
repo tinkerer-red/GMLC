@@ -343,6 +343,7 @@
     {"id":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},},
     {"id":{"name":"room0","path":"rooms/room0/room0.yy",},},
     {"id":{"name":"room1","path":"rooms/room1/room1.yy",},},
+    {"id":{"name":"__apply_constructor_tags","path":"scripts/__apply_constructor_tags/__apply_constructor_tags.yy",},},
     {"id":{"name":"__functionOverrides","path":"scripts/__functionOverrides/__functionOverrides.yy",},},
     {"id":{"name":"__privPromise","path":"scripts/__privPromise/__privPromise.yy",},},
     {"id":{"name":"Assert","path":"scripts/Assert/Assert.yy",},},

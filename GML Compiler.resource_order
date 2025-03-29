@@ -98,6 +98,7 @@
     {"name":"rmEmpty","order":6,"path":"rooms/rmEmpty/rmEmpty.yy",},
     {"name":"rmInit","order":7,"path":"rooms/rmInit/rmInit.yy",},
     {"name":"room1","order":1,"path":"rooms/room1/room1.yy",},
+    {"name":"__apply_constructor_tags","order":4,"path":"scripts/__apply_constructor_tags/__apply_constructor_tags.yy",},
     {"name":"__functionOverrides","order":1,"path":"scripts/__functionOverrides/__functionOverrides.yy",},
     {"name":"__privPromise","order":1,"path":"scripts/__privPromise/__privPromise.yy",},
     {"name":"AssertAPI","order":3,"path":"scripts/AssertAPI/AssertAPI.yy",},

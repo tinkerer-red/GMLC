@@ -101,6 +101,16 @@ function is_script(_value) {
 	return script_exists(_value);
 }
 
+// uncomment this when tags are applied to constructors
+function is_constructor(_func){
+	if (is_method(_func)) {
+		return asset_has_tags(method_get_index(_func), "@@constructor");
+	}
+	else {
+		return asset_has_tags(_func, "@@constructor");
+	}
+}
+
 function static_exists(_struct, _name) {
 	var _static = static_get(_struct)
 	
@@ -122,6 +132,7 @@ function throw_gmlc_error(_err) {
 '+string(_err)+"\n=========\n\n", true)
 
 }
+
 
 
 
