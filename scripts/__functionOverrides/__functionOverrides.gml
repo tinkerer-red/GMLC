@@ -6,49 +6,82 @@
 function __gmlc_method(_struct, _func) {
 	//these two are the same exact thing, one is just a constructor
 	static __executeMethodFunction = function() {
-		var argArr = array_create(argument_count, undefined);
+		// -- This is the only difference between the two functions
+		__GMLC_DEFAULT_SELF_AND_OTHER
+		var _target = target;
+		var _func = func;
+		//////////////////////////////////////////////////////////
+		
+		static argArr = array_create(argument_count, undefined);
+		var _argArr = argArr;
+		array_resize(_argArr, argument_count)
 		var _i=argument_count-1; repeat(argument_count) {
-			argArr[_i] = argument[_i];
+			_argArr[_i] = argument[_i];
 		_i--}
 		
-		if (target != undefined) {
+		
+		if (_target != undefined) {
 			var _prevOther = global.otherInstance;
 			var _prevSelf  = global.selfInstance;
 			global.otherInstance = global.selfInstance;
-			global.selfInstance = target;
+			global.selfInstance = _target;
 			
-			var _return = method_call(func, argArr);
+			var _return = method_call(_func, _argArr);
 			
 			global.otherInstance = _prevOther;
 			global.selfInstance  = _prevSelf;
 		}
 		else {
-			var _return = method_call(func, argArr);
+			var _return = method_call(_func, _argArr);
 		}
 		
+		array_resize(_argArr, 0)
 		return _return;
 	}
 	static __executeMethodConstructor = function() constructor {
-		var argArr = array_create(argument_count, undefined);
+		// -- This is the only difference between the two functions
+		//check to see if this is a `new` expression, or some `script_execute` equivalent using `method_call`
+		var _self_is_gmlc  = self[$ "__@@is_gmlc_function@@__"];
+		var _is_new_expression = !_self_is_gmlc;
+		if (_is_new_expression) {
+			with other {
+				__GMLC_DEFAULT_SELF_AND_OTHER
+				var _target = target;
+				var _func = func;
+			}
+		}
+		else {
+			__GMLC_DEFAULT_SELF_AND_OTHER
+			var _target = target;
+			var _func = func;
+			
+		}
+		//////////////////////////////////////////////////////////
+		
+		static argArr = array_create(argument_count, undefined);
+		var _argArr = argArr;
+		array_resize(_argArr, argument_count)
 		var _i=argument_count-1; repeat(argument_count) {
-			argArr[_i] = argument[_i];
+			_argArr[_i] = argument[_i];
 		_i--}
 		
-		if (target != undefined) {
+		
+		if (_target != undefined) {
 			var _prevOther = global.otherInstance;
 			var _prevSelf  = global.selfInstance;
 			global.otherInstance = global.selfInstance;
-			global.selfInstance = target;
+			global.selfInstance = _target;
 			
-			var _return = method_call(func, argArr);
+			var _return = method_call(_func, _argArr);
 			
 			global.otherInstance = _prevOther;
 			global.selfInstance  = _prevSelf;
 		}
 		else {
-			var _return = method_call(func, argArr);
+			var _return = method_call(_func, _argArr);
 		}
 		
+		array_resize(_argArr, 0)
 		return _return;
 	}
 	
