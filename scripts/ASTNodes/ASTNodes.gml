@@ -386,8 +386,6 @@ function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _
 		var _arr = [];
 		var _parent = self;
 		
-		pprint(self)
-		
 		if (_top_down) {
 			array_push(_arr, {node: tryBlock, parent: _parent, key: "tryBlock", index: undefined});
 			if (catchBlock != undefined) array_push(_arr, {node: catchBlock, parent: _parent, key: "catchBlock", index: undefined});
