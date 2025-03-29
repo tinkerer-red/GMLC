@@ -1,77 +1,86 @@
 #region Macros
+#region Globals for `self` and `other`
 #macro __GMLC_DEFAULT_SELF_AND_OTHER	global.otherInstance ??= global.selfInstance ?? rootNode.globals;\
 										global.selfInstance ??= other
+#endregion
 
-#macro __GMLC_PRE_FUNC	if (self[$ "argumentCount"] == undefined) pprint(self);\
-						/*mostly just used in recursion code*/\
-						var _arg_count = max(argument_count, self[$ "argumentCount"]??0)\
-						if (recursionCount++) {\
-						    /* Stash the locals*/\
-							if (struct_exists(self, "locals")){\
-						        array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);\
-								array_resize(locals, 0);\
-								array_resize(locals, localCount);\
-						        array_copy(backupLocalsWrittenTo, array_length(backupLocalsWrittenTo), localsWrittenTo, 0, localCount);\
-								array_resize(localsWrittenTo, 0);\
-								array_resize(localsWrittenTo, localCount);\
-							}\
-							/* Stach the arguments*/\
-							if (struct_exists(self, "arguments")){\
-						        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);\
-								array_resize(arguments, 0);\
-								array_resize(arguments, _arg_count);\
-								array_push(argCountMemory, _arg_count)\
-							}\
-						}\
-						/* Stash the previous argument count for next theoretical recursion of the function*/\
-						prevArgCount = _arg_count;\
-						/* populate argument array*/\
-						var _i=argument_count-1; repeat(argument_count) {\
-							arguments[_i] = argument[_i];\
-						_i--}\
-						/* Scripts dont have default arguments, this is important for Functions and Constructors*/\
-						if (struct_exists(self, "argumentCount")) {\
-							argumentsDefault();\
-						}\
-						/* If constructor call, init our parents first*/\
-						if (self[$ "hasParentConstructor"]) {\
-							parentConstructorCall(arguments)\
-						}\
-						/* Run our statics, once again Scripts do not have this.*/\
-						if (struct_exists(self, "staticsExecuted") && !staticsExecuted) {\
-							static_set(self, statics);\
-							staticsExecuted = true;\
-							staticsBlock();\
-						}
-
-#macro __GMLC_POST_FUNC	returnValue = undefined;\
-						flowMask = FLOW_MASK.EMPTY;\
-						if (--recursionCount) {\
-					        /* Un-stash the locals*/\
-							if (struct_exists(self, "locals")){\
-								var _local_offset = array_length(backupLocals)-localCount\
+#region Locals
+#macro __GMLC_STASH_LOCALS	array_copy(backupLocals, array_length(backupLocals), locals, 0, localCount);\
+							array_resize(locals, 0);\
+							array_resize(locals, localCount);\
+						    array_copy(backupLocalsWrittenTo, array_length(backupLocalsWrittenTo), localsWrittenTo, 0, localCount);\
+							array_resize(localsWrittenTo, 0);\
+							array_resize(localsWrittenTo, localCount)
+							
+#macro __GMLC_UNSTASH_LOCALS	var _local_offset = array_length(backupLocals)-localCount\
 						        array_copy(locals, 0, backupLocals, _local_offset, localCount);\
 						        array_resize(backupLocals, _local_offset);\
 								var _local_offset = array_length(backupLocalsWrittenTo)-localCount\
 						        array_copy(localsWrittenTo, 0, backupLocalsWrittenTo, _local_offset, localCount);\
-						        array_resize(backupLocalsWrittenTo, _local_offset);\
-							}\
-							/* Un-stash the arguments*/\
-							if (struct_exists(self, "arguments")){\
-								var _prev_arg_count = array_pop(argCountMemory)\
+						        array_resize(backupLocalsWrittenTo, _local_offset)
+
+#macro __GMLC_RESET_LOCALS	array_resize(locals, 0);\
+							array_resize(localsWrittenTo, 0)
+#endregion
+
+#region Arguments
+#macro __GMLC_STASH_ARGUMENTS	array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);\
+								array_resize(arguments, 0);\
+								array_resize(arguments, _arg_count);\
+								array_push(argCountMemory, _arg_count)
+								
+#macro __GMLC_UNSTASH_ARGUMENTS var _prev_arg_count = array_pop(argCountMemory)\
 								var _arg_offset = array_length(backupArguments)-_prev_arg_count\
 						        array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);\
-						        array_resize(backupArguments, _arg_offset);\
-							}\
+						        array_resize(backupArguments, _arg_offset)
+
+#macro __GMLC_RESET_ARGUMENTS	array_resize(arguments, 0);
+
+#macro __GMLC_INIT_ARGUMENT_COUNT	var _arg_count = max(argument_count, argumentCount)
+
+#macro __GMLC_POPULATE_ARGUMENTS	prevArgCount = _arg_count;\
+									var _i=argument_count-1; repeat(argument_count) {\
+										arguments[_i] = argument[_i];\
+									_i--}\
+									if (struct_exists(self, "argumentsDefault")) {\
+										argumentsDefault();\
+									}
+#endregion
+
+#region Constructors
+#macro __GMLC_CALL_PARENT_CONSTRUCTOR	if (self[$ "hasParentConstructor"]) {\
+											parentConstructorCall(arguments)\
+										}
+
+#endregion
+
+#region Statics
+#macro __GMLC_INIT_STATICS	if (struct_exists(self, "staticsExecuted") && !staticsExecuted) {\
+								staticsExecuted = true;\
+								staticsBlock();\
+							}
+
+#endregion
+
+#macro __GMLC_PRE_FUNC	__GMLC_DEFAULT_SELF_AND_OTHER\
+						__GMLC_INIT_ARGUMENT_COUNT\
+						if (recursionCount++) {\
+						    __GMLC_STASH_LOCALS\
+							__GMLC_STASH_ARGUMENTS\
+						}\
+						__GMLC_POPULATE_ARGUMENTS\
+						__GMLC_INIT_STATICS
+						
+
+#macro __GMLC_POST_FUNC	returnValue = undefined;\
+						flowMask = FLOW_MASK.EMPTY;\
+						if (--recursionCount) {\
+							__GMLC_UNSTASH_LOCALS\
+							__GMLC_UNSTASH_ARGUMENTS\
 					    }\
 						else {\
-							if (struct_exists(self, "locals")){\
-								array_resize(locals, 0);\
-								array_resize(localsWrittenTo, 0);\
-							}\
-							if (struct_exists(self, "arguments")){\
-						        array_resize(arguments, 0);\
-							}\
+							__GMLC_RESET_LOCALS;\
+							__GMLC_RESET_ARGUMENTS;\
 						}
 #endregion
 
@@ -128,11 +137,24 @@ function __GMLCexecuteProgram() {
 }
 function __GMLCcompileProgram(_node, _globalsStruct) {
 	var _output = new __GMLC_Function(undefined, undefined, "__GMLCcompileProgram", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.rootNode = _output;
 	_output.globals = _globalsStruct; // these are optional inputs for future use with compiling a full project folder.
 	_output.program = __GMLCcompileFunction(_output, _output, _node);
 	
-	_output.recursionCount = 0; 
-	_output.prevArgCount = 0; 
+	//this assists with converting locals from struct accessors to an array write
+	_output.localLookUps = {};
+	var _i=0; repeat(array_length(_node.LocalVarNames)) {
+		_output.localLookUps[$ _node.LocalVarNames[_i]] = _i;
+	_i++}
+	_output.localCount = _i;
+	_output.locals = array_create(_i, undefined);
+	_output.localsWrittenTo = array_create(_i, false); //remember if we ever wrote to those locals, this is used to throw errors incase we are reading from an unwritten local
+	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
+	_output.backupLocalsWrittenTo = [];//if the function is recursive stash the locals back into this array, to<->from
+	
+	_output.recursionCount = 0;
+	_output.prevArgCount = 0;
+	_output.argumentCount = 0;
 	_output.arguments = [];
 	_output.backupArguments = [];
 	_output.argCountMemory = [];
@@ -156,7 +178,6 @@ function __GMLCcompileProgram(_node, _globalsStruct) {
 }
 
 function __GMLCexecuteFunction() {
-	show_debug_message("doot doot")
 	__GMLC_DEFAULT_SELF_AND_OTHER
 	__GMLC_PRE_FUNC
 	
@@ -177,7 +198,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	//statics
 	_output.staticsExecuted = false;
-	_output.statics = new __GMLC_Statics();
+	_output.statics = {};
 	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
 	static_set(_output, _output.statics)
 	
@@ -212,11 +233,35 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 
 function __GMLCexecuteConstructor() constructor {
 	//check to see if this is a `new` expression, or some `script_execute` equivalent
-	var _is_new_expression = is_instanceof(self, __GMLCexecuteConstructor);
+	//var _is_new_expression = is_instanceof(self, __GMLCexecuteConstructor);
+	var _is_new_expression = array_length(struct_get_names(self)) == 0;
 	
-	with other {
-		__GMLC_DEFAULT_SELF_AND_OTHER;
-		__GMLC_PRE_FUNC;
+	if (_is_new_expression) {
+		with other {
+			__GMLC_DEFAULT_SELF_AND_OTHER
+			__GMLC_INIT_ARGUMENT_COUNT
+			if (recursionCount++) {
+				__GMLC_STASH_LOCALS
+				__GMLC_STASH_ARGUMENTS
+			}
+			__GMLC_POPULATE_ARGUMENTS
+			__GMLC_CALL_PARENT_CONSTRUCTOR
+			__GMLC_INIT_STATICS
+			var _program = program;
+			var _arguments = arguments;
+			var _statics = statics;
+		}
+	}
+	else {
+		__GMLC_DEFAULT_SELF_AND_OTHER
+		__GMLC_INIT_ARGUMENT_COUNT
+		if (recursionCount++) {
+			__GMLC_STASH_LOCALS
+			__GMLC_STASH_ARGUMENTS
+		}
+		__GMLC_POPULATE_ARGUMENTS
+		__GMLC_CALL_PARENT_CONSTRUCTOR
+		__GMLC_INIT_STATICS
 		var _program = program;
 		var _arguments = arguments;
 		var _statics = statics;
@@ -296,8 +341,6 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 		//no parent? just have an empty static
 		static_set(_output.statics, static_get({}))
 	}
-	
-	static_set(_output, _output.statics)
 	
 	return method(_output, __GMLCexecuteConstructor)
 }
@@ -974,7 +1017,7 @@ function __GMLCexecuteNewExpression() {
         array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
 		array_resize(arguments, 0);
 		array_resize(arguments, _arg_count);
-		array_push(argCountMemory, _arg_count)
+		array_push(argCountMemory, _arg_count);
     }
 	
 	//remember how many the function had
@@ -986,41 +1029,7 @@ function __GMLCexecuteNewExpression() {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 	
-	var _return = undefined;
-	if (is_method(_func)) {
-		if (is_gmlc_program(_func))
-		|| (is_gmlc_method(_func)) {
-			var _struct = {};
-			var _args = arguments;
-			
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = (is_gmlc_method(_func)) ? (__method_get_self(_func) ?? global.selfInstance) : global.selfInstance;
-			global.selfInstance = _struct;
-			
-			var _return = method_call(_func, _args);
-			static_set(_struct, _func.statics);
-			
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
-		}
-		else {
-			// I honestly have no idea why someone would bind a constructor to an object prior to calling it, lets hope this works...
-			var _args = arguments;
-			with (global.otherInstance) with (global.selfInstance) {
-				var _struct = constructor_call_ext(_func, _args);
-				static_set(_struct, static_get(method_get_index(_func)));
-			}
-		}
-	}
-	else {
-		var _args = arguments;
-		with (global.otherInstance) with (global.selfInstance) {
-			var _struct = constructor_call_ext(_func, _args);
-			//static_set(_struct, static_get(_func));
-		}
-	}
-	
+	var _struct = constructor_call_ext(_func, arguments);
 	
 	if (--recursionCount) {
         // Un-stash the arguments
@@ -1873,7 +1882,6 @@ function __GMLC_Constructor_Statics(_construct_name) : __GMLC_Statics() construc
 		"__@@is_gmlc_constructed@@__": true,
 		"__@@gmlc_constructor_name@@__": _construct_name,
 	};
-	
 }
 
 #endregion

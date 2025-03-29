@@ -6,9 +6,10 @@ testFramework = new TestFrameworkRun();
 
 var _string = @'
 function foo() constructor {
-	show_debug_message(function(){
+	show_debug_message(bar);
+	static bar = function() {
 		show_debug_message(self)
-	});
+	}
 }
 var t = new foo();
 t.bar();
