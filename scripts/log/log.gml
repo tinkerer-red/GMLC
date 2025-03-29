@@ -8,7 +8,7 @@ function json(_input) {
 #macro pprint repeat (__pprint_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __pprint
 /// @param ...args
 function __pprint() {
-    var _str = $"{__pprint.__file}/{__pprint.__func}:{__pprint.__line}:\n"
+    var _str = $"PRINTER :: {__pprint.__file}/{__pprint.__func}:{__pprint.__line}:\n"
     
     var _i=0; repeat(argument_count) {
 		_str += json_stringify(__reStruct(argument[_i]), true)+"\n";
@@ -16,9 +16,9 @@ function __pprint() {
 	show_debug_message(_str)
 }
 function __pprint_pre(_file, _func, _line) {
-    __trace.__file = _file;
-    __trace.__func = _func;
-    __trace.__line = _line;
+    __pprint.__file = _file;
+    __pprint.__func = _func;
+    __pprint.__line = _line;
     return 1;
 }
 /// @ignore
@@ -109,10 +109,10 @@ function __reStruct(_struct) {
 #macro log repeat (__log_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __log
 /// @param ...args
 function __log() {
-    var _str = $"{__log.__file}/{__log.__func}:{__log.__line}:"
+    var _str = $"LOGGER :: {__log.__file}/{__log.__func}:{__log.__line}:"
 	
 	for (var i = 0; i < argument_count; i++) {
-        _str += $" {argument[i]}"
+        _str += $"\n\t{argument[i]}"
     }
     
 	show_debug_message(_str);
