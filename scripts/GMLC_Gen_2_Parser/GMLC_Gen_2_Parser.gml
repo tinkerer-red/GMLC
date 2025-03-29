@@ -640,17 +640,19 @@
 			scriptAST.GlobalVar[$ functionName] = globalFunctionNode;
 			array_push(scriptAST.GlobalVarNames, functionName);
 			
+			var _func_ref = new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
+			
 			// now correctly set the assignment, either a global lookup, or a method call, depending on if it's inside a constructor or not
 			switch (currentScope) {
 				case ScopeType.GLOBAL: {
-					var _func = new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
+					var _func = _func_ref;
 				break;}
 				case ScopeType.STATIC: {
 					var _func = new ASTCallExpression(
 						new ASTLiteral(__method, line, lineString, "__method"),
 						[
 							new ASTLiteral(undefined, line, lineString, "undefined"),
-							globalFunctionNode
+							_func_ref
 						], 
 						line,
 						lineString
@@ -661,7 +663,7 @@
 						new ASTLiteral(__method, line, lineString, "__method"),
 						[
 							new ASTUniqueIdentifier("self", line, lineString),
-							globalFunctionNode
+							_func_ref
 						], 
 						line,
 						lineString
