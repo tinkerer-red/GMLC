@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__DeprocatedVariables",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__DeprocatedVariables",
+  "parent":{
+    "name":"__Deprocated",
+    "path":"folders/GMLCompiler/__Final/Internal/LookupTables/__Deprocated.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

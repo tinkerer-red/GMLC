@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"keywordNamespaces",
+  "%Name":"TypeEnums",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"keywordNamespaces",
+  "name":"TypeEnums",
   "parent":{
     "name":"Internal",
     "path":"folders/GMLCompiler/__Final/Internal.yy",

@@ -625,10 +625,10 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 				#endregion
 				#region Enum Constants
 			
-				static __enum_header_arr = __ExistingEnumerationHeaderStrings();
+				static __enum_header_arr = __ExistingEnumHeaderStrings();
 				if (array_contains(__enum_header_arr, _identifier)) {
 				
-					static __enum_arr = __ExistingEnumerationStrings();
+					static __enum_arr = __ExistingEnumStrings();
 				
 					var _found = false;
 				
@@ -660,7 +660,7 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 						_temp_identifier += chr(_nextIterToken);
 					
 						if (array_contains(__enum_arr, _temp_identifier)) {
-							static __enum_lookup = __ExistingEnumerations();
+							static __enum_lookup = __ExistingEnums();
 							var _val = struct_get(__enum_lookup, _temp_identifier)
 						
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column);

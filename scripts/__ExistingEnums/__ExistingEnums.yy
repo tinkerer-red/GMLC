@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__ExistingEnums",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__ExistingEnums",
+  "parent":{
+    "name":"LookupTables",
+    "path":"folders/GMLCompiler/__Final/Internal/LookupTables.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"Script9",
+  "%Name":"GC_Log",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"Script9",
+  "name":"GC_Log",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"Misc.",
+    "path":"folders/Misc..yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

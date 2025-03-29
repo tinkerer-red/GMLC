@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"log",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"Misc.",
+    "path":"folders/Misc..yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
