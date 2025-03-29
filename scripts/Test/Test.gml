@@ -22,7 +22,7 @@ function Test(_name = undefined) : Task() constructor {
 	/// @ignore
 	endHook = addProperty("endHook", undefined, is_callable);
 	/// @ignore
-	timeoutMillis = addProperty("timeoutMillis", 60000, is_real);
+	timeoutMillis = addProperty("timeoutMillis", 5000, is_real);
 	/// @ignore
 	platformFilter = addProperty("platformFilter", undefined, is_callable);
 	

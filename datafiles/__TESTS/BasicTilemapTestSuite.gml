@@ -1,3 +1,5 @@
+#macro TEST_INVALID_ARGS false
+
 /// @function CreateTestLayer()
 /// @description Creates a new layer for testing. Returns undefined and fails the test if the layer has not been created correctly.
 /// @return {Id.layer}
