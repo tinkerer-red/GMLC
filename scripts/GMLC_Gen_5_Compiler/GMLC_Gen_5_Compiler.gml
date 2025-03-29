@@ -2,6 +2,13 @@
 #region Globals for `self` and `other`
 #macro __GMLC_DEFAULT_SELF_AND_OTHER	global.otherInstance ??= global.selfInstance ?? rootNode.globals;\
 										global.selfInstance ??= other
+
+#macro __GMLC_UPDATE_SELF_AND_OTHER	var _pre_other = global.otherInstance;\
+									var _pre_self = global.selfInstance;\
+									global.otherInstance = global.selfInstance ?? rootNode.globals;\
+									global.selfInstance = other
+#macro __GMLC_RESET_SELF_AND_OTHER	global.otherInstance = _pre_other;\
+									global.selfInstance = _pre_self
 #endregion
 
 #region Locals
@@ -87,8 +94,6 @@
 
 ///NOTE: all of these should be build into the parent programs struct, and all children should
 // have a reference to that struct to access the locals and arguments when ever needed
-
-
 
 enum FLOW_MASK {
     EMPTY    = 0, // 0b000
@@ -232,13 +237,15 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCexecuteConstructor() constructor {
-	//check to see if this is a `new` expression, or some `script_execute` equivalent
-	//var _is_new_expression = is_instanceof(self, __GMLCexecuteConstructor);
-	var _is_new_expression = array_length(struct_get_names(self)) == 0;
+	//check to see if this is a `new` expression, or some `script_execute` equivalent using `method_call`
+	var _self_is_gmlc  = self[$ "__@@is_gmlc_function@@__"];
+	var _is_new_expression = !_self_is_gmlc;
 	
 	if (_is_new_expression) {
 		with other {
 			__GMLC_DEFAULT_SELF_AND_OTHER
+			__GMLC_UPDATE_SELF_AND_OTHER
+			
 			__GMLC_INIT_ARGUMENT_COUNT
 			if (recursionCount++) {
 				__GMLC_STASH_LOCALS
@@ -254,6 +261,8 @@ function __GMLCexecuteConstructor() constructor {
 	}
 	else {
 		__GMLC_DEFAULT_SELF_AND_OTHER
+		__GMLC_UPDATE_SELF_AND_OTHER
+		
 		__GMLC_INIT_ARGUMENT_COUNT
 		if (recursionCount++) {
 			__GMLC_STASH_LOCALS
@@ -268,13 +277,22 @@ function __GMLCexecuteConstructor() constructor {
 	}
 	
 	//run the body
-	if (_is_new_expression) static_set(self, _statics)
+	static_set(global.selfInstance, _statics);
 	method_call(_program, _arguments);
 	
-	with other {
+	__GMLC_RESET_SELF_AND_OTHER
+	
+	if (_is_new_expression) {
+		with other {
+			var _return = returnValue;
+			__GMLC_POST_FUNC
+		}
+	}
+	else {
 		var _return = returnValue;
 		__GMLC_POST_FUNC
 	}
+	
 	return _return;
 }
 function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
@@ -290,7 +308,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	
 	//statics
 	_output.staticsExecuted = false;
-	_output.statics = new __GMLC_Constructor_Statics(_node.name);
+	_output.statics = {};
 	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
 	static_set(_output, _output.statics)
 	
@@ -1030,6 +1048,7 @@ function __GMLCexecuteNewExpression() {
 	_i--}
 	
 	var _struct = constructor_call_ext(_func, arguments);
+	var t = static_get(_struct);
 	
 	if (--recursionCount) {
         // Un-stash the arguments
