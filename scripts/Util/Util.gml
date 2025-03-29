@@ -41,46 +41,49 @@ function constructor_call_ext(_constructor, _args = undefined, _offset = 0, _len
 }
 
 function is_gmlc_program(_program) {
-	var _self = method_get_self(_program);
-	if (is_method(_program))
-	&& (_self != undefined)
-	&& (_self != global)
-	&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
-			return true;
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		if (_self != undefined)
+		&& (_self != global)
+		&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
+				return true;
+		}
 	}
 	return false;
 }
 
 function is_gmlc_function(_program) {
-	var _self = method_get_self(_program);
-	if (is_method(_program))
-	&& (_self != undefined)
-	&& (_self != global)
-	&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
-		return true;
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		if (_self != undefined)
+		&& (_self != global)
+		&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
+				return true;
+		}
 	}
 	return false;
 }
 
 function is_gmlc_constructor(_program) {
-	
-	var _self = method_get_self(_program);
-	if (is_method(_program))
-	&& (_self != undefined)
-	&& (_self != global)
-	&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
-			return struct_exists(_self, "__") && struct_exists(_self.__, "__@@is_gmlc_constructed@@__");
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		if (_self != undefined)
+		&& (_self != global)
+		&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
+				return struct_exists(_self, "__") && struct_exists(_self.__, "__@@is_gmlc_constructed@@__");
+		}
 	}
 	return false;
 }
 
 function is_gmlc_method(_program) {
-	var _self = method_get_self(_program);
-	if (is_method(_program))
-	&& (_self != undefined)
-	&& (_self != global)
-	&& (struct_exists(_self, "__@@is_gmlc_method@@__")) {
-		return true;
+	if (is_method(_program)) {
+		var _self = method_get_self(_program);
+		if (_self != undefined)
+		&& (_self != global)
+		&& (struct_exists(_self, "__@@is_gmlc_method@@__")) {
+				return true;
+		}
 	}
 	return false;
 }
