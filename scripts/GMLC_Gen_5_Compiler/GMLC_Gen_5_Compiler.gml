@@ -1647,20 +1647,6 @@ function __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node) {
 #region Identifiers
 
 #region Targeters / Getter / Setters
-#region Get Target
-function __GMLCGetScopeTarget(_scopeType) {
-	switch (_scopeType) {
-		case ScopeType.GLOBAL:   return __GMLCexecuteTargetGlobal    break;
-		case ScopeType.LOCAL:    return __GMLCexecuteTargetVarLocal  break;
-		case ScopeType.STATIC:   return __GMLCexecuteTargetVarStatic break;
-		case ScopeType.SELF:     return __GMLCexecuteTargetSelf      break;
-		case ScopeType.OTHER:    return __GMLCexecuteTargetOther     break;
-		case ScopeType.CONST:    return __GMLCexecuteTargetConstant  break;
-		case ScopeType.UNIQUE:   return __GMLCexecuteTargetUnique    break;
-		default: throw_gmlc_error($"Unsupported scope to be written to :: {_scopeType}");
-	}
-}
-#endregion
 
 //these are used when the target is an expected result, self, other, global, static, var, or a known unique variabke like `room` or `fps`
 function __GMLCGetScopeGetter(_scopeType) {
@@ -1726,56 +1712,7 @@ function __GMLCGetScopeUpdater(_scopeType, _increment, _prefix) {
 	}
 }
 
-#region Targeters
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetSelf() {
-    return global.selfInstance;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetOther() {
-    return global.otherInstance;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetGlobal() {
-    return rootNode.globals;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetVarLocal() {
-    return parentNode.locals;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetVarStatic() {
-    return parentNode.statics;
-}
-#region //{
-//}
-#endregion
-function __GMLCexecuteTargetUnique() {
-    throw_gmlc_error($"Shouldnt be trying to target Unique Scope")
-}
-
-#endregion
-
-#region Genaric Getter    -    (These will use expressions instead of literal keys written to the method, for those see fast pass script)
-#region //{
-// used for natively compiled functions
-//    target: <expression>,
-//    key: <expression>,
-//}
-#endregion
-function __GMLCexecutePropertyGet() {
-	return struct_get(target(), key());
-}
+#region Generic Getter    -    (These will use expressions instead of literal keys written to the method, for those see fast pass script)
 function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _line, _lineString){
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePropertyGet", "<Missing Error Message>", _line, _lineString);	
 	_output.key      = _leftKey;
@@ -1791,17 +1728,7 @@ function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _lin
 }
 #endregion
 
-#region Genaric Setter    -    (These will use expressions instead of literal keys written to the method, for those see fast pass script)
-#region //{
-// used for natively compiled functions
-//    target: <expression>,
-//    key: <expression>,
-//    expression: <expression>,
-//}
-#endregion
-function __GMLCexecutePropertySet() {
-	struct_set(target(), key(), expression());
-}
+#region Generic Setter    -    (These will use expressions instead of literal keys written to the method, for those see fast pass script)
 function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightExpression, _line, _lineString){
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePropertySet", "<Missing Error Message>", _line, _lineString);
 	_output.key = _key;
