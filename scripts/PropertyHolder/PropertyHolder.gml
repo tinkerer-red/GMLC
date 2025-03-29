@@ -76,17 +76,17 @@ function PropertyHolder() : IConfigurable() constructor {
 	static showProperties = function(_all = false) {
 		
 		var _header = string("# {0} Property List ####################", instanceof(self));
-		do_trace(_header);
+		pprint(_header);
 		var _names = variable_struct_get_names(properties);
 		var _i = 0;
 		repeat (variable_struct_names_count(properties)) {
 			var _name = _names[_i++];
 			var _property = properties[$ _name];
 			if (!_all && _property.private) continue;
-			do_trace(properties[$ _name]);
+			pprint(properties[$ _name]);
 		}
 		var _footer = string_repeat("#", string_length(_header))
-		do_trace(_footer);
+		pprint(_footer);
 	}
 
 	/// @function config(configuration)

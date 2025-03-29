@@ -82,7 +82,7 @@
 					static __lastString = ""
 					var _str = string(currentTokenIndex/array_length(tokens)/10)
 					if (__lastString != _str) {
-						do_trace($"{real(_str)*1000}% Finished")
+						pprint($"{real(_str)*1000}% Finished")
 						__lastString = _str;
 					}
 				}
@@ -446,7 +446,7 @@
 				
 				//parse and identify the exception variable as a local variable.
 				_exceptionVar = currentToken.value;  // Parse the exception variable
-				array_push(scriptAST.LocalVarNames, _exceptionVar);
+				array_push(currentFunction.LocalVarNames, _exceptionVar);
 				
 				nextToken();  // Move past Identifier
 				expectToken(__GMLC_TokenType.Punctuation, ")");
@@ -741,7 +741,7 @@
 					static __lastString = ""
 					var _str = string(currentTokenIndex/array_length(tokens))
 					if (__lastString != _str) {
-						do_trace($"{real(_str)*100}% Finished")
+						pprint($"{real(_str)*100}% Finished")
 						__lastString = _str;
 					}
 				}

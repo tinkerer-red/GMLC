@@ -3285,7 +3285,7 @@ function d3d_model_wall(argument0, argument1, argument2, argument3, argument4, a
 function d3d_primitive_begin(argument0) {
 
 	if (global.__d3dPrimKind != -1) {
-		do_trace( "ERROR : cannot begin a primitive before end called on previous")
+		pprint( "ERROR : cannot begin a primitive before end called on previous")
 	}
 
 	global.__d3dPrimKind = argument0;
@@ -3303,7 +3303,7 @@ function d3d_primitive_begin(argument0) {
 function d3d_primitive_begin_texture(argument0, argument1) {
 
 	if (global.__d3dPrimKind != -1) {
-		do_trace( "ERROR : cannot begin a primitive before end called on previous")
+		pprint( "ERROR : cannot begin a primitive before end called on previous")
 	}
 
 	global.__d3dPrimKind = argument0;
@@ -3331,7 +3331,7 @@ function d3d_primitive_end() {
 		// mark this as finished
 		global.__d3dPrimKind = -1;
 	} else {
-		do_trace( "d3d_primitive_end :: with no d3d_primitive_begin ");
+		pprint( "d3d_primitive_end :: with no d3d_primitive_begin ");
 	}
 
 
@@ -3613,7 +3613,7 @@ function d3d_set_projection_perspective(argument0, argument1, argument2, argumen
 function d3d_set_shading() {
 
 	if (!global.__d3dDeprecatedMessage[0]) {
-		do_trace( "d3d_set_shading is deprecated as it needs to be done in the shader now" );
+		pprint( "d3d_set_shading is deprecated as it needs to be done in the shader now" );
 		global.__d3dDeprecatedMessage[0] = true;
 	} 
 
@@ -4949,7 +4949,7 @@ function action_bounce(argument0, argument1) {
 
 /// @description  @description action_cd_pause - deprecated function
 function action_cd_pause() {
-	do_trace( "action_cd_pause is a deprecated function" );
+	pprint( "action_cd_pause is a deprecated function" );
 	return 0;
 
 
@@ -4959,7 +4959,7 @@ function action_cd_pause() {
 
 /// @description  @description action_cd_play - deprecated function
 function action_cd_play() {
-	do_trace( "action_cd_play is a deprecated function" );
+	pprint( "action_cd_play is a deprecated function" );
 	return 0;
 
 
@@ -4969,7 +4969,7 @@ function action_cd_play() {
 
 /// @description  @description action_cd_playing - deprecated function
 function action_cd_playing() {
-	do_trace( "action_cd_playing is a deprecated function" );
+	pprint( "action_cd_playing is a deprecated function" );
 	return 0;
 
 
@@ -4979,7 +4979,7 @@ function action_cd_playing() {
 
 /// @description  @description action_cd_present - deprecated function
 function action_cd_present() {
-	do_trace( "action_cd_present is a deprecated function" );
+	pprint( "action_cd_present is a deprecated function" );
 	return 0;
 
 
@@ -4989,7 +4989,7 @@ function action_cd_present() {
 
 /// @description  @description action_cd_resume - deprecated function
 function action_cd_resume() {
-	do_trace( "action_cd_resume is a deprecated function" );
+	pprint( "action_cd_resume is a deprecated function" );
 	return 0;
 
 
@@ -4999,7 +4999,7 @@ function action_cd_resume() {
 
 /// @description  @description action_cd_stop - deprecated function
 function action_cd_stop() {
-	do_trace( "action_cd_stop is a deprecated function" );
+	pprint( "action_cd_stop is a deprecated function" );
 	return 0;
 
 
@@ -5236,7 +5236,7 @@ function action_draw_ellipse_gradient(argument0, argument1, argument2, argument3
 /// @description  @description (Old DnD) - deprecated
 /// @param Old DnD
 function action_draw_font() {
-	do_trace( "action_draw_font deprecated");
+	pprint( "action_draw_font deprecated");
 
 
 
@@ -5246,7 +5246,7 @@ function action_draw_font() {
 /// @description  @description (Old DnD) - deprecated
 /// @param Old DnD
 function action_draw_font_old() {
-	do_trace( "action_draw_font_old deprecated");
+	pprint( "action_draw_font_old deprecated");
 
 
 
@@ -5661,7 +5661,7 @@ function action_execute_script() {
 /// @description  @description (Old DnD) - fill color
 /// @param Old DnD
 function action_fill_color() {
-	do_trace( "action_fill_color is deprecated");
+	pprint( "action_fill_color is deprecated");
 
 
 
@@ -5671,7 +5671,7 @@ function action_fill_color() {
 /// @description  @description (Old DnD) - fill colour
 /// @param Old DnD
 function action_fill_colour() {
-	do_trace( "action_fill_colour is deprecated");
+	pprint( "action_fill_colour is deprecated");
 
 
 
@@ -5715,7 +5715,7 @@ function action_fullscreen(argument0) {
 /// @description  @description (Old DnD) - highscore (deprecated)
 /// @param Old DnD
 function action_highscore() {
-	do_trace( "action_highscore is deprecated");
+	pprint( "action_highscore is deprecated");
 
 
 
@@ -6087,7 +6087,7 @@ function action_linear_step(argument0, argument1, argument2, argument3) {
 /// @description  @description (Old DnD) - line color
 /// @param Old DnD
 function action_line_color() {
-	do_trace( "action_line_color is deprecated");
+	pprint( "action_line_color is deprecated");
 
 
 
@@ -6097,7 +6097,7 @@ function action_line_color() {
 /// @description  @description (Old DnD) - line colour
 /// @param Old DnD
 function action_line_colour() {
-	do_trace( "action_line_colour is deprecated");
+	pprint( "action_line_colour is deprecated");
 
 
 
@@ -6605,7 +6605,7 @@ function action_path_end() {
 /// @description  @description (Old DnD) - path old
 /// @param Old DnD
 function action_path_old() {
-	do_trace( "action_path_old is deprecated");
+	pprint( "action_path_old is deprecated");
 
 
 
@@ -6689,7 +6689,7 @@ function action_replace_background(argument0, argument1) {
 /// @param index sound index
 /// @param filename filename to replace
 function action_replace_sound() {
-	do_trace( "action_replace_sound is deprecated")
+	pprint( "action_replace_sound is deprecated")
 
 
 
@@ -7066,7 +7066,7 @@ function action_sound(argument0, argument1) {
 /// @description  @description (Old DnD) - action splash web (deprecated)
 /// @param Old DnD
 function action_splash_web() {
-	do_trace( "action_splash_web is deprecated");
+	pprint( "action_splash_web is deprecated");
 
 
 
@@ -7568,13 +7568,13 @@ function room_set_view(argument0, argument1, argument2, argument3, argument4, ar
 
 	if (!room_exists(__ind))
 	{
-		do_trace("room_set_view: room " + string(__ind) + " does not exist");
+		pprint("room_set_view: room " + string(__ind) + " does not exist");
 		return -1;
 	}
 
 	if ((__vind < 0) || (__vind > 7))
 	{
-		do_trace("room_set_view: view index out of range");
+		pprint("room_set_view: view index out of range");
 		return -1;
 	}
 
@@ -7799,7 +7799,7 @@ function room_tile_clear(argument0) {
 /// @param kind		The kind of sound it should be added as (legacy Feature) 0=normal, 1=background, 2=3D, 3=multimedia player, for things like MP3s).
 /// @param preload	Whether the sound should preload into memory immediately (true) or not (false) (legacy Feature) .
 function sound_add() {
-	do_trace( "sound_add is not supported");
+	pprint( "sound_add is not supported");
 	return -1;
 
 
@@ -7821,7 +7821,7 @@ function sound_delete(argument0) {
 /// @description  @description sound_discard - deprecated function
 /// @param index	sound index
 function sound_discard() {
-	do_trace( "sound_discard is a deprecated function" );
+	pprint( "sound_discard is a deprecated function" );
 	return 0;
 
 
@@ -7856,7 +7856,7 @@ function sound_fade(argument0, argument1, argument2) {
 /// @description  @description sound_get_kind - deprecated function
 /// @param index	sound index
 function sound_get_kind() {
-	do_trace( "sound_get_kind - deprecated function");
+	pprint( "sound_get_kind - deprecated function");
 	return 0;
 
 
@@ -7878,7 +7878,7 @@ function sound_get_name(argument0) {
 /// @description  @description sound_get_preload - deprecated function
 /// @param index	sound index
 function sound_get_preload() {
-	do_trace( "sound_get_preload - deprecated function");
+	pprint( "sound_get_preload - deprecated function");
 	return 0;
 
 
@@ -7949,7 +7949,7 @@ function sound_play(argument0) {
 /// @param kind		The kind of sound it should be added as (legacy Feature) 0=normal, 1=background, 2=3D, 3=multimedia player, for things like MP3s).
 /// @param preload	Whether the sound should preload into memory immediately (true) or not (false) (legacy Feature) .
 function sound_replace() {
-	do_trace( "sound_replace is not supported");
+	pprint( "sound_replace is not supported");
 	return false;
 
 
@@ -7960,7 +7960,7 @@ function sound_replace() {
 /// @description  @description sound_restore - deprecated function
 /// @param index	sound index
 function sound_restore() {
-	do_trace( "sound_restore is a deprecated function" );
+	pprint( "sound_restore is a deprecated function" );
 	return 0;
 
 
@@ -8006,7 +8006,7 @@ function sound_volume(argument0, argument1) {
 function texture_set_blending(argument0) {
 	var __dummy = argument0;
 
-	do_trace("texture_set_blending() currently not supported");
+	pprint("texture_set_blending() currently not supported");
 
 
 
