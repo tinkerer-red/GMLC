@@ -1,21 +1,25 @@
-function log(_str) {
-	var _new_str = "";
-	var _i=0; repeat(argument_count) {
-		_new_str += string(argument[_i])+" ";
-	_i++}
-	show_debug_message(_new_str);
-}
-
 function json(_input) {
 	return json_stringify(_input, true)
 }
 
-function pprint(_thing) {
-	var _str = "";
-	var _i=0; repeat(argument_count) {
-		_str += json_stringify(__reStruct(argument[_i]), true)
+
+
+
+#macro pprint repeat (__pprint_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __pprint
+/// @param ...args
+function __pprint() {
+    var _str = $"{__pprint.__file}/{__pprint.__func}:{__pprint.__line}:\n"
+    
+    var _i=0; repeat(argument_count) {
+		_str += json_stringify(__reStruct(argument[_i]), true)+"\n";
 	_i++}
 	show_debug_message(_str)
+}
+function __pprint_pre(_file, _func, _line) {
+    __trace.__file = _file;
+    __trace.__func = _func;
+    __trace.__line = _line;
+    return 1;
 }
 /// @ignore
 function __reStruct(_struct) {
@@ -102,10 +106,10 @@ function __reStruct(_struct) {
 /// @param   {string} str : The string you wish to log
 /// @returns {undefined}
 #endregion
-#macro trace repeat (__trace_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __trace
+#macro log repeat (__log_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __log
 /// @param ...args
-function __trace() {
-    var _str = $"{__trace.__trace_file}/{__trace.__trace_func}:{__trace.__trace_line}:"
+function __log() {
+    var _str = $"{__log.__file}/{__log.__func}:{__log.__line}:"
 	
 	for (var i = 0; i < argument_count; i++) {
         _str += $" {argument[i]}"
@@ -113,9 +117,9 @@ function __trace() {
     
 	show_debug_message(_str);
 }
-function __trace_pre(_file, _func, _line) {
-    __trace.__trace_file = _file;
-    __trace.__trace_func = _func;
-    __trace.__trace_line = _line;
+function __log_pre(_file, _func, _line) {
+    __log.__file = _file;
+    __log.__func = _func;
+    __log.__line = _line;
 	return 1;
 }
