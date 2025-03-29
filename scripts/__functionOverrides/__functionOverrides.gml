@@ -1,9 +1,34 @@
 // this script contains a bunch of functions which imitate native functions,
 // but to allow for us to work better with gmlc
-
-/// @ignore
-function __method(_struct, _func) {
-	static __executeMethod = function() {
+#region method()
+#macro __vanilla_method method
+#macro method __gmlc_method
+function __gmlc_method(_struct, _func) {
+	//these two are the same exact thing, one is just a constructor
+	static __executeMethodFunction = function() {
+		var argArr = array_create(argument_count, undefined);
+		var _i=argument_count-1; repeat(argument_count) {
+			argArr[_i] = argument[_i];
+		_i--}
+		
+		if (target != undefined) {
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
+			global.otherInstance = global.selfInstance;
+			global.selfInstance = target;
+			
+			var _return = method_call(func, argArr);
+			
+			global.otherInstance = _prevOther;
+			global.selfInstance  = _prevSelf;
+		}
+		else {
+			var _return = method_call(func, argArr);
+		}
+		
+		return _return;
+	}
+	static __executeMethodConstructor = function() constructor {
 		var argArr = array_create(argument_count, undefined);
 		var _i=argument_count-1; repeat(argument_count) {
 			argArr[_i] = argument[_i];
@@ -27,29 +52,34 @@ function __method(_struct, _func) {
 		return _return;
 	}
 	
+	
+	
 	if (is_gmlc_program(_func)) {
-		if (is_gmlc_method(_func)) {
-			//a gmlc method
-			return method({
-				"__@@is_gmlc_method@@__": true,
-				target: _struct,
-				func: method_get_self(_func).func,
-			}, __executeMethod)
-		}
-		else {
-			//a gmlc function
-			return method({
-				"__@@is_gmlc_method@@__": true,
-				target: _struct,
-				func: _func,
-			}, __executeMethod)
-		}
+		//a gmlc function
+		var _exe = (is_constructor(_func)) ? __executeMethodConstructor : __executeMethodFunction;
+		
+		return __vanilla_method({
+			"__@@is_gmlc_method@@__": true,
+			target: _struct,
+			func: _func,
+		}, _exe)
+	}
+	else if (is_gmlc_method(_func)) {
+		//a gmlc method
+		var _exe = (is_constructor(_func)) ? __executeMethodConstructor : __executeMethodFunction;
+		
+		return __vanilla_method({
+			"__@@is_gmlc_method@@__": true,
+			target: _struct,
+			func: method_get_self(_func).func,
+		}, _exe)
 	}
 	else {
 		//a native gml function/method
-		return method(_struct, _func);
+		return __vanilla_method(_struct, _func);
 	}
 }
+#endregion
 
 function __new(_func, argArr=[]) {
 	return constructor_call_ext(_func, argArr);
@@ -72,25 +102,6 @@ function __instanceof(_struct) {
 	
 	// any number of other things
 	return instanceof(_struct);
-	
-}
-
-function __is_instanceof(_struct, _constructor) {
-	if (is_gmlc_constructed(_struct)) {
-		static __base_struct_statics = static_get({});
-		var _static = static_get(_struct);
-		var _constructor_static = static_get(_constructor);
-		while(_static != __base_struct_statics) {
-			if (_static == _constructor_static) {
-				return true;
-			}
-			_static = static_get(_static);
-		}
-		return false
-	}
-	
-	// any number of other things
-	return is_instanceof(_struct, _constructor);
 	
 }
 
@@ -252,13 +263,6 @@ function __NewGMLArray() {
 function __NewGMLStruct() {
 	var _struct = {};
 	var _i=0; repeat(argument_count/2) {
-		if (is_method(argument[_i+1]))
-		&& (!is_gmlc_method(argument[_i+1])) {
-			_struct[$ argument[_i]] = __method(_struct, argument[_i+1])
-		}
-		else {
-			_struct[$ argument[_i]] = argument[_i+1];
-		}
 		_struct[$ argument[_i]] = argument[_i+1];
 	_i+=2;}//end repeat loop
 	

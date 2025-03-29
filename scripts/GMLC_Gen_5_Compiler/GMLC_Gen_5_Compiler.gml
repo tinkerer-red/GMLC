@@ -1220,6 +1220,7 @@ function __GMLCexecuteCallExpression() {
 			global.otherInstance = _prevSelf;
 			global.selfInstance = _self;
 			
+			//why am i doing this?
 			with (_prevSelf) {
 				_return = method_call(_func, _args);
 			}

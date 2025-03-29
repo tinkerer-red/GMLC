@@ -627,7 +627,7 @@
 			currentFunction = globalFunctionNode;
 			
 			//change the scope if needed
-			if (_isConstructor) currentScope = ScopeType.SELF
+			if (_isConstructor) currentScope = ScopeType.SELF;
 			
 			// Parse the function body and apply it
 			globalFunctionNode.statements = parseBlock();
@@ -649,7 +649,7 @@
 				break;}
 				case ScopeType.STATIC: {
 					var _func = new ASTCallExpression(
-						new ASTLiteral(__method, line, lineString, "__method"),
+						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
 						[
 							new ASTLiteral(undefined, line, lineString, "undefined"),
 							_func_ref
@@ -660,7 +660,7 @@
 				break;}
 				case ScopeType.SELF  : {
 					var _func = new ASTCallExpression(
-						new ASTLiteral(__method, line, lineString, "__method"),
+						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
 						[
 							new ASTUniqueIdentifier("self", line, lineString),
 							_func_ref
@@ -1418,7 +1418,12 @@
 		        nextToken();  // Move past the identifier
 				
 				if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
+					var _prev_scope = currentScope;
+					currentScope = ScopeType.SELF;
+					
 					var value = parseExpression();
+					
+					currentScope = _prev_scope;
 				}
 				else if (key.type == __GMLC_TokenType.String)
 				     || (key.type == __GMLC_TokenType.Identifier)
@@ -1599,8 +1604,7 @@
 		
 		static getReplacementFunction = function(_func) {
 			switch (_func) {
-				case method             : return __method            ;
-				case is_instanceof      : return __is_instanceof     ;
+				case __vanilla_method   : return __gmlc_method       ;
 				case static_get         : return __static_get        ;
 				
 				case static_set         : return __static_set        ;

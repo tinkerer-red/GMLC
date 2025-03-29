@@ -6,15 +6,13 @@ testFramework = new TestFrameworkRun();
 
 var _string = @'
 function foo() constructor {
-	show_debug_message(bar);
-	abc = 123
-	static bar = function() {
-		show_debug_message(self)
-	}
+	_constructor = function() constructor { };
+	var _struct = { const: _constructor };
+	var _result = array_create_ext(10, method( _struct, function() {
+		return new const();
+	}));
 }
-var t = new foo();
-show_debug_message(t);
-t.bar();
+new foo();
 '
 
 tokenizer = new GML_Tokenizer();
