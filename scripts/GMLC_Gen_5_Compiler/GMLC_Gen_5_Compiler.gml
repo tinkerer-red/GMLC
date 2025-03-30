@@ -346,7 +346,9 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 		//there is probably a better way to check if what we have is indeed a gmlc program or a real script
 		var _parent_constuct = _rootNode.globals[$ _node.parentName]
 		if (is_gmlc_program(_parent_constuct)) {
-			static_set(_output.statics, _parent_constuct.statics)
+			var _our_static = _output.statics
+			var _parent_static = method_get_self(_parent_constuct).statics
+			static_set(_our_static, _parent_static)
 		}
 		else {
 			static_set(_output.statics, static_get(_node.parentCall.callee.value))
