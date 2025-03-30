@@ -1,3 +1,6 @@
+#macro TEST_INVALID_ARGS false
+
+
 function ResourceLayersTestSuite() : TestSuite() constructor {
 
 	addFact("layer_get_set_test", function() {

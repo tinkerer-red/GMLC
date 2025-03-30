@@ -104,6 +104,7 @@
     {"name":"room1","order":1,"path":"rooms/room1/room1.yy",},
     {"name":"__DeprocatedFunctions","order":1,"path":"scripts/__DeprocatedFunctions/__DeprocatedFunctions.yy",},
     {"name":"__DeprocatedVariables","order":2,"path":"scripts/__DeprocatedVariables/__DeprocatedVariables.yy",},
+    {"name":"__EnvironmentClass","order":10,"path":"scripts/__EnvironmentClass/__EnvironmentClass.yy",},
     {"name":"__ExistingConstants","order":6,"path":"scripts/__ExistingConstants/__ExistingConstants.yy",},
     {"name":"__ExistingEnums","order":8,"path":"scripts/__ExistingEnums/__ExistingEnums.yy",},
     {"name":"__ExistingFunctions","order":3,"path":"scripts/__ExistingFunctions/__ExistingFunctions.yy",},

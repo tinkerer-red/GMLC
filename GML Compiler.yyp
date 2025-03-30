@@ -353,6 +353,7 @@
     {"id":{"name":"__DeprocatedConstants","path":"scripts/__DeprocatedConstants/__DeprocatedConstants.yy",},},
     {"id":{"name":"__DeprocatedFunctions","path":"scripts/__DeprocatedFunctions/__DeprocatedFunctions.yy",},},
     {"id":{"name":"__DeprocatedVariables","path":"scripts/__DeprocatedVariables/__DeprocatedVariables.yy",},},
+    {"id":{"name":"__EnvironmentClass","path":"scripts/__EnvironmentClass/__EnvironmentClass.yy",},},
     {"id":{"name":"__ExistingConstants","path":"scripts/__ExistingConstants/__ExistingConstants.yy",},},
     {"id":{"name":"__ExistingEnums","path":"scripts/__ExistingEnums/__ExistingEnums.yy",},},
     {"id":{"name":"__ExistingFunctions","path":"scripts/__ExistingFunctions/__ExistingFunctions.yy",},},
