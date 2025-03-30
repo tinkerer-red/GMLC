@@ -93,7 +93,10 @@ function is_gmlc_constructed(_struct) {
 	// there is no reason to use this for anything else,
 	// as a generic struct made by gmlc would still only need to be a struct
 	// no need for additional information
-	return !is_method(_struct) && is_struct(_struct) && struct_exists(static_get(_struct), "__@@is_gmlc_constructed@@__")
+	return !is_method(_struct)
+		&& is_struct(_struct)
+		&& is_struct(static_get(_struct)) // sometimes its undefined
+		&& struct_exists(static_get(_struct), "__@@is_gmlc_constructed@@__")
 }
 
 function is_script(_value) {
