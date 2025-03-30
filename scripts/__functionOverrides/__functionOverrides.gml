@@ -114,28 +114,47 @@ function __gmlc_method(_struct, _func) {
 }
 #endregion
 
-function __new(_func, argArr=[]) {
-	return constructor_call_ext(_func, argArr);
-}
-
-function __instanceof(_struct) {
-	if (is_gmlc_constructed(_struct)) {
-		return _struct.__[$ "__@@gmlc_constructor_name@@__"]
-	}
-	
-	if (is_method(_struct)) {
-		if (is_gmlc_method(_struct)) {
-			return "function"
+#region typeof()
+#macro __vanilla_typeof typeof
+#macro typeof __gmlc_typeof
+function __gmlc_typeof(_val) {
+	if (is_method(_val)) {
+		if (is_gmlc_method(_val)) {
+			return "method"
 		}
-		
-		if (is_gmlc_program(_struct)) {
-			return undefined
+		if (is_gmlc_program(_val)) {
+			return "ref"
 		}
 	}
 	
 	// any number of other things
-	return instanceof(_struct);
+	return __vanilla_typeof(_val);
+}
+#endregion
+
+#region instanceof()
+#macro __vanilla_instanceof instanceof
+#macro instanceof __gmlc_instanceof
+function __gmlc_instanceof(_val) {
+	if (is_method(_val)) {
+		if (is_gmlc_program(_val))
+		|| (is_gmlc_method(_val)) {
+			return "function"
+		}
+	}
+	else {
+		if (is_gmlc_constructed(_val)) {
+			
+		}
+	}
 	
+	// any number of other things
+	return __vanilla_instanceof(_val);
+}
+#endregion
+
+function __new(_func, argArr=[]) {
+	return constructor_call_ext(_func, argArr);
 }
 
 function __static_get(_struct) {

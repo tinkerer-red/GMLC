@@ -14,8 +14,7 @@ function __ExistingConstants() {
 	"asset_particlesystem": asset_particlesystem,
 	"asset_sequence": asset_sequence,
 	"asset_unknown": asset_unknown,
-	"audiogroup_default": audiogroup_default,
-	//"audiogroup_MP3": audiogroup_MP3, //not added to GM yet
+	"audiogroup_default": audiogroup_default, // i dont think this is actually needed, but most people will still have audiogrou_default defined so we'll include it.
 	"audio_falloff_exponent_distance": audio_falloff_exponent_distance,
 	"audio_falloff_exponent_distance_clamped": audio_falloff_exponent_distance_clamped,
 	"audio_falloff_exponent_distance_scaled": audio_falloff_exponent_distance_scaled,

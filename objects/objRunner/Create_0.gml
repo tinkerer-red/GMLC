@@ -36,6 +36,7 @@ var _program = compileProgram(ast);
 _program();
 
 //// Register your test suites here...
+//testFramework.addSuite(BasicInstanceTypesTestSuite);
 //testFramework.addSuite(OptimizerConstantFoldingTestSuite);
 //testFramework.addSuite(OptimizerConstantPropagationTestSuite);
 //testFramework.addSuite(OptimizerUnreachableCodeTestSuite);
@@ -43,6 +44,8 @@ _program();
 //testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
 //testFramework.addSuite(BasicConstructorTestSuit);
 //testFramework.addSuite(BasicStatementExpressionsTestSuite);
+
+
 
 // Add all of the official test suites from their .gml files in included folder \__TEST\*.gml
 var _file_names = file_find_all("__TESTS/*gml");

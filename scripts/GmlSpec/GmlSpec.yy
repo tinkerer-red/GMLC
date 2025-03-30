@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GmlSpec",
   "parent":{
-    "name":"Internal",
-    "path":"folders/GMLCompiler/__Final/Internal.yy",
+    "name":"Misc",
+    "path":"folders/GMLCompiler/__Final/Internal/Misc.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

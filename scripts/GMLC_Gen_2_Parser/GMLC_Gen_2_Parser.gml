@@ -1608,7 +1608,7 @@
 				case static_get         : return __static_get        ;
 				
 				case static_set         : return __static_set        ;
-				case typeof             : return __typeof            ;
+				case __vanilla_typeof   : return __gmlc_typeof       ;
 				case method_get_index   : return __method_get_index  ;
 				case method_get_self    : return __method_get_self   ;
 				case script_execute     : return __script_execute    ;

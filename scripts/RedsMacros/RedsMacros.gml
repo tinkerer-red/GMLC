@@ -3,7 +3,7 @@ window_set_position(display_get_width()/2-128, display_get_height()/2-128);
 instance_create_depth(0, 0, 0, objLogoRenderer);
 
 #macro RefuseTest return __RefuseTest
-function __RefuseTest(_desc="Red Manually refused this test"){
+function __RefuseTest(_desc="Red Manually refused this test") {
 	assert_true(false, _desc)
 }
 

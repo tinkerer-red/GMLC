@@ -89,11 +89,11 @@ function is_gmlc_method(_program) {
 }
 
 function is_gmlc_constructed(_struct) {
-	//this only returns true when ever it was created by a gmlc constructor,
+	//this only returns true when ever a struct was created by a gmlc constructor,
 	// there is no reason to use this for anything else,
 	// as a generic struct made by gmlc would still only need to be a struct
 	// no need for additional information
-	return is_struct(_struct) && struct_exists(_struct, "__") && struct_exists(_struct.__, "__@@is_gmlc_constructed@@__")
+	return !is_method(_struct) && is_struct(_struct) && struct_exists(static_get(_struct), "__@@is_gmlc_constructed@@__")
 }
 
 function is_script(_value) {
