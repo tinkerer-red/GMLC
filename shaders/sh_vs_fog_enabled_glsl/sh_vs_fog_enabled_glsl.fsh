@@ -1,4 +1,4 @@
-// This shader tests the gm_VS_FogEnabled built-in uniform by outputting white if its true and black if its false
+// This shader tests the gm_VS_FogEnabled built-in uniform by outputting white if it's true and black if it's false
 // Fragment Shader
 
 // Input values

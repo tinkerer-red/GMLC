@@ -13,11 +13,11 @@ varying vec4 v_vColour;
 
 void main()
 {
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     vec4 object_space_pos = vec4( in_Position.x, in_Position.y, in_Position.z, 1.0);
     gl_Position = gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION] * object_space_pos;
 	
-	// Get the index of the current rectangle via its red value
+	// Get the index of the current rectangle via it's red value
 	int rect_index = int(in_Colour.r * 255.0);
 	
 	// Get the light colour for the light corresponding to that index

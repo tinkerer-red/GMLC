@@ -27,7 +27,7 @@
   "name":"Sequence2",
   "parent":{
     "name":"sequences",
-    "path":"folders/xUnit/Tests/TestResources/sequences.yy",
+    "path":"folders/Tests/TestResources/sequences.yy",
   },
   "playback":0,
   "playbackSpeed":60.0,

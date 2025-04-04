@@ -5,7 +5,7 @@
   "name":"handle_testTimeline",
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "resourceType":"GMTimeline",
   "resourceVersion":"2.0",

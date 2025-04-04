@@ -4,7 +4,7 @@
   "name":"sh_matrix_max_hlsl",
   "parent":{
     "name":"HLSL",
-    "path":"folders/xUnit/Tests/TestResources/shaders/ShaderUniformTests/HLSL.yy",
+    "path":"folders/Tests/TestResources/shaders/ShaderUniformTests/HLSL.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

@@ -19,7 +19,7 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
 	// Set the vertex colour to the value from gm_AmbientColour 

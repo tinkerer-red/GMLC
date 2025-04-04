@@ -1,0 +1,652 @@
+function GMLC_Env() : __EnvironmentClass() constructor {
+	
+	should_optimize = false;
+	
+	#region Init
+	importSymbolMap(__GmlSpec());
+	
+	#region Expose Keywords
+	var _keyword_map = {
+		"globalvar": true,
+		"var": true,
+		"if": true,
+		"then": true,
+		"else": true,
+		"begin": true,
+		"end": true,
+		"for": true,
+		"while": true,
+		"do": true,
+		"until": true,
+		"repeat": true,
+		"switch": true,
+		"case": true,
+		"default": true,
+		"break": true,
+		"continue": true,
+		"with": true,
+		"exit": true,
+		"return": true,
+		"mod": true,
+		"div": true,
+		"not": true,
+		"and": true,
+		"or": true,
+		"xor": true,
+		"enum": true,
+		"function": true,
+		"new": true,
+		"constructor": true,
+		"static": true,
+		"region": true,
+		"endregion": true,
+		"macro": true,
+		"try": true,
+		"catch": true,
+		"finally": true,
+		"define": true,
+		"throw": true,
+		"delete": true,
+		"_GMLINE_": true,
+		"_GMFUNCTION_": true,
+	};
+	exposeKeywords(_keyword_map);
+	#endregion
+	#region Expose Constants
+	var _arr = array_concat(
+		asset_get_ids(asset_object),         asset_get_ids(asset_sprite),   asset_get_ids(asset_sound),
+		asset_get_ids(asset_room),           asset_get_ids(asset_tiles),    asset_get_ids(asset_path),
+		asset_get_ids(asset_font),           asset_get_ids(asset_timeline), asset_get_ids(asset_shader),
+		asset_get_ids(asset_animationcurve), asset_get_ids(asset_sequence), asset_get_ids(asset_particlesystem)
+	)
+	var _cont_map = {};
+	var _i=0; repeat(array_length(_arr)) {
+		var _asset = _arr[_i];
+		var _name = asset_get_name(_asset);
+		
+		_cont_map[$ _name] = _asset;
+	_i++};
+	exposeConstants(_cont_map);
+	exposeConstants({
+		"global": global,
+		"all": all,
+		"noone": noone,
+	});
+	#endregion
+	#region Expose Functions
+	var _scripts = asset_get_ids(asset_script);
+	var _func_map = {};
+	var _i=0; repeat(array_length(_scripts)) {
+		var _func = _scripts[_i];
+		var _name = script_get_name(_func);
+		_func_map[$ _name] = _func;
+	_i++};
+	exposeFunctions(_func_map)
+	
+	//This will overwrite the existing functions.
+	exposeFunctions({
+		"method":             __gmlc_method,
+		"typeof":             __gmlc_typeof,
+		"instanceof":         __gmlc_instanceof,
+		"static_get":         __gmlc_static_get,
+		"static_set":         __gmlc_static_set,
+		"method_get_index":   __gmlc_method_get_index,
+		"method_get_self":    __gmlc_method_get_self,
+		"script_execute":     __gmlc_script_execute,
+		"script_execute_ext": __gmlc_script_execute_ext,
+	})
+	#endregion
+	#region Expose Operators
+	var _op_map = {};
+	_op_map[$ "!"] = true;
+	_op_map[$ "!="] = true;
+	_op_map[$ "#"] = true;
+	_op_map[$ "$"] = true;
+	_op_map[$ "%"] = true;
+	_op_map[$ "%="] = true;
+	_op_map[$ "&"] = true;
+	_op_map[$ "&&"] = true;
+	_op_map[$ "&="] = true;
+	_op_map[$ "*"] = true;
+	_op_map[$ "*="] = true;
+	_op_map[$ "+"] = true;
+	_op_map[$ "+="] = true;
+	_op_map[$ "++"] = true;
+	_op_map[$ "-"] = true;
+	_op_map[$ "-="] = true;
+	_op_map[$ "--"] = true;
+	_op_map[$ "/"] = true;
+	_op_map[$ "<"] = true;
+	_op_map[$ "<>"] = true;
+	_op_map[$ "!="] = true;
+	_op_map[$ "<="] = true;
+	_op_map[$ "<<"] = true;
+	_op_map[$ "="] = true;
+	_op_map[$ ">"] = true;
+	_op_map[$ "?"] = true;
+	_op_map[$ "??"] = true;
+	_op_map[$ "??="] = true;
+	_op_map[$ "@"] = true;
+	_op_map[$ "^"] = true;
+	_op_map[$ "^^"] = true;
+	_op_map[$ "^="] = true;
+	_op_map[$ "~"] = true;
+	_op_map[$ "|"] = true;
+	_op_map[$ "||"] = true;
+	_op_map[$ "|="] = true;
+	exposeOperators(_op_map)
+	#endregion
+	#region Expose Variables
+	var _var_map = {
+		"visible":{
+			get: function(){ return visible; },
+			set: function(value){ visible = value; },
+		},
+		"managed":{
+			get: function(){ return managed; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable managed"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"path_index":{
+			get: function(){ return path_index; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable path_index"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"async_load":{
+			get: function(){ return async_load; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable async_load"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"event_data":{
+			get: function(){ return event_data; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable event_data"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"iap_data":{
+			get: function(){ return iap_data; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable iap_data"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"display_aa":{
+			get: function(){ return display_aa; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable display_aa"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"delta_time":{
+			get: function(){ return delta_time; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable delta_time"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"webgl_enabled":{
+			get: function(){ return webgl_enabled; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable webgl_enabled"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"argument_relative":{
+			get: function(){ return argument_relative; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"argument":{
+			get: function(){ return parentNode.arguments; },
+			set: function(value){ parentNode.arguments = value; },
+		},
+		"argument0":{
+			get: function(){ return parentNode.arguments[0]; },
+			set: function(value){ parentNode.arguments[0] = value; },
+		},
+		"argument1":{
+			get: function(){ return parentNode.arguments[1]; },
+			set: function(value){ parentNode.arguments[1] = value; },
+		},
+		"argument2":{
+			get: function(){ return parentNode.arguments[0]; },
+			set: function(value){ parentNode.arguments[0] = value; },
+		},
+		"argument3":{
+			get: function(){ return parentNode.arguments[3]; },
+			set: function(value){ parentNode.arguments[3] = value; },
+		},
+		"argument4":{
+			get: function(){ return parentNode.arguments[4]; },
+			set: function(value){ parentNode.arguments[4] = value; },
+		},
+		"argument5":{
+			get: function(){ return parentNode.arguments[5]; },
+			set: function(value){ parentNode.arguments[5] = value; },
+		},
+		"argument6":{
+			get: function(){ return parentNode.arguments[6]; },
+			set: function(value){ parentNode.arguments[6] = value; },
+		},
+		"argument7":{
+			get: function(){ return parentNode.arguments[7]; },
+			set: function(value){ parentNode.arguments[7] = value; },
+		},
+		"argument8":{
+			get: function(){ return parentNode.arguments[8]; },
+			set: function(value){ parentNode.arguments[8] = value; },
+		},
+		"argument9":{
+			get: function(){ return parentNode.arguments[9]; },
+			set: function(value){ parentNode.arguments[9] = value; },
+		},
+		"argument10":{
+			get: function(){ return parentNode.arguments[10]; },
+			set: function(value){ parentNode.arguments[10] = value; },
+		},
+		"argument11":{
+			get: function(){ return parentNode.arguments[11]; },
+			set: function(value){ parentNode.arguments[11] = value; },
+		},
+		"argument12":{
+			get: function(){ return parentNode.arguments[12]; },
+			set: function(value){ parentNode.arguments[12] = value; },
+		},
+		"argument13":{
+			get: function(){ return parentNode.arguments[13]; },
+			set: function(value){ parentNode.arguments[13] = value; },
+		},
+		"argument14":{
+			get: function(){ return parentNode.arguments[14]; },
+			set: function(value){ parentNode.arguments[14] = value; },
+		},
+		"argument15":{
+			get: function(){ return parentNode.arguments[15]; },
+			set: function(value){ parentNode.arguments[15] = value; },
+		},
+		"argument_count":{
+			get: function(){ return array_length(parentNode.arguments); },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_count"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"debug_mode":{
+			get: function(){ return debug_mode; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable debug_mode"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"room":{
+			get: function(){ return room; },
+			set: function(value){ room = value; },
+		},
+		"room_first":{
+			get: function(){ return room_first; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable room_first"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"room_last":{
+			get: function(){ return room_last; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable room_last"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"score":{
+			get: function(){ return score; },
+			set: function(value){ score = value; },
+		},
+		"lives":{
+			get: function(){ return lives; },
+			set: function(value){ lives = value; },
+		},
+		"health":{
+			get: function(){ return health; },
+			set: function(value){ health = value; },
+		},
+		"game_id":{
+			get: function(){ return game_id; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_id"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"game_display_name":{
+			get: function(){ return game_display_name; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_display_name"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"game_project_name":{
+			get: function(){ return game_project_name; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_project_name"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"game_save_id":{
+			get: function(){ return game_save_id; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_save_id"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"working_directory":{
+			get: function(){ return working_directory; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable working_directory"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"temp_directory":{
+			get: function(){ return temp_directory; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable temp_directory"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"cache_directory":{
+			get: function(){ return cache_directory; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable cache_directory"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"program_directory":{
+			get: function(){ return program_directory; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable program_directory"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"instance_count":{
+			get: function(){ return instance_count; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_count"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"instance_id":{
+			get: function(){ return instance_id; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_id"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"room_width":{
+			get: function(){ return room_width; },
+			set: function(value){ room_width = value; },
+		},
+		"room_height":{
+			get: function(){ return room_height; },
+			set: function(value){ room_height = value; },
+		},
+		"room_caption":{
+			get: function(){ return room_caption; },
+			set: function(value){ room_caption = value; },
+		},
+		"room_speed":{
+			get: function(){ return room_speed; },
+			set: function(value){ room_speed = value; },
+		},
+		"room_persistent":{
+			get: function(){ return room_persistent; },
+			set: function(value){ room_persistent = value; },
+		},
+		"view_enabled":{
+			get: function(){ return view_enabled; },
+			set: function(value){ view_enabled = value; },
+		},
+		"view_current":{
+			get: function(){ return view_current; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable view_current"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"view_visible":{
+			get: function(){ return view_visible; },
+			set: function(value){ view_visible = value; },
+		},
+		"view_xport":{
+			get: function(){ return view_xport; },
+			set: function(value){ view_xport = value; },
+		},
+		"view_yport":{
+			get: function(){ return view_yport; },
+			set: function(value){ view_yport = value; },
+		},
+		"view_wport":{
+			get: function(){ return view_wport; },
+			set: function(value){ view_wport = value; },
+		},
+		"view_hport":{
+			get: function(){ return view_hport; },
+			set: function(value){ view_hport = value; },
+		},
+		"view_surface_id":{
+			get: function(){ return view_surface_id; },
+			set: function(value){ view_surface_id = value; },
+		},
+		"view_camera":{
+			get: function(){ return view_camera; },
+			set: function(value){ view_camera = value; },
+		},
+		"mouse_x":{
+			get: function(){ return mouse_x; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable mouse_x"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"mouse_y":{
+			get: function(){ return mouse_y; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable mouse_y"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"mouse_button":{
+			get: function(){ return mouse_button; },
+			set: function(value){ mouse_button = value; },
+		},
+		"mouse_lastbutton":{
+			get: function(){ return mouse_lastbutton; },
+			set: function(value){ mouse_lastbutton = value; },
+		},
+		"keyboard_key":{
+			get: function(){ return keyboard_key; },
+			set: function(value){ keyboard_key = value; },
+		},
+		"keyboard_lastkey":{
+			get: function(){ return keyboard_lastkey; },
+			set: function(value){ keyboard_lastkey = value; },
+		},
+		"keyboard_lastchar":{
+			get: function(){ return keyboard_lastchar; },
+			set: function(value){ keyboard_lastchar = value; },
+		},
+		"keyboard_string":{
+			get: function(){ return keyboard_string; },
+			set: function(value){ keyboard_string = value; },
+		},
+		"cursor_sprite":{
+			get: function(){ return cursor_sprite; },
+			set: function(value){ cursor_sprite = value; },
+		},
+		"show_score":{
+			get: function(){ return show_score; },
+			set: function(value){ show_score = value; },
+		},
+		"show_lives":{
+			get: function(){ return show_lives; },
+			set: function(value){ show_lives = value; },
+		},
+		"show_health":{
+			get: function(){ return show_health; },
+			set: function(value){ show_health = value; },
+		},
+		"caption_score":{
+			get: function(){ return caption_score; },
+			set: function(value){ caption_score = value; },
+		},
+		"caption_lives":{
+			get: function(){ return caption_lives; },
+			set: function(value){ caption_lives = value; },
+		},
+		"caption_health":{
+			get: function(){ return caption_health; },
+			set: function(value){ caption_health = value; },
+		},
+		"fps":{
+			get: function(){ return fps; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable fps"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"fps_real":{
+			get: function(){ return fps_real; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable fps_real"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_time":{
+			get: function(){ return current_time; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_time"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_year":{
+			get: function(){ return current_year; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_year"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_month":{
+			get: function(){ return current_month; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_month"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_day":{
+			get: function(){ return current_day; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_day"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_weekday":{
+			get: function(){ return current_weekday; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_weekday"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_hour":{
+			get: function(){ return current_hour; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_time"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_minute":{
+			get: function(){ return current_minute; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_minute"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"current_second":{
+			get: function(){ return current_second; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_second"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"event_action":{
+			get: function(){ return event_action; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable event_action"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"error_occurred":{
+			get: function(){ return error_occurred; },
+			set: function(value){ error_occurred = value; },
+		},
+		"error_last":{
+			get: function(){ return error_last; },
+			set: function(value){ error_last = value; },
+		},
+		"gamemaker_registered":{
+			get: function(){ return gamemaker_registered; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable gamemaker_registered"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"gamemaker_pro":{
+			get: function(){ return gamemaker_pro; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable gamemaker_pro"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"application_surface":{
+			get: function(){ return application_surface; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable application_surface"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"font_texture_page_size":{
+			get: function(){ return font_texture_page_size; },
+			set: function(value){ font_texture_page_size = value; },
+		},
+		"os_type":{
+			get: function(){ return os_type; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_type"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"os_device":{
+			get: function(){ return os_device; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_device"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"os_version":{
+			get: function(){ return os_version; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_version"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"os_browser":{
+			get: function(){ return os_browser; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_browser"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"browser_width":{
+			get: function(){ return browser_width; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable bwoser_width"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"browser_height":{
+			get: function(){ return browser_height; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable browser_height"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"rollback_current_frame":{
+			get: function(){ return rollback_current_frame; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_current_frame"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"rollback_confirmed_frame":{
+			get: function(){ return rollback_confirmed_frame; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_confirmed_frame"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"rollback_event_id":{
+			get: function(){ return rollback_event_id; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_event_id"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"rollback_event_param":{
+			get: function(){ return rollback_event_param; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_event_param"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"rollback_game_running":{
+			get: function(){ return rollback_game_running; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_game_running"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"rollback_api_server":{
+			get: function(){ return rollback_api_server; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_api_server"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"wallpaper_config":{
+			get: function(){ return wallpaper_config; },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable wallpaper_config"+$"\n(line {line}) -\t{lineString}") },
+		},
+		"background_showcolor":{
+			get: function(){ return background_showcolor; },
+			set: function(value){ background_showcolor = value; },
+		},
+		"background_color":{
+			get: function(){ return background_color; },
+			set: function(value){ background_color = value; },
+		},
+		"background_colour":{
+			get: function(){ return background_colour; },
+			set: function(value){ background_colour = value; },
+		},
+		"background_showcolour":{
+			get: function(){ return background_showcolour; },
+			set: function(value){ background_showcolour = value; },
+		},
+		
+	}
+	_var_map[$ "self"] = {
+		get: function(){ return global.selfInstance; },
+		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable self"+$"\n(line {line}) -\t{lineString}") },
+	};
+	_var_map[$ "other"] = {
+		get: function(){ return global.otherInstance; },
+		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable other"+$"\n(line {line}) -\t{lineString}") },
+	};
+	exposeVariables(_var_map);
+	#endregion
+	
+	tokenizer      = new GMLC_Gen_0_Tokenizer(self);
+	pre_processor  = new GMLC_Gen_1_PreProcessor(self);
+	parser         = new GMLC_Gen_2_Parser(self);
+	post_processor = new GMLC_Gen_3_PostProcessor(self);
+	optimizer      = new GMLC_Gen_4_Optimizer(self);
+	#endregion
+	
+	#region Public
+	static compile = function(_sourceCode) {
+		tokenizer.initialize(_sourceCode);
+		var tokens = tokenizer.parseAll();
+		
+		pre_processor.initialize(tokens);
+		var preprocessedTokens = pre_processor.parseAll();
+		
+		parser.initialize(preprocessedTokens);
+		var ast = parser.parseAll();
+		
+		post_processor.initialize(ast);
+		var ast = post_processor.parseAll();
+		
+		if (should_optimize) {
+			optimizer.initialize(ast);
+			var ast = optimizer.parseAll();
+		}
+		
+		return compileProgram(ast);
+	}
+	static enable_optimizer = function(_bool) {
+		should_optimize = _bool;
+		return self;
+	}
+	#endregion
+
+	#region Private
+	// Reserved for future internal helpers
+	#endregion
+	
+}
+var t = new GMLC_Env();
+json_save("output2.json", t.envSymbols)
+
+
+
+function asset_get_name(_asset) {
+	var _type = asset_get_type(_asset);
+	switch(_type) {
+		case asset_object:         return object_get_name(_asset);
+		case asset_sprite:         return sprite_get_name(_asset);
+		case asset_sound:          return audio_get_name(_asset);
+		case asset_room:           return room_get_name(_asset);
+		case asset_tiles:          return tileset_get_name(_asset);
+		case asset_path:           return path_get_name(_asset);
+		case asset_script:         return script_get_name(_asset);
+		case asset_font:           return font_get_name(_asset);
+		case asset_timeline:       return timeline_get_name(_asset);
+		case asset_shader:         return shader_get_name(_asset);
+		case asset_animationcurve: return animcurve_get(_asset).name;
+		case asset_sequence:       return sequence_get(_asset).name;
+		case asset_particlesystem: return particle_get_info(_asset).name;
+		
+		case asset_unknown: default:
+			return undefined;
+	}
+}
+
+

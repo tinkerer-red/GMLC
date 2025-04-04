@@ -1,8 +1,12 @@
 
 
 enum RainbowColors {
-	Red, Orange, Yellow,
-	Green, Blue, Indigo,
+	Red,
+	Orange,
+	Yellow,
+	Green,
+	Blue,
+	Indigo,
 	Violet
 }
 

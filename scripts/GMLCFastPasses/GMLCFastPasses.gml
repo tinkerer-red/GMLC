@@ -8,7 +8,7 @@ function __GMLCexecuteGetPropertySelf() {
     var _target = global.selfInstance;
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -23,14 +23,14 @@ function __GMLCexecuteGetPropertySelf() {
 		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
 		if struct_exists(_static, key) {
 			return _static[$ key];
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
@@ -567,7 +567,7 @@ function __GMLCexecuteStructDotAccGet(){
 	var _target = target();
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -582,14 +582,14 @@ function __GMLCexecuteStructDotAccGet(){
 		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
 		if struct_exists(_static, key) {
 			return _static[$ key];
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
@@ -629,7 +629,7 @@ function __GMLCexecuteStructDotAccSet(){
 	var _target = target();
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -648,7 +648,7 @@ function __GMLCexecuteStructDotAccSet(){
 	
 	
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
@@ -656,7 +656,7 @@ function __GMLCexecuteStructDotAccSet(){
 			_static[$ key] = expression();
 			return
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	//last resort if no statics contain the key write to target
@@ -692,6 +692,32 @@ function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _ex
 #endregion
 
 #endregion
+
+function __GMLCexecuteUpdatePlusPlusPrefix() {
+    // Prefix ++
+	var _val = getter();
+	setter(_val + 1);
+	return _val + 1;
+}
+function __GMLCexecuteUpdatePlusPlusPostfix() {
+	// Postfix ++
+	var _val = getter();
+	setter(_val + 1);
+	return _val;
+}
+function __GMLCexecuteUpdateMinusMinusPrefix() {
+    // Prefix --
+	var _val = getter();
+	setter(_val - 1);
+	return _val - 1;
+}
+function __GMLCexecuteUpdateMinusMinusPostfix() {
+    // Postfix --
+	var _val = getter();
+	setter(_val - 1);
+	return _val;
+}
+
 
 #endregion
 
@@ -1433,7 +1459,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	var _target = target();
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -1448,14 +1474,14 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
 		if struct_exists(_static, key) {
 			return ++_static[$ key];
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
@@ -1465,7 +1491,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	var _target = target();
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -1480,14 +1506,14 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
 		if struct_exists(_static, key) {
 			return _static[$ key]++;
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
@@ -1499,7 +1525,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	var _target = target();
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -1514,14 +1540,14 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
 		if struct_exists(_static, key) {
 			return --_static[$ key];
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
@@ -1531,7 +1557,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	var _target = target();
 	
 	if (is_gmlc_function(_target)) {
-		_target = __static_get(_target)
+		_target = __gmlc_static_get(_target)
 	}
 	
 	if (struct_exists(_target, key)) {
@@ -1546,14 +1572,14 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
 	}
 	
-	var _static = __static_get(_target)
+	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
 	while (_static != undefined) {
 		if struct_exists(_static, key) {
 			return _static[$ key]--;
 		}
-		_static = __static_get(_static)
+		_static = __gmlc_static_get(_static)
 	}
 	
 	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")

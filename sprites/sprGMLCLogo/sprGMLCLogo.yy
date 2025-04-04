@@ -26,7 +26,7 @@
   "origin":0,
   "parent":{
     "name":"Rendering",
-    "path":"folders/GMLCompiler/Rendering.yy",
+    "path":"folders/GMLCompiler/__Final/Rendering.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

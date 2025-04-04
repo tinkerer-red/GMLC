@@ -19,11 +19,11 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
-	// When enable_corner_id() is enabled, the corner ID is stored in the lowest bit of the red and blue component of the vertexs colour
-	// Get the lowest bit of the vertexs red and blue values by getting their remainder when divided by 2
+	// When enable_corner_id() is enabled, the corner ID is stored in the lowest bit of the red and blue component of the vertex's colour
+	// Get the lowest bit of the vertex's red and blue values by getting their remainder when divided by 2
 	float2 rem = (float2(INPUT.vColor.x, INPUT.vColor.z) * 255.0) % 2.0;
 	// Then get the corner ID by multiplying the lowest bit of red by 1, the lowest bit of blue by 2, then adding them together to get their decimal value
 	// (a dot product is used here to do this effeciently)

@@ -1,4 +1,4 @@
-// This shader tests the gm_RcpFogRange built-in uniform by outputting white if its over 99 (should be 100 when set), and black if not
+// This shader tests the gm_RcpFogRange built-in uniform by outputting white if it's over 99 (should be 100 when set), and black if not
 // Vertex Shader
 
 // Input values
@@ -19,7 +19,7 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
 	// Set the vertex colour to black

@@ -6,7 +6,7 @@
   "name":"handle_testScript",
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

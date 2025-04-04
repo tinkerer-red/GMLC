@@ -20,10 +20,10 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
-	// Scale the normals values to be between 0 and 1
+	// Scale the normal's values to be between 0 and 1
 	float3 scaled_normal = (INPUT.vNormal / 2.0) + 0.5;
 	
 	// Set the red, green and blue values of each vertex to the scaled x, y and z values of the normal

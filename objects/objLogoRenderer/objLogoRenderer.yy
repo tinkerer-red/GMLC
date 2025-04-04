@@ -7,7 +7,7 @@
   "overriddenProperties":[],
   "parent":{
     "name":"Rendering",
-    "path":"folders/GMLCompiler/Rendering.yy",
+    "path":"folders/GMLCompiler/__Final/Rendering.yy",
   },
   "parentObjectId":null,
   "persistent":true,

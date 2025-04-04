@@ -1,3 +1,4 @@
+gmlc = new GMLC_Env();
 
 show_debug_overlay(true)
 
@@ -6,58 +7,58 @@ log("\n\n\n")
 #region Interpreter Unit Tests
 function run_interpreter_test(description, input, expectedReturn=undefined) {
 	
-	
-	var tokenizer = new GML_Tokenizer();
-	tokenizer.initialize(input);
-	tokenizer.parseAsync(method(
-	{description, expectedReturn},
-	function(tokens) {
+	with (gmlc) {
+		var tokenizer = new GMLC_Gen_0_Tokenizer();
+		tokenizer.initialize(input);
+		tokenizer.parseAsync(method(
+		{description, expectedReturn},
+		function(tokens) {
 		
-		pprint(tokens)
+			pprint(tokens)
 		
-		var preprocessor = new GML_PreProcessor();
-		preprocessor.initialize(tokens);
-		preprocessor.parseAsync(method(
-		self,
-		function(preprocessedTokens) {
+			var preprocessor = new GMLC_Gen_1_PreProcessor();
+			preprocessor.initialize(tokens);
+			preprocessor.parseAsync(method(
+			self,
+			function(preprocessedTokens) {
 			
-			log($"Attempting Interpreter Test :: {description}")
+				log($"Attempting Interpreter Test :: {description}")
 			
-			var parser = new GML_Parser();
-			parser.initialize(preprocessedTokens);
-			var ast = parser.parseAll();
+				var parser = new GMLC_Gen_2_Parser();
+				parser.initialize(preprocessedTokens);
+				var ast = parser.parseAll();
 			
-			var postprocessor = new GML_PostProcessor();
-			postprocessor.initialize(ast);
-			var ast = postprocessor.parseAll();
+				var postprocessor = new GMLC_Gen_3_PostProcessor();
+				postprocessor.initialize(ast);
+				var ast = postprocessor.parseAll();
 			
-			log("\n\n\n")
-			log(" :: Default AST :: ")
-			pprint(ast)
-			log("\n\n\n")
+				log("\n\n\n")
+				log(" :: Default AST :: ")
+				pprint(ast)
+				log("\n\n\n")
 			
-			//var optimizer = new GML_Optimizer();
-			//optimizer.initialize(ast);
-			//var ast = optimizer.parseAll();
+				//var optimizer = new GMLC_Gen_4_Optimizer();
+				//optimizer.initialize(ast);
+				//var ast = optimizer.parseAll();
 			
-			//log("\n\n\n")
-			//log(" :: Optimized AST :: ")
-			//pprint(ast)
-			//log("\n\n\n")
+				//log("\n\n\n")
+				//log(" :: Optimized AST :: ")
+				//pprint(ast)
+				//log("\n\n\n")
 			
-			var _program = compileProgram(ast);
-			var outputReturn = executeProgram(_program)
+				var _program = compileProgram(ast);
+				var outputReturn = executeProgram(_program)
 			
-			expectedReturn = (is_callable(expectedReturn)) ? expectedReturn() : expectedReturn;
+				expectedReturn = (is_callable(expectedReturn)) ? expectedReturn() : expectedReturn;
 			
-			var _same = __compare_results(description, outputReturn, expectedReturn);
-			if (!_same) {
-				log($"AST ::\n{json_stringify(ast, true)}\n")
-			}
+				var _same = __compare_results(description, outputReturn, expectedReturn);
+				if (!_same) {
+					log($"AST ::\n{json_stringify(ast, true)}\n")
+				}
 			
+			}));
 		}));
-	}));
-	
+	}
 	
 	
 	//var _program = undefined;
@@ -628,7 +629,7 @@ function attempt_file_parsing(_fname) {
 	
 	//log(_str)
 	
-	var tokenizer = new GML_Tokenizer();
+	var tokenizer = new GMLC_Gen_0_Tokenizer();
 	tokenizer.initialize(_str);
 	var tokens = tokenizer.parseAll();
 	tokenizer.cleanup();
@@ -646,19 +647,19 @@ function attempt_file_parsing(_fname) {
 	}
 	log("Tokenizer Completed")
 	//*
-	var preprocessor = new GML_PreProcessor();
+	var preprocessor = new GMLC_Gen_1_PreProcessor();
 	preprocessor.initialize(tokens);
 	var tokens = preprocessor.parseAll();
 	
 	log("PreProcessor Completed")
 	
-	var parser = new GML_Parser();
+	var parser = new GMLC_Gen_2_Parser();
 	parser.initialize(tokens);
 	var ast = parser.parseAll();
 	
 	log("Parser Completed")
 	
-	var postprocessor = new GML_PostProcessor();
+	var postprocessor = new GMLC_Gen_3_PostProcessor();
 	postprocessor.initialize(ast);
 	var optimizedAST = postprocessor.parseAll();
 	
@@ -686,7 +687,7 @@ function compile_file(_fname) {
 	
 	//log(_str)
 	
-	var tokenizer = new GML_Tokenizer();
+	var tokenizer = new GMLC_Gen_0_Tokenizer();
 	tokenizer.initialize(_str);
 	var tokens = tokenizer.parseAll();
 	tokenizer.cleanup();
@@ -704,13 +705,13 @@ function compile_file(_fname) {
 	}
 	log("Tokenizer Completed")
 	//*
-	var preprocessor = new GML_PreProcessor();
+	var preprocessor = new GMLC_Gen_1_PreProcessor();
 	preprocessor.initialize(tokens);
 	var tokens = preprocessor.parseAll();
 	
 	log("PreProcessor Completed")
 	
-	var parser = new GML_Parser();
+	var parser = new GMLC_Gen_2_Parser();
 	parser.initialize(tokens);
 	var ast = parser.parseAll();
 	
@@ -722,7 +723,7 @@ function compile_file(_fname) {
 	
 	log("Converter Completed")
 	
-	var postprocessor = new GML_PostProcessor();
+	var postprocessor = new GMLC_Gen_3_PostProcessor();
 	postprocessor.initialize(ast);
 	var optimizedAST = postprocessor.parseAll();
 	

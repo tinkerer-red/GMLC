@@ -4,7 +4,7 @@
   "name":"handle_testShader",
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

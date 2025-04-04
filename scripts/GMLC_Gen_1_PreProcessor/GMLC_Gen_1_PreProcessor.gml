@@ -1,6 +1,7 @@
 #region PreProcessor.gml
 
-function GML_PreProcessor() : FlexiParseBase() constructor {
+function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
+	env = _env;
 	
 	program = undefined;
 	tokens = undefined;
@@ -325,10 +326,10 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 					expectToken(__GMLC_TokenType.Keyword, "region")
 				
 					var name = currentToken.value; // Assuming next token is the macro name
-					array_push(program.MacroVarNames, name);
-				
-					__nextToken();
-				
+					//array_push(program.MacroVarNames, name);
+					
+					//__nextToken();
+					
 					var regionTitle = parseRegionTitle(); // Collect the macro body starting after the name
 					
 					//maybe in the future we will include these, but for now lets not worry about it
@@ -344,10 +345,10 @@ function GML_PreProcessor() : FlexiParseBase() constructor {
 					expectToken(__GMLC_TokenType.Operator, "#")
 					expectToken(__GMLC_TokenType.Keyword, "endregion")
 				
-					var name = currentToken.value; // Assuming next token is the macro name
-					array_push(program.MacroVarNames, name);
-				
-					__nextToken();
+					//var name = currentToken.value; // Assuming next token is the macro name
+					//array_push(program.MacroVarNames, name);
+					
+					//__nextToken();
 					
 					//maybe in the future we will include these, but for now lets not worry about it
 					//var _token = new __GMLC_create_token(__GMLC_TokenType.RegionStart, "#endregion", "#endregion", _start_line, _start_column);

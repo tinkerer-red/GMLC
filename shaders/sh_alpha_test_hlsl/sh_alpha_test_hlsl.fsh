@@ -16,14 +16,14 @@ float4 main(PixelShaderInput INPUT) : SV_TARGET {
     float4 diffuseTexture = gm_BaseTextureObject.Sample(gm_BaseTexture, INPUT.vTexcoord);
 	float4 outputColour = INPUT.vColor * diffuseTexture;
 	
-	// If gm_AlphaTestEnabled is true, set the fragments blue and red components to 0.5, tinting it green
+	// If gm_AlphaTestEnabled is true, set the fragment's blue and red components to 0.5, tinting it green
 	if (gm_AlphaTestEnabled == true)
 	{
 		outputColour.b = 0.5;
 		outputColour.r = 0.5;
 	}
 	
-	// If the fragments alpha is under gm_AlphaRefValue (divided by 255 to scale it to between 1 and 0), set its alpha to 0
+	// If the fragment's alpha is under gm_AlphaRefValue (divided by 255 to scale it to between 1 and 0), set its alpha to 0
 	float alpha_ref_value = gm_AlphaRefValue;
 	if (outputColour.a < alpha_ref_value / 255.0)
 	{

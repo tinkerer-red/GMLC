@@ -350,8 +350,11 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 			var _parent_static = method_get_self(_parent_constuct).statics
 			static_set(_our_static, _parent_static)
 		}
-		else {
+		else if (_parent_constuct != undefined) {
 			static_set(_output.statics, static_get(_node.parentCall.callee.value))
+		}
+		else {
+			//the parent is a gmlc program which has yet to be compiled. statics will be set when parent is compiled
 		}
 		
 		
@@ -361,6 +364,21 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 		//no parent? just have an empty static
 		static_set(_output.statics, static_get({}))
 	}
+	
+	//after initializing we need to check all constructors in the global space
+	// and if their callee is our global reference we need to update their statics,
+	// this ensures we're able to compile a child then a parent regardless of order.
+	var _globals = _rootNode.globals;
+	var _names = struct_get_names(_rootNode.globals);
+	var _i=0; repeat(array_length(_names)) {
+		var _global = _globals[$ _names[_i]];
+		if (is_gmlc_constructor(_global)) {
+			var _data = method_get_self(_global);
+			if (_data.parentConstructorName == _node.name) {
+				static_set(static_get(_data), _output.statics)
+			}
+		}
+	_i++};
 	
 	return method(_output, __GMLCexecuteConstructor)
 }
@@ -1792,6 +1810,9 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 	}
 	else if (_node.scope == ScopeType.GLOBAL) {
 		_output.globals = _rootNode.globals;
+	}
+	else if (_node.scope == ScopeType.CONST) {
+		show_debug_message("wait")
 	}
 	return method(_output, __GMLCGetScopeGetter(_node.scope))
 }

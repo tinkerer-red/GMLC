@@ -157,11 +157,7 @@ function __new(_func, argArr=[]) {
 	return constructor_call_ext(_func, argArr);
 }
 
-function __static_get(_struct) {
-	
-	if (is_gmlc_constructed(_struct)) {
-		return static_get(_struct)
-	}
+function __gmlc_static_get(_struct) {
 	
 	if (is_method(_struct)) {
 		if (is_gmlc_method(_struct)) {
@@ -170,7 +166,7 @@ function __static_get(_struct) {
 		}
 		
 		if (is_gmlc_program(_struct)) {
-			var _r = static_get(method_get_self(_struct))
+			var _r = method_get_self(_struct).statics
 			return _r
 		}
 	}
@@ -180,7 +176,7 @@ function __static_get(_struct) {
 	
 }
 
-function __static_set(_targetStruct, _staticStruct) {
+function __gmlc_static_set(_targetStruct, _staticStruct) {
 	if (is_gmlc_program(_targetStruct)) {
 		_targetStruct.statics = _staticStruct;
 		return static_set(method_get_self(_targetStruct), _staticStruct);
@@ -191,7 +187,7 @@ function __static_set(_targetStruct, _staticStruct) {
 	
 }
 
-function __method_get_index(_method) {
+function __gmlc_method_get_index(_method) {
 	if (is_method(_method)) {
 		if (is_gmlc_method(_method)) {
 			return method_get_self(_method).func;
@@ -207,7 +203,7 @@ function __method_get_index(_method) {
 	
 }
 
-function __method_get_self(_method) {
+function __gmlc_method_get_self(_method) {
 	if (is_method(_method)) {
 		if (is_gmlc_method(_method)) {
 			return method_get_self(_method).target;
@@ -223,21 +219,7 @@ function __method_get_self(_method) {
 	
 }
 
-function __typeof(_val) {
-	if (is_method(_val)) {
-		if (is_gmlc_method(_val)) {
-			return "method"
-		}
-		if (is_gmlc_program(_val)) {
-			return "ref"
-		}
-	}
-	
-	// any number of other things
-	return typeof(_val);
-}
-
-function __script_execute(ind) {
+function __gmlc_script_execute(ind) {
 	static __argArr = [];
 	array_resize(__argArr, 0);
 	
@@ -246,14 +228,14 @@ function __script_execute(ind) {
 			__argArr[_i] = argument[_i];
 		_i++}
 		
-		return __script_execute_ext(argument0, __argArr)
+		return __gmlc_script_execute_ext(argument0, __argArr)
 	}
 	
-	return __script_execute_ext(argument0)
+	return __gmlc_script_execute_ext(argument0)
 	
 }
 
-function __script_execute_ext(ind, array=undefined, offset=0, num_args=array_length(array)-offset) {
+function __gmlc_script_execute_ext(ind, array=undefined, offset=0, num_args=array_length(array)-offset) {
 	static __argArr = [];
 	array_resize(__argArr, 0)
 	

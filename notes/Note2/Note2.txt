@@ -23,6 +23,13 @@ Debugging tools:
 
 
 Optimizer ToDo:
+- calling array_push and similar functions with an arbitrary argument count multiple times in a row with the same target can typically be reordered better for compile time efficiency.
+	Example:
+		array_push(parserSteps, parseSkipWhitespace);
+		array_push(parserSteps, parseCommentLine);
+		array_push(parserSteps, parseCommentBlock);
+	Into:
+		array_push(parserSteps, parseSkipWhitespace, parseCommentLine, parseCommentBlock);
 - "pick one" functions should be removed if only one argument is provided, these include `min, max, choose` and some others i guess. idk
 - Dead Code Elimination
 - loop iteration improvements

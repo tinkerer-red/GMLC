@@ -13,7 +13,7 @@
   "name":"handle_testSound",
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "preload":false,
   "resourceType":"GMSound",
@@ -21,5 +21,5 @@
   "sampleRate":44100,
   "soundFile":"handle_testSound.wav",
   "type":0,
-  "volume":0.01,
+  "volume":1.0,
 }

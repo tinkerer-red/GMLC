@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__ExistingFunctions",
   "parent":{
-    "name":"LookupTables",
-    "path":"folders/GMLCompiler/__Final/Internal/LookupTables.yy",
+    "name":"__Shouldnt be needed",
+    "path":"folders/GMLCompiler/__Final/Internal/LookupTables/__Shouldnt be needed.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

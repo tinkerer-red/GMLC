@@ -1,4 +1,4 @@
-// This shader tests the gm_RcpFogRange built-in uniform by outputting white if its over 99 (should be 100 when set), and black if not
+// This shader tests the gm_RcpFogRange built-in uniform by outputting white if it's over 99 (should be 100 when set), and black if not
 // Fragment Shader
 
 // Input values

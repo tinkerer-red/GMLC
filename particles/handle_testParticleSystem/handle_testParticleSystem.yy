@@ -14,7 +14,7 @@
   "name":"handle_testParticleSystem",
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "resourceType":"GMParticleSystem",
   "resourceVersion":"2.0",

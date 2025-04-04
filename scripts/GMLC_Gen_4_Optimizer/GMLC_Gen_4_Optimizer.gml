@@ -10,7 +10,9 @@
 	deadCodeElimination(ast): Removes parts of the AST that do not affect the program outcome, such as unreachable code.
 	*/
 	#endregion
-	function GML_Optimizer() constructor {
+	function GMLC_Gen_4_Optimizer(_env) constructor {
+		env = _env;
+		
 		//init variables:
 		
 		ast = undefined;

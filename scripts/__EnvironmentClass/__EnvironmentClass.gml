@@ -3,6 +3,43 @@ function __EnvironmentClass() constructor {
 	envSymbols = {};
 	
 	#region Public
+	static importSymbolMap = function(symbolMap, overwrite = false) {
+		if (!is_struct(symbolMap)) {
+			throw "importSymbolMap() expects a struct as input.";
+		}
+		
+		var keys = struct_get_names(symbolMap);
+		for (var i = 0; i < array_length(keys); i++) {
+			var key = keys[i];
+			var entry = symbolMap[$ key];
+			
+			if (!is_struct(entry)) continue;
+			if (!is_string(entry.type)) continue;
+			
+			if (!overwrite && struct_exists(envSymbols, key)) {
+				continue; // Skip if already exists and overwrite is false
+			}
+			
+			if (!struct_exists(envSymbols, key)) {
+				envSymbols[$ key] = {};
+			}
+			
+			var sym = envSymbols[$ key];
+			
+			sym.value     = entry.value;
+			sym.type      = entry.type;
+			sym.getter    = entry[$ "getter"] ?? __defaultSymbolGetter(entry.type, key, entry.value);
+			sym.setter    = entry[$ "setter"] ?? __defaultSymbolSetter(entry.type, key, entry.value);
+			sym.highlight = entry.highlight ?? __defaultSymbolHighlight(entry.type);
+			
+			// Optional metadata preserved for external tooling or doc gen
+			if (entry[$ "feather"] != undefined) {
+				sym.feather = entry.feather;
+			}
+		}
+		
+		return self;
+	};
 	static setHighlight = function(conf) {
 		if (!is_struct(conf)) throw "env.setHighlight() expects a struct as an input"
 		
@@ -43,7 +80,7 @@ function __EnvironmentClass() constructor {
 	};
 	
 	#region === Keywords ===
-	static addKeywords     = function(conf) { __addType("envKeywords", conf);  return self; };
+	static exposeKeywords  = function(conf) { __exposeType("envKeywords", conf);  return self; };
 	static removeKeywords  = function(keys) { __removeType("envKeywords", keys); return self; };
 	static clearKeywords   = function()     { __clearType("envKeywords"); return self; };
 	static getKeyword      = function(name) { return __getType("envKeywords", name); };
@@ -51,7 +88,7 @@ function __EnvironmentClass() constructor {
 	static getAllKeywords  = function()     { return __getAllType("envKeywords"); };
 	#endregion
 	#region === Constants ===
-	static addConstants     = function(conf) { __addType("envConstants", conf);  return self; };
+	static exposeConstants  = function(conf) { __exposeType("envConstants", conf);  return self; };
 	static removeConstants  = function(keys) { __removeType("envConstants", keys); return self; };
 	static clearConstants   = function()     { __clearType("envConstants"); return self; };
 	static getConstant      = function(name) { return __getType("envConstants", name); };
@@ -59,7 +96,7 @@ function __EnvironmentClass() constructor {
 	static getAllConstants  = function()     { return __getAllType("envConstants"); };
 	#endregion
 	#region === Enums ===
-	static addEnums     = function(conf) { __addType("envEnums", conf);  return self; };
+	static exposeEnums     = function(conf) { __exposeType("envEnums", conf);  return self; };
 	static removeEnums  = function(keys) { __removeType("envEnums", keys); return self; };
 	static clearEnums   = function()     { __clearType("envEnums"); return self; };
 	static getEnum      = function(name) { return __getType("envEnums", name); };
@@ -67,44 +104,36 @@ function __EnvironmentClass() constructor {
 	static getAllEnums  = function()     { return __getAllType("envEnums"); };
 	#endregion
 	#region === Functions ===
-	static addFunctions     = function(conf) { __addType("envFunctions", conf);  return self; };
+	static exposeFunctions     = function(conf) { __exposeType("envFunctions", conf);  return self; };
 	static removeFunctions  = function(keys) { __removeType("envFunctions", keys); return self; };
 	static clearFunctions   = function()     { __clearType("envFunctions"); return self; };
 	static getFunction      = function(name) { return __getType("envFunctions", name); };
 	static isFunction       = function(name) { return __isType("envFunctions", name); };
 	static getAllFunctions  = function()     { return __getAllType("envFunctions"); };
 	#endregion
-	#region === Dynamic Variables (with getter/setter) ===
-	static addDynamicVars     = function(conf) { __addType("envDynamicVar", conf);  return self; };
-	static removeDynamicVars  = function(keys) { __removeType("envDynamicVar", keys); return self; };
-	static clearDynamicVars   = function()     { __clearType("envDynamicVar"); return self; };
-	static getDynamicVar      = function(name) { return __getType("envDynamicVar", name); };
-	static isDynamicVar       = function(name) { return __isType("envDynamicVar", name); };
-	static getAllDynamicVars  = function()     { return __getAllType("envDynamicVar"); };
-	#endregion
-	#region === Builtin Variables ===
-	static addBuiltinVars     = function(conf) { __addType("envBuiltInVars", conf);  return self; };
-	static removeBuiltinVars  = function(keys) { __removeType("envBuiltInVars", keys); return self; };
-	static clearBuiltinVars   = function()     { __clearType("envBuiltInVars"); return self; };
-	static getBuiltinVar      = function(name) { return __getType("envBuiltInVars", name); };
-	static isBuiltinVar       = function(name) { return __isType("envBuiltInVars", name); };
-	static getAllBuiltinVars  = function()     { return __getAllType("envBuiltInVars"); };
+	#region === Variables ===
+	static exposeVariables  = function(conf) { __exposeType("envVariable", conf);  return self; };
+	static removeVariables  = function(keys) { __removeType("envVariable", keys); return self; };
+	static clearVariables   = function()     { __clearType("envVariable"); return self; };
+	static getVariable      = function(name) { return __getType("envVariable", name); };
+	static isVariable       = function(name) { return __isType("envVariable", name); };
+	static getAllVariables  = function()     { return __getAllType("envVariable"); };
 	#endregion
 	#region === Macros ===
-	static addMacros     = function(conf) { __addType("envMacros", conf);  return self; };
+	static exposeMacros     = function(conf) { __exposeType("envMacros", conf);  return self; };
 	static removeMacros  = function(keys) { __removeType("envMacros", keys); return self; };
 	static clearMacros   = function()     { __clearType("envMacros"); return self; };
 	static getMacro      = function(name) { return __getType("envMacros", name); };
 	static isMacro       = function(name) { return __isType("envMacros", name); };
 	static getAllMacros  = function()     { return __getAllType("envMacros"); };
 	#endregion
-	#region === Accessors ===
-	//static addAccessors     = function(conf) { __defineSymbols(envAccessors, conf, "envAccessors");  return self; };
-	//static removeAccessors  = function(keys) { __removeType(envAccessors, keys); return self; };
-	//static clearAccessors   = function()     { __clearType("envAccessors"); return self; };
-	//static getAccessor      = function(name) { return envAccessors[$ name]; };
-	//static isAccessor       = function(name) { return struct_exists(envAccessors, name); };
-	//static getAllAccessors  = function()     { return envAccessors; };
+	#region === Operators ===
+	static exposeOperators  = function(conf) { __exposeType("envOperators", conf);  return self; };
+	static removeOperators  = function(keys) { __removeType("envOperators", keys); return self; };
+	static clearOperators   = function()     { __clearType("envOperators"); return self; };
+	static getOperator      = function(name) { return __getType("envOperators", name); };
+	static isOperator       = function(name) { return __isType("envOperators", name); };
+	static getAllOperators  = function()     { return __getAllType("envOperators"); };
 	#endregion
 	
 	#endregion
@@ -125,11 +154,11 @@ function __EnvironmentClass() constructor {
 			
 			var sym = envSymbols[$ key];
 			
-			if (!struct_exists(sym, "value")) sym.value = val;
-			if (!struct_exists(sym, "type")) sym.type = _type;
-			if (!struct_exists(sym, "getter")) sym.getter = __defaultSymbolGetter(_type, key, val);
-			if (!struct_exists(sym, "setter")) sym.setter = __defaultSymbolSetter(_type, key, val);
-			if (!struct_exists(sym, "highlight")) sym.highlight = defaultHighlight;
+			sym.value = val;
+			sym.type = _type;
+			sym.highlight = defaultHighlight;
+			sym.getter = __defaultSymbolGetter(_type, key, val);
+			sym.setter = __defaultSymbolSetter(_type, key, val);
 		}
 	};
 	static __mergeStruct  = function(_target, _source) {
@@ -196,14 +225,13 @@ function __EnvironmentClass() constructor {
 			case "envMacros":       return "highlight.macro";
 			case "envEnums":        return "highlight.enum";
 			case "envKeywords":     return "highlight.keyword";
-			case "envDynamicVar":   return "highlight.dynamic";
-			case "envBuiltInVars":  return "highlight.builtin";
+			case "envVariable":     return "highlight.variable";
 			default:                return "highlight.identifier";
 		}
 	};
 	
 	#region Types
-	static __addType = function(type, conf) {
+	static __exposeType = function(type, conf) {
 		__populateSymbols(conf, type);
 		return self;
 	};
@@ -221,7 +249,7 @@ function __EnvironmentClass() constructor {
 	
 	static __getType = function(type, name) {
 		var sym = envSymbols[$ name];
-		return (struct_exists(sym, "type") && sym.type == type) ? sym : undefined;
+		return (sym != undefined && struct_exists(sym, "type") && sym.type == type) ? sym : undefined;
 	};
 	
 	static __isType = function(type, name) {
@@ -254,59 +282,7 @@ function __EnvironmentClass() constructor {
 	
 	#endregion
 	#endregion
+	
 }
 
-
-var env = new __EnvironmentClass();
-env.addConstants({ "pi": 3.14 });
-
-var _pi = env.getConstant("pi");
-show_debug_message($"pi.type == {_pi.type}, expecting result :: envConstants");
-show_debug_message($"pi.highlight == {_pi.highlight}, expecting result :: highlight.constant");
-show_debug_message($"pi.getter() == {_pi.getter()}, expecting result :: 3.14");
-
-
-var env = new __EnvironmentClass();
-env.addConstants({ "pi": 3.14 });
-
-var _pi = env.getConstant("pi");
-var caught = false;
-try {
-	_pi.setter(4);
-} catch (e) {
-	caught = true;
-}
-show_debug_message($"caught == {caught}, expecting result :: true");
-
-
-var env = new __EnvironmentClass();
-env.addDynamicVars({ "score": 0 });
-
-var _score = env.getDynamicVar("score");
-show_debug_message($"score.getter() == {score.getter()}, expecting result :: 0");
-_score.setter(42);
-show_debug_message($"score.getter() == {score.getter()}, expecting result :: 42");
-
-
-var env = new __EnvironmentClass();
-env.addConstants({ "pi": 3.14 });
-env.setHighlight({ "pi": "highlight.special" });
-
-var _pi = env.getConstant("pi");
-show_debug_message($"pi.highlight == {_pi.highlight}, expecting result :: highlight.special");
-
-
-var env = new __EnvironmentClass();
-env.addFunctions({ "myFunc": function() {} });
-
-show_debug_message($"env.isFunction('myFunc') == {env.isFunction("myFunc")}, expecting result :: true");
-
-var funcs = env.getAllFunctions();
-show_debug_message($"funcs['myFunc'].type == {funcs[$ "myFunc"].type}, expecting result :: envFunctions");
-
-
-var env = new __EnvironmentClass();
-env.addFunctions({ "myFunc": function() {} });
-env.clearFunctions();
-
-show_debug_message($"env.isFunction('myFunc') == {env.isFunction("myFunc")}, expecting result :: false");
+/*

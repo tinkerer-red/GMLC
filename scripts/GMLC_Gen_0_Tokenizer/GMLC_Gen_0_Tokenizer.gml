@@ -12,7 +12,9 @@ peekToken(): Look at the next token without removing it from the stream or advan
 tokenize(sourceCode): Takes the entire source code as input and converts it into tokens until the end of the string.
 */
 #endregion
-function GML_Tokenizer() : FlexiParseBase() constructor {
+function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
+	env = _env;
+	
 	sourceCodeString = "";
 	sourceCodeCharLength = 0;
 	sourceCodeByteLength = 0;
@@ -66,6 +68,8 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 		column = 0;
 		
 		finished = false;
+		
+		return self;
 	};
 	
 	static __cleanup = function() {
@@ -545,239 +549,178 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 			
 			var _identifier = _raw_string
 			
-			if (!sandboxed) {
-				var _index = asset_get_index(_identifier);
-				var _type = asset_get_type(_identifier)
-				
-				#region Assets
-				if (is_handle(_index))
-				&& (_index > -1)
-				&& ((_type == asset_object)
-				|| (_type == asset_sprite)
-				|| (_type == asset_sound)
-				|| (_type == asset_room)
-				|| (_type == asset_tiles)
-				|| (_type == asset_path)
-				//|| (_type == asset_script)
-				|| (_type == asset_font)
-				|| (_type == asset_timeline)
-				|| (_type == asset_shader)
-				|| (_type == asset_animationcurve)
-				|| (_type == asset_sequence)
-				|| (_type == asset_particlesystem))
-				{
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}	
-				#endregion
-				#region Functions
 			
-				if (_type == asset_script) && (_index > -1) {
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-				//built in functions
-				static __functions_lookup = __ExistingFunctions();
-				var _index = struct_get(__functions_lookup, _identifier)
-				if (_index != undefined) {
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-			
-				static __dep_functions_lookup = __DeprocatedFunctions();
-				var _index = struct_get(__dep_functions_lookup, _identifier)
-				if (_index != undefined) {
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-			
-				#endregion
-				#region Constants
-			
-			
-				static __constants_lookup = __ExistingConstants();
-				var _constant = struct_get(__constants_lookup, _identifier)
-				if (_constant != undefined) {
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-			
-				static __dep_constants_lookup = __DeprocatedConstants();
-				var _constant = struct_get(__dep_constants_lookup, _identifier)
-				if (_constant != undefined) {
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _constant, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-			
-				static __unique_variables_arr = __ExistingUniqueVariables();
-				if (array_contains(__unique_variables_arr, _identifier)) {
-					var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-			
-				#endregion
-				#region Enum Constants
-			
-				static __enum_header_arr = __ExistingEnumHeaderStrings();
-				if (array_contains(__enum_header_arr, _identifier)) {
-				
-					static __enum_arr = __ExistingEnumStrings();
-				
-					var _found = false;
-				
-					//find the shortest/longest string
-					var _shortest = infinity; var _longest  = 0;
-					var _i=0; repeat(array_length(__enum_arr)) {
-						var _length = string_length(__enum_arr[_i])
-						_shortest = min(_shortest, _length);
-						_longest  = max(_longest , _length);
-					_i++}
-				
-					//define the range we will be peeking
-					var _peek_length = _shortest - string_length(_identifier);
-					var _iterations = _longest - string_length(_identifier) - _peek_length;
-				
-					var _temp_identifier = _identifier
-					var _i=1; repeat(_peek_length) {
-						_temp_identifier += chr(__peekUTF8(_i));
-					_i++}
-				
-					//iterate through all and try to find a match
-					var _i=1; repeat(_iterations) {
-						var _nextIterToken = __peekUTF8(_peek_length+_i);
-						
-						if (_nextIterToken == undefined) {
-							break;
-						}
-						
-						_temp_identifier += chr(_nextIterToken);
+			#region nameof()
+			if (_identifier == "nameof") {
+				var _start_line = line;
+				var _start_column = column;
 					
-						if (array_contains(__enum_arr, _temp_identifier)) {
-							static __enum_lookup = __ExistingEnums();
-							var _val = struct_get(__enum_lookup, _temp_identifier)
-						
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column);
-							_found = true;
-							break;
-						}
+				__nextUTF8();
+				__expectUTF8(ord("(")); //consume @
 					
-					_i+=1;}//end repeat loop
-				
-					if (_found) {
-						var _jump = string_length(_temp_identifier) - string_length(_identifier);
-						repeat (_jump) __nextUTF8();
-						
-						array_push(tokens, _token);
-						return _token;
-					}
-				}
-			
-				#endregion
-				#region Keywords
-			
-				if (array_contains(keywords, _identifier)) {
-					switch (_identifier) {
-						case "begin":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "end":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "mod":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "div":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "not":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "and":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "or":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "xor":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "_GMLINE_":{
-							var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
-							array_push(tokens, _token);
-							return _token;
-						break;}
-						case "_GMFUNCTION_":{
-							//this is actually handled later when we parse, for now just return the keyword
-							throw_gmlc_error("_GMFUNCTION_ is currently not supported")
-						break;}
-					}
-				
-					var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
-					array_push(tokens, _token);
-					return _token;
-				}
-				
-				if (_identifier == "nameof") {
-					var _start_line = line;
-					var _start_column = column;
+				var _raw_string = "nameof(";
+				var _string = __fetchAllUntil(ord(")"));
+				_raw_string += _string+")"
 					
-					__nextUTF8();
-					__expectUTF8(ord("(")); //consume @
+				var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
 					
-					var _raw_string = "nameof(";
-					var _string = __fetchAllUntil(ord(")"));
-					_raw_string += _string+")"
-					
-					var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
-					
-					array_push(tokens, _token);
-					return _token;
-				}
-				
-				#endregion
-			
-				if (_identifier == "true")           var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "true", true, _start_line, _start_column);
-				else if (_identifier == "false")     var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "false", false, _start_line, _start_column);
-				else if (_identifier == "infinity")  var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "infinity", infinity, _start_line, _start_column);
-				else if (_identifier == "undefined") var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "undefined", undefined, _start_line, _start_column);
-				else if (_identifier == "NaN")       var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "NaN", NaN, _start_line, _start_column);
-				else                                 var _token = new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
-				
 				array_push(tokens, _token);
 				return _token;
 			}
-			else {
-				// parse the exposed functions and assets
-				//var _data = exposedIdentifiers[$ _identifier]
-				//var _type = _data.type;
-				//var _identifier = _data.value;
-				//var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index, _start_line, _start_column);
-				//array_push(tokens, _token);
+			#endregion
+			#region Functions
+				
+			var _index = env.getFunction(_identifier);
+			if (_index != undefined) {
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index.value, _start_line, _start_column);
+				array_push(tokens, _token);
 				return _token;
 			}
+				
+			#endregion
+			#region Constants
+			
+			var _index = env.getConstant(_identifier);
+			if (_index != undefined) {
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index.value, _start_line, _start_column);
+				array_push(tokens, _token);
+				return _token;
+			}
+			
+			#endregion
+			#region Variables
+			
+			var _index = env.getVariable(_identifier);
+			if (_index != undefined) {
+				var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
+				array_push(tokens, _token);
+				return _token;
+			}
+			
+			#endregion
+			#region Enum Constants
+			var _index = env.getEnum(_identifier);
+			if (_index != undefined) {
+				var _found = false;
+				
+				var _enum_tail_arr = struct_get_names(_index.value);
+				
+				//find the shortest/longest string
+				var _shortest = infinity; var _longest  = 0;
+				var _i=0; repeat(array_length(_enum_tail_arr)) {
+					var _length = string_length(_enum_tail_arr[_i])
+					_shortest = min(_shortest, _length);
+					_longest  = max(_longest , _length);
+				_i++}
+				
+				//define the range we will be peeking
+				var _peek_length = _shortest;
+				var _iterations = _longest - _peek_length;
+				
+				var _offset = 1; //skip the dot
+				
+				var _temp_identifier = "";
+				var _i=_offset+1; repeat(_peek_length - 1) { //offload the adding of the last init char to the next loop since it already started with string adding
+					_temp_identifier += chr(__peekUTF8(_i));
+				_i++}
+				
+				
+				
+				//iterate through all and try to find a match
+				var _i=_offset; repeat(_iterations+1) { // account for last char of start
+					var _nextIterToken = __peekUTF8(_peek_length+_i);
+						
+					if (_nextIterToken == undefined) {
+						break;
+					}
+						
+					_temp_identifier += chr(_nextIterToken);
+					
+					if (array_contains(_enum_tail_arr, _temp_identifier)) {
+						var _val = _index.value[$ _temp_identifier].value;
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column);
+						_found = true;
+						break;
+					}
+					
+				_i+=1;}//end repeat loop
+				
+				if (_found) {
+					var _jump = string_length(_temp_identifier)+1;
+					repeat (_jump) __nextUTF8();
+						
+					array_push(tokens, _token);
+					return _token;
+				}
+			}
+			
+			#endregion
+			#region Keywords
+				
+			var _index = env.getKeyword(_identifier);
+			if (_index != undefined) {
+				switch (_identifier) {
+					case "begin":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "end":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "mod":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "div":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "not":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "and":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "or":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "xor":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "_GMLINE_":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "_GMFUNCTION_":{
+						//this is actually handled later when we parse, for now just return the keyword
+						throw_gmlc_error("_GMFUNCTION_ is currently not supported")
+					break;}
+				}
+				
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
+				array_push(tokens, _token);
+				return _token;
+			}
+				
+			#endregion
+			// else...
+			var _token = new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
+			array_push(tokens, _token);
+			return _token;
 		}
 		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
 		return false;
@@ -1187,7 +1130,6 @@ function GML_Tokenizer() : FlexiParseBase() constructor {
 	array_push(parserSteps, parseIllegal);
 	
 	#endregion
-	
 	
 	#region Util
 	

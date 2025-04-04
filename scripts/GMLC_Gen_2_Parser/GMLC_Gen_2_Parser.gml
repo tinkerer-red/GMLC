@@ -11,7 +11,12 @@
 	parseStatement(tokens): Parse a statement from tokens.
 	*/
 	#endregion
-	function GML_Parser() constructor {
+	function GMLC_Gen_2_Parser(_env) constructor {
+		env = _env;
+		
+		//init scope tokens
+		ScopeType();
+		
 		finished = false;
 		tokens = undefined;
 		currentTokenIndex = 0;
@@ -446,7 +451,7 @@
 				
 				//parse and identify the exception variable as a local variable.
 				_exceptionVar = currentToken.value;  // Parse the exception variable
-				array_push(currentFunction.LocalVarNames, _exceptionVar);
+				array_push((currentFunction ?? scriptAST).LocalVarNames, _exceptionVar);
 				
 				nextToken();  // Move past Identifier
 				expectToken(__GMLC_TokenType.Punctuation, ")");
@@ -1288,8 +1293,7 @@
 					
 				break;}
 				case __GMLC_TokenType.Function:{
-					var _func = getReplacementFunction(currentToken.value)
-					var node = new ASTLiteral(_func, line, lineString, currentToken.name);
+					var node = new ASTLiteral(currentToken.value, line, lineString, currentToken.name);
 					nextToken(); // Move past the identifier
 					return node;
 					
@@ -1601,23 +1605,6 @@
 			
 			return false;
 		};
-		
-		static getReplacementFunction = function(_func) {
-			switch (_func) {
-				case __vanilla_method   : return __gmlc_method       ;
-				case static_get         : return __static_get        ;
-				
-				case static_set         : return __static_set        ;
-				case __vanilla_typeof   : return __gmlc_typeof       ;
-				case method_get_index   : return __method_get_index  ;
-				case method_get_self    : return __method_get_self   ;
-				case script_execute     : return __script_execute    ;
-				case script_execute_ext : return __script_execute_ext;
-				
-				default					: return _func;
-			}
-			
-		}
 		
 		#endregion
 		

@@ -192,7 +192,7 @@
   "name":"handle_testFont",
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "pointRounding":0,
   "ranges":[

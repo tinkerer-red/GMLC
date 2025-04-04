@@ -357,7 +357,7 @@
   "overriddenProperties":[],
   "parent":{
     "name":"objects",
-    "path":"folders/xUnit/Tests/TestResources/objects.yy",
+    "path":"folders/Tests/TestResources/objects.yy",
   },
   "parentObjectId":null,
   "persistent":true,

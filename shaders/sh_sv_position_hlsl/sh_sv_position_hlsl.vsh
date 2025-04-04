@@ -1,4 +1,4 @@
-// This shader tests SV_POSITION by setting each fragments red and green values to SV_POSITIONs x and y values
+// This shader tests SV_POSITION by setting each fragment's red and green values to SV_POSITION's x and y values
 // Vertex Shader
 
 // Input values
@@ -16,13 +16,13 @@ struct VertexShaderOutput {
 };
 
 // Uniforms
-uniform float2 u_resolution; // The resolution of the window
+float2 u_resolutionVS; // The resolution of the window
 
 
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
 	// Pass the vertex position, colour and texture coordinates to the fragment shader

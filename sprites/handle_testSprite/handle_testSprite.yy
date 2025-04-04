@@ -26,7 +26,7 @@
   "origin":0,
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

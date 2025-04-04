@@ -14,7 +14,7 @@
   "name":"room1",
   "parent":{
     "name":"rooms",
-    "path":"folders/xUnit/Tests/TestResources/rooms.yy",
+    "path":"folders/Tests/TestResources/rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

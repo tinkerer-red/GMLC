@@ -4,7 +4,7 @@
   "name":"sh_frag_coord_glsles",
   "parent":{
     "name":"GLSLES",
-    "path":"folders/xUnit/Tests/TestResources/shaders/ShaderTests/GLSLES.yy",
+    "path":"folders/Tests/TestResources/shaders/ShaderTests/GLSLES.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

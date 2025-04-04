@@ -22,7 +22,7 @@ float4x4 u_Matrix; // Matrix passed into the shader
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix, multiplied by the matrix passed into the shader
+	// Calculate the vertex's position on screen using the world_view_projection matrix, multiplied by the matrix passed into the shader
     float4 matrixWVP = mul(u_Matrix, mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition));
 	
 	// Pass the vertex position, colour and texture coordinates to the fragment shader

@@ -1,4 +1,4 @@
-// This shader tests the gm_PS_FogEnabled built-in uniform by outputting white if its true and black if its false
+// This shader tests the gm_PS_FogEnabled built-in uniform by outputting white if it's true and black if it's false
 // Vertex Shader
 
 // Input values
@@ -19,7 +19,7 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
 	// Pass the vertex position, colour and texture coordinates to the fragment shader

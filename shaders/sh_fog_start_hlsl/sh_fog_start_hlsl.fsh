@@ -1,4 +1,4 @@
-// This shader tests the gm_FogStart built-in uniform by outputting white if its value is over 9.0 (should be 10 when set) and black otherwise
+// This shader tests the gm_FogStart built-in uniform by outputting white if it's value is over 9.0 (should be 10 when set) and black otherwise
 // Fragment Shader
 
 // Input values

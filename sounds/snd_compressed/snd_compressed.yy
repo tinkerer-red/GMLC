@@ -9,11 +9,11 @@
   "bitRate":128,
   "compression":1,
   "conversionMode":0,
-  "duration":26.592,
+  "duration":26.56365,
   "name":"snd_compressed",
   "parent":{
     "name":"sounds",
-    "path":"folders/xUnit/Tests/TestResources/sounds.yy",
+    "path":"folders/Tests/TestResources/sounds.yy",
   },
   "preload":false,
   "resourceType":"GMSound",
@@ -21,5 +21,5 @@
   "sampleRate":44100,
   "soundFile":"snd_compressed.mp3",
   "type":0,
-  "volume":0.01,
+  "volume":1.0,
 }

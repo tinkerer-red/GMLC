@@ -4,7 +4,7 @@
   "name":"sh_fog_start_glsles",
   "parent":{
     "name":"GLSLES",
-    "path":"folders/xUnit/Tests/TestResources/shaders/ShaderUniformTests/GLSLES.yy",
+    "path":"folders/Tests/TestResources/shaders/ShaderUniformTests/GLSLES.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

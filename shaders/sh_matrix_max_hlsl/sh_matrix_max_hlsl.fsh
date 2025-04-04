@@ -1,4 +1,4 @@
-// It will test the MATRICES_MAX constant by outputting its value as the RGB components of the vertex colour.
+// It will test the MATRICES_MAX constant by outputting it's value as the RGB components of the vertex colour.
 // Fragment Shader
 
 // Input values

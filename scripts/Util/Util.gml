@@ -54,11 +54,12 @@ function is_gmlc_program(_program) {
 
 function is_gmlc_function(_program) {
 	if (is_method(_program)) {
-		var _self = method_get_self(_program);
-		if (_self != undefined)
-		&& (_self != global)
-		&& (struct_exists(_self, "__@@is_gmlc_function@@__")) {
+		if (method_get_index(_program) == __GMLCexecuteFunction){
+			var _self = method_get_self(_program);
+			if (_self != undefined)
+			&& (_self != global) {
 				return true;
+			}
 		}
 	}
 	return false;
@@ -66,11 +67,12 @@ function is_gmlc_function(_program) {
 
 function is_gmlc_constructor(_program) {
 	if (is_method(_program)) {
-		var _self = method_get_self(_program);
-		if (_self != undefined)
-		&& (_self != global)
-		&& (struct_exists(_self, "__@@is_gmlc_program@@__")) {
-				return struct_exists(_self, "__") && struct_exists(_self.__, "__@@is_gmlc_constructed@@__");
+		if (method_get_index(_program) == __GMLCexecuteConstructor){
+			var _self = method_get_self(_program);
+			if (_self != undefined)
+			&& (_self != global) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -135,8 +137,25 @@ function throw_gmlc_error(_err) {
 
 }
 
-
-
+function script_get_index(_script_name) {
+	static __built_in_lookup = undefined;
+	
+	//entirely because asset_get_index returns -1 for builtin functions
+	if (__built_in_lookup = undefined) {
+		var _lookup = {};
+		
+		var _i=0; repeat(10_000) {
+			var _name = script_get_name(_i);
+			if !(string_starts_with(_name, "@")) {
+				_lookup[$ _name] = _i;
+			}
+		_i++}
+		
+		__built_in_lookup = _lookup;
+	}
+	
+	return __built_in_lookup[$ _script_name] ?? asset_get_index(_script_name);
+}
 
 // unit testing
 function __compare_results(desc, result, expected) {

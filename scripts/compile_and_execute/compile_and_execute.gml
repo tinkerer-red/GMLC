@@ -82,31 +82,8 @@ global.TestFailed = {};
 function compile_and_execute(_string) {
 	static __faster = 0;
 	
-	static tokenizer = new GML_Tokenizer();
-	tokenizer.initialize(_string);
-	var tokens = tokenizer.parseAll();
-	
-	static preprocessor = new GML_PreProcessor();
-	preprocessor.initialize(tokens);
-	var preprocessedTokens = preprocessor.parseAll();
-	
-	static parser = new GML_Parser();
-	parser.initialize(preprocessedTokens);
-	var ast = parser.parseAll();
-	
-	static postprocessor = new GML_PostProcessor();
-	postprocessor.initialize(ast);
-	var ast = postprocessor.parseAll();
-	
-	
-	//static optimizer = new GML_Optimizer();
-	//optimizer.initialize(ast);
-	//var ast = optimizer.parseAll();
-	
-	//log(json(ast))
-	
-	var _program = compileProgram(ast);
-	//pprint(_program)
+	static gmlc = new GMLC_Env()
+	var _program = gmlc.compile(_string);
 	
 	//GC_START
 	var _start = get_timer();
@@ -141,29 +118,9 @@ function compile_and_execute(_string) {
 
 
 function compile_code(_string) {
-	static tokenizer = new GML_Tokenizer();
-	tokenizer.initialize(_string);
-	var tokens = tokenizer.parseAll();
+	static gmlc = new GMLC_Env()
+	var _program = gmlc.compile(_string);
 	
-	static preprocessor = new GML_PreProcessor();
-	preprocessor.initialize(tokens);
-	var preprocessedTokens = preprocessor.parseAll();
-	
-	static parser = new GML_Parser();
-	parser.initialize(preprocessedTokens);
-	var ast = parser.parseAll();
-	
-	static postprocessor = new GML_PostProcessor();
-	postprocessor.initialize(ast);
-	var ast = postprocessor.parseAll();
-	
-	//static optimizer = new GML_Optimizer();
-	//optimizer.initialize(ast);
-	//var ast = optimizer.parseAll();
-	
-	//log(json(ast))
-	
-	var _program = compileProgram(ast);
 	return _program;
 	
 }

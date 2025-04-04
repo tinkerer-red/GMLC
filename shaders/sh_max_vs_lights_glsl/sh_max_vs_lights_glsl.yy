@@ -4,7 +4,7 @@
   "name":"sh_max_vs_lights_glsl",
   "parent":{
     "name":"GLSL",
-    "path":"folders/xUnit/Tests/TestResources/shaders/ShaderUniformTests/GLSL.yy",
+    "path":"folders/Tests/TestResources/shaders/ShaderUniformTests/GLSL.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

@@ -2,8 +2,8 @@
   "$GMSound":"",
   "%Name":"snd_MP3",
   "audioGroupId":{
-    "name":"audiogroup_default",
-    "path":"audiogroups/audiogroup_default",
+    "name":"audiogroup_MP3",
+    "path":"audiogroups/audiogroup_MP3",
   },
   "bitDepth":1,
   "bitRate":128,
@@ -13,7 +13,7 @@
   "name":"snd_MP3",
   "parent":{
     "name":"sounds",
-    "path":"folders/xUnit/Tests/TestResources/sounds.yy",
+    "path":"folders/Tests/TestResources/sounds.yy",
   },
   "preload":false,
   "resourceType":"GMSound",
@@ -21,5 +21,5 @@
   "sampleRate":44100,
   "soundFile":"snd_MP3.mp3",
   "type":0,
-  "volume":0.01,
+  "volume":1.0,
 }

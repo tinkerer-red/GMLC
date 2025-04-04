@@ -13,7 +13,7 @@
   "out_tilevborder":2,
   "parent":{
     "name":"handles",
-    "path":"folders/xUnit/Tests/TestResources/handles.yy",
+    "path":"folders/Tests/TestResources/handles.yy",
   },
   "resourceType":"GMTileSet",
   "resourceVersion":"2.0",

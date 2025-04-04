@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__EnvironmentClass",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"Internal",
+    "path":"folders/GMLCompiler/__Final/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

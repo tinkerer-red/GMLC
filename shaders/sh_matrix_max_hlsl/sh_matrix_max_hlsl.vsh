@@ -1,4 +1,4 @@
-// This shader will test the MATRICES_MAX constant by outputting its value as the RGB components of the vertex colour.
+// This shader will test the MATRICES_MAX constant by outputting it's value as the RGB components of the vertex colour.
 // Vertex Shader
 
 // Input values
@@ -19,7 +19,7 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
 	// Get MATRICES_MAX

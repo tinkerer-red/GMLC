@@ -1,5 +1,5 @@
 // This shader is intended to be used with a 4x2 grid of rectangles, each with a unique red colour value to be used as an index.
-// It will test gm_Lights_PosRange by attempting to set each rectangles RGBA colour values to each lights xyz position and w range value.
+// It will test gm_Lights_PosRange by attempting to set each rectangle's RGBA colour values to each light's xyz position and w range value.
 // Vertex Shader
 
 // Input values
@@ -20,10 +20,10 @@ struct VertexShaderOutput {
 VertexShaderOutput main(VertexShaderInput INPUT) {
     VertexShaderOutput OUTPUT;
 	
-	// Calculate the vertexs position on screen using the world_view_projection matrix
+	// Calculate the vertex's position on screen using the world_view_projection matrix
     float4 matrixWVP = mul(gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION], INPUT.vPosition);
 	
-	// Get the index of the current rectangle via its red value
+	// Get the index of the current rectangle via it's red value
 	int rect_index = int(INPUT.vColor.r * 255.0);
 	
 	// Get the light position and range for the light corresponding to that index

@@ -17,7 +17,7 @@ uniform mat4 u_Matrix; // Matrix passed into the shader
 
 void main()
 {
-	// Calculate the vertexs position on screen using the world_view_projection matrix, multiplied by the matrix passed into the shader
+	// Calculate the vertex's position on screen using the world_view_projection matrix, multiplied by the matrix passed into the shader
     vec4 object_space_pos = vec4( in_Position.x, in_Position.y, in_Position.z, 1.0);
     gl_Position = u_Matrix * gm_Matrices[MATRIX_WORLD_VIEW_PROJECTION] * object_space_pos;
     

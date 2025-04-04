@@ -26,7 +26,7 @@
   "origin":4,
   "parent":{
     "name":"sprites",
-    "path":"folders/xUnit/Tests/TestResources/sprites.yy",
+    "path":"folders/Tests/TestResources/sprites.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",
