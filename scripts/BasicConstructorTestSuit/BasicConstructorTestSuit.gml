@@ -38,41 +38,47 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		//A`s statics
 		var _struct = static_get(_a)
 		var _expected = static_get(a)
-		assert_struct_equals(_struct, _expected, "A`s Static Structs are not equal")
+		assert_equals(_struct, _expected, "A`s Static Structs are not equal")
+		assert_true(is_instanceof(_a, a), "Object A is not instance of constructor A")
 		
 		var _b = new b(1);
 		
 		//self
 		var _struct = _b;
-		var _expected = { aInstance : "This is A`s Instance", argumentChain : 2, localChain : 1, bInstance : "This is B`s Instance" }
+		var _expected = { aInstance : "This is A`s Instance", bInstance : "This is B`s Instance", argumentChain : 2, localChain : 1, }
 		assert_struct_equals(_struct, _expected, "B`s Structs are not equal")
 		//B`s statics
 		var _struct = static_get(_b)
 		var _expected = static_get(b)
-		assert_struct_equals(_struct, _expected, "B`s Static Structs are not equal")
+		assert_equals(_struct, _expected, "B`s Static Structs are not equal")
+		assert_true(is_instanceof(_b, b), "Object B is not instance of constructor B")
 		//A`s statics
 		var _struct = static_get(static_get(_b))
 		var _expected = static_get(a)
-		assert_struct_equals(_struct, _expected, "B`s 2xStatic`s Structs are not equal to construct A`s")
+		assert_equals(_struct, _expected, "B`s 2xStatic`s Structs are not equal to construct A`s")
+		assert_true(is_instanceof(_b, a), "Object B is not instance of constructor A")
 		
 		var _c = new c(1);
 		
 		//self
 		var _struct = _c;
-		var _expected = {"__":{"__@@is_gmlc_constructed@@__":true,"__@@gmlc_constructor_name@@__":"c"},"overwrite":"C Overwrite","cStatic":"This is C`s Static","bStatic":"This is B`s Static","aStatic":"This is A`s Static"}
+		var _expected = {aInstance:"This is A`s Instance", bInstance:"This is B`s Instance", cInstance:"This is C`s Instance", argumentChain:3, localChain:2}
 		assert_struct_equals(_struct, _expected, "C`s Structs are not equal")
 		//C`s statics
 		var _struct = static_get(_c)
 		var _expected = static_get(c)
-		assert_struct_equals(_struct, _expected, "C`s Static Structs are not equal")
+		assert_equals(_struct, _expected, "C`s Static Structs are not equal")
+		assert_true(is_instanceof(_c, c), "Object C is not instance of constructor C")
 		//B`s statics
 		var _struct = static_get(static_get(_c))
 		var _expected = static_get(b)
-		assert_struct_equals(_struct, _expected, "C`s 2xStatic`s Structs are not equal to construct B`s")
+		assert_equals(_struct, _expected, "C`s 2xStatic`s Structs are not equal to construct B`s")
+		assert_true(is_instanceof(_c, b), "Object C is not instance of constructor B")
 		//A`s statics
 		var _struct = static_get(static_get(static_get(_c)))
 		var _expected = static_get(a)
-		assert_struct_equals(_struct, _expected, "C`s 3xStatic`s Structs are not equal to construct A`s")
+		assert_equals(_struct, _expected, "C`s 3xStatic`s Structs are not equal to construct A`s")
+		assert_true(is_instanceof(_c, a), "Object C is not instance of constructor A")
 		')
 	});
 	
