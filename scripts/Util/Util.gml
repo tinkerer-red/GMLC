@@ -54,12 +54,10 @@ function is_gmlc_program(_program) {
 
 function is_gmlc_function(_program) {
 	if (is_method(_program)) {
-		if (method_get_index(_program) == __GMLCexecuteFunction){
-			var _self = method_get_self(_program);
-			if (_self != undefined)
-			&& (_self != global) {
-				return true;
-			}
+		var _func = method_get_index(_program)
+		if (_func == __GMLCexecuteFunction)
+		|| (_func == static_get(__gmlc_method)[$ "__executeMethodFunction"]) {
+			return true;
 		}
 	}
 	return false;
@@ -67,12 +65,10 @@ function is_gmlc_function(_program) {
 
 function is_gmlc_constructor(_program) {
 	if (is_method(_program)) {
-		if (method_get_index(_program) == __GMLCexecuteConstructor){
-			var _self = method_get_self(_program);
-			if (_self != undefined)
-			&& (_self != global) {
-				return true;
-			}
+		var _func = method_get_index(_program)
+		if (_func == __GMLCexecuteConstructor)
+		|| (_func == static_get(__gmlc_method)[$ "__executeMethodConstructor"]) {
+			return true;
 		}
 	}
 	return false;
@@ -131,9 +127,9 @@ function static_exists(_struct, _name) {
 
 function throw_gmlc_error(_err) {
 	log(_err)
-	show_error(@'
+	throw @'
 ===GMLC===
-'+string(_err)+"\n=========\n\n", true)
+'+string(_err)+"\n=========\n\n";
 
 }
 

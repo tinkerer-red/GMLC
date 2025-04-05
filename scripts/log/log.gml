@@ -8,7 +8,11 @@ function json(_input) {
 #macro pprint repeat (__pprint_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __pprint
 /// @param ...args
 function __pprint() {
-    var _str = $"PRINTER :: {__pprint.__file}/{__pprint.__func}:{__pprint.__line}:\n"
+    var _str = $"PRINTER :: {
+		string_replace(__pprint.__file, "gml_GlobalScript_", "")
+	}/{
+		string_replace(__pprint.__func, "gml_Script_", "")
+	}:{__pprint.__line}:\n"
     
     var _i=0; repeat(argument_count) {
 		_str += json_stringify(__reStruct(argument[_i]), true)+"\n";
@@ -109,7 +113,11 @@ function __reStruct(_struct) {
 #macro log repeat (__log_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __log
 /// @param ...args
 function __log() {
-    var _str = $"LOGGER :: {__log.__file}/{__log.__func}:{__log.__line}:"
+    var _str = $"LOGGER :: {
+		string_replace(__log.__file, "gml_GlobalScript_", "")
+	}/{
+		string_replace(__log.__func, "gml_Script_", "")
+	}:{__log.__line}:"
 	
 	for (var i = 0; i < argument_count; i++) {
         _str += $"\n\t{argument[i]}"
