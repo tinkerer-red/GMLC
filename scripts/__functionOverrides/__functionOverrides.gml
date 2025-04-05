@@ -10,6 +10,11 @@ function __gmlc_method(_struct, _func) {
 		__GMLC_DEFAULT_SELF_AND_OTHER
 		var _target = target;
 		var _func = func;
+		
+		var _prevOther = global.otherInstance;
+		var _prevSelf  = global.selfInstance;
+		global.otherInstance = global.selfInstance;
+		global.selfInstance = _target;
 		//////////////////////////////////////////////////////////
 		
 		static argArr = array_create(argument_count, undefined);
@@ -21,10 +26,6 @@ function __gmlc_method(_struct, _func) {
 		
 		
 		if (_target != undefined) {
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance;
-			global.selfInstance = _target;
 			
 			var _return = method_call(_func, _argArr);
 			
@@ -49,12 +50,19 @@ function __gmlc_method(_struct, _func) {
 				var _target = target;
 				var _func = func;
 			}
+			
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
+			global.otherInstance = _target;
+			global.selfInstance = self;
 		}
 		else {
 			__GMLC_DEFAULT_SELF_AND_OTHER
 			var _target = target;
 			var _func = func;
 			
+			var _prevOther = global.otherInstance;
+			var _prevSelf  = global.selfInstance;
 		}
 		//////////////////////////////////////////////////////////
 		
@@ -67,18 +75,23 @@ function __gmlc_method(_struct, _func) {
 		
 		
 		if (_target != undefined) {
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = global.selfInstance;
-			global.selfInstance = _target;
-			
-			var _return = method_call(_func, _argArr);
+			//this is just method_call, but it works on constructors
+			var _program_data = method_get_self(_func);
+			var _program_func = method_get_index(_func);
+			with (_program_data) {
+				var _return = script_execute_ext(_func, _argArr)
+			}
 			
 			global.otherInstance = _prevOther;
 			global.selfInstance  = _prevSelf;
 		}
 		else {
-			var _return = method_call(_func, _argArr);
+			//this is just method_call, but it works on constructors
+			var _program_data = method_get_self(_func);
+			var _program_func = method_get_index(_func);
+			with (_program_data) {
+				var _return = script_execute_ext(_func, _argArr)
+			}
 		}
 		
 		array_resize(_argArr, 0)
@@ -144,12 +157,54 @@ function __gmlc_instanceof(_val) {
 	}
 	else {
 		if (is_gmlc_constructed(_val)) {
-			
+			return _val[$ "__@@gmlc_script_name@@__"];
 		}
 	}
 	
 	// any number of other things
 	return __vanilla_instanceof(_val);
+}
+#endregion
+
+#region is_instanceof()
+#macro __vanilla_is_instanceof is_instanceof
+//#macro is_instanceof __gmlc_is_instanceof
+function __gmlc_is_instanceof(_struct, _constructor) {
+	
+	if (is_method(_constructor)) {
+		var _should_parse = false;
+		
+		if (is_gmlc_method(_constructor)) {
+			//var _target = method_get_self(_struct).target
+			_constructor = method_get_self(_constructor).func;
+		}
+		
+		if (is_gmlc_program(_constructor)) {
+			var _program_data = method_get_self(_constructor);
+			
+			var _constructor_statics = _program_data.statics;
+			var _struct_statics = static_get(_struct);
+			if (_struct_statics == _constructor_statics) {
+				return true;
+			}
+			else {
+				var _should_parse = true;
+			}
+		}
+		
+		if (_should_parse) {
+			while(_struct_statics != undefined) {
+				if (_struct_statics == _constructor_statics) {
+					return true;
+				}
+				_struct_statics = static_get(_struct_statics);
+			}
+			
+			return false;
+		}
+	}
+	// any number of other things
+	return __vanilla_is_instanceof(_struct, _constructor);
 }
 #endregion
 
@@ -161,13 +216,17 @@ function __gmlc_static_get(_struct) {
 	
 	if (is_method(_struct)) {
 		if (is_gmlc_method(_struct)) {
-			var _r = static_get(method_get_self(_struct).func)
-			return _r
+			//var _target = method_get_self(_struct).target
+			var _program = method_get_self(_struct).func;
+			var _program_data = method_get_self(_program);
+			var _statics = _program_data.statics;
+			return _statics
 		}
 		
 		if (is_gmlc_program(_struct)) {
-			var _r = method_get_self(_struct).statics
-			return _r
+			var _program_data = method_get_self(_struct);
+			var _statics = _program_data.statics
+			return _statics
 		}
 	}
 	
@@ -282,6 +341,27 @@ function __gmlc_script_execute_ext(ind, array=undefined, offset=0, num_args=arra
 	}
 	
 	return script_execute_ext(ind, __argArr);
+}
+
+function __gmlc_script_get_name(ind) {
+	
+	if (is_method(ind)) {
+		if (is_gmlc_method(ind)) {
+			//var _target = method_get_self(_struct).target
+			ind = method_get_self(ind).func;
+		}
+		
+		if (is_gmlc_program(ind)) {
+			var _program_data = method_get_self(ind);
+			var _statics = _program_data.statics
+			var _name = _statics[$ "__@@gmlc_script_name@@__"]
+			return _name;
+		}
+	}
+	
+	// any number of other things
+	return script_get_name(ind);
+	
 }
 
 

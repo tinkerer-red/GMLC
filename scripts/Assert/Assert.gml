@@ -1543,7 +1543,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} [description] An optional description for this assert_true.
 	/// @returns {Bool}
 	static structEquals = function(_struct, _expected, _description = undefined) {
-
+		
 		// Assert type
 		static assertTitle = "Asserted two structs to be equal";
 
@@ -1582,7 +1582,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 				_passed = false;
 			}
 		}
-	
+		
 		var _resolver = _passed ? pass : fail;
 	
 		return _resolver(assertTitle, _description, _struct, _expected);

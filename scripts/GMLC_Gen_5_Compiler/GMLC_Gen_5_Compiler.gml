@@ -203,7 +203,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	//statics
 	_output.staticsExecuted = false;
-	_output.statics = {};
+	_output.statics = new __GMLC_Statics(_node[$ "name"]);
 	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
 	static_set(_output, _output.statics)
 	
@@ -241,27 +241,17 @@ function __GMLCexecuteConstructor() constructor {
 	var _self_is_gmlc  = self[$ "__@@is_gmlc_function@@__"];
 	var _is_new_expression = !_self_is_gmlc;
 	
-	if (_is_new_expression) {
-		with other {
-			__GMLC_DEFAULT_SELF_AND_OTHER
-			__GMLC_UPDATE_SELF_AND_OTHER
-			
-			__GMLC_INIT_ARGUMENT_COUNT
-			if (recursionCount++) {
-				__GMLC_STASH_LOCALS
-				__GMLC_STASH_ARGUMENTS
-			}
-			__GMLC_POPULATE_ARGUMENTS
-			__GMLC_CALL_PARENT_CONSTRUCTOR
-			__GMLC_INIT_STATICS
-			var _program = program;
-			var _arguments = arguments;
-			var _statics = statics;
-		}
-	}
-	else {
+	var _program_data = (_is_new_expression) ? other : self;
+	with _program_data {
+		var _program = program;
+		var _arguments = arguments;
+		var _statics = statics;
+		
 		__GMLC_DEFAULT_SELF_AND_OTHER
-		__GMLC_UPDATE_SELF_AND_OTHER
+		
+		if (_is_new_expression) {
+			__GMLC_UPDATE_SELF_AND_OTHER
+		}
 		
 		__GMLC_INIT_ARGUMENT_COUNT
 		if (recursionCount++) {
@@ -269,18 +259,21 @@ function __GMLCexecuteConstructor() constructor {
 			__GMLC_STASH_ARGUMENTS
 		}
 		__GMLC_POPULATE_ARGUMENTS
-		__GMLC_CALL_PARENT_CONSTRUCTOR
+		if (_program_data[$ "hasParentConstructor"]) {
+			parentConstructorCall(arguments)
+			var _obj_statics = static_get(global.selfInstance);
+			static_set(_statics, _obj_statics);
+		}
 		__GMLC_INIT_STATICS
-		var _program = program;
-		var _arguments = arguments;
-		var _statics = statics;
 	}
 	
 	//run the body
 	static_set(global.selfInstance, _statics);
 	method_call(_program, _arguments);
 	
-	__GMLC_RESET_SELF_AND_OTHER
+	if (_is_new_expression) {
+		__GMLC_RESET_SELF_AND_OTHER
+	}
 	
 	if (_is_new_expression) {
 		with other {
@@ -308,7 +301,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	
 	//statics
 	_output.staticsExecuted = false;
-	_output.statics = {};
+	_output.statics = new __GMLC_Constructor_Statics(_node.name);
 	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
 	static_set(_output, _output.statics)
 	
@@ -1226,12 +1219,20 @@ function __GMLCexecuteCallExpression() {
 	
 	var _return = undefined;
 	if (is_method(_func)) {
-		if (is_gmlc_program(_func))
+		if is_gmlc_constructor(_func) {
+			//this is just method_call, but it works on constructors
+			var _program_data = method_get_self(_func);
+			var _program_func = method_get_index(_func);
+			var _arguments = arguments
+			with (_program_data) {
+				script_execute_ext(_program_func, _arguments);
+			}
+		}
+		else if (is_gmlc_program(_func))
 		|| (is_gmlc_method(_func)) {
 			_return = method_call(_func, arguments);
 		}
 		else {
-			
 			var _self = method_get_self(_func);
 			var _args = arguments;
 			
@@ -1250,18 +1251,10 @@ function __GMLCexecuteCallExpression() {
 		}
 	}
 	else {
-		//try {
-			var _args = arguments;
-			with (global.otherInstance) with (global.selfInstance) {
-				_return = script_execute_ext(_func, _args);
-			}
-		//}
-		//catch(e) {
-		//	pprint(e)
-		//	var _wait = current_time
-		//	while(current_time-_wait < 1_000) {}
-		//	throw "fuck you"
-		//}
+		var _args = arguments;
+		with (global.otherInstance) with (global.selfInstance) {
+			_return = script_execute_ext(_func, _args);
+		}
 	}
 	
 	if (shouldUpdateInstanceScoping) {
@@ -1844,14 +1837,11 @@ function __GMLC_Function(_rootNode, _parentNode, _base, _error, _line, _lineStri
 }
 static_get(__GMLC_Function)[$ "__@@is_gmlc_program@@__"] = true;
 
-function __GMLC_Statics() constructor {
-	
+function __GMLC_Statics(_program_name) constructor {
+	self[$ "__@@gmlc_script_name@@__"] = _program_name;
 }
-function __GMLC_Constructor_Statics(_construct_name) : __GMLC_Statics() constructor {
-	__ = {
-		"__@@is_gmlc_constructed@@__": true,
-		"__@@gmlc_constructor_name@@__": _construct_name,
-	};
+function __GMLC_Constructor_Statics(_construct_name) : __GMLC_Statics(_construct_name) constructor {
+	self[$ "__@@is_gmlc_constructed@@__"] = true;
 }
 
 #endregion

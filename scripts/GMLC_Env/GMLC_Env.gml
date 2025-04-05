@@ -88,10 +88,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"method":             __gmlc_method,
 		"typeof":             __gmlc_typeof,
 		"instanceof":         __gmlc_instanceof,
+		"is_instanceof":      __gmlc_is_instanceof,
 		"static_get":         __gmlc_static_get,
 		"static_set":         __gmlc_static_set,
 		"method_get_index":   __gmlc_method_get_index,
 		"method_get_self":    __gmlc_method_get_self,
+		"script_get_name":    __gmlc_script_get_name,
 		"script_execute":     __gmlc_script_execute,
 		"script_execute_ext": __gmlc_script_execute_ext,
 	})
@@ -174,10 +176,10 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			get: function(){ return webgl_enabled; },
 			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable webgl_enabled"+$"\n(line {line}) -\t{lineString}") },
 		},
-		"argument_relative":{
-			get: function(){ return argument_relative; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative"+$"\n(line {line}) -\t{lineString}") },
-		},
+		//"argument_relative":{
+		//	get: function(){ return argument_relative; },
+		//	set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative"+$"\n(line {line}) -\t{lineString}") },
+		//},
 		"argument":{
 			get: function(){ return parentNode.arguments; },
 			set: function(value){ parentNode.arguments = value; },

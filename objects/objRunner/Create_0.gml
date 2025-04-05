@@ -15,18 +15,23 @@ gmlc.exposeConstants({
 
 // ################# TEST SUITE REGISTRATION #################
 var _string = @'
-function foo() constructor {
-	_constructor = function() constructor { };
-	var _struct = { const: _constructor };
-	var _result = array_create_ext(10, method( _struct, function() {
-		return new const();
-	}));
+function test() : TestSuite() constructor {
+	static func_static = true;
+	func_local = true;
+	show_debug_message(static_get(self))
+	show_debug_message(static_get(static_get(self)))
+	show_debug_message(addFact)
 }
-new foo();
 '
 
 var _program = gmlc.compile(_string);
-_program();
+var _self = method_get_self(_program)
+var t = new _self.globals.test();
+log(instanceof(t));
+log(t);
+var t = constructor_call_ext(_self.globals.test);
+log(instanceof(t));
+log(t);
 
 //// Register your test suites here...
 //testFramework.addSuite(OptimizerConstantFoldingTestSuite);
@@ -37,7 +42,7 @@ _program();
 testFramework.addSuite(BasicConstructorTestSuit);
 
 
-/*
+//*
 // Add all of the official test suites from their .gml files in included folder \__TEST\*.gml
 var _file_names = file_find_all("__TESTS/*gml");
 for(var i=0; i<array_length(_file_names); i++) {
