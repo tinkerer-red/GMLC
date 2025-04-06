@@ -1440,6 +1440,11 @@
 					throw_gmlc_error($"Object: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id")
 				}
 		        
+				//correct constants to be the string they are expected to be
+				if (key.value != key.name) {
+					key.value = key.name;
+				}
+				
 				//push the key and the value
 				array_push(
 					_args,
