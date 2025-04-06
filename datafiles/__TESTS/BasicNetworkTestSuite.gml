@@ -19,8 +19,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = config_get_param("test_server_address");
-			var _server_port = config_get_param("test_server_port");
+			var _server_address = "127.0.0.1";
+			var _server_port = 8080;
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -55,8 +55,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = config_get_param("test_server_address");
-			var _server_port = config_get_param("test_server_port");
+			var _server_address = "127.0.0.1";
+			var _server_port = 8080;
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -90,8 +90,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = config_get_param("test_server_address");
-			var _server_port = config_get_param("test_server_port");
+			var _server_address = "127.0.0.1";
+			var _server_port = 8080;
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -125,8 +125,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = config_get_param("test_server_address");
-			var _server_port = config_get_param("test_server_port");
+			var _server_address = "127.0.0.1";
+			var _server_port = 8080;
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -187,8 +187,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = config_get_param("test_server_address");
-			var _server_port = config_get_param("test_server_port");
+			var _server_address = "127.0.0.1";
+			var _server_port = 8080;
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -249,8 +249,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = config_get_param("test_server_address");
-			var _server_port = config_get_param("test_server_port");
+			var _server_address = "127.0.0.1";
+			var _server_port = 8080;
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
