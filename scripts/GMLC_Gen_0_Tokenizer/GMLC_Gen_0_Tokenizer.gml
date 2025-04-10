@@ -127,16 +127,21 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//var _start_pos = charPos;
 			var _start_line = line;
 			var _start_column = column;
-		
+			
 			__expectUTF8(ord("/")); //consume first /
 			__expectUTF8(ord("/")); //consume second /
 			var _raw_string = "//";
 			
 			while (currentCharCode != undefined)
-			&& (currentCharCode != ord("\n"))
-			&& (currentCharCode != ord("\r"))
 			{
 				_raw_string += chr(currentCharCode);
+				
+				var _next_char = __peekUTF8();
+				if (_next_char == ord("\n"))
+				|| (_next_char == ord("\r")) {
+					break;
+				}
+				
 				__nextUTF8();
 			}
 			
@@ -154,11 +159,11 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		if (currentCharCode == ord("/") && _next_char == ord("*")) {
 			var _start_line = line;
 			var _start_column = column;
-		
+			
 			__expectUTF8(ord("/")); //consume /
 			__expectUTF8(ord("*")); //consume *
 			var _raw_string = "/*";
-		
+			
 			while (currentCharCode != undefined)
 			{
 				if (currentCharCode == ord("*"))
@@ -168,12 +173,14 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				_raw_string += chr(currentCharCode);
 				__nextUTF8();
 			}
-		
+			
 			__expectUTF8(ord("*")); //consume *
-			__expectUTF8(ord("/")); //consume /
-		
+			
+			//we dont actually want to consume this, flexi parse will move us onto our next thing on it's own.
+			//__expectUTF8(ord("/")); //consume /
+			
 			_raw_string += "*/";
-		
+			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;

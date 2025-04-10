@@ -596,19 +596,24 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	static compile = function(_sourceCode) {
 		tokenizer.initialize(_sourceCode);
 		var tokens = tokenizer.parseAll();
+		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
 		
 		pre_processor.initialize(tokens);
 		var preprocessedTokens = pre_processor.parseAll();
+		if (__log_pre_processer_results) json_save("pre_processor.json", preprocessedTokens)
 		
 		parser.initialize(preprocessedTokens);
 		var ast = parser.parseAll();
+		if (__log_parser_results) json_save("parser.json", ast)
 		
 		post_processor.initialize(ast);
 		var ast = post_processor.parseAll();
+		if (__log_post_processer_results) json_save("post_processor.json", ast)
 		
 		if (should_optimize) {
 			optimizer.initialize(ast);
 			var ast = optimizer.parseAll();
+			if (__log_optimizer_results) json_save("optimizer.json", ast)
 		}
 		
 		return compileProgram(ast);
@@ -618,16 +623,18 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return self;
 	}
 	#endregion
-
+	
 	#region Private
-	// Reserved for future internal helpers
+	//used to print the outputs for debugging
+	__log_path = "log.json"
+	__log_tokenizer_results      = true;
+	__log_pre_processer_results  = true;
+	__log_parser_results         = true;
+	__log_post_processer_results = true;
+	__log_optimizer_results      = true;
 	#endregion
 	
 }
-var t = new GMLC_Env();
-json_save("output2.json", t.envSymbols)
-
-
 
 function asset_get_name(_asset) {
 	var _type = asset_get_type(_asset);

@@ -9,9 +9,9 @@ function json(_input) {
 /// @param ...args
 function __pprint() {
     var _str = $"PRINTER :: {
-		string_replace(__pprint.__file, "gml_GlobalScript_", "")
+		string_replace(string_replace(__pprint.__file, "gml_Object_", ""), "gml_GlobalScript_", "")
 	}/{
-		string_replace(__pprint.__func, "gml_Script_", "")
+		string_replace(string_replace(__pprint.__func, "gml_Object_", ""), "gml_Script_", "")
 	}:{__pprint.__line}:\n"
     
     var _i=0; repeat(argument_count) {
@@ -114,9 +114,9 @@ function __reStruct(_struct) {
 /// @param ...args
 function __log() {
     var _str = $"LOGGER :: {
-		string_replace(__log.__file, "gml_GlobalScript_", "")
+		string_replace(string_replace(__log.__file, "gml_Object_", ""), "gml_GlobalScript_", "")
 	}/{
-		string_replace(__log.__func, "gml_Script_", "")
+		string_replace(string_replace(__log.__func, "gml_Object_", ""), "gml_Script_", "")
 	}:{__log.__line}:"
 	
 	for (var i = 0; i < argument_count; i++) {

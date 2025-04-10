@@ -45,7 +45,7 @@ function TestSuite() : TestBatch() constructor {
 	/// @param {Struct} events A struct with events to logic mappings.
 	/// @param {Struct} [options] The options be used by the test.
 	static addTestAsync = function(_name, _object, _events, _options = undefined) {
-	
+		
 		var _testAsync = new TestAsync(_name, _object, _events, _options);
 		
 		add(_testAsync);

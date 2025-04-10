@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"gumshoe",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"gumshoe",
+  "parent":{
+    "name":"_Libraries",
+    "path":"folders/_Libraries.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

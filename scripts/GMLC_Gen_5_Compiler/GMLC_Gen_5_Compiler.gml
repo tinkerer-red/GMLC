@@ -1253,7 +1253,16 @@ function __GMLCexecuteCallExpression() {
 	else {
 		var _args = arguments;
 		with (global.otherInstance) with (global.selfInstance) {
-			_return = script_execute_ext(_func, _args);
+			//try {
+				_return = script_execute_ext(_func, _args);
+			//}
+			//catch(e) {
+			//	log(_func);
+			//	log(script_get_name(_func));
+			//	log(_args);
+			//	log(e);
+			//	log("\n\n\n");
+			//}
 		}
 	}
 	
@@ -1292,13 +1301,14 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
+	// this should really already be handled by a dot accessor, what's going on here?
 	_output.shouldUpdateInstanceScoping = false;
 	_output.updateScopingTarget = undefined;
-	if (_node.callee.type == __GMLC_NodeType.AccessorExpression) 
-	&& (_node.callee.accessorType == __GMLC_AccessorType.Dot) {
-		_output.shouldUpdateInstanceScoping = true;
-		_output.updateScopingTarget = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee.expr);
-	}
+	//if (_node.callee.type == __GMLC_NodeType.AccessorExpression) 
+	//&& (_node.callee.accessorType == __GMLC_AccessorType.Dot) {
+	//	_output.shouldUpdateInstanceScoping = true;
+	//	_output.updateScopingTarget = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee.expr);
+	//}
 	
 	var _argArr = _node.arguments
 	var _i=0; repeat(array_length(_argArr)) {

@@ -26,7 +26,7 @@ function file_read_all_text(_filename) {
     }
     
     var _buffer = buffer_load(_filename);
-    var _result = buffer_read(_buffer, buffer_string);
+	var _result = (buffer_get_size(_buffer)) ? buffer_read(_buffer, buffer_string) : undefined;
     buffer_delete(_buffer);
     return _result;
 }
@@ -72,6 +72,7 @@ function json_save(_filename, _value) {
     var _json_content = json_stringify(_value, true);
     file_write_all_text(_filename, _json_content);
 }
+
 
 
 
