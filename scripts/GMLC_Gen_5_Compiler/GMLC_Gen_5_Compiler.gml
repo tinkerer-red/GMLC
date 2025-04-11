@@ -1083,7 +1083,7 @@ function __GMLCexecuteNewExpression() {
 function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileNewExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.expression.callee);
-	_output.calleeName = _node.expression.callee.name; // this is actually unneeded, but we would still like to have it for debugging
+	_output.calleeName = _node.expression.callee[$ "name"]; // this is actually unneeded, but we would still like to have it for debugging
 	
 	_output.recursionCount = 0; 
 	_output.prevArgCount = 0;
