@@ -412,7 +412,6 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
 				return _token;
 			}
-			
 			#endregion
 			
 			var _str = string_replace(_raw_string, "$", "0x");

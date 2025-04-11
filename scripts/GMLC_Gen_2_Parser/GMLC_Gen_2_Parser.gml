@@ -1482,6 +1482,14 @@
 			if (currentToken != undefined && currentToken.value != ")") {
 				var _found_closing_bracket = false;
 				while (currentToken != undefined) {
+					
+					//handle empty argument values as undefined `func(,,,,,arg5)`
+					if (currentToken.value == ",") {
+						array_push(_arguments, new ASTLiteral(undefined, currentToken.line, currentToken.lineString)); // Parse each argument as an expression
+						nextToken();  // Consume the comma to continue to the next argument
+						continue;
+					}
+					
 					var _expr = parseExpression()
 					
 					array_push(_arguments, _expr); // Parse each argument as an expression
