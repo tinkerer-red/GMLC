@@ -51,7 +51,7 @@
 			replaceAllMacrosAndEnums(tokens);
 			
 			currentTokenIndex = 0;
-			currentToken = tokens[currentTokenIndex];
+			currentToken = (array_length(tokens) > 0) ? tokens[currentTokenIndex] : undefined;
 			currentFunction = undefined;
 			
 			operatorStack = []; // Stack for operators
@@ -1275,7 +1275,7 @@
 					}
 					
 					if (_scopeType == ScopeType.CONST) {
-						var node = new ASTIdentifier(currentToken.value, ScopeType.CONST, line, lineString);
+						var node = new ASTLiteral(currentToken.value, line, lineString);
 						nextToken(); // Move past the identifier
 						return node;
 					}
