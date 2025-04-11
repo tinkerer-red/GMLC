@@ -1,23 +1,27 @@
 gmlc = new GMLC_Env();
 
-var _root_dir = "C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23";
-var _gml_files = gumshoe(_root_dir, "gml"); // flat array of all .gml files recursively
-var _report = {};
-var _file_results = [];
-var _success_count = 0;
+gmlc.compile(file_read_all_text("C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23/shdwcat__YUI/scripts/input_trigger_effect_get_state/input_trigger_effect_get_state.gml"))
 
-// Compile each .gml file
-for (var i = 0; i < array_length(_gml_files); i++) {
-	var _file_path = _gml_files[i];
-	var _source = "";
-	var _success = false;
-	var _meta = undefined;
-	
+var _root_dir = "C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23";
+var _gml_files = gumshoe(_root_dir, "gml", true); // flat array of all .gml files recursively
+
+pprint(_gml_files)
+
+compile_file = function(_file_path){
 	// Read file
 	log($"\tReading:: {_file_path}")
-	_source = file_read_all_text(_file_path);
-	if (_source == undefined) continue;
-	
+	var _source = file_read_all_text(_file_path);
+	if (_source == undefined) {
+		return {
+			success: true,
+			meta_data: undefined,
+			dir: _file_path
+		};
+	}
+			
+	var _success = false;
+	var _meta = undefined;
+			
 	// Compile
 	log($"\tCompiling:: {_file_path}")
 	try {
@@ -29,48 +33,60 @@ for (var i = 0; i < array_length(_gml_files); i++) {
 		log($"\t\tFailed:: {_file_path}\n{json(err)}")
 		_meta = err;
 	}
-
-	if (_success) _success_count++;
-
-	// Extract repo path key (everything after root folder)
-	var _repo_key = string_replace_all(_file_path, _root_dir + "/", "");
-	var _slash_index = string_pos("/", _repo_key);
-	if (_slash_index > 0) {
-		_repo_key = string_copy(_repo_key, 1, _slash_index - 1);
-	}
-
-	// Init repo entry if needed
-	if (!variable_struct_exists(_report, _repo_key)) {
-		_report[$ _repo_key] = {
-			files: [],
-			success_count: 0,
-			success_rate: 0,
-			success: false
-		};
-	}
-
-	// Push file result
-	var _file_entry = {
-		dir: _file_path,
+			
+	return {
 		success: _success,
-		meta_data: _meta
+		meta_data: _meta,
+		dir: _file_path
 	};
-	array_push(_report[$ _repo_key].files, _file_entry);
-
-	if (_success) _report[$ _repo_key].success_count++;
 }
 
-// Finalize repo report
-var _keys = variable_struct_get_names(_report);
-for (var i = 0; i < array_length(_keys); i++) {
-	var _key = _keys[i];
-	var _entry = _report[$ _key];
-	var _total = array_length(_entry.files);
-	_entry.success_rate = _total > 0 ? (_entry.success_count / _total) : 1;
-	_entry.success = (_entry.success_count == _total);
+compile_struct = function(_struct, _path, _report={}) {
+	var _success_rate = 0;
+	var _success_count = 0;
+	var _file_count = 0;
+	
+	var _keys = variable_struct_get_names(_struct);
+	for (var i = 0; i < array_length(_keys); i++) {
+		var _key = _keys[i];
+		var _entry = _struct[$ _key];
+		
+		if (is_struct(_entry)) {
+			var _return = compile_struct(_entry, _path+"/"+_key);
+			
+			_success_count += _return.success_count;
+			_file_count += _return.file_count;
+			
+			_report[$ _key] = _return;
+		}
+		else {
+			var _file_path = _path+"/"+_key;
+			var _return = compile_file(_file_path)
+			
+			_file_count++
+			if (_return.success) _success_count++
+			
+			_report[$ _key] = _return;
+		}
+		
+	}
+	
+	_success_rate = _success_count / _file_count;
+	
+	_report.success_rate = _success_rate;
+	_report.success_count = _success_count;
+	_report.file_count = _file_count;
+	
+	return _report;
 }
+
+
+var _report_final = compile_struct(_gml_files, _root_dir);
 
 // Save full JSON result
-json_save("compile_report.json", _report);
+json_save("compile_report.json", _report_final);
 log("!!!compiling complete!!!")
+
+gmlc = undefined;
+
 
