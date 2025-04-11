@@ -349,14 +349,23 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _next_char = __peekUTF8() ?? 0;
 		
 		if (currentCharCode == ord("$") && __char_is_hex(_next_char))
+		|| (currentCharCode == ord("#") && __char_is_hex(_next_char))
 		|| (currentCharCode == ord("0") && _next_char == ord("x"))
 		{
 			var _start_line = line;
 			var _start_column = column;
 			
+			//this will force a requirement of 6 digits
+			var _is_color = false;
+			
 			if (currentCharCode == ord("$")) {
 				__nextUTF8(); // consume $
 				var _raw_string = "$"
+			}
+			if (currentCharCode == ord("#")) {
+				__nextUTF8(); // consume $
+				var _raw_string = "#"
+				var _is_color = true;
 			}
 			else if (currentCharCode == ord("0")) {
 				__nextUTF8(); // consume 0
@@ -391,15 +400,27 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			
 			#region Error Handling
+			//ensure the resulting string of a #color is exactly 6 digits long
+			if (_is_color)
+			&& (_len != 6) {
+				throw_gmlc_error($"Script: \{Script1\} at line { _start_line } : css hex color needs to be 6 digits ")
+			}
+			
+			//ensure hex numbers are less then 16 digits long
 			if (_len > 16) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: input length == {_len}";
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
 				return _token;
 			}
+			
 			#endregion
 			
-			var _str = string_replace(_raw_string, "$", "0x")
-			_str = string_replace_all(_str, "_", "")
+			var _str = string_replace(_raw_string, "$", "0x");
+			_str = string_replace(_raw_string, "#", "0x");
+			_str = string_replace_all(_str, "_", "");
+			
+			
+			
 			var _hex_value = real(_str);
 			
 			static __maxSigned32 = 0x7FFFFFFF
@@ -472,7 +493,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			#region Error Handling
 			if (_len > 64) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {line} : Binary number {_raw_string} is too large or too small";
-				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_str, _error, _start_line, _start_column);
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
 				return _token;
 			}
 			#endregion
