@@ -1490,9 +1490,10 @@
 						continue;
 					}
 					
+					// Parse each argument as an expression
 					var _expr = parseExpression()
+					array_push(_arguments, _expr);
 					
-					array_push(_arguments, _expr); // Parse each argument as an expression
 					if (currentToken.value == ",") {
 						nextToken();  // Consume the comma to continue to the next argument
 					}
