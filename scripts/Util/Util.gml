@@ -1,3 +1,41 @@
+function asset_get_name(_asset) {
+	var _type = asset_get_type(_asset);
+	switch(_type) {
+		case asset_object:         return object_get_name(_asset);
+		case asset_sprite:         return sprite_get_name(_asset);
+		case asset_sound:          return audio_get_name(_asset);
+		case asset_room:           return room_get_name(_asset);
+		case asset_tiles:          return tileset_get_name(_asset);
+		case asset_path:           return path_get_name(_asset);
+		case asset_script:         return script_get_name(_asset);
+		case asset_font:           return font_get_name(_asset);
+		case asset_timeline:       return timeline_get_name(_asset);
+		case asset_shader:         return shader_get_name(_asset);
+		case asset_animationcurve: return animcurve_get(_asset).name;
+		case asset_sequence:       return sequence_get(_asset).name;
+		case asset_particlesystem: return particle_get_info(_asset).name;
+		
+		case asset_unknown: default:
+			return undefined;
+	}
+}
+
+function struct_filter(_input, _predicate) {
+	var _output = {};
+	var _keys = struct_get_names(_input);
+	
+	for (var i = 0; i < array_length(_keys); i++) {
+		var _key = _keys[i];
+		var _value = _input[$ _key];
+		
+		if (_predicate(_key, _value)) {
+			_output[$ _key] = _value;
+		}
+	}
+	
+	return _output;
+}
+
 /// @description Creates a new constructor instance from the specified constructor and array of arguments.
 /// @param {Function} Constructor Description
 /// @param {Array<Any>} [args] Description

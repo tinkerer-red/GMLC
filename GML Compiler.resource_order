@@ -141,6 +141,7 @@
     {"name":"__ExistingEnums","order":1,"path":"scripts/__ExistingEnums/__ExistingEnums.yy",},
     {"name":"__ExistingUniqueVariables","order":7,"path":"scripts/__ExistingUniqueVariables/__ExistingUniqueVariables.yy",},
     {"name":"__ExistingVariables","order":2,"path":"scripts/__ExistingVariables/__ExistingVariables.yy",},
+    {"name":"__gmlc_trie_string_matching","order":6,"path":"scripts/__gmlc_trie_string_matching/__gmlc_trie_string_matching.yy",},
     {"name":"__load_gml_spec","order":1,"path":"scripts/__load_gml_spec/__load_gml_spec.yy",},
     {"name":"__privPromise","order":1,"path":"scripts/__privPromise/__privPromise.yy",},
     {"name":"AssertAPI","order":3,"path":"scripts/AssertAPI/AssertAPI.yy",},

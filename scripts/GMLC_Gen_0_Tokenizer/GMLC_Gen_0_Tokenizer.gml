@@ -14,6 +14,10 @@ tokenize(sourceCode): Takes the entire source code as input and converts it into
 #endregion
 function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	env = _env;
+	__keyword_lookup  = __gmlc_convert_to_array_map(env.getAllKeywords());
+	__function_lookup = __gmlc_convert_to_array_map(env.getAllFunctions());
+	__constant_lookup = __gmlc_convert_to_array_map(env.getAllConstants());
+	__variable_lookup = __gmlc_convert_to_array_map(env.getAllVariables());
 	
 	sourceCodeString = "";
 	sourceCodeCharLength = 0;
@@ -23,26 +27,16 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	
 	charPos = 0;
 	bytePos = 0;
-	
 	currentCharCode = undefined;
+	
+	templateStringDepth = 0;
 	
 	tokens = undefined;
 	program = undefined;
 	
 	line = 1;
 	column = 0;
-	
 	finished = false;
-	
-	templateStringDepth = 0;
-	
-	
-	sandboxed = false;
-	keywords = ["globalvar", "var", "if", "then", "else", "begin", "end", "for", "while", "do",
-	"until", "repeat", "switch", "case", "default", "break", "continue", "with", "exit", "return",
-	"global", "mod", "div", "not", "and", "or", "xor", "enum", "function", "new", "constructor",
-	"static", "region", "endregion", "macro", "try", "catch", "finally", "define", "throw",
-	"delete", "_GMLINE_", "_GMFUNCTION_"];
 	
 	// Initialize tokenizer with source code
 	static __initialize = function(_sourceCode) {
@@ -117,6 +111,244 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			return true;
 		}
 		//show_debug_message($":: parseSkipWhitespace :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseKeywords = function() {
+		var _start_line = line;
+		var _start_column = column;
+		
+		var _node = __keyword_lookup;
+		var _char_index = 0;
+		
+		while (true) {
+			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			if (_byte == undefined) break;
+			
+			var _next = _node[_byte];
+			if (_next == undefined) break;
+			
+			_node = _next;
+			_char_index++;
+			
+			if (_node[0] != undefined)
+			&& (!__char_is_alphanumeric(__peekUTF8(_char_index))) {
+				
+				//skip ahead
+				var _identifier = "";
+				
+				repeat(_char_index-1) {
+					_identifier += chr(currentCharCode);
+					__nextUTF8();
+				}
+				
+				_identifier += chr(currentCharCode);
+				
+				switch (_identifier) {
+					case "begin":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "end":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "mod":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "div":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "not":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "and":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "or":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "xor":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "_GMLINE_":{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+					case "_GMFUNCTION_":{
+						//this is actually handled later when we parse, for now just return the keyword
+						throw_gmlc_error("_GMFUNCTION_ is currently not supported")
+					break;}
+					default:{
+						var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
+						array_push(tokens, _token);
+						return _token;
+					break;}
+				}
+				
+			}
+		}
+		
+		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseFunctions = function() {
+		var _start_line = line;
+		var _start_column = column;
+		
+		var _node = __function_lookup;
+		var _char_index = 0;
+		
+		while (true) {
+			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			if (_byte == undefined) break;
+			
+			var _next = _node[_byte];
+			if (_next == undefined) break;
+			
+			_node = _next;
+			_char_index++;
+			
+			if (_node[0] != undefined)
+			&& (!__char_is_alphanumeric(__peekUTF8(_char_index))) {
+				
+				//skip ahead
+				var _identifier = "";
+				
+				repeat(_char_index-1) {
+					_identifier += chr(currentCharCode);
+					__nextUTF8();
+				}
+				
+				_identifier += chr(currentCharCode);
+				
+				var _return = env.getFunction(_identifier)
+				
+				//if there was no match 
+				if (_return == undefined) {
+					var _return = env.getFunction(_identifier)
+					return false;
+				}
+				
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _return.value, _start_line, _start_column);
+				array_push(tokens, _token);
+				return _token;
+			}
+		}
+		
+		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseConstants = function() {
+		var _start_line = line;
+		var _start_column = column;
+		
+		var _node = __constant_lookup;
+		var _char_index = 0;
+		
+		while (true) {
+			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			if (_byte == undefined) break;
+			
+			var _next = _node[_byte];
+			if (_next == undefined) break;
+			
+			_node = _next;
+			_char_index++;
+			
+			if (_node[0] != undefined)
+			&& (!__char_is_alphanumeric(__peekUTF8(_char_index))) {
+				
+				//skip ahead
+				var _identifier = "";
+				
+				repeat(_char_index-1) {
+					_identifier += chr(currentCharCode);
+					__nextUTF8();
+				}
+				
+				_identifier += chr(currentCharCode);
+				
+				var _return = env.getConstant(_identifier);
+				
+				//if there was no match 
+				if (_return == undefined) {
+					var _return = env.getConstant(_identifier)
+					return false;
+				}
+				
+				var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _return.value, _start_line, _start_column);
+				array_push(tokens, _token);
+				return _token;
+			}
+		}
+		
+		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
+		return false;
+	};
+	
+	static parseVariables = function() {
+		var _start_line = line;
+		var _start_column = column;
+		
+		var _node = __variable_lookup;
+		var _char_index = 0;
+		
+		while (true) {
+			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			if (_byte == undefined) break;
+			
+			var _next = _node[_byte];
+			if (_next == undefined) break;
+			
+			_node = _next;
+			_char_index++;
+			
+			if (_node[0] != undefined)
+			&& (!__char_is_alphanumeric(__peekUTF8(_char_index))) {
+				
+				//skip ahead
+				var _identifier = "";
+				
+				repeat(_char_index-1) {
+					_identifier += chr(currentCharCode);
+					__nextUTF8();
+				}
+				
+				_identifier += chr(currentCharCode);
+				
+				var _return = env.getVariable(_identifier)
+				
+				//if there was no match 
+				if (_return == undefined) {
+					var _return = env.getVariable(_identifier)
+					return false;
+				}
+				
+				var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _return.value, _start_line, _start_column);
+				array_push(tokens, _token);
+				return _token;
+			}
+		}
+		
+		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
 		return false;
 	};
 	
@@ -362,8 +594,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				__nextUTF8(); // consume $
 				var _raw_string = "$"
 			}
-			if (currentCharCode == ord("#")) {
-				__nextUTF8(); // consume $
+			else if (currentCharCode == ord("#")) {
+				__nextUTF8(); // consume #
 				var _raw_string = "#"
 				var _is_color = true;
 			}
@@ -373,7 +605,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				var _raw_string = "0x"
 			}
 			else {
-				throw_gmlc_error($"Entered parseHexNumbers with a non-valid entry string : {chr(currentCharCode)}")
+				throw_gmlc_error($"Entered parseHexNumbers with a non-valid entry string : {chr(currentCharCode)} This is a bug! Please report!")
 			}
 			
 			var _len = 0;
@@ -403,7 +635,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//ensure the resulting string of a #color is exactly 6 digits long
 			if (_is_color)
 			&& (_len != 6) {
-				throw_gmlc_error($"Script: \{Script1\} at line { _start_line } : css hex color needs to be 6 digits ")
+				throw_gmlc_error($"Script: \{Script1\} at line { _start_line } : css hex color needs to be 6 digits\n{_raw_string}")
 			}
 			
 			//ensure hex numbers are less then 16 digits long
@@ -415,7 +647,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			#endregion
 			
 			var _str = string_replace(_raw_string, "$", "0x");
-			_str = string_replace(_raw_string, "#", "0x");
+			_str = string_replace(_str, "#", "0x");
 			_str = string_replace_all(_str, "_", "");
 			
 			
@@ -597,32 +829,32 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			#endregion
 			#region Functions
 				
-			var _index = env.getFunction(_identifier);
-			if (_index != undefined) {
-				var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index.value, _start_line, _start_column);
-				array_push(tokens, _token);
-				return _token;
-			}
+			//var _index = env.getFunction(_identifier);
+			//if (_index != undefined) {
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index.value, _start_line, _start_column);
+			//	array_push(tokens, _token);
+			//	return _token;
+			//}
 				
 			#endregion
 			#region Constants
 			
-			var _index = env.getConstant(_identifier);
-			if (_index != undefined) {
-				var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index.value, _start_line, _start_column);
-				array_push(tokens, _token);
-				return _token;
-			}
+			//var _index = env.getConstant(_identifier);
+			//if (_index != undefined) {
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index.value, _start_line, _start_column);
+			//	array_push(tokens, _token);
+			//	return _token;
+			//}
 			
 			#endregion
 			#region Variables
 			
-			var _index = env.getVariable(_identifier);
-			if (_index != undefined) {
-				var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
-				array_push(tokens, _token);
-				return _token;
-			}
+			//var _index = env.getVariable(_identifier);
+			//if (_index != undefined) {
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
+			//	array_push(tokens, _token);
+			//	return _token;
+			//}
 			
 			#endregion
 			#region Enum Constants
@@ -684,64 +916,64 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			#endregion
 			#region Keywords
 				
-			var _index = env.getKeyword(_identifier);
-			if (_index != undefined) {
-				switch (_identifier) {
-					case "begin":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "end":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "mod":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "div":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "not":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "and":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "or":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "xor":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "_GMLINE_":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
-					break;}
-					case "_GMFUNCTION_":{
-						//this is actually handled later when we parse, for now just return the keyword
-						throw_gmlc_error("_GMFUNCTION_ is currently not supported")
-					break;}
-				}
+			//var _index = env.getKeyword(_identifier);
+			//if (_index != undefined) {
+			//	switch (_identifier) {
+			//		case "begin":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "end":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "mod":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "div":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "not":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "and":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "or":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "xor":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "_GMLINE_":{
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
+			//			array_push(tokens, _token);
+			//			return _token;
+			//		break;}
+			//		case "_GMFUNCTION_":{
+			//			//this is actually handled later when we parse, for now just return the keyword
+			//			throw_gmlc_error("_GMFUNCTION_ is currently not supported")
+			//		break;}
+			//	}
 				
-				var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
-				array_push(tokens, _token);
-				return _token;
-			}
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
+			//	array_push(tokens, _token);
+			//	return _token;
+			//}
 				
 			#endregion
 			// else...
@@ -1141,20 +1373,26 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		return _token;
 	};
 	
-	array_push(parserSteps, parseSkipWhitespace);
-	array_push(parserSteps, parseCommentLine);
-	array_push(parserSteps, parseCommentBlock);
-	array_push(parserSteps, parseStringLiteral);
-	array_push(parserSteps, parseHexNumbers);
-	array_push(parserSteps, parseStringTemplate);
-	array_push(parserSteps, parseBinaryNumber);
-	array_push(parserSteps, parseNumber);
-	array_push(parserSteps, parseIdentifier);
-	array_push(parserSteps, parseRawStringLiteral);
-	array_push(parserSteps, parseOperator);
-	array_push(parserSteps, parsePunctuation);
-	array_push(parserSteps, parseEscapeOperator);
-	array_push(parserSteps, parseIllegal);
+	array_push(parserSteps,
+		parseSkipWhitespace,
+		parseKeywords,
+		parseFunctions,
+		parseConstants,
+		parseVariables,
+		parseCommentLine,
+		parseCommentBlock,
+		parseStringLiteral,
+		parseHexNumbers,
+		parseStringTemplate,
+		parseBinaryNumber,
+		parseIdentifier,
+		parseNumber,
+		parseRawStringLiteral,
+		parseOperator,
+		parsePunctuation,
+		parseEscapeOperator,
+		parseIllegal
+	);
 	
 	#endregion
 	

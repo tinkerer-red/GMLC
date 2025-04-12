@@ -3,7 +3,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	should_optimize = false;
 	
 	#region Init
-	importSymbolMap(__GmlSpec());
 	
 	#region Expose Keywords
 	var _keyword_map = {
@@ -38,8 +37,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"new": true,
 		"constructor": true,
 		"static": true,
-		"region": true,
-		"endregion": true,
+		//"#region": true,
+		//"#endregion": true,
 		"macro": true,
 		"try": true,
 		"catch": true,
@@ -50,53 +49,10 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"_GMLINE_": true,
 		"_GMFUNCTION_": true,
 	};
-	exposeKeywords(_keyword_map);
-	#endregion
-	#region Expose Constants
-	var _arr = array_concat(
-		asset_get_ids(asset_object),         asset_get_ids(asset_sprite),   asset_get_ids(asset_sound),
-		asset_get_ids(asset_room),           asset_get_ids(asset_tiles),    asset_get_ids(asset_path),
-		asset_get_ids(asset_font),           asset_get_ids(asset_timeline), asset_get_ids(asset_shader),
-		asset_get_ids(asset_animationcurve), asset_get_ids(asset_sequence), asset_get_ids(asset_particlesystem)
-	)
-	var _cont_map = {};
-	var _i=0; repeat(array_length(_arr)) {
-		var _asset = _arr[_i];
-		var _name = asset_get_name(_asset);
-		
-		_cont_map[$ _name] = _asset;
-	_i++};
-	exposeConstants(_cont_map);
-	exposeConstants({
-		"global": global,
-		"all": all,
-		"noone": noone,
-	});
-	#endregion
-	#region Expose Functions
-	var _scripts = asset_get_ids(asset_script);
-	var _func_map = {};
-	var _i=0; repeat(array_length(_scripts)) {
-		var _func = _scripts[_i];
-		var _name = script_get_name(_func);
-		_func_map[$ _name] = _func;
-	_i++};
-	exposeFunctions(_func_map)
+	_keyword_map[$ "#region"] = true;
+	_keyword_map[$ "#endregion"] = true;
 	
-	//This will overwrite the existing functions.
-	exposeFunctions({
-		"method":             __gmlc_method,
-		"typeof":             __gmlc_typeof,
-		"instanceof":         __gmlc_instanceof,
-		"is_instanceof":      __gmlc_is_instanceof,
-		"static_get":         __gmlc_static_get,
-		"static_set":         __gmlc_static_set,
-		"method_get_index":   __gmlc_method_get_index,
-		"method_get_self":    __gmlc_method_get_self,
-		"script_get_name":    __gmlc_script_get_name,
-		"script_execute":     __gmlc_script_execute,
-		"script_execute_ext": __gmlc_script_execute_ext,
-	})
+	exposeKeywords(_keyword_map);
 	#endregion
 	#region Expose Operators
 	var _op_map = {};
@@ -590,6 +546,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	parser         = new GMLC_Gen_2_Parser(self);
 	post_processor = new GMLC_Gen_3_PostProcessor(self);
 	optimizer      = new GMLC_Gen_4_Optimizer(self);
+	
 	#endregion
 	
 	#region Public
@@ -622,6 +579,137 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		should_optimize = _bool;
 		return self;
 	}
+	
+	static set_exposure = function(_expose_level=GMLC_EXPOSURE.SAFE) {
+		expose_constants(_expose_level);
+		expose_user_assets(_expose_level);
+		expose_functions(_expose_level);
+		
+		return self;
+	}
+	
+	static expose_constants = function(_expose_level=GMLC_EXPOSURE.SAFE) {
+		var _spec = __GmlSpec();
+		var _map = struct_filter(_spec, function(_key, _val) {
+			return _val[$ "type"] == "envConstants";
+		});
+		importSymbolMap(_map);
+		
+		exposeConstants({
+			"all": all,
+			"noone": noone,
+		});
+		//expose globl depending on exposure level
+		exposeConstants({
+			"global": (_expose_level == GMLC_EXPOSURE.FULL) ? global : {},
+		});
+		return self;
+	}
+	static expose_user_assets = function(_expose_level=GMLC_EXPOSURE.SAFE) {
+		if (_expose_level < GMLC_EXPOSURE.SAFE) 
+		|| (_expose_level == GMLC_EXPOSURE.NATIVE) {
+			return;
+		}
+		
+		var _arr = array_concat(
+			asset_get_ids(asset_object),         asset_get_ids(asset_sprite),   asset_get_ids(asset_sound),
+			asset_get_ids(asset_room),           asset_get_ids(asset_tiles),    asset_get_ids(asset_path),
+			asset_get_ids(asset_font),           asset_get_ids(asset_timeline), asset_get_ids(asset_shader),
+			asset_get_ids(asset_animationcurve), asset_get_ids(asset_sequence), asset_get_ids(asset_particlesystem)
+		)
+		var _cont_map = {};
+		var _i=0; repeat(array_length(_arr)) {
+			var _asset = _arr[_i];
+			var _name = asset_get_name(_asset);
+		
+			_cont_map[$ _name] = _asset;
+		_i++};
+		exposeConstants(_cont_map);
+		return self;
+	}
+	static expose_functions = function(_expose_level = GMLC_EXPOSURE.SAFE) {
+		switch (_expose_level) {
+			case GMLC_EXPOSURE.NONE: break;
+			case GMLC_EXPOSURE.SAFE:
+				expose_pure_functions();
+				expose_overwrite_functions();
+			break;
+			case GMLC_EXPOSURE.MODERATE:
+				expose_safe_functions();
+				expose_overwrite_functions();
+			break;
+			case GMLC_EXPOSURE.ALL:
+				expose_native_functions();
+				expose_overwrite_functions();
+			break;
+			case GMLC_EXPOSURE.FULL:
+				expose_native_functions(); // Includes all built-in functions
+				expose_user_functions();   // And also user scripts
+			break;
+		}
+		return self;
+	};
+
+	
+	static expose_pure_functions = function() {
+		var _spec = __GmlSpec();
+		var _map = struct_filter(_spec, function(_key, _val) {
+			return (_val[$ "type"] == "envFunctions")
+				&& (_val[$ "feather"][$ "pure"])
+				&& __is_safe_function(_key, _val);
+		});
+		importSymbolMap(_map);
+		
+		return self;
+	}
+	static expose_safe_functions = function() {
+		var _spec = __GmlSpec();
+		
+		var _map = struct_filter(_spec, function(_key, _val) {
+			if (!__is_safe_function(_key, _val)) return false;
+			return _val[$ "feather"][$ "pure"]; // Only allow pure built-ins
+		});
+		
+		importSymbolMap(_map);
+		
+		return self;
+	};
+	static expose_overwrite_functions = function(){
+		//This will overwrite the existing functions.
+		exposeFunctions({
+			"method":             __gmlc_method,
+			"typeof":             __gmlc_typeof,
+			"instanceof":         __gmlc_instanceof,
+			"is_instanceof":      __gmlc_is_instanceof,
+			"static_get":         __gmlc_static_get,
+			"static_set":         __gmlc_static_set,
+			"method_get_index":   __gmlc_method_get_index,
+			"method_get_self":    __gmlc_method_get_self,
+			"script_get_name":    __gmlc_script_get_name,
+			"script_execute":     __gmlc_script_execute,
+			"script_execute_ext": __gmlc_script_execute_ext,
+		})
+		return self;
+	}
+	static expose_native_functions = function() {
+		var _spec = __GmlSpec();
+		var _map = struct_filter(_spec, function(_key, _val) {
+			return (_val[$ "type"] == "envFunctions");
+		});
+		importSymbolMap(_map);
+		return self;
+	}
+	static expose_user_functions = function() {
+		var _scripts = asset_get_ids(asset_script);
+		var _func_map = {};
+		var _i=0; repeat(array_length(_scripts)) {
+			var _func = _scripts[_i];
+			var _name = script_get_name(_func);
+			_func_map[$ _name] = _func;
+		_i++};
+		exposeFunctions(_func_map);
+		return self;
+	}
 	#endregion
 	
 	#region Private
@@ -632,30 +720,90 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_parser_results         = true;
 	__log_post_processer_results = true;
 	__log_optimizer_results      = true;
-	#endregion
 	
+	static __is_safe_function = function(_key, _val) {
+		if (_val[$ "type"] != "envFunctions") return false;
+		
+		static bannedFunctions = [
+			"game_restart", "game_end", "environment_get_variable", "room_restart", "room_goto",
+			"room_goto_next", "room_goto_previous", "room_add", "room_assign", "room_instance_add",
+			"room_duplicate", "room_instance_clear", "method", "method_get_index", "method_get_self",
+			"os_get_info", "asset_get_index", "asset_get_ids", "event_perform_async", "static_set",
+			"static_get", "gc_enable", "wallpaper_set_config", "wallpaper_set_subscriptions",
+			"parameter_string", "parameter_count", "buffer_load",  "buffer_save", "buffer_save_async", 
+			"buffer_load_async",
+		];
+		
+		static bannedFunctionCharacters = [
+			"@@", "$", "anon", "<unknown>", "rollback",
+			"xbox", "psn", "switch", "uwp", "win8", "ps4", "ps5",
+			"gxc", "external_", "matchmaking", "file_", "ini_",
+			"winphone", "ERROR", "testFailed", "achievement", "extension",
+			"ms_iap", "analytics"
+		];
+		
+		if (array_contains(bannedFunctions, _key)) return false;
+		
+		var _length = array_length(bannedFunctionCharacters);
+		for (var i = 0; i < _length; i++) {
+			if (string_pos(bannedFunctionCharacters[i], _key) > 0) {
+				return false;
+			}
+		}
+		
+		return true;
+	}
+	
+	#endregion
 }
 
-function asset_get_name(_asset) {
-	var _type = asset_get_type(_asset);
-	switch(_type) {
-		case asset_object:         return object_get_name(_asset);
-		case asset_sprite:         return sprite_get_name(_asset);
-		case asset_sound:          return audio_get_name(_asset);
-		case asset_room:           return room_get_name(_asset);
-		case asset_tiles:          return tileset_get_name(_asset);
-		case asset_path:           return path_get_name(_asset);
-		case asset_script:         return script_get_name(_asset);
-		case asset_font:           return font_get_name(_asset);
-		case asset_timeline:       return timeline_get_name(_asset);
-		case asset_shader:         return shader_get_name(_asset);
-		case asset_animationcurve: return animcurve_get(_asset).name;
-		case asset_sequence:       return sequence_get(_asset).name;
-		case asset_particlesystem: return particle_get_info(_asset).name;
-		
-		case asset_unknown: default:
-			return undefined;
-	}
+/*
+	GMLC_EXPOSURE defines progressive tiers of symbol visibility and function access for code evaluation.
+	Use this to enforce sandboxing, restrict access to sensitive APIs, or expose just enough for trusted scripts.
+*/
+enum GMLC_EXPOSURE {
+	NONE,
+	/*
+		Nothing is exposed by default.
+		No assets, no constants, no functions — built-in or user-defined — are available.
+	*/
+	SAFE,
+	/*
+		Exposes only native constants, built-in *pure* functions (no side effects),
+		and user assets such as sprites, objects, fonts, rooms, etc.
+		User-defined scripts are not included.
+	*/
+	MODERATE,
+	/*
+		Extends SAFE by allowing built-in *non-pure* functions such as random, instance creation,
+		and timeline manipulation — as long as they do not access external systems.
+		Still excludes functions that touch local files, networking, extensions, or raw buffers.
+		User-defined scripts are not included.
+	*/
+	ALL,
+	/*
+		Exposes the entire native GML runtime — including all built-in functions for file access,
+		buffer manipulation, networking, and system-level operations.
+		However, user-defined scripts and functions are still excluded in this mode.
+		This is a trusted runtime with full engine access but without user script inclusion.
+	*/
+	FULL,
+	/*
+		Unrestricted access: includes all built-in constants and functions, including those for
+		file I/O, networking, extensions, and buffer operations.
+		Also includes **all user-defined scripts automatically**.
+		This mode disables all safety restrictions and assumes a trusted environment.
+	*/
+	NATIVE,
+	/*
+		Grants access to the full native GML runtime, including all built-in functions and constants.
+		Unlike ALL or FULL, this level excludes all user-defined assets, constants, and scripts.
+		Primarily intended for emulating a fully trusted GML environment without sandbox restrictions,
+		while keeping the user runtime completely isolated.
+	*/
+	__SIZE__,
 }
+
+
 
 

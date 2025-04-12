@@ -370,6 +370,7 @@
     {"id":{"name":"__ExistingUniqueVariables","path":"scripts/__ExistingUniqueVariables/__ExistingUniqueVariables.yy",},},
     {"id":{"name":"__ExistingVariables","path":"scripts/__ExistingVariables/__ExistingVariables.yy",},},
     {"id":{"name":"__functionOverrides","path":"scripts/__functionOverrides/__functionOverrides.yy",},},
+    {"id":{"name":"__gmlc_trie_string_matching","path":"scripts/__gmlc_trie_string_matching/__gmlc_trie_string_matching.yy",},},
     {"id":{"name":"__load_gml_spec","path":"scripts/__load_gml_spec/__load_gml_spec.yy",},},
     {"id":{"name":"__privPromise","path":"scripts/__privPromise/__privPromise.yy",},},
     {"id":{"name":"__SnapSystem","path":"scripts/__SnapSystem/__SnapSystem.yy",},},

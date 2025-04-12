@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__gmlc_trie_string_matching",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__gmlc_trie_string_matching",
+  "parent":{
+    "name":"Internal",
+    "path":"folders/GMLCompiler/__Final/Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

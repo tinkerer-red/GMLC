@@ -74,11 +74,16 @@
 		static parseNext = function() {
 			if (currentToken != undefined) {
 				
+				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
 				if (currentToken == undefined) return;
 				
 				var statement = parseStatement();
-				optionalToken(__GMLC_TokenType.Punctuation, ";")
+				
+				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
 				if (statement) {
 					array_push(scriptAST.statements.statements, statement);
 				}
@@ -216,13 +221,15 @@
 						array_push(_statements, _statement);
 					}
 					
-					//consume optional `;`
-					optionalToken(__GMLC_TokenType.Punctuation, ";")
+					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 					
 					// Parse each statement until } is found
 					// Optional: Handle error checking for unexpected end of file
 				}
-				optionalToken(__GMLC_TokenType.Punctuation, ";")
+				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
 				nextToken(); // Consume the }
 				
 				//compile better code
@@ -235,7 +242,10 @@
 			else {
 				// If no {, its a single statement block
 				var singleStatement = parseStatement();
-				optionalToken(__GMLC_TokenType.Punctuation, ";")
+				
+				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				
 				return new ASTBlockStatement([singleStatement], line, lineString);
 			}
 		};
@@ -312,7 +322,10 @@
 			else {
 				var _increment = undefined;
 			}
-			optionalToken(__GMLC_TokenType.Punctuation, ";"); //these are typically already handled by the parseBlock
+			
+			//these are typically already handled by the parseBlock
+			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+			while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 			
 			expectToken(__GMLC_TokenType.Punctuation, ")");
 			
@@ -404,7 +417,10 @@
 					}
 					else {
 						array_push(statements, parseStatement());
-						optionalToken(__GMLC_TokenType.Punctuation, ";")
+						
+						//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+						while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+						
 						if (_expectClosingCurly && optionalToken(__GMLC_TokenType.Punctuation, "}")) {
 							_expectClosingCurly = false;
 						}
@@ -412,7 +428,10 @@
 				}
 				else {
 					array_push(statements, parseStatement());
-					optionalToken(__GMLC_TokenType.Punctuation, ";")
+					
+					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+					
 					if (_expectClosingCurly && optionalToken(__GMLC_TokenType.Punctuation, "}")) {
 						_expectClosingCurly = false;
 					}
@@ -1483,13 +1502,13 @@
 				var _found_closing_bracket = false;
 				while (currentToken != undefined) {
 					
+					if (currentToken.value == ")") break;
+					
 					//handle empty argument values as undefined `func(,,,,,arg5)`
 					if (currentToken.value == ",") {
 						
 						array_push(_arguments, new ASTLiteral(undefined, currentToken.line, currentToken.lineString)); // Parse each argument as an expression
 						nextToken();  // Consume the comma to continue to the next argument
-						
-						if (currentToken.value == ")") break;
 						
 						continue;
 					}
@@ -1501,14 +1520,6 @@
 					if (currentToken.value == ",") {
 						nextToken();  // Consume the comma to continue to the next argument
 					}
-					else if (currentToken.value == ")") {
-						break;
-					}
-					else {
-						pprint("lastFiveTokens :: ",lastFiveTokens)
-						throw_gmlc_error($"Syntax Error: Expected ',' or ')' at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.");
-					}
-					
 				}
 			}
 			

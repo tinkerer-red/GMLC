@@ -1,13 +1,16 @@
-gmlc = new GMLC_Env();
+gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
 
-gmlc.compile(file_read_all_text("C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23/shdwcat__YUI/scripts/input_trigger_effect_get_state/input_trigger_effect_get_state.gml"))
+//gmlc.compile("#endregion")
+
+
+gmlc.compile(file_read_all_text("C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23/JujuAdams__SHA-and-HMAC/scripts/hmac_sha1/hmac_sha1.gml"))
 
 var _root_dir = "C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23";
 var _gml_files = gumshoe(_root_dir, "gml", true); // flat array of all .gml files recursively
 
 pprint(_gml_files)
 
-compile_file = function(_file_path){
+compile_file = function(_file_path) {
 	// Read file
 	log($"\tReading:: {_file_path}")
 	var _source = file_read_all_text(_file_path);
