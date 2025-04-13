@@ -592,11 +592,11 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			
 			if (currentCharCode == ord("$")) {
 				__nextUTF8(); // consume $
-				var _raw_string = "$"
+				var _raw_string = "$";
 			}
 			else if (currentCharCode == ord("#")) {
 				__nextUTF8(); // consume #
-				var _raw_string = "#"
+				var _raw_string = "#";
 				var _is_color = true;
 			}
 			else if (currentCharCode == ord("0")) {
@@ -1382,8 +1382,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		parseCommentLine,
 		parseCommentBlock,
 		parseStringLiteral,
-		parseHexNumbers,
 		parseStringTemplate,
+		parseHexNumbers,
 		parseBinaryNumber,
 		parseIdentifier,
 		parseNumber,
