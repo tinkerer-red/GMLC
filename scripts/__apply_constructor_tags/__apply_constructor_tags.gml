@@ -1,5 +1,9 @@
-// Apparently GM doesnt apply these tags to static functions... yippy..
-// here is a solution to this.
+// Namespace style constructors will not recieve any constructor tags.
+// This is intended, but this is a work around for such a thing.
+// https://github.com/YoYoGames/GameMaker-Bugs/issues/10317#issuecomment-2816652022
+
+// Additionally this allows for us to very quickly add the same tags to LTS
+// so it will make back porting easier in the future.
 
 var _func_arr = asset_get_ids(asset_script);
 var _i=0; repeat(array_length(_func_arr)) {

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"compile_and_execute",
   "parent":{
-    "name":"internal",
-    "path":"folders/GMLCompiler/internal.yy",
+    "name":"internal testing",
+    "path":"folders/GMLCompiler/internal testing.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

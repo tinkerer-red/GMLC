@@ -41,11 +41,12 @@
     {"$GMFolder":"","%Name":"LookupTables","folderPath":"folders/GMLCompiler/__Final/Internal/LookupTables.yy","name":"LookupTables","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"__Deprocated","folderPath":"folders/GMLCompiler/__Final/Internal/LookupTables/__Deprocated.yy","name":"__Deprocated","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"__Shouldnt be needed","folderPath":"folders/GMLCompiler/__Final/Internal/LookupTables/__Shouldnt be needed.yy","name":"__Shouldnt be needed","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"old","folderPath":"folders/GMLCompiler/__Final/Internal/old.yy","name":"old","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Parsers","folderPath":"folders/GMLCompiler/__Final/Parsers.yy","name":"Parsers","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"_Internal","folderPath":"folders/GMLCompiler/__Final/Parsers/_Internal.yy","name":"_Internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Rendering","folderPath":"folders/GMLCompiler/__Final/Rendering.yy","name":"Rendering","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"group1","folderPath":"folders/GMLCompiler/group1.yy","name":"group1","resourceType":"GMFolder","resourceVersion":"2.0",},
-    {"$GMFolder":"","%Name":"internal","folderPath":"folders/GMLCompiler/internal.yy","name":"internal","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"internal testing","folderPath":"folders/GMLCompiler/internal testing.yy","name":"internal testing","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Misc.","folderPath":"folders/Misc..yy","name":"Misc.","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Tests","folderPath":"folders/Tests.yy","name":"Tests","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"TestResources","folderPath":"folders/Tests/TestResources.yy","name":"TestResources","resourceType":"GMFolder","resourceVersion":"2.0",},
@@ -319,7 +320,7 @@
   "isEcma":false,
   "LibraryEmitters":[],
   "MetaData":{
-    "IDEVersion":"2024.13.0.190",
+    "IDEVersion":"2024.13.1.193",
   },
   "name":"GML Compiler",
   "resources":[
