@@ -598,6 +598,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		exposeConstants({
 			"all": all,
 			"noone": noone,
+			"GM_build_date": GM_build_date,
+			"GM_build_type": GM_build_type,
+			"GM_version": GM_version,
+			"GM_runtime_version": GM_runtime_version,
+			"GM_project_filename": GM_project_filename,
+			"GM_is_sandboxed": GM_is_sandboxed,
 		});
 		//expose globl depending on exposure level
 		exposeConstants({
