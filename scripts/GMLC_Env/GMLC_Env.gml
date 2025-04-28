@@ -43,7 +43,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"try": true,
 		"catch": true,
 		"finally": true,
-		"define": true,
 		"throw": true,
 		"delete": true,
 		"_GMLINE_": true,
