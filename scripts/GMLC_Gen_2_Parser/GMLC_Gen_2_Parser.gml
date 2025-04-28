@@ -857,16 +857,30 @@
 				var varLineString = currentToken.lineString;
 				
 				if (currentToken.type != __GMLC_TokenType.Identifier) {
+					if (_found_one) {
+						break;
+					}
+					
 		            throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}");
 		        }
 				
-		        var identifier = currentToken.value;
-				nextToken();
+				// we parse anything which starts with an identifier to ensure there is no postfix op attached to it like `++`, and accessor, or function call
+		        var identifier = parsePostfixExpression();
+				
+				if (identifier.type != __GMLC_NodeType.Identifier) {
+					if (_found_one) {
+						break;
+					}
+					
+					throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved type: {identifier.type}, {currentToken}\nLast five tokens:\n{lastFiveTokens}");
+				}
 				
 				//push to the table array
 				if (!array_contains(_tableArr, identifier)) {
-					array_push(_tableArr, identifier);
+					array_push(_tableArr, identifier.name);
 				}
+				
+				_found_one = true;
 				
 				//fetch expression
 				var expr = undefined;
