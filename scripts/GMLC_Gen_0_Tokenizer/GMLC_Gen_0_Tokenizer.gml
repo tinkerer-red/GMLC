@@ -608,21 +608,21 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				throw_gmlc_error($"Entered parseHexNumbers with a non-valid entry string : {chr(currentCharCode)} This is a bug! Please report!")
 			}
 			
+			//this is the string actually passed into `real()`
+			var _hex_str = "0x"
+			
 			var _len = 0;
 			while (currentCharCode != undefined)
 			&& (__char_is_hex(currentCharCode))
 			{
-				if (currentCharCode >= ord("0") && currentCharCode <= ord("9")) {
+				var _char = chr(currentCharCode);
+				
+				if (currentCharCode != ord("_")) {
 					_len += 1;
-				}
-				else if (currentCharCode >= ord("A") && currentCharCode <= ord("F")) {
-					_len += 1;
-				}
-				else if (currentCharCode >= ord("a") && currentCharCode <= ord("f")) {
-					_len += 1;
+					_hex_str += _char;
 				}
 				
-				_raw_string += chr(currentCharCode);
+				_raw_string += _char;
 				
 				if (!__char_is_hex(__peekUTF8() ?? 0)) {
 					break;
@@ -646,13 +646,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			#endregion
 			
-			var _str = string_replace(_raw_string, "$", "0x");
-			_str = string_replace(_str, "#", "0x");
-			_str = string_replace_all(_str, "_", "");
-			
-			
-			
-			var _hex_value = real(_str);
+			var _hex_value = real(_hex_str);
 			
 			static __maxSigned32 = 0x7FFFFFFF
 			if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32-1) _hex_value = __hexTo64Bit(_str);
