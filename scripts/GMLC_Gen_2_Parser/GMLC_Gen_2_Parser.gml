@@ -190,7 +190,6 @@
 				case "try":			return parseTryCatchStatement();
 				case "throw":		return parseThrowExpression();
 				case "function":	parseFunctionDeclaration() return undefined;
-				case "#define":		parseDefineFunctionDeclaration() return undefined;
 				//case "let":			//
 				case "var":			//
 				case "static":		//
@@ -739,50 +738,6 @@
 			return new ASTArgument(identifier, expr, undefined, line, lineString);
 		}
 		
-		//used for gms1.4 #define funcName
-		static parseDefineFunctionDeclaration = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-			
-			expectToken(__GMLC_TokenType.Define, "#define");
-			var functionName = $"GMLC@{currentToken.value}";  // Parse the function identifier
-			nextToken();  // Move past Identifier
-			
-			var globalFunctionNode = new ASTFunctionDeclaration(functionName, [], [], undefined,  line, lineString);
-			
-			//cache the old current function, incase we are declaring a function inside a function
-			var _old_function = currentFunction;
-			currentFunction = globalFunctionNode;
-			
-			//build the body
-			var _body = [];
-			while (currentToken != undefined && currentToken.value != "#define") {
-				var _statement = parseStatement();
-				array_push(_body, _statement);
-				// Parse each statement until } is found
-				// Optional: Handle error checking for unexpected end of file
-				if (GML_COMPILER_DEBUG) {
-					static __lastString = ""
-					var _str = string(currentTokenIndex/array_length(tokens))
-					if (__lastString != _str) {
-						pprint($"{real(_str)*100}% Finished")
-						__lastString = _str;
-					}
-				}
-			}
-			if (currentToken != undefined) nextToken(); // Consume the }
-			globalFunctionNode.statements = new ASTBlockStatement(_body, line, lineString); // Return a block statement containing all parsed statements;
-			
-			//reset the current function
-			currentFunction = _old_function;
-			
-			// Add to GlobalVar mapping of the Program node
-			scriptAST.GlobalVar[$ functionName] = globalFunctionNode;
-			array_push(scriptAST.GlobalVarNames, functionName);
-			
-			// Return a reference to the function in the global scope
-			return new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
-		};
 		
 		static parseVariableDeclaration = function () {
 			var line = currentToken.line;

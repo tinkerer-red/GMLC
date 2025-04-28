@@ -279,23 +279,6 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 		return false;
 	}
 	
-	static parseDefine = function() {
-		if (currentToken.type == __GMLC_TokenType.Operator)
-		{
-			var _next_token = __peekToken();
-			if (_next_token.type == __GMLC_TokenType.Keyword)
-			&& (_next_token.value == "define")
-			{
-				__nextToken(); // skip #
-				__nextToken(); // skip define
-				array_push(processedTokens, new __GMLC_create_token(__GMLC_TokenType.Define, "#define", "#define", currentToken.line, currentToken.column, currentToken.lineString));
-				
-				return true;
-			}
-		}
-		return false;
-	}
-	
 	static parseRegion = function() {
 		static parseRegionTitle = function() {
 			var title = "";
