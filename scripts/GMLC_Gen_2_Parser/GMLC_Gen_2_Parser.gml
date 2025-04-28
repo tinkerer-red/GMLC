@@ -438,6 +438,8 @@
 		    }
 
 		    expectToken(__GMLC_TokenType.Punctuation, "}"); // Ensure } and consume it
+			
+			optionalToken(__GMLC_TokenType.Punctuation, ";")
 
 		    return new ASTSwitchStatement(switchExpression, cases, line, lineString);
 		};
