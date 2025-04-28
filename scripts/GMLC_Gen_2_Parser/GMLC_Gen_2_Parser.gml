@@ -1675,14 +1675,12 @@ function __find_ScopeType_from_string(_string) {
 	
 	
 	// Asset Handling
-	//NOTE: replace this with an asset look up table built into the build environment later, for API usage as a
-	// modding tool to prevent users from messing with the source code too much
-	var _index = asset_get_index(_string);
-	var _type = asset_get_type(_string)
-	if (_index != asset_script) && (_index > -1) {
+	if (env.isFunction(_string)) {
 		return ScopeType.CONST;
 	}
-	
+	else if (env.isConstant(_string)) {
+		return ScopeType.CONST;
+	}
 	
 	if (currentFunction != undefined) {
 		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType.LOCAL;
