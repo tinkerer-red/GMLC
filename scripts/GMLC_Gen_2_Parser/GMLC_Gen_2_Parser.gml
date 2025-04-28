@@ -850,6 +850,14 @@
 			
 			var declarations = [];
 			
+			// this variable is used to help prevent issues where many variables are defined at once but were not properly ended with `;`:
+			var _found_one = false;
+			// Example:
+			// var c_black = #000000,
+			//     c_white = #000000,
+			//
+			// with (thing) { ... }
+			
 			//parse all declarations
 		    while (true) {
 				// optionally skip redeclarations
