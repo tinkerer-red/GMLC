@@ -649,7 +649,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _hex_value = real(_hex_str);
 			
 			static __maxSigned32 = 0x7FFFFFFF
-			if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32-1) _hex_value = __hexTo64Bit(_str);
+			if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32-1) _hex_value = __hexTo64Bit(_hex_str);
 			
 			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _hex_value, _start_line, _start_column);
