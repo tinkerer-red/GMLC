@@ -1479,27 +1479,30 @@
 			
 			//early out
 			if (currentToken != undefined && currentToken.value != ")") {
+				
 				var _found_closing_bracket = false;
+				var _argument_found = false;
+				
 				while (currentToken != undefined) {
 					
 					if (currentToken.value == ")") break;
 					
-					//handle empty argument values as undefined `func(,,,,,arg5)`
 					if (currentToken.value == ",") {
+						//handle empty argument values as undefined `func(,,,,,arg5)`
+						if (!_argument_found) {
+							array_push(_arguments, new ASTLiteral(undefined, currentToken.line, currentToken.lineString)); // Parse each argument as an expression
+						}
 						
-						array_push(_arguments, new ASTLiteral(undefined, currentToken.line, currentToken.lineString)); // Parse each argument as an expression
 						nextToken();  // Consume the comma to continue to the next argument
-						
-						continue;
+						_argument_found = false;
+					}
+					else {
+						// Parse each argument as an expression
+						var _expr = parseExpression()
+						array_push(_arguments, _expr);
+						_argument_found = true;
 					}
 					
-					// Parse each argument as an expression
-					var _expr = parseExpression()
-					array_push(_arguments, _expr);
-					
-					if (currentToken.value == ",") {
-						nextToken();  // Consume the comma to continue to the next argument
-					}
 				}
 			}
 			

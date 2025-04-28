@@ -35,4 +35,3 @@ var _i=0; repeat(array_length(_func_arr)) {
 	
 _i++}
 
-
