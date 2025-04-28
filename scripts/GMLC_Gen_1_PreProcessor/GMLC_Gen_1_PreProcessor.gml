@@ -274,7 +274,8 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			program.EnumVar[$ enumName] = _enum_struct;
 			program.EnumVarNames[$ enumName] = enumMembers;
 			
-			expectToken(__GMLC_TokenType.Punctuation, ";");
+			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+			while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 			
 			return true;
 		}

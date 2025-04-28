@@ -226,6 +226,7 @@
 					// Parse each statement until } is found
 					// Optional: Handle error checking for unexpected end of file
 				}
+				
 				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 				
@@ -439,7 +440,8 @@
 
 		    expectToken(__GMLC_TokenType.Punctuation, "}"); // Ensure } and consume it
 			
-			optionalToken(__GMLC_TokenType.Punctuation, ";")
+			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+			while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 
 		    return new ASTSwitchStatement(switchExpression, cases, line, lineString);
 		};
@@ -1371,7 +1373,8 @@
 					nextToken();
 					if (currentToken == undefined) return undefined;
 					var _node = parseStatement();
-					optionalToken(__GMLC_TokenType.Punctuation, ";")
+					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 					_node.skipOptimization = true;
 					return _node;
 					
