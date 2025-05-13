@@ -628,7 +628,19 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
     var _statements = _node.statements;
     
 	var _i = 0; repeat(array_length(_statements)) {
-        var _expr = __GMLCcompileExpression(_rootNode, _parentNode, _statements[_i]);
+		var _statement = _statements[_i];
+		if (_statement.type == __GMLC_NodeType.EmptyNode) {
+			//dont compile and continue on
+		}
+        
+		if (_statement.type == __GMLC_NodeType.BlockStatement) {
+			//compile but take out the statements and inject them in this one.
+			var _compiled_child_block = __GMLCcompileBlockStatement(_rootNode, _parentNode, _statement);
+			var _child_block = method_get_self(_compiled_child_block)
+			output.blockStatements = array_concat(output.blockStatements, _child_block.blockStatements)
+		}
+        
+		var _expr = __GMLCcompileExpression(_rootNode, _parentNode, _statement);
         if (_expr != undefined) {
             var _exprStruct = method_get_self(_expr);
             array_push(output.blockStatements, _expr);
@@ -638,7 +650,11 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
     output.size = array_length(output.blockStatements);
     
     // If there’s only one statement, return that single statement.
-    if (output.size == 1) {
+    if (output.size == 0) {
+        return function(){};
+    }
+    
+	if (output.size == 1) {
         return output.blockStatements[0];
     }
     
@@ -655,7 +671,8 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteIf() {
-    if (condition()) trueBlock();
+    if (condition())
+		trueBlock();
 }
 #region //{
 // used for gmlc compiled repeat blocks
