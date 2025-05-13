@@ -316,8 +316,8 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		break;}
 		
 		case __GMLC_NodeType.EmptyNode:{
-			//dont do shit! We expect this to never actually be needed and could safely be undefined, this is typically used when we remove unreachable code.
-			return undefined;
+			//return a completely empty function, ideally we would not even enter a function but thats for a future task for the optimizer and fast passes to deal with.
+			return function(){};
 		}
 		
 		/*
@@ -613,7 +613,11 @@ function __GMLCexecuteBlockStatement() {
 	i++;}
 }
 function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
-    // If the node is not a block, simply compile it as an expression.
+    if (_node.type == __GMLC_NodeType.EmptyNode) {
+		return function(){};
+	}
+	
+	// If the node is not a block, simply compile it as an expression.
     if (_node.type != __GMLC_NodeType.BlockStatement) {
         return __GMLCcompileExpression(_rootNode, _parentNode, _node);
     }
@@ -840,10 +844,10 @@ function __GMLCexecuteFor() {
 }
 function __GMLCcompileFor(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileFor", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.assignment = (_node.initialization == undefined) ? function(){} : __GMLCcompileExpression(_rootNode, _parentNode, _node.initialization);
-	_output.condition = (_node.condition == undefined) ? function(){return true} : __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
-	_output.operation = (_node.increment == undefined) ? function(){} : __GMLCcompileExpression(_rootNode, _parentNode, _node.increment);
-	_output.blockStatement = (_node.codeBlock == undefined) ? function(){} : __GMLCcompileExpression(_rootNode, _parentNode, _node.codeBlock);
+	_output.assignment     = (_node.initialization == undefined) ? function(){}            : __GMLCcompileExpression(_rootNode, _parentNode, _node.initialization);
+	_output.condition      = (_node.condition      == undefined) ? function(){return true} : __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
+	_output.operation      = (_node.increment      == undefined) ? function(){}            : __GMLCcompileExpression(_rootNode, _parentNode, _node.increment);
+	_output.blockStatement = (_node.codeBlock      == undefined) ? function(){}            : __GMLCcompileExpression(_rootNode, _parentNode, _node.codeBlock);
     
 	return method(_output, __GMLCexecuteFor);
 }
