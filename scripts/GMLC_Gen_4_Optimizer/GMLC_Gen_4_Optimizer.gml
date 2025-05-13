@@ -1790,7 +1790,7 @@
 								return _node.alternate;
 							}
 							else {
-								log($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `else` block only in line ({_node.line}) `{_node.lineString}`")
+								log($"Optimizer :: eliminateDeadCode :: Could remove `if` statement in line ({_node.line}) `{_node.lineString}`")
 								return new ASTEmpty(_node.line, _node.lineString);
 							}
 						}
