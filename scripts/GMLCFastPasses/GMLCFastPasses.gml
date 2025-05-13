@@ -70,6 +70,7 @@ function __GMLCexecuteGetPropertyVarStatic() {
 //}
 #endregion
 function __GMLCexecuteGetPropertyUnique() {
+	throw "STOP USING THIS FUNCTION!!!!"
     switch (key) {
 		case "self": return global.selfInstance;
 		case "other": return global.otherInstance;

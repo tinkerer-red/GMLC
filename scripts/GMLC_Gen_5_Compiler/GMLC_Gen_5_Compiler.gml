@@ -182,6 +182,169 @@ function __GMLCcompileProgram(_node, _globalsStruct) {
 	return method(_output, __GMLCexecuteProgram)
 }
 
+function __GMLCexecuteExpression() {};
+function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
+	//log("\n\n")
+	//pprint(_node)
+	//log($"TYPE :: {_node.type}\nLINE :: {struct_exists(_node, "lineString") ? _node.lineString : "<undefined>"}\nNODE :: {json_stringify(_node, true)}")
+	
+	if (_parentNode=undefined && _node==undefined) {
+		throw_gmlc_error("Red forgot to add the `rootNode` and `parentNode` when calling `__GMLCcompileExpression`!")
+	}
+	if (!is_instanceof(_node, ASTNode)) {
+		throw_gmlc_error($"Supplied Node is not a valid AST - Red's fault\ninstanceof(_node) == {instanceof(_node)}")
+	}
+	
+	//check every different ast node, and see how it should be compiled,
+    // this is essentially our lookup table for that
+	
+	switch (_node.type) {
+		case __GMLC_NodeType.FunctionDeclaration:{
+			return __GMLCcompileFunction(_rootNode, undefined, _node);
+		break;}
+		case __GMLC_NodeType.ConstructorDeclaration:{
+			return __GMLCcompileConstructor(_rootNode, undefined, _node);
+		break;}
+		case __GMLC_NodeType.ArgumentList:{
+			throw_gmlc_error("not done yet")
+		break;}
+		case __GMLC_NodeType.Argument:{
+			throw_gmlc_error("not done yet")
+		break;}
+		
+		case __GMLC_NodeType.BlockStatement:{
+			return __GMLCcompileBlockStatement(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.IfStatement:{
+			return __GMLCcompileIf(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.ForStatement:{
+			return __GMLCcompileFor(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.WhileStatement:{
+			return __GMLCcompileWhile(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.RepeatStatement:{
+			return __GMLCcompileRepeat(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.DoUntilStatement:{
+			return __GMLCcompileDoUntil(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.WithStatement:{
+			return __GMLCcompileWith(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.TryStatement:{
+			return __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.SwitchStatement:{
+			return __GMLCcompileSwitch(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.CaseExpression:
+		case __GMLC_NodeType.CaseDefault:{
+			return __GMLCcompileCase(_rootNode, _parentNode, _node)
+		break;}
+		
+		case __GMLC_NodeType.BreakStatement:{
+			return __GMLCcompileBreak(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.ContinueStatement:{
+			return __GMLCcompileContinue(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.ExitStatement:{
+			return __GMLCcompileExit(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.ReturnStatement:{
+			return __GMLCcompileReturn(_rootNode, _parentNode, _node)
+		break;}
+		
+		case __GMLC_NodeType.VariableDeclarationList:{
+			return __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.VariableDeclaration:{
+			return __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node);
+		break;}
+		
+		case __GMLC_NodeType.CallExpression:{
+			return __GMLCcompileCallExpression(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.NewExpression:{
+			return __GMLCcompileNewExpression(_rootNode, _parentNode, _node)
+		break;}
+		
+		case __GMLC_NodeType.ExpressionStatement:{
+			//NOTE: Logging this incase we are generating unneeded AST nodes.
+			throw_gmlc_error("There shouldnt be any of these")
+			return __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
+		break;}
+		case __GMLC_NodeType.AssignmentExpression:{
+			return __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.BinaryExpression:{
+			return __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.LogicalExpression:{
+			return __GMLCcompileLogicalExpression(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.NullishExpression:{
+			return __GMLCcompileNullishExpression(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.UnaryExpression:{
+			return __GMLCcompileUnaryExpression(_rootNode, _parentNode, _node)
+		break;}
+		case __GMLC_NodeType.UpdateExpression:{
+			return __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node)
+		break;}
+				
+		case __GMLC_NodeType.ConditionalExpression:{
+			return __GMLCcompileTernaryExpression(_rootNode, _parentNode, _node);
+		break;}
+		
+		case __GMLC_NodeType.Literal:{
+			return __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node);
+		break;}
+		case __GMLC_NodeType.Identifier:{
+			return __GMLCcompileIdentifier(_rootNode, _parentNode, _node)
+		break;}
+				
+		case __GMLC_NodeType.UniqueIdentifier:{
+			//we should only ever make it here if we are `getting` the unique identifier.
+			return __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node)
+		break;}
+				
+		case __GMLC_NodeType.AccessorExpression:{
+			return __GMLCcompileAccessor(_rootNode, _parentNode, _node)
+		break;}
+		
+		case __GMLC_NodeType.EmptyNode:{
+			//dont do shit! We expect this to never actually be needed and could safely be undefined, this is typically used when we remove unreachable code.
+			return undefined;
+		}
+		
+		/*
+		case __GMLC_NodeType.PropertyAccessor:{
+			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
+		break;}
+		case __GMLC_NodeType.AccessorExpression:{
+			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
+		break;}
+		case __GMLC_NodeType.MethodVariableConstructor:{
+			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
+		break;}
+		case __GMLC_NodeType.MethodVariableFunction:{
+			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
+		break;}
+		//*/
+		default:
+			
+			trace(json_stringify(_node, true))
+			throw_gmlc_error($"Current Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}")
+		break;
+				
+		// Add cases for other types of nodes
+	}
+	
+};
+
 function __GMLCexecuteFunction() {
 	__GMLC_DEFAULT_SELF_AND_OTHER
 	__GMLC_PRE_FUNC
@@ -433,168 +596,6 @@ function __GMLCcompileArgument(_rootNode, _parentNode, _node) {
 	return _output;
 }
 
-function __GMLCexecuteExpression() {};
-function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
-	//log("\n\n")
-	//pprint(_node)
-	//log($"TYPE :: {_node.type}\nLINE :: {struct_exists(_node, "lineString") ? _node.lineString : "<undefined>"}\nNODE :: {json_stringify(_node, true)}")
-	
-	if (_parentNode=undefined && _node==undefined) {
-		throw_gmlc_error("Red forgot to add the `rootNode` and `parentNode` when calling `__GMLCcompileExpression`!")
-	}
-	if (!is_instanceof(_node, ASTNode)) {
-		throw_gmlc_error($"Supplied Node is not a valid AST - Red's fault\ninstanceof(_node) == {instanceof(_node)}")
-	}
-	
-	//check every different ast node, and see how it should be compiled,
-    // this is essentially our lookup table for that
-	
-	switch (_node.type) {
-		case __GMLC_NodeType.FunctionDeclaration:{
-			return __GMLCcompileFunction(_rootNode, undefined, _node);
-		break;}
-		case __GMLC_NodeType.ConstructorDeclaration:{
-			return __GMLCcompileConstructor(_rootNode, undefined, _node);
-		break;}
-		case __GMLC_NodeType.ArgumentList:{
-			throw_gmlc_error("not done yet")
-		break;}
-		case __GMLC_NodeType.Argument:{
-			throw_gmlc_error("not done yet")
-		break;}
-		
-		case __GMLC_NodeType.BlockStatement:{
-			return __GMLCcompileBlockStatement(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.IfStatement:{
-			return __GMLCcompileIf(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.ForStatement:{
-			return __GMLCcompileFor(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.WhileStatement:{
-			return __GMLCcompileWhile(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.RepeatStatement:{
-			return __GMLCcompileRepeat(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.DoUntilStatement:{
-			return __GMLCcompileDoUntil(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.WithStatement:{
-			return __GMLCcompileWith(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.TryStatement:{
-			return __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.SwitchStatement:{
-			return __GMLCcompileSwitch(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.CaseExpression:
-		case __GMLC_NodeType.CaseDefault:{
-			return __GMLCcompileCase(_rootNode, _parentNode, _node)
-		break;}
-		
-		case __GMLC_NodeType.BreakStatement:{
-			return __GMLCcompileBreak(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.ContinueStatement:{
-			return __GMLCcompileContinue(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.ExitStatement:{
-			return __GMLCcompileExit(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.ReturnStatement:{
-			return __GMLCcompileReturn(_rootNode, _parentNode, _node)
-		break;}
-		
-		case __GMLC_NodeType.VariableDeclarationList:{
-			return __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.VariableDeclaration:{
-			return __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node);
-		break;}
-		
-		case __GMLC_NodeType.CallExpression:{
-			return __GMLCcompileCallExpression(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.NewExpression:{
-			return __GMLCcompileNewExpression(_rootNode, _parentNode, _node)
-		break;}
-		
-		case __GMLC_NodeType.ExpressionStatement:{
-			//NOTE: Logging this incase we are generating unneeded AST nodes.
-			throw_gmlc_error("There shouldnt be any of these")
-			return __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
-		break;}
-		case __GMLC_NodeType.AssignmentExpression:{
-			return __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.BinaryExpression:{
-			return __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.LogicalExpression:{
-			return __GMLCcompileLogicalExpression(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.NullishExpression:{
-			return __GMLCcompileNullishExpression(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.UnaryExpression:{
-			return __GMLCcompileUnaryExpression(_rootNode, _parentNode, _node)
-		break;}
-		case __GMLC_NodeType.UpdateExpression:{
-			return __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node)
-		break;}
-				
-		case __GMLC_NodeType.ConditionalExpression:{
-			return __GMLCcompileTernaryExpression(_rootNode, _parentNode, _node);
-		break;}
-		
-		case __GMLC_NodeType.Literal:{
-			return __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node);
-		break;}
-		case __GMLC_NodeType.Identifier:{
-			return __GMLCcompileIdentifier(_rootNode, _parentNode, _node)
-		break;}
-				
-		case __GMLC_NodeType.UniqueIdentifier:{
-			return __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node)
-		break;}
-				
-		case __GMLC_NodeType.AccessorExpression:{
-			return __GMLCcompileAccessor(_rootNode, _parentNode, _node)
-		break;}
-		
-		case __GMLC_NodeType.EmptyNode:{
-			//dont do shit! We expect this to never actually be needed and could safely be undefined, this is typically used when we remove unreachable code.
-			return undefined;
-		}
-		
-		/*
-		case __GMLC_NodeType.PropertyAccessor:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		case __GMLC_NodeType.AccessorExpression:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		case __GMLC_NodeType.MethodVariableConstructor:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		case __GMLC_NodeType.MethodVariableFunction:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		//*/
-		default:
-			
-			trace(json_stringify(_node, true))
-			throw_gmlc_error($"Current Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}")
-		break;
-				
-		// Add cases for other types of nodes
-	}
-	
-};
-
 #endregion
 
 #region Statements
@@ -674,10 +675,18 @@ function __GMLCcompileIf(_rootNode, _parentNode, _node) {
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.condition);
 	_output.trueBlock = __GMLCcompileExpression(_rootNode, _parentNode, _node.consequent);
     
+	//if it's an empty `else` block statement
+	if (_node.alternate != undefined)
+	&& (_node.alternate.type == __GMLC_NodeType.BlockStatement)
+	&& (array_length(_node.alternate.statements) == 0) {
+		_node.alternate = undefined;
+	}
+	
+	//if there is no 'else'
 	if (_node.alternate == undefined) {
 		return method(_output, __GMLCexecuteIf);
     }
-    else {
+	else {
 		_output.elseBlock = __GMLCcompileExpression(_rootNode, _parentNode, _node.alternate);
 		return method(_output, __GMLCexecuteIfElse);
     }
@@ -1320,7 +1329,7 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 
 function __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileVariableDeclaration", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.key = _node.identifier; //this is now unused but we keep it around for crash reports and debugging purposes
+	_output.key = _node.identifier.value;
 	if (_node.scope == ScopeType.LOCAL) {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
@@ -1821,10 +1830,9 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUniqueIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.key = _node.value
+	//var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUniqueIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
 	
-	return method(_output, __GMLCexecuteGetPropertyUnique)
+	return _node.value.get;
 }
 
 

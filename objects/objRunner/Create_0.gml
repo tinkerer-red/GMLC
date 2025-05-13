@@ -15,7 +15,6 @@ gmlc.exposeConstants({
 	"audiogroup_OGG": audiogroup_OGG,
 	"audiogroup_WAV": audiogroup_WAV,
 })
-
 //shaders
 gmlc.exposeConstants({
 	"sh_ambient_colour_glsl": sh_ambient_colour_glsl,
@@ -106,13 +105,26 @@ gmlc.exposeConstants({
 	"sh_vs_fog_enabled_hlsl": sh_vs_fog_enabled_hlsl,
 })
 
+gmlc.exposeConstants({
+	"pprint": function(){
+	    var _str = "";
+		var _i=0; repeat(argument_count) {
+			_str += json_stringify(__reStruct(argument[_i]), true)+"\n";
+		_i++}
+		show_debug_message(_str)
+	},
+})
+
+gmlc.set_exposure(GMLC_EXPOSURE.FULL)
+
 // ################# TEST SUITE REGISTRATION #################
 var _string = @'
 function test() : TestSuite() constructor {
 	static func_static = true;
 	func_local = true;
-	show_debug_message(static_get(self))
-	show_debug_message(static_get(static_get(self)))
+	pprint(static_get(self))
+	pprint(static_get(self))
+	pprint(static_get(static_get(self)))
 	show_debug_message(addFact)
 }
 '
@@ -133,9 +145,10 @@ log(t);
 //testFramework.addSuite(BasicEscapeCharacterTestSuite);
 //testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
 //testFramework.addSuite(BasicConstructorTestSuit);
+testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 
 
-//*
+/*
 // Add all of the official test suites from their .gml files in included folder \__TEST\*.gml
 var _file_names = file_find_all("__TESTS/*gml");
 for(var i=0; i<array_length(_file_names); i++) {
