@@ -284,6 +284,9 @@
 				case __GMLC_NodeType.ConstructorDeclaration:{
 					
 				break;}
+				case __GMLC_NodeType.EmptyNode:{
+					//do nothing, this is just a place holder
+				break;}
 				/*
 				case __GMLC_NodeType.PropertyAccessor:{
 					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
