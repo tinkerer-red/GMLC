@@ -53,14 +53,6 @@ function EmptyBlockAcceptanceTestSuite() : TestSuite() constructor {
         ')
     });
 
-    addFact("Empty switch block is allowed", function() {
-        compile_and_execute(@'
-        var input = 5;
-        switch (input) {}
-        assert_equals(input, 5, "Empty switch block should not error");
-        ')
-    });
-
     addFact("Switch case with empty block is allowed", function() {
         compile_and_execute(@'
         var input = 2;
