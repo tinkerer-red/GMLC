@@ -150,6 +150,7 @@
     {"name":"BasicConstructorTestSuit","order":7,"path":"scripts/BasicConstructorTestSuit/BasicConstructorTestSuit.yy",},
     {"name":"BasicEscapeCharacterTestSuite","order":5,"path":"scripts/BasicEscapeCharacterTestSuite/BasicEscapeCharacterTestSuite.yy",},
     {"name":"BasicTernaryOperatorTestSuite","order":6,"path":"scripts/BasicTernaryOperatorTestSuite/BasicTernaryOperatorTestSuite.yy",},
+    {"name":"BinaryConditionTestSuite","order":9,"path":"scripts/BinaryConditionTestSuite/BinaryConditionTestSuite.yy",},
     {"name":"compile_and_execute","order":2,"path":"scripts/compile_and_execute/compile_and_execute.yy",},
     {"name":"ConfigAPI","order":3,"path":"scripts/ConfigAPI/ConfigAPI.yy",},
     {"name":"draw_texture_rect","order":1,"path":"scripts/draw_texture_rect/draw_texture_rect.yy",},

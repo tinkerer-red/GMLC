@@ -382,6 +382,7 @@
     {"id":{"name":"BasicConstructorTestSuit","path":"scripts/BasicConstructorTestSuit/BasicConstructorTestSuit.yy",},},
     {"id":{"name":"BasicEscapeCharacterTestSuite","path":"scripts/BasicEscapeCharacterTestSuite/BasicEscapeCharacterTestSuite.yy",},},
     {"id":{"name":"BasicTernaryOperatorTestSuite","path":"scripts/BasicTernaryOperatorTestSuite/BasicTernaryOperatorTestSuite.yy",},},
+    {"id":{"name":"BinaryConditionTestSuite","path":"scripts/BinaryConditionTestSuite/BinaryConditionTestSuite.yy",},},
     {"id":{"name":"channel_get_name","path":"scripts/channel_get_name/channel_get_name.yy",},},
     {"id":{"name":"compile_and_execute","path":"scripts/compile_and_execute/compile_and_execute.yy",},},
     {"id":{"name":"ConfigAPI","path":"scripts/ConfigAPI/ConfigAPI.yy",},},

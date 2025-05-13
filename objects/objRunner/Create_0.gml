@@ -145,7 +145,8 @@ log(t);
 //testFramework.addSuite(BasicEscapeCharacterTestSuite);
 //testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
 //testFramework.addSuite(BasicConstructorTestSuit);
-testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
+//testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
+testFramework.addSuite(BinaryConditionTestSuite);
 
 
 /*
