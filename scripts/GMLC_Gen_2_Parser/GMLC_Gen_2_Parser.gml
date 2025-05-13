@@ -1298,7 +1298,7 @@
 					if (currentToken.value == "(") {
 						// Handle expressions wrapped in parentheses
 						nextToken(); // Consume (
-						var expr = parseExpression();
+						var expr = parseConditionalExpression();
 						expectToken(__GMLC_TokenType.Punctuation, ")");
 						return expr;
 					}
