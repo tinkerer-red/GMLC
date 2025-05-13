@@ -596,19 +596,16 @@
 			if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
 				#region function foo() : `bar`() constructor {} :: parse constructor parent
 				
-				var _identifier = parsePrimaryExpression();
-				var _parent = parseFunctionCall(_identifier);
+				var _parent = parseAccessExpression();
 				
 				//if its an internally defined function, like a function defined in the same program we're parsing
 				if (_parent.type != __GMLC_NodeType.CallExpression) {
-					//see if we will be looking into our own program or searching global space
-					if (_identifier.type != __GMLC_NodeType.Identifier) {
-						//check if it's an existing built in function not in the program
-						if (!is_callable(_identifier.value)) {
-							throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.name}")
-						}
-					}
+					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent}")
 				}
+				else if (!is_callable(_parent.callee.value)) {
+					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}")
+				}
+				
 				
 				#endregion
 				
@@ -1276,7 +1273,8 @@
 					}
 					
 					if (_scopeType == ScopeType.CONST) {
-						var node = new ASTLiteral(currentToken.value, line, lineString);
+						var _data = env.getConstant(currentToken.value) ?? env.getFunction(currentToken.value)
+						var node = new ASTLiteral(_data.value, line, lineString);
 						nextToken(); // Move past the identifier
 						return node;
 					}
