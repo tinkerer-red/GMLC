@@ -14,10 +14,12 @@ tokenize(sourceCode): Takes the entire source code as input and converts it into
 #endregion
 function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	env = _env;
-	__keyword_lookup  = __gmlc_convert_to_array_map(env.getAllKeywords());
-	__function_lookup = __gmlc_convert_to_array_map(env.getAllFunctions());
-	__constant_lookup = __gmlc_convert_to_array_map(env.getAllConstants());
-	__variable_lookup = __gmlc_convert_to_array_map(env.getAllVariables());
+	
+	//these are speed based look up tables for our env, these will get initialized
+	__keyword_lookup  = undefined;
+	__function_lookup = undefined;
+	__constant_lookup = undefined;
+	__variable_lookup = undefined;
 	
 	sourceCodeString = "";
 	sourceCodeCharLength = 0;
@@ -62,6 +64,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		column = 0;
 		
 		finished = false;
+		
+		//update our env lookup tables
+		__keyword_lookup  = __gmlc_convert_to_array_map(env.getAllKeywords());
+		__function_lookup = __gmlc_convert_to_array_map(env.getAllFunctions());
+		__constant_lookup = __gmlc_convert_to_array_map(env.getAllConstants());
+		__variable_lookup = __gmlc_convert_to_array_map(env.getAllVariables());
 		
 		return self;
 	};
