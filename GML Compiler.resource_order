@@ -158,6 +158,7 @@
     {"name":"ds_map_to_array","order":3,"path":"scripts/ds_map_to_array/ds_map_to_array.yy",},
     {"name":"ds_queue_to_array","order":4,"path":"scripts/ds_queue_to_array/ds_queue_to_array.yy",},
     {"name":"ds_stack_to_array","order":5,"path":"scripts/ds_stack_to_array/ds_stack_to_array.yy",},
+    {"name":"EmptyBlockAcceptanceTestSuite","order":8,"path":"scripts/EmptyBlockAcceptanceTestSuite/EmptyBlockAcceptanceTestSuite.yy",},
     {"name":"event_to_string","order":2,"path":"scripts/event_to_string/event_to_string.yy",},
     {"name":"frameworkSetup","order":3,"path":"scripts/frameworkSetup/frameworkSetup.yy",},
     {"name":"generate_cube","order":1,"path":"scripts/generate_cube/generate_cube.yy",},

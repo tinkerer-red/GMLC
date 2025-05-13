@@ -396,6 +396,7 @@
     {"id":{"name":"ds_map_to_array","path":"scripts/ds_map_to_array/ds_map_to_array.yy",},},
     {"id":{"name":"ds_queue_to_array","path":"scripts/ds_queue_to_array/ds_queue_to_array.yy",},},
     {"id":{"name":"ds_stack_to_array","path":"scripts/ds_stack_to_array/ds_stack_to_array.yy",},},
+    {"id":{"name":"EmptyBlockAcceptanceTestSuite","path":"scripts/EmptyBlockAcceptanceTestSuite/EmptyBlockAcceptanceTestSuite.yy",},},
     {"id":{"name":"event_to_string","path":"scripts/event_to_string/event_to_string.yy",},},
     {"id":{"name":"Fact","path":"scripts/Fact/Fact.yy",},},
     {"id":{"name":"filesystem_is_sandboxed","path":"scripts/filesystem_is_sandboxed/filesystem_is_sandboxed.yy",},},
@@ -648,8 +649,8 @@
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"GMLCTestRoom","path":"rooms/GMLCTestRoom/GMLCTestRoom.yy",},},
     {"roomId":{"name":"rmInit","path":"rooms/rmInit/rmInit.yy",},},
+    {"roomId":{"name":"GMLCTestRoom","path":"rooms/GMLCTestRoom/GMLCTestRoom.yy",},},
     {"roomId":{"name":"room1","path":"rooms/room1/room1.yy",},},
     {"roomId":{"name":"room0","path":"rooms/room0/room0.yy",},},
     {"roomId":{"name":"rmEmpty","path":"rooms/rmEmpty/rmEmpty.yy",},},
