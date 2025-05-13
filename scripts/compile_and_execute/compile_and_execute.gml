@@ -4,7 +4,7 @@ global.TestFailed = {};
 function compile_and_execute(_string) {
 	static __faster = 0;
 	
-	static gmlc = new GMLC_Env()
+	static gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 	var _program = gmlc.compile(_string);
 	
 	//GC_START
