@@ -233,6 +233,10 @@
 				nextToken(); // Consume the }
 				
 				//compile better code
+				if (array_length(_statements) == 0) {
+					return new ASTEmpty();
+				}
+				
 				if (array_length(_statements) == 1) {
 					return _statements[0];
 				}
@@ -378,15 +382,10 @@
 			
 			var cases = [];
 		    var statements = undefined;
-		    var _expectClosingCurly = false;
-			
+		    
 		    while (currentToken != undefined && currentToken.value != "}") {
 				if (currentToken.type == __GMLC_TokenType.Keyword) {
 					if (currentToken.value == "case") {
-						if (_expectClosingCurly) {
-							throw_gmlc_error($"switch/case statement was opened with \{ but was never closed")
-						}
-						
 						var caseLine = currentToken.line;
 						var caseLineString = currentToken.lineString;
 						
@@ -394,23 +393,17 @@
 						var _label = parseExpression();
 						
 						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure : and consume it
-						_expectClosingCurly = optionalToken(__GMLC_TokenType.Punctuation, "{")
 						
 						statements = [];
 						array_push(cases, new ASTCaseExpression(_label, statements, caseLine, caseLineString));
 					}
 					else if (currentToken.value == "default") {
-						if (_expectClosingCurly) {
-							throw_gmlc_error($"switch/case statement was opened with \{ but was never closed")
-						}
-						
 						var caseLine = currentToken.line;
 						var caseLineString = currentToken.lineString;
 						
 						nextToken(); //consume default
 						
 						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure : and consume it
-						_expectClosingCurly = optionalToken(__GMLC_TokenType.Punctuation, "{")
 						
 						statements = [];
 						array_push(cases, new ASTCaseDefault(statements, line, lineString));
@@ -421,9 +414,6 @@
 						//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 						while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 						
-						if (_expectClosingCurly && optionalToken(__GMLC_TokenType.Punctuation, "}")) {
-							_expectClosingCurly = false;
-						}
 					}
 				}
 				else {
@@ -432,9 +422,6 @@
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
 					
-					if (_expectClosingCurly && optionalToken(__GMLC_TokenType.Punctuation, "}")) {
-						_expectClosingCurly = false;
-					}
 				}
 		    }
 
