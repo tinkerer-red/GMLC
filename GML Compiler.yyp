@@ -389,6 +389,7 @@
     {"id":{"name":"ConfigManager","path":"scripts/ConfigManager/ConfigManager.yy",},},
     {"id":{"name":"constants","path":"scripts/constants/constants.yy",},},
     {"id":{"name":"cross_product","path":"scripts/cross_product/cross_product.yy",},},
+    {"id":{"name":"DotChainPerformanceTestSuite","path":"scripts/DotChainPerformanceTestSuite/DotChainPerformanceTestSuite.yy",},},
     {"id":{"name":"draw_rect","path":"scripts/draw_rect/draw_rect.yy",},},
     {"id":{"name":"draw_test_utils","path":"scripts/draw_test_utils/draw_test_utils.yy",},},
     {"id":{"name":"draw_texture_rect","path":"scripts/draw_texture_rect/draw_texture_rect.yy",},},

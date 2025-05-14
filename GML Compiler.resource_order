@@ -153,6 +153,7 @@
     {"name":"BinaryConditionTestSuite","order":9,"path":"scripts/BinaryConditionTestSuite/BinaryConditionTestSuite.yy",},
     {"name":"compile_and_execute","order":2,"path":"scripts/compile_and_execute/compile_and_execute.yy",},
     {"name":"ConfigAPI","order":3,"path":"scripts/ConfigAPI/ConfigAPI.yy",},
+    {"name":"DotChainPerformanceTestSuite","order":10,"path":"scripts/DotChainPerformanceTestSuite/DotChainPerformanceTestSuite.yy",},
     {"name":"draw_texture_rect","order":1,"path":"scripts/draw_texture_rect/draw_texture_rect.yy",},
     {"name":"ds_grid_to_array","order":1,"path":"scripts/ds_grid_to_array/ds_grid_to_array.yy",},
     {"name":"ds_list_to_array","order":2,"path":"scripts/ds_list_to_array/ds_list_to_array.yy",},
