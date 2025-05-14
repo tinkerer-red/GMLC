@@ -567,13 +567,16 @@ function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expressi
 function __GMLCexecuteStructDotAccGet(){
 	var _target = target();
 	
-	if (is_gmlc_function(_target)) {
-		_target = __gmlc_static_get(_target)
-	}
+	var _t = method_get_self(target)
 	
 	if (struct_exists(_target, key)) {
 		return _target[$ key];
 	}
+	
+	if (is_gmlc_function(_target)) {
+		_target = __gmlc_static_get(_target)
+	}
+	
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
@@ -599,18 +602,18 @@ function __GMLCexecuteStructDotAccGet(){
 function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
 	
 	//incase it's a valid scope, lets hoist it to a better fitted function
-	if (_target.type == __GMLC_NodeType.Identifier) {
-		var _getter = __GMLCGetScopeGetter(_target.scope)
+	//if (_target.type == __GMLC_NodeType.Identifier) {
+	//	var _getter = __GMLCGetScopeGetter(_target.scope)
 		
-		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
-		_output.key        = _key.value;
+	//	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
+	//	_output.key        = _key.value;
 		
-		if (_target.scope == ScopeType.GLOBAL) {
-			_output.globals = _rootNode.globals;
-		}
+	//	if (_target.scope == ScopeType.GLOBAL) {
+	//		_output.globals = _rootNode.globals;
+	//	}
 		
-		method(_output, _getter)
-	}
+	//	method(_output, _getter)
+	//}
 	
 	//leave the following to allow for thing.thing.thing() to be a valid call
 	
