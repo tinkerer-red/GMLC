@@ -677,10 +677,11 @@
 					)
 				break;}
 				case ScopeType.SELF  : {
+					var _self = new ASTUniqueIdentifier(env.getVariable("self").value, line, lineString);
 					var _func = new ASTCallExpression(
 						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
 						[
-							new ASTUniqueIdentifier("self", line, lineString),
+							_self,
 							_func_ref
 						], 
 						line,
