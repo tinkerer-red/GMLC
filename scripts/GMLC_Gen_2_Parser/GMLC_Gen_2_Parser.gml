@@ -1468,7 +1468,8 @@
 				}
 		        
 				//correct constants to be the string they are expected to be
-				if (key.value != key.name) {
+				if (key.type != __GMLC_TokenType.String)
+				&& (key.value != key.name) {
 					key.value = key.name;
 				}
 				
