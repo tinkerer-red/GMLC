@@ -519,8 +519,14 @@
 			
 			nextToken(); // Consume return
 			var expr = undefined;
-			if (currentToken.value != ";")
-			&& (currentToken.type  != __GMLC_TokenType.Keyword) {
+			if (currentToken.value == ";") {
+				
+			}
+			else if (currentToken.type == __GMLC_TokenType.Keyword)
+			&& (currentToken.value != "new") {
+				
+			}
+			else {
 				expr = parseExpression(); // Parse the return expression if any
 			}
 			
