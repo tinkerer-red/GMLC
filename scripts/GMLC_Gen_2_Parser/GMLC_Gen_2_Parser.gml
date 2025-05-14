@@ -1452,7 +1452,7 @@
 					var _prev_scope = currentScope;
 					currentScope = ScopeType.SELF;
 					
-					var value = parseExpression();
+					var value = parseConditionalExpression();
 					
 					currentScope = _prev_scope;
 				}
