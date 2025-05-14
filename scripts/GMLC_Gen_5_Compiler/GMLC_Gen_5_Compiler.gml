@@ -1,7 +1,17 @@
 #region Macros
 #region Globals for `self` and `other`
-#macro __GMLC_DEFAULT_SELF_AND_OTHER	global.otherInstance ??= global.selfInstance ?? rootNode.globals;\
-										global.selfInstance ??= other
+#macro __GMLC_DEFAULT_SELF_AND_OTHER	var _entered_on_this_function = false;\
+										if (global.otherInstance == undefined)\
+										&& (global.selfInstance == undefined) {\
+											_entered_on_this_function = true;\
+											global.otherInstance = global.selfInstance ?? rootNode.globals;\
+											global.selfInstance = other\
+										}
+
+#macro __GMLC_RESET_DEFAULT_SELF_AND_OTHER	if (_entered_on_this_function) {\
+												global.otherInstance = undefined;\
+												global.selfInstance = undefined;\
+											}
 
 #macro __GMLC_UPDATE_SELF_AND_OTHER	var _pre_other = global.otherInstance;\
 									var _pre_self = global.selfInstance;\
@@ -88,7 +98,8 @@
 						else {\
 							__GMLC_RESET_LOCALS;\
 							__GMLC_RESET_ARGUMENTS;\
-						}
+						}\
+						__GMLC_RESET_DEFAULT_SELF_AND_OTHER
 #endregion
 
 
@@ -442,11 +453,13 @@ function __GMLCexecuteConstructor() constructor {
 		with other {
 			var _return = returnValue;
 			__GMLC_POST_FUNC
+			__GMLC_RESET_DEFAULT_SELF_AND_OTHER
 		}
 	}
 	else {
 		var _return = returnValue;
 		__GMLC_POST_FUNC
+		__GMLC_RESET_DEFAULT_SELF_AND_OTHER
 	}
 	
 	return _return;
