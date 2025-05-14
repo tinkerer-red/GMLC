@@ -583,7 +583,7 @@
 			if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
 				#region function foo() : `bar`() constructor {} :: parse constructor parent
 				
-				var _parent = parseAccessExpression();
+				var _parent = parseCallAccessExpression();
 				
 				//if its an internally defined function, like a function defined in the same program we're parsing
 				if (_parent.type != __GMLC_NodeType.CallExpression) {
@@ -891,9 +891,23 @@
 			
 			expectToken(__GMLC_TokenType.Keyword, "new");  // Expect the new keyword
 			
-			var _funcCall = parseExpressionStatement();
+			var expr = parseAccessExpression();
+			expr = parseFunctionCall(expr);
 			
-			return new ASTNewExpression( _funcCall, line, lineString);
+			var _args = expr.arguments;
+			array_insert(_args, 0, expr.callee)
+			//return new ASTNewExpression(expr, line, lineString);
+			return new ASTCallExpression(
+				new ASTLiteral(
+					constructor_call_ext,
+					line,
+					lineString,
+					"new"
+				),
+				_args,
+				line,
+				lineString
+			);
 		};
 		
 		#endregion
@@ -1169,7 +1183,7 @@
 		};
 
 		static parsePostfixExpression = function() {
-			var expr = parseAccessExpression();
+			var expr = parseCallAccessExpression();
 			static __arr = ["++", "--"];
 			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value))
 			&& !(expr.type == "Literal" && expr.scope == ScopeType.CONST) {
@@ -1184,15 +1198,34 @@
 			return expr;
 		};
 		
+		static parseCallAccessExpression = function() {
+			var expr = parseAccessExpression();
+			
+			while (currentToken != undefined) {
+				switch (currentToken.value) {
+					case "(": {
+						expr = parseFunctionCall(expr);
+					break;}
+					case "[": {
+						expr = parseBracketAccessor(expr);
+					break;}
+					case ".": {
+						expr = parseDotAccessor(expr);
+					break;}
+					default: {
+						return expr
+					break;}
+				}
+			}
+			return expr;
+		};
+
 		static parseAccessExpression = function() {
 			var expr = parsePrimaryExpression();
 			
 			var _should_break = false;
 			while (currentToken != undefined) {
 				switch (currentToken.value) {
-					case "(": {
-						expr = parseFunctionCall(expr);
-					break;}
 					case "[": {
 						expr = parseBracketAccessor(expr);
 					break;}
