@@ -7,7 +7,7 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 	//	assert_struct_equals(_r, { aInstance : "This is A`s Instance", cInstance : "This is C`s Instance", argumentChain : 3, localChain : 2, bInstance : "This is B`s Instance" })
 	//})
 	
-	addFact("constructor test #1", function() {
+	addFact("constructor test #2", function() {
 		compile_and_execute(@'
 		function a(arg0) constructor {
 			static overwrite = "A Overwrite"
@@ -89,7 +89,7 @@ function BasicConstructorTestSuit() : TestSuite() constructor {
 		//')
 	});
 	
-	addFact("constructor test #1", function() {
+	addFact("constructor test #3", function() {
 		compile_and_execute(@'
 		function __TestSuitFunctionConstructorChildA() constructor {
 			static child_a_static_exist = true;
