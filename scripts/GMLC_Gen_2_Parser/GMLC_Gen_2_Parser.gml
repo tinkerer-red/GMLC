@@ -595,8 +595,16 @@
 				if (_parent.type != __GMLC_NodeType.CallExpression) {
 					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent}")
 				}
-				else if (!is_callable(_parent.callee.value)) {
-					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}")
+				
+				//if it's a global identifier
+				if (!is_callable(_parent.callee.value))
+				&& (_parent.callee.type == __GMLC_NodeType.Identifier)
+				&& (_parent.callee.scope == ScopeType.GLOBAL)
+				{
+					var _ref = program.GlobalVar[$ _parent.callee.value]
+					if (_ref.type != __GMLC_NodeType.ConstructorDeclaration) {
+						throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}")
+					}
 				}
 				
 				
