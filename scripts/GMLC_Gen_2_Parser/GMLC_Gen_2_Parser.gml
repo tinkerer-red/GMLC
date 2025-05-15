@@ -909,20 +909,22 @@
 			var expr = parseAccessExpression();
 			expr = parseFunctionCall(expr);
 			
-			var _args = expr.arguments;
-			array_insert(_args, 0, expr.callee)
-			//return new ASTNewExpression(expr, line, lineString);
-			return new ASTCallExpression(
-				new ASTLiteral(
-					constructor_call_ext,
-					line,
-					lineString,
-					"new"
-				),
-				_args,
-				line,
-				lineString
-			);
+			return new ASTNewExpression(expr, line, lineString);
+			
+			//var _args = expr.arguments;
+			//array_insert(_args, 0, expr.callee)
+			
+			//return new ASTCallExpression(
+			//	new ASTLiteral(
+			//		constructor_call_ext,
+			//		line,
+			//		lineString,
+			//		"new"
+			//	),
+			//	_args,
+			//	line,
+			//	lineString
+			//);
 		};
 		
 		#endregion
