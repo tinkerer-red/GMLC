@@ -16,8 +16,7 @@ function __gmlc_method(_struct, _func) {
 		
 		//dont update scope if we are already on the correct scope,
 		// and dont update scope if it's an unbound method
-		if (_target != undefined)
-		&& (_target != _prevSelf) {
+		if (_target != undefined) {
 			global.otherInstance = _prevSelf;
 			global.selfInstance = _target;
 		}

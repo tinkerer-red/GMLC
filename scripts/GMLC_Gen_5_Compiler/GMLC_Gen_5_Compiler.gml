@@ -18,7 +18,7 @@
 									var _desired_self = other;\
 									;\ //dont update scope if we are already on the correct scope,
 									;\ // and dont update scope if it's an unbound method
-									if (_desired_self != undefined) && (_desired_self != _pre_self) {\
+									if (_desired_self != undefined) {\
 										global.otherInstance = _pre_self ?? rootNode.globals;\
 										global.selfInstance = _desired_self;\
 									}
