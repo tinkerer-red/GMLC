@@ -1,11 +1,11 @@
 function BasicConstructorTestSuit() : TestSuite() constructor {
 	
-	//addFact("constructor test #1", function() {
-	//	var _r = compile_and_execute(@'
-	//	return { aInstance : "This is A`s Instance", cInstance : "This is C`s Instance", argumentChain : 3, localChain : 2, bInstance : "This is B`s Instance" }
-	//	')
-	//	assert_struct_equals(_r, { aInstance : "This is A`s Instance", cInstance : "This is C`s Instance", argumentChain : 3, localChain : 2, bInstance : "This is B`s Instance" })
-	//})
+	addFact("constructor test #1", function() {
+		var _r = compile_and_execute(@'
+		return { aInstance : "This is A`s Instance", cInstance : "This is C`s Instance", argumentChain : 3, localChain : 2, bInstance : "This is B`s Instance" }
+		')
+		assert_struct_equals(_r, { aInstance : "This is A`s Instance", cInstance : "This is C`s Instance", argumentChain : 3, localChain : 2, bInstance : "This is B`s Instance" })
+	})
 	
 	addFact("constructor test #2", function() {
 		compile_and_execute(@'
