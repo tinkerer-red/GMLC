@@ -569,12 +569,12 @@ function __GMLCexecuteStructDotAccGet(){
 	
 	var _t = method_get_self(target)
 	
-	if (struct_exists(_target, key)) {
-		return _target[$ key];
-	}
-	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
+	}
+	
+	if (struct_exists(_target, key)) {
+		return _target[$ key];
 	}
 	
 	
