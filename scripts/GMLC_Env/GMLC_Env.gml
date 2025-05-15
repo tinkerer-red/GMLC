@@ -649,6 +649,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			break;
 			case GMLC_EXPOSURE.FULL:
 				expose_native_functions(); // Includes all built-in functions
+				expose_overwrite_functions();
 				expose_user_functions();   // And also user scripts
 			break;
 		}
