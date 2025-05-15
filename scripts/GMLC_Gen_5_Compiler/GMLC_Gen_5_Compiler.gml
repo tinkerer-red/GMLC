@@ -15,8 +15,13 @@
 
 #macro __GMLC_UPDATE_SELF_AND_OTHER	var _pre_other = global.otherInstance;\
 									var _pre_self = global.selfInstance;\
-									global.otherInstance = global.selfInstance ?? rootNode.globals;\
-									global.selfInstance = other
+									var _desired_self = other;\
+									;\ //dont update scope if we are already on the correct scope,
+									;\ // and dont update scope if it's an unbound method
+									if (_desired_self != undefined) && (_desired_self != _pre_self) {\
+										global.otherInstance = _pre_self ?? rootNode.globals;\
+										global.selfInstance = _desired_self;\
+									}
 #macro __GMLC_RESET_SELF_AND_OTHER	global.otherInstance = _pre_other;\
 									global.selfInstance = _pre_self
 #endregion
@@ -415,6 +420,8 @@ function __GMLCexecuteConstructor() constructor {
 	var _self_is_gmlc  = self[$ "__@@is_gmlc_function@@__"];
 	var _is_new_expression = !_self_is_gmlc;
 	
+	var dcs = debug_get_callstack()
+	
 	var _program_data = (_is_new_expression) ? other : self;
 	with _program_data {
 		var _program = program;
@@ -432,7 +439,15 @@ function __GMLCexecuteConstructor() constructor {
 			__GMLC_STASH_LOCALS
 			__GMLC_STASH_ARGUMENTS
 		}
-		__GMLC_POPULATE_ARGUMENTS
+		
+		prevArgCount = _arg_count;
+		var _i=argument_count-1; repeat(argument_count) {
+			arguments[_i] = argument[_i];
+		_i--}
+		if (struct_exists(self, "argumentsDefault")) {
+			argumentsDefault();
+		}
+										
 		if (_program_data[$ "hasParentConstructor"]) {
 			parentConstructorCall(arguments)
 			var _obj_statics = static_get(global.selfInstance);
@@ -441,7 +456,6 @@ function __GMLCexecuteConstructor() constructor {
 		__GMLC_INIT_STATICS
 	}
 	
-	//run the body
 	static_set(global.selfInstance, _statics);
 	method_call(_program, _arguments);
 	
@@ -1256,8 +1270,13 @@ function __GMLCexecuteCallExpression() {
 	if (shouldUpdateInstanceScoping) {
 		var _prevUpdateOther = global.otherInstance;
 		var _prevUpdateSelf  = global.selfInstance;
-		global.otherInstance = _prevUpdateSelf;
-		global.selfInstance = updateScopingTarget();
+		
+		var _target = updateScopingTarget();
+		if (_target != undefined)
+		&& (_target != _prevUpdateSelf) {
+			global.otherInstance = _prevUpdateSelf;
+			global.selfInstance = _target;
+		}
 	}
 	
 	var _return = undefined;
