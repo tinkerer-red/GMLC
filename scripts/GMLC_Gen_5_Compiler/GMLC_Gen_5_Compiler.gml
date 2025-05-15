@@ -4,7 +4,7 @@
 										if (global.otherInstance == undefined)\
 										&& (global.selfInstance == undefined) {\
 											_entered_on_this_function = true;\
-											global.otherInstance = global.selfInstance ?? rootNode.globals;\
+											global.otherInstance = global.selfInstance ?? (self[$ "rootNode"] ? rootNode[$ "globals"] : other) ?? other;\
 											global.selfInstance = other\
 										}
 
