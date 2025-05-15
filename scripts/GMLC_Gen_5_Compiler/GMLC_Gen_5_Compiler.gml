@@ -1454,7 +1454,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			
 			
 			//compile the actual method we will be calling
-			//compile the getter
+			//compile the setter
 			var _output2 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
 			_output2.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
 			_output2.expression = _expression;
