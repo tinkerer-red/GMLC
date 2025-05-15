@@ -1547,23 +1547,29 @@ function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
     
     switch (_node.operator) {
-		case "==":  return method(_output, __GMLCexecuteOpEqualsEquals     );
-		case "!=":  return method(_output, __GMLCexecuteOpNotEquals        );
-		case "<":   return method(_output, __GMLCexecuteOpLess             );
-		case "<=":  return method(_output, __GMLCexecuteOpLessEquals       );
-		case ">":   return method(_output, __GMLCexecuteOpGreater          );
-		case ">=":  return method(_output, __GMLCexecuteOpGreaterEquals    );
-		case "+":   return method(_output, __GMLCexecuteOpPlus             );
-		case "-":   return method(_output, __GMLCexecuteOpMinus            );
-		case "*":   return method(_output, __GMLCexecuteOpMultiply         );
-		case "/":   return method(_output, __GMLCexecuteOpDivide           );
-		case "mod": return method(_output, __GMLCexecuteOpMod              );
-		case "div": return method(_output, __GMLCexecuteOpDiv              );
-		case "|":   return method(_output, __GMLCexecuteOpBitwiseOR        );
-		case "^":   return method(_output, __GMLCexecuteOpBitwiseXOR       );
-		case "&":   return method(_output, __GMLCexecuteOpBitwiseAND       );
-		case "<<":  return method(_output, __GMLCexecuteOpBitwiseShiftLeft );
-		case ">>":  return method(_output, __GMLCexecuteOpBitwiseShiftRight);
+		case "==":  return __vanilla_method(_output, __GMLCexecuteOpEqualsEquals     );
+		case "!=":  return __vanilla_method(_output, __GMLCexecuteOpNotEquals        );
+		case "<":   return __vanilla_method(_output, __GMLCexecuteOpLess             );
+		case "<=":  return __vanilla_method(_output, __GMLCexecuteOpLessEquals       );
+		case ">":   return __vanilla_method(_output, __GMLCexecuteOpGreater          );
+		case ">=":  return __vanilla_method(_output, __GMLCexecuteOpGreaterEquals    );
+		case "+":   return __vanilla_method(_output, __GMLCexecuteOpPlus             );
+		case "-":   return __vanilla_method(_output, __GMLCexecuteOpMinus            );
+		case "*":   return __vanilla_method(_output, __GMLCexecuteOpMultiply         );
+		case "/":   return __vanilla_method(_output, __GMLCexecuteOpDivide           );
+		case "mod": return __vanilla_method(_output, __GMLCexecuteOpMod              );
+		case "div": return __vanilla_method(_output, __GMLCexecuteOpDiv              );
+		case "|":   return __vanilla_method(_output, __GMLCexecuteOpBitwiseOR        );
+		case "^":   return __vanilla_method(_output, __GMLCexecuteOpBitwiseXOR       );
+		case "&":   return __vanilla_method(_output, __GMLCexecuteOpBitwiseAND       );
+		case "<<":  return __vanilla_method(_output, __GMLCexecuteOpBitwiseShiftLeft );
+		case ">>":  return __vanilla_method(_output, __GMLCexecuteOpBitwiseShiftRight);
+		
+		case "=":   
+			throw "Should this be accessible here?"
+			return __vanilla_method(_output, __GMLCexecuteOpEqualsEquals     );
+		break;
+		
 	}
 }
 #region Binary Expressions
