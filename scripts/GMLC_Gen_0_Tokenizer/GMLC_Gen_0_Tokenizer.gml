@@ -408,16 +408,16 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			{
 				if (currentCharCode == ord("*"))
 				&& (__peekUTF8() == ord("/")) {
+					__expectUTF8(ord("*")); //consume *
+					
+					//we dont actually want to consume this, flexi parse will move us onto our next thing on it's own.
+					//__expectUTF8(ord("/")); //consume /
+					
 					break;
 				}
 				_raw_string += chr(currentCharCode);
 				__nextUTF8();
 			}
-			
-			__expectUTF8(ord("*")); //consume *
-			
-			//we dont actually want to consume this, flexi parse will move us onto our next thing on it's own.
-			//__expectUTF8(ord("/")); //consume /
 			
 			_raw_string += "*/";
 			
