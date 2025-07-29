@@ -413,13 +413,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					//we dont actually want to consume this, flexi parse will move us onto our next thing on it's own.
 					//__expectUTF8(ord("/")); //consume /
 					
+					_raw_string += "*/";
+					
 					break;
 				}
 				_raw_string += chr(currentCharCode);
 				__nextUTF8();
 			}
-			
-			_raw_string += "*/";
 			
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
 			array_push(tokens, _token);
