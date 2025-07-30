@@ -276,6 +276,8 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				
 			}
 			
+			expectToken(__GMLC_TokenType.Punctuation, "}")
+			
 			program.EnumVar[$ enumName] = _enum_struct;
 			program.EnumVarNames[$ enumName] = enumMembers;
 			
