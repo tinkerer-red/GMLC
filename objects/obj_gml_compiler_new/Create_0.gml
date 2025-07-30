@@ -8,11 +8,11 @@ gmlc.compile(file_read_all_text("C:/Users/Red/Documents/GameMakerStudio2/__compi
 var _root_dir = "C:/Users/Red/Documents/GameMakerStudio2/__compile_tests_from_github/__gms23";
 var _gml_files = gumshoe(_root_dir, "gml", true); // flat array of all .gml files recursively
 
-pprint(_gml_files)
+//pprint(_gml_files)
 
 compile_file = function(_file_path) {
 	// Read file
-	log($"\tReading:: {_file_path}")
+	//log($"\tReading:: {_file_path}")
 	var _source = file_read_all_text(_file_path);
 	if (_source == undefined) {
 		return {
@@ -26,11 +26,11 @@ compile_file = function(_file_path) {
 	var _meta = undefined;
 			
 	// Compile
-	log($"\tCompiling:: {_file_path}")
+	//log($"\tCompiling:: {_file_path}")
 	try {
 		var _program = gmlc.compile(_source);
 		_success = true;
-		log($"\tSuccess:: {_file_path}")
+		//log($"\tSuccess:: {_file_path}")
 	}
 	catch (err) {
 		log($"\t\tFailed:: {_file_path}\n{json(err)}")
