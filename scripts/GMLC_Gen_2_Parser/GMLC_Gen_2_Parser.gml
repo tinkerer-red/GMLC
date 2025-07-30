@@ -320,7 +320,7 @@
 			}
 			expectToken(__GMLC_TokenType.Punctuation, ";");
 			
-			if (currentToken.value != ")" && currentToken.name != ";") {
+			if (currentToken.name != ")" && currentToken.name != ";") {
 				var _increment = parseBlock();
 			}
 			else {
@@ -712,7 +712,7 @@
 			
 			expectToken(__GMLC_TokenType.Punctuation, "(");
 			var parameters = [];
-			while (currentToken.value != ")") {
+			while (currentToken.name != ")") {
 			    var _argNode = parseArgumentDefaultSingle()
 				_argNode.argument_index = array_length(parameters);
 				
@@ -1359,7 +1359,7 @@
 				break;}
 				case __GMLC_TokenType.Punctuation:{
 					
-					if (currentToken.value == "(") {
+					if (currentToken.name == "(") {
 						// Handle expressions wrapped in parentheses
 						nextToken(); // Consume (
 						var expr = parseConditionalExpression();
@@ -1531,14 +1531,14 @@
 			expectToken(__GMLC_TokenType.Punctuation, "("); // Ensure ( and consume it
 			
 			//early out
-			if (currentToken != undefined && currentToken.value != ")") {
+			if (currentToken != undefined && currentToken.name != ")") {
 				
 				var _found_closing_bracket = false;
 				var _argument_found = false;
 				
 				while (currentToken != undefined) {
 					
-					if (currentToken.value == ")") break;
+					if (currentToken.name == ")") break;
 					
 					if (currentToken.name == ",") {
 						//handle empty argument values as undefined `func(,,,,,arg5)`
@@ -1739,4 +1739,5 @@ function array_insert_ext(array, index, arr_of_val, offset=0, length=max(array_l
 	return script_execute_ext(array_insert, __args);
 }
 #endregion
+
 
