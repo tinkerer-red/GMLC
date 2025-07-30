@@ -988,7 +988,6 @@
 			return expr;
 		};
 		
-		// Add the conditional parsing at the right level
 		static parseLogicalOrExpression = function() {
 			var expr = parseLogicalAndExpression();
 			while (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && currentToken.value == "||") {
@@ -1004,6 +1003,7 @@
 		};
 
 		static parseTerneryExpression = function(expr) {
+			
 			if (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && currentToken.value == "?") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
@@ -1554,8 +1554,8 @@
 						_argument_found = false;
 					}
 					else {
-						// Parse each argument as an expression
-						var _expr = parseExpression()
+						// Parse each argument as a conditional expression
+						var _expr = parseConditionalExpression()
 						array_push(_arguments, _expr);
 						_argument_found = true;
 					}
