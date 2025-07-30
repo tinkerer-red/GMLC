@@ -298,7 +298,7 @@
 			
 			
 			//it's possible to make a for statement with no initializer variable
-			if (currentToken.value != ";") {
+			if (currentToken.name != ";") {
 				if (currentToken.value == "var") {
 					var _initialization = parseVariableDeclaration();
 				}
@@ -312,7 +312,7 @@
 			expectToken(__GMLC_TokenType.Punctuation, ";");
 			
 			//it's possible to make a for statement with no conditional statement
-			if (currentToken.value != ";") {
+			if (currentToken.name != ";") {
 				var _condition = parseConditionalExpression();
 			}
 			else {
@@ -320,7 +320,7 @@
 			}
 			expectToken(__GMLC_TokenType.Punctuation, ";");
 			
-			if (currentToken.value != ")" && currentToken.value != ";") {
+			if (currentToken.value != ")" && currentToken.name != ";") {
 				var _increment = parseBlock();
 			}
 			else {
@@ -519,7 +519,7 @@
 			
 			nextToken(); // Consume return
 			var expr = undefined;
-			if (currentToken.value == ";") {
+			if (currentToken.name == ";") {
 				// dont attempt to parse if its expected to return undefined
 			}
 			else if (currentToken.type == __GMLC_TokenType.Keyword)
@@ -719,7 +719,7 @@
 				array_push(parameters, _argNode);
 				
 				
-			    if (currentToken.value == ",") {
+			    if (currentToken.name == ",") {
 			        nextToken();  // Handle multiple parameters
 			    }
 			}
@@ -876,10 +876,10 @@
 					
 				}
 				
-				if (currentToken.value == ";") {
+				if (currentToken.name == ";") {
 					break
 				}
-		        if (currentToken == undefined || currentToken.value != ",") {
+		        if (currentToken == undefined || currentToken.name != ",") {
 		            break; // End of declaration list
 		        }
 				
@@ -1223,19 +1223,24 @@
 			var expr = parseAccessExpression();
 			
 			while (currentToken != undefined) {
-				switch (currentToken.value) {
-					case "(": {
-						expr = parseFunctionCall(expr);
-					break;}
-					case "[": {
-						expr = parseBracketAccessor(expr);
-					break;}
-					case ".": {
-						expr = parseDotAccessor(expr);
-					break;}
-					default: {
-						return expr
-					break;}
+				if (currentToken.type == __GMLC_TokenType.Punctuation) {
+					switch (currentToken.value) {
+						case "(": {
+							expr = parseFunctionCall(expr);
+						break;}
+						case "[": {
+							expr = parseBracketAccessor(expr);
+						break;}
+						case ".": {
+							expr = parseDotAccessor(expr);
+						break;}
+						default: {
+							return expr
+						break;}
+					}
+				}
+				else {
+					return expr
 				}
 			}
 			return expr;
@@ -1246,16 +1251,21 @@
 			
 			var _should_break = false;
 			while (currentToken != undefined) {
-				switch (currentToken.value) {
-					case "[": {
-						expr = parseBracketAccessor(expr);
-					break;}
-					case ".": {
-						expr = parseDotAccessor(expr);
-					break;}
-					default: {
-						return expr
-					break;}
+				if (currentToken.type == __GMLC_TokenType.Punctuation) {
+					switch (currentToken.value) {
+						case "[": {
+							expr = parseBracketAccessor(expr);
+						break;}
+						case ".": {
+							expr = parseDotAccessor(expr);
+						break;}
+						default: {
+							return expr
+						break;}
+					}
+				}
+				else {
+					return expr
 				}
 			}
 			return expr;
@@ -1434,7 +1444,7 @@
 		        var element = parseExpression();
 				array_push(elements, element);
 		        
-				if (currentToken.value == ",") {
+				if (currentToken.name == ",") {
 		            nextToken();  // Skip the comma
 		        }
 		    }
@@ -1494,7 +1504,7 @@
 					value
 				);
 				
-		        if (currentToken.value == ",") {
+		        if (currentToken.name == ",") {
 		            nextToken();  // Skip the comma
 		        }
 				
@@ -1530,7 +1540,7 @@
 					
 					if (currentToken.value == ")") break;
 					
-					if (currentToken.value == ",") {
+					if (currentToken.name == ",") {
 						//handle empty argument values as undefined `func(,,,,,arg5)`
 						if (!_argument_found) {
 							array_push(_arguments, new ASTLiteral(undefined, currentToken.line, currentToken.lineString)); // Parse each argument as an expression
@@ -1616,7 +1626,7 @@
 			//parse the index/key
 			var _val1 = parseExpression();
 			var _val2 = undefined;
-			if (currentToken.value == ",") {
+			if (currentToken.name == ",") {
 				nextToken();
 				//parse the second array index
 				var _val2 = parseExpression();

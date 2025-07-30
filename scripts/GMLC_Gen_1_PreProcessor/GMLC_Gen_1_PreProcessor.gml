@@ -242,7 +242,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 					__nextToken(); // Move past =
 					_expr = [];
 					while (currentTokenIndex < _length) {
-						if (currentToken.value != "," && currentToken.value != "}" && currentToken.value != "\n") {
+						if (currentToken.name != "," && currentToken.value != "}" && currentToken.value != "\n") {
 							array_push(_expr, currentToken);
 							__nextToken();
 						}
@@ -263,7 +263,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				defaultValue++;
 				
 				// Handle commas between enum members
-				if (currentToken.value == ",") {
+				if (currentToken.name == ",") {
 					__nextToken();
 				}
 				
