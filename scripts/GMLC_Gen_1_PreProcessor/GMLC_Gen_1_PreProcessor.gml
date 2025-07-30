@@ -352,6 +352,8 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	};
 	
 	static optionalToken = function(optionalType, optionalValue) {
+		if (currentToken == undefined) return;
+		
 		if (currentToken.type == optionalType && currentToken.value == optionalValue) {
 			__nextToken();
 		}
