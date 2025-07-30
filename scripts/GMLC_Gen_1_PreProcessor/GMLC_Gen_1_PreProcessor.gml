@@ -231,7 +231,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			optionalToken(__GMLC_TokenType.Whitespace, "\n");
 			
 			var _length = array_length(tokens);
-			while (currentTokenIndex < _length && currentToken.value != "}") {
+			while (currentTokenIndex < _length && !(currentToken.type == __GMLC_TokenType.Punctuation && currentToken.value == "}")) {
 				skipWhitespaces();
 				
 				if (currentToken.type != __GMLC_TokenType.Identifier) {
