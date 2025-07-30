@@ -520,11 +520,15 @@
 			nextToken(); // Consume return
 			var expr = undefined;
 			if (currentToken.value == ";") {
-				
+				// dont attempt to parse if its expected to return undefined
 			}
 			else if (currentToken.type == __GMLC_TokenType.Keyword)
 			&& (currentToken.value != "new") {
-				
+				// dont attempt to parse keywords if new block is starting
+			}
+			else if (currentToken.type == __GMLC_TokenType.Punctuation)
+			&& (currentToken.value == "}") {
+				// dont attempt to parse if end of block statement
 			}
 			else {
 				expr = parseExpression(); // Parse the return expression if any
