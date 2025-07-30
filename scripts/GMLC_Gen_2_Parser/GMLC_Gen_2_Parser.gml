@@ -214,6 +214,10 @@
 				nextToken(); // Consume the {
 				var _statements = [];
 				while (currentToken != undefined && currentToken.value != "}") {
+					//specifically Juju Adams will use `;` in macros to denote the next line, i really only ever expect a block statement to start with a `;` if its a Juju macro
+					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
+					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+					
 					var _statement = parseStatement();
 					
 					if (_statement != undefined) {
