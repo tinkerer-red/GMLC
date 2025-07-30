@@ -1444,7 +1444,7 @@
 			var elements = [];
 		    
 		    expectToken(__GMLC_TokenType.Punctuation, "[");
-		    while (currentToken != undefined && currentToken.value != "]") {
+		    while (currentToken != undefined && currentToken.name != "]") {
 		        var element = parseExpression();
 				array_push(elements, element);
 		        
@@ -1743,5 +1743,4 @@ function array_insert_ext(array, index, arr_of_val, offset=0, length=max(array_l
 	return script_execute_ext(array_insert, __args);
 }
 #endregion
-
 
