@@ -151,9 +151,13 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			while (currentTokenIndex < _length) {
 				// Check for line break not preceded by a backslash escape
 				if (currentToken.type == __GMLC_TokenType.Whitespace)
-				&& (currentToken.value == "\n")
-				&& (!previousTokenWasEscape) {
-					break;  // End of macro body
+				&& (currentToken.value == "\n") {
+					if (previousTokenWasEscape) {
+						previousTokenWasEscape = false; //begin parsing again
+					}
+					else{
+						break;  // End of macro body
+					}
 				}
 				
 				// Check if current token is an escape operator, and update flag
@@ -162,11 +166,12 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				}
 				else if (currentToken.type == __GMLC_TokenType.Whitespace)
 				|| (currentToken.type == __GMLC_TokenType.Comment)
-				|| (currentToken.type == __GMLC_TokenType.Region) {
+				|| (currentToken.type == __GMLC_TokenType.Region)
+				|| (previousTokenWasEscape) //specifically completely ignore everything after a `\`
+				{
 					//dont do shit
 				}
 				else {
-					previousTokenWasEscape = false;
 					array_push(body, currentToken);
 				}
 				
