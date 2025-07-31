@@ -33,6 +33,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 		currentToken = undefined; // tokens[currentTokenIndex];
 		finished = false;
 		
+		__nextToken();
 	};
 	
 	#region jsDoc
@@ -72,7 +73,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	/// @func    nextToken()
 	/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
 	/// @self    ParserBase
-	/// @returns {void}
+	/// @returns {undefined}
 	#endregion
 	static __nextToken = function() {
 		lastFiveTokens[0] = lastFiveTokens[1];
@@ -131,6 +132,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				//change the token type and mark for processing
 				currentToken.type = __GMLC_TokenType.NoOpPragma;
 				array_push(processedTokens, currentToken);
+				__nextToken();
 				return true;
 			}
 		}
@@ -138,6 +140,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 		|| (currentToken.type == __GMLC_TokenType.Comment)
 		|| (currentToken.type == __GMLC_TokenType.Region)
 		{
+			__nextToken();
 			return true;
 		}
 		return false;
@@ -148,6 +151,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			var body = [];
 			var previousTokenWasEscape = false;
 			var _length = array_length(tokens)
+			
 			while (currentTokenIndex < _length) {
 				// Check for line break not preceded by a backslash escape
 				if (currentToken.type == __GMLC_TokenType.Whitespace)
@@ -178,6 +182,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				__nextToken();
 			}
 			
+			__nextToken();
 			return body;
 		};
 		
@@ -305,6 +310,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				__nextToken();
 			}
 			
+			__nextToken();
 			return title;
 		};
 		
@@ -316,7 +322,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			}
 			if (currentToken.value == "#endregion") {
 				expectToken(__GMLC_TokenType.Keyword, "#endregion")
-					return true;
+				return true;
 			}
 		}
 		
@@ -326,7 +332,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	static parseAcceptance = function() {
 		//push everything back in
 		array_push(processedTokens, currentToken);
-		
+		__nextToken();
 		return true;
 	}
 	

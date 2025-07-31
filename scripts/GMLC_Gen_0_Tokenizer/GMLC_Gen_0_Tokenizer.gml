@@ -40,6 +40,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	column = 0;
 	finished = false;
 	
+	lastFiveTokens = array_create(5, undefined);
+	
 	// Initialize tokenizer with source code
 	static __initialize = function(_sourceCode) {
 		sourceCodeString = string_replace_all(string_replace_all(_sourceCode, "\r\n", "\n"), "\r", "\n");
@@ -71,6 +73,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		__constant_lookup = __gmlc_convert_to_array_map(env.getAllConstants());
 		__variable_lookup = __gmlc_convert_to_array_map(env.getAllVariables());
 		
+		__nextToken();
+		
 		return self;
 	};
 	
@@ -91,6 +95,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	
 	static __nextToken = function() {
 		__nextUTF8()
+		
+		lastFiveTokens[0] = lastFiveTokens[1];
+		lastFiveTokens[1] = lastFiveTokens[2];
+		lastFiveTokens[2] = lastFiveTokens[3];
+		lastFiveTokens[3] = lastFiveTokens[4];
+		lastFiveTokens[4] = currentCharCode;
+		
 		return currentCharCode;
 	}
 	
@@ -106,6 +117,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				if (currentCharCode == ord("\n")) {
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Whitespace, "\n", "\n", line, column);
 					array_push(tokens, _token);
+					nextToken();
 					return _token;
 				}
 				
@@ -116,6 +128,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				__nextUTF8();
 			}
 			
+			nextToken();
 			return true;
 		}
 		//show_debug_message($":: parseSkipWhitespace :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
@@ -152,51 +165,35 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				
 				_identifier += chr(currentCharCode);
 				
+				nextToken();
+				
 				switch (_identifier) {
 					case "begin":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "{", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "end":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _identifier, "}", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "mod":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "mod", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "div":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "div", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "not":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "!", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "and":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "&&", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "or":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "||", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "xor":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _identifier, "^^", _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "_GMLINE_":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Number, "_GMLINE_", _start_line, _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 					case "_GMFUNCTION_":{
 						//this is actually handled later when we parse, for now just return the keyword
@@ -204,11 +201,11 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					break;}
 					default:{
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Keyword, _identifier, _identifier, _start_line, _start_column);
-						array_push(tokens, _token);
-						return _token;
 					break;}
 				}
 				
+				array_push(tokens, _token);
+				return _token;
 			}
 		}
 		
@@ -254,6 +251,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					return false;
 				}
 				
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _return.value, _start_line, _start_column);
 				array_push(tokens, _token);
 				return _token;
@@ -302,6 +300,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					return false;
 				}
 				
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _return.value, _start_line, _start_column);
 				array_push(tokens, _token);
 				return _token;
@@ -350,6 +349,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					return false;
 				}
 				
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _return.value, _start_line, _start_column);
 				array_push(tokens, _token);
 				return _token;
@@ -385,6 +385,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				__nextUTF8();
 			}
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -421,6 +422,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				__nextUTF8();
 			}
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Comment, _raw_string, _raw_string, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -571,11 +573,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			
 			if (!_string_closed) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
 				array_push(tokens, _token);
 				return _token;
 			}
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -649,7 +653,9 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//ensure hex numbers are less then 16 digits long
 			if (_len > 16) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: input length == {_len}";
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+				array_push(tokens, _token);
 				return _token;
 			}
 			#endregion
@@ -660,6 +666,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32-1) _hex_value = __hexTo64Bit(_hex_str);
 			
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _hex_value, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -726,7 +733,9 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			#region Error Handling
 			if (_len > 64) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {line} : Binary number {_raw_string} is too large or too small";
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+				array_push(tokens, _token);
 				return _token;
 			}
 			#endregion
@@ -737,6 +746,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			static __maxSigned32 = 0x7FFFFFFF
 			if (_binary_value > __maxSigned32 || _binary_value < -__maxSigned32-1) _binary_value = __binaryTo64Bit(_str);
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _raw_string, _binary_value, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -780,6 +790,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			static __maxSigned32 = 0x7FFFFFFF
 			if (_number > __maxSigned32 || _number < -__maxSigned32-1) _number = int64(_str);
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _num_string, _number, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -822,9 +833,9 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				var _raw_string = "nameof(";
 				var _string = __fetchAllUntil(ord(")"));
 				_raw_string += _string+")"
-					
+				
+				nextToken();
 				var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
-					
 				array_push(tokens, _token);
 				return _token;
 			}
@@ -833,6 +844,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				
 			//var _index = env.getFunction(_identifier);
 			//if (_index != undefined) {
+			//	nextToken();
 			//	var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _index.value, _start_line, _start_column);
 			//	array_push(tokens, _token);
 			//	return _token;
@@ -843,6 +855,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			
 			//var _index = env.getConstant(_identifier);
 			//if (_index != undefined) {
+			//	nextToken();
 			//	var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _identifier, _index.value, _start_line, _start_column);
 			//	array_push(tokens, _token);
 			//	return _token;
@@ -853,6 +866,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			
 			//var _index = env.getVariable(_identifier);
 			//if (_index != undefined) {
+			//	nextToken();
 			//	var _token = new __GMLC_create_token(__GMLC_TokenType.UniqueVariable, _identifier, _identifier, _start_line, _start_column);
 			//	array_push(tokens, _token);
 			//	return _token;
@@ -909,7 +923,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				if (_found) {
 					var _jump = string_length(_temp_identifier)+1;
 					repeat (_jump) __nextUTF8();
-						
+					
 					array_push(tokens, _token);
 					return _token;
 				}
@@ -979,6 +993,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				
 			#endregion
 			// else...
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Identifier, _identifier, _identifier, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -1006,8 +1021,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _string = __fetchAllUntil(_start_quote);
 			_raw_string += _string+chr(currentCharCode) // add the closing quote
 			
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
-			
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -1034,23 +1049,27 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // !=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("#"): { // #
 					_op_string += chr(currentCharCode);
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("$"): { // $
 					_op_string += chr(currentCharCode);
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1062,12 +1081,14 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // %=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					_op_string += chr(currentCharCode);
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "mod", _start_line, _start_column);
 					array_push(tokens, _token);
 					return _token;
@@ -1079,6 +1100,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("&"): { // &&
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1086,11 +1108,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // &=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1102,11 +1126,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // *=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1118,6 +1144,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // +=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1125,11 +1152,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("+"): { // ++
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1141,6 +1170,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // -=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1148,11 +1178,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("-"): { // --
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1164,11 +1196,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1180,6 +1214,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord(">"): { // <> AKA: !=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, "!=", _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1187,6 +1222,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // <=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1194,11 +1230,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("<"): { // <<
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1210,11 +1248,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1226,6 +1266,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1233,11 +1274,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord(">"): {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1254,22 +1297,26 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 								case ord("="): { // ??=
 									__nextUTF8();
 									_op_string += chr(currentCharCode);
+									nextToken();
 									var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 									array_push(tokens, _token);
 									return _token;
 								break;}
 							}
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("@"): { // @
 					_op_string += chr(currentCharCode);
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1281,6 +1328,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("^"): { // ^^
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1288,17 +1336,20 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // ^=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("~"): { // ~
 					_op_string += chr(currentCharCode);
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1310,6 +1361,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("|"): { // ||
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
@@ -1317,11 +1369,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						case ord("="): { // |=
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
+							nextToken();
 							var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Operator, _op_string, _op_string, _start_line, _start_column);	
 					array_push(tokens, _token);
 					return _token;
@@ -1343,6 +1397,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _start_column = column;
 		
 			var _punctuation = chr(currentCharCode);
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.Punctuation, _punctuation, _punctuation, _start_line, _start_column);
 			array_push(tokens, _token);
 			return _token;
@@ -1354,6 +1409,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	static parseEscapeOperator = function() {
 		var _startCharCode = currentCharCode;
 		if (currentCharCode == ord(@'\')) {
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.EscapeOperator, "\\", "\\", line, column);
 			array_push(tokens, _token);
 			return _token;
@@ -1366,8 +1422,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _start_line = line;
 		var _start_column = column;
 		
+		log(lastFiveTokens)
+		log(charPos)
+		log(sourceCodeCharLength)
+		
 		var illegalChar = chr(currentCharCode);
 		var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : invalid token \"{illegalChar}\"";
+		nextToken();
 		var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, illegalChar, _error, _start_line, _start_column);
 		
 		array_push(tokens, _token);
@@ -1539,7 +1600,9 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				break;}
 				case ord("\n"): { // \n
 					var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
+					nextToken();
 					var _token = new __GMLC_create_token(__GMLC_TokenType.Illegal, _raw_string, _error, _start_line, _start_column);
+					array_push(tokens, _token);
 					return _token;
 				break;}
 				case ord(@'{'): { // "
@@ -1568,21 +1631,24 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		}
 		
 		
-		
 		// $" full "
 		if (string_starts_with(_raw_string, @'$"') && string_ends_with(_raw_string, @'"')) {
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column);
 		}
 		// $" begin {
 		else if (string_starts_with(_raw_string, @'$"') && string_ends_with(_raw_string, "{")) {
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateStringBegin, _raw_string, _string, _start_line, _start_column);
 		}
 		// } middle {
 		if (string_starts_with(_raw_string, "}") && string_ends_with(_raw_string, "{")) {
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateStringMiddle, _raw_string, _string, _start_line, _start_column);
 		}
 		// } end "
 		if (string_starts_with(_raw_string, "}") && string_ends_with(_raw_string, @'"')) {
+			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType.TemplateStringEnd, _raw_string, _string, _start_line, _start_column);
 		}
 		
@@ -2000,7 +2066,7 @@ function __GMLC_ProgramTokens(_tokens) constructor {
 	tokens = _tokens;
 }
 /// @ignore
-function __GMLC_create_token(_type, _name, _value, _line, _column, _lineString = other.sourceCodeLineArray[_line-1]) constructor {
+function __GMLC_create_token(_type, _name, _value, _line, _column, _byte_start, _byte_end, _lineString = other.sourceCodeLineArray[_line-1]) constructor {
 	type   = _type;
 	name   = _name;
 	value  = _value;

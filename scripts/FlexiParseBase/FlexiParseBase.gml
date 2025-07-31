@@ -29,7 +29,6 @@ function FlexiParseBase() constructor {
 			__cleanup();
 		}
 		__initialize(_input);
-		__nextToken();
 	};
 	
 	#region jsDoc
@@ -96,7 +95,7 @@ function FlexiParseBase() constructor {
 		
 		async_promise = new Promise(method(self, function() {
 			while (!PromiseExceededFrameBudget()) {
-				nextToken();
+				parseNext();
 				
 				if (isFinished()) {
 					async_active = false;
@@ -167,7 +166,7 @@ function FlexiParseBase() constructor {
 	#endregion
 	static parseAll = function() {
 		while (!isFinished()) {
-			var _token = nextToken();
+			parseNext();
 		}
 		return finalize();
 	}
@@ -176,21 +175,10 @@ function FlexiParseBase() constructor {
 	/// @func    nextToken()
 	/// @desc    Processes the next token using the added parser steps. If errors are to be caught, they will be handled via the error handler.
 	/// @self    FlexiParseBase
-	/// @returns {void}
+	/// @returns {undefined}
 	#endregion
 	static nextToken = function() {
-		if (should_catch_errors) {
-			try {
-				parseNext();
-				__nextToken();
-			} catch (e) {
-				error_handler(e);
-			}
-		}
-		else {
-			parseNext();
-			__nextToken();
-		}
+		return __nextToken();
 	};
 		
 	#region jsDoc
@@ -200,12 +188,24 @@ function FlexiParseBase() constructor {
 	/// @returns {undefined}
 	#endregion
 	static parseNext = function() {
-		for (var i = 0; i < array_length(parserSteps); i++) {
-				
-			var _shouldBreak = parserSteps[i]();  // Pass the token through each parser step
-				
-			if (_shouldBreak) {
-				break;
+		if (should_catch_errors) {
+			try {
+				for (var i = 0; i < array_length(parserSteps); i++) {
+					var _shouldBreak = parserSteps[i]();  // Pass the token through each parser step
+					if (_shouldBreak) {
+						break;
+					}
+				}
+			} catch (e) {
+				error_handler(e);
+			}
+		}
+		else {
+			for (var i = 0; i < array_length(parserSteps); i++) {
+				var _shouldBreak = parserSteps[i]();  // Pass the token through each parser step
+				if (_shouldBreak) {
+					break;
+				}
 			}
 		}
 	};
@@ -215,7 +215,7 @@ function FlexiParseBase() constructor {
 	/// @desc    Adds a parser step (function) to the list of steps to be executed during parsing.
 	/// @self    FlexiParseBase
 	/// @param   {function} step : The parser function to be added to the list
-	/// @returns {void}
+	/// @returns {undefined}
 	#endregion
 	static addParserStep = function(step) {
 		array_push(parserSteps, step);
@@ -225,7 +225,7 @@ function FlexiParseBase() constructor {
 	/// @func    clearParserSteps()
 	/// @desc    Clears all parser steps from the list. Useful for resetting or changing the parsing process.
 	/// @self    FlexiParseBase
-	/// @returns {void}
+	/// @returns {undefined}
 	#endregion
 	static clearParserSteps = function() {
 		array_resize(parserSteps, 0);

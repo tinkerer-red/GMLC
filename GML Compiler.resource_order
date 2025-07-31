@@ -3,7 +3,6 @@
     {"name":"_Libraries","order":3,"path":"folders/_Libraries.yy",},
     {"name":"ParserLibrary","order":1,"path":"folders/_Libraries/ParserLibrary.yy",},
     {"name":"Base","order":1,"path":"folders/_Libraries/ParserLibrary/Base.yy",},
-    {"name":"SubModules","order":2,"path":"folders/_Libraries/ParserLibrary/SubModules.yy",},
     {"name":"Private","order":1,"path":"folders/_Libraries/Promise/Private.yy",},
     {"name":"SNAP","order":2,"path":"folders/_Libraries/SNAP.yy",},
     {"name":"CSV","order":1,"path":"folders/_Libraries/SNAP/CSV.yy",},
