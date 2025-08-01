@@ -1445,7 +1445,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			lastFiveTokens,
 			charPos,
 			sourceCodeCharLength,
-			string_copy(sourceCodeString, (charPos-20) ? charPos : 0, charPos)
+			string_copy(sourceCodeString, (charPos-20) ? charPos-20 : 0, charPos)
 		)
 		
 		var illegalChar = chr(currentCharCode);
