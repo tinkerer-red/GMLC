@@ -304,7 +304,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				&& (currentToken.value == "\n") {
 					
 					//alright we're breaking here for some reason, print the god damn thing
-					log("Region Title Is :: " + title)
+					log("Region Title Is :: " + title);
 					
 					break;  // End of macro body
 				}
@@ -321,12 +321,12 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 		
 		if (currentToken.type == __GMLC_TokenType.Keyword) {
 			if (currentToken.value == "#region") {
-				expectToken(__GMLC_TokenType.Keyword, "#region")
-				var regionTitle = parseRegionTitle(); // Collect the macro body starting after the name
+				expectToken(__GMLC_TokenType.Keyword, "#region");
+				var regionTitle = parseRegionTitle();
 				return true;
 			}
 			if (currentToken.value == "#endregion") {
-				expectToken(__GMLC_TokenType.Keyword, "#endregion")
+				expectToken(__GMLC_TokenType.Keyword, "#endregion");
 				return true;
 			}
 		}
