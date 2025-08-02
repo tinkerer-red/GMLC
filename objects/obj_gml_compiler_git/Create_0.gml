@@ -83,7 +83,6 @@ compile_struct = function(_struct, _path, _report={}) {
 	return _report;
 }
 
-
 var _report_final = compile_struct(_gml_files, _root_dir);
 
 // Save full JSON result
