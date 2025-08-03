@@ -7,8 +7,10 @@ gmlc.__log_post_processer_results = true;
 gmlc.__log_optimizer_results      = true;
 
 gmlc.compile(@'
+    #macro test "abc";
+	
 	foo = 123;
-	bar = "abc";
+	bar = test;
 	
 	var foo;
 ')

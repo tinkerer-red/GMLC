@@ -143,6 +143,25 @@
 							
 							var _macroTokens = currentScript.MacroVar[$ _token.value];
 							
+							//replace the new token data with the existing information data.
+							//additionally mark the information as macro body token
+							
+							//_token.name
+							//_token.line
+							//_token.lineString
+							//_token.byteStart
+							//_token.byteEnd
+							//_token.column
+							
+							//"type":"__GMLC_TokenType.Punctuation",
+							//"line":4.0,
+							//"lineString":"\tfoo = 123;",
+							//"name":";",
+							//"value":";",
+							//"byteStart":37.0,
+							//"byteEnd":38.0,
+							//"column":11.0
+							
 							array_delete(_tokens, _i, 1); //remove the macro from the token array
 							array_insert_ext(_tokens, _i, _macroTokens); //insert the macro definition into the token array
 							
