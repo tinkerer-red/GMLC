@@ -6,7 +6,7 @@
   "name":"TestAPI",
   "parent":{
     "name":"TestModule",
-    "path":"folders/xUnit/Modules/TestModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

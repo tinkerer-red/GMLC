@@ -6,7 +6,7 @@
   "name":"IConfigurable",
   "parent":{
     "name":"Interfaces",
-    "path":"folders/xUnit/Modules/PropertyModule/Interfaces.yy",
+    "path":"folders/_Libraries/xUnit/Modules/PropertyModule/Interfaces.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

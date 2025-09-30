@@ -6,7 +6,7 @@
   "name":"generate_cube",
   "parent":{
     "name":"3D Mesh Creation",
-    "path":"folders/xUnit/Tests/Utils/ShaderTests/3D Mesh Creation.yy",
+    "path":"folders/_Libraries/xUnit/Tests/Utils/ShaderTests/3D Mesh Creation.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

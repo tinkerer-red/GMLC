@@ -5,7 +5,7 @@
 //}
 #endregion
 function __GMLCexecuteGetPropertySelf() {
-    var _target = global.selfInstance;
+    var _target = global.gmlc_self_instance;
 	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
@@ -41,7 +41,7 @@ function __GMLCexecuteGetPropertySelf() {
 //}
 #endregion
 function __GMLCexecuteGetPropertyOther() {
-    return global.otherInstance[$ key];
+    return global.gmlc_other_instance[$ key];
 }
 #region //{
 //    key: <expression>
@@ -72,8 +72,8 @@ function __GMLCexecuteGetPropertyVarStatic() {
 function __GMLCexecuteGetPropertyUnique() {
 	throw "STOP USING THIS FUNCTION!!!!"
     switch (key) {
-		case "self": return global.selfInstance;
-		case "other": return global.otherInstance;
+		case "self": return global.gmlc_self_instance;
+		case "other": return global.gmlc_other_instance;
 		case "all": return all;
 		case "noone": return noone;
 		
@@ -197,7 +197,7 @@ function __GMLCexecuteGetPropertyUnique() {
 //}
 #endregion
 function __GMLCexecuteSetPropertySelf() {
-    global.selfInstance[$ key] = expression()
+    global.gmlc_self_instance[$ key] = expression()
 }
 #region //{
 //    key: <expression>
@@ -205,7 +205,7 @@ function __GMLCexecuteSetPropertySelf() {
 //}
 #endregion
 function __GMLCexecuteSetPropertyOther() {
-    global.otherInstance[$ key] = expression()
+    global.gmlc_other_instance[$ key] = expression()
 }
 #region //{
 //    key: <expression>
@@ -729,30 +729,30 @@ function __GMLCexecuteUpdateMinusMinusPostfix() {
 
 #region Self
 function __GMLCexecuteUpdatePropertySelfPlusPlusPrefix() {
-    return ++global.selfInstance[$ key];
+    return ++global.gmlc_self_instance[$ key];
 }
 function __GMLCexecuteUpdatePropertySelfPlusPlusPostfix() {
-	return global.selfInstance[$ key]++;
+	return global.gmlc_self_instance[$ key]++;
 }
 function __GMLCexecuteUpdatePropertySelfMinusMinusPrefix() {
-    return --global.selfInstance[$ key];
+    return --global.gmlc_self_instance[$ key];
 }
 function __GMLCexecuteUpdatePropertySelfMinusMinusPostfix() {
-    return global.selfInstance[$ key]--;
+    return global.gmlc_self_instance[$ key]--;
 }
 #endregion
 #region Other
 function __GMLCexecuteUpdatePropertyOtherPlusPlusPrefix() {
-    return ++global.otherInstance[$ key];
+    return ++global.gmlc_other_instance[$ key];
 }
 function __GMLCexecuteUpdatePropertyOtherPlusPlusPostfix() {
-    return global.otherInstance[$ key]++;
+    return global.gmlc_other_instance[$ key]++;
 }
 function __GMLCexecuteUpdatePropertyOtherMinusMinusPrefix() {
-    return --global.otherInstance[$ key];
+    return --global.gmlc_other_instance[$ key];
 }
 function __GMLCexecuteUpdatePropertyOtherMinusMinusPostfix() {
-    return global.otherInstance[$ key]--;
+    return global.gmlc_other_instance[$ key]--;
 }
 #endregion
 #region Global

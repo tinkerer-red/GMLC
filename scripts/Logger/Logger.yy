@@ -6,7 +6,7 @@
   "name":"Logger",
   "parent":{
     "name":"Internal",
-    "path":"folders/xUnit/Modules/LoggerModule/Internal.yy",
+    "path":"folders/_Libraries/xUnit/Modules/LoggerModule/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

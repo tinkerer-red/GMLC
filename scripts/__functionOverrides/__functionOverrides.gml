@@ -11,14 +11,14 @@ function __gmlc_method(_struct, _func) {
 		var _target = target;
 		var _func = func;
 		
-		var _prevOther = global.otherInstance;
-		var _prevSelf  = global.selfInstance;
+		var _prevOther = global.gmlc_other_instance;
+		var _prevSelf  = global.gmlc_self_instance;
 		
 		//dont update scope if we are already on the correct scope,
 		// and dont update scope if it's an unbound method
 		if (_target != undefined) {
-			global.otherInstance = _prevSelf;
-			global.selfInstance = _target;
+			global.gmlc_other_instance = _prevSelf;
+			global.gmlc_self_instance = _target;
 		}
 		//////////////////////////////////////////////////////////
 		
@@ -34,8 +34,8 @@ function __gmlc_method(_struct, _func) {
 			
 			var _return = method_call(_func, _argArr);
 			
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
+			global.gmlc_other_instance = _prevOther;
+			global.gmlc_self_instance  = _prevSelf;
 		}
 		else {
 			var _return = method_call(_func, _argArr);
@@ -56,18 +56,18 @@ function __gmlc_method(_struct, _func) {
 				var _func = func;
 			}
 			
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = _target;
-			global.selfInstance = self;
+			var _prevOther = global.gmlc_other_instance;
+			var _prevSelf  = global.gmlc_self_instance;
+			global.gmlc_other_instance = _target;
+			global.gmlc_self_instance = self;
 		}
 		else {
 			__GMLC_DEFAULT_SELF_AND_OTHER
 			var _target = target;
 			var _func = func;
 			
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
+			var _prevOther = global.gmlc_other_instance;
+			var _prevSelf  = global.gmlc_self_instance;
 		}
 		//////////////////////////////////////////////////////////
 		
@@ -87,8 +87,8 @@ function __gmlc_method(_struct, _func) {
 				var _return = script_execute_ext(_func, _argArr)
 			}
 			
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
+			global.gmlc_other_instance = _prevOther;
+			global.gmlc_self_instance  = _prevSelf;
 		}
 		else {
 			//this is just method_call, but it works on constructors

@@ -6,7 +6,7 @@
   "name":"channel_get_name",
   "parent":{
     "name":"Utils",
-    "path":"folders/xUnit/Modules/AssertModule/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Modules/AssertModule/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -10,7 +10,7 @@
   "overriddenProperties":[],
   "parent":{
     "name":"xUnit",
-    "path":"folders/xUnit.yy",
+    "path":"folders/_Libraries/xUnit.yy",
   },
   "parentObjectId":null,
   "persistent":true,

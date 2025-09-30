@@ -6,7 +6,7 @@
   "name":"ds_map_to_array",
   "parent":{
     "name":"Utils",
-    "path":"folders/xUnit/Modules/AssertModule/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Modules/AssertModule/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

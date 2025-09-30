@@ -6,7 +6,7 @@
   "name":"Vector2",
   "parent":{
     "name":"Vectors",
-    "path":"folders/xUnit/Tests/Utils/ShaderTests/Vectors.yy",
+    "path":"folders/_Libraries/xUnit/Tests/Utils/ShaderTests/Vectors.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

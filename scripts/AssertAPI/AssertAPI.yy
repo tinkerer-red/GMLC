@@ -6,7 +6,7 @@
   "name":"AssertAPI",
   "parent":{
     "name":"AssertModule",
-    "path":"folders/xUnit/Modules/AssertModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/AssertModule.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

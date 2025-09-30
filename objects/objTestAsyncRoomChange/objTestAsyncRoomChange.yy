@@ -12,7 +12,7 @@
   "overriddenProperties":[],
   "parent":{
     "name":"Objects",
-    "path":"folders/xUnit/Modules/TestModule/Objects.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule/Objects.yy",
   },
   "parentObjectId":{
     "name":"objTest",

@@ -6,7 +6,7 @@
   "name":"draw_test_utils",
   "parent":{
     "name":"Utils",
-    "path":"folders/xUnit/Modules/TestModule/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

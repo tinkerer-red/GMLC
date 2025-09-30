@@ -6,7 +6,7 @@
   "name":"struct_unflatten",
   "parent":{
     "name":"Utils",
-    "path":"folders/xUnit/Modules/ConfigModule/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Modules/ConfigModule/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

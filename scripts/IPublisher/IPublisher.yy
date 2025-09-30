@@ -6,7 +6,7 @@
   "name":"IPublisher",
   "parent":{
     "name":"Interfaces",
-    "path":"folders/xUnit/Modules/PublisherModule/Interfaces.yy",
+    "path":"folders/_Libraries/xUnit/Modules/PublisherModule/Interfaces.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

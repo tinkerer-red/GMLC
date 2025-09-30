@@ -6,7 +6,7 @@
   "name":"Test",
   "parent":{
     "name":"Internal",
-    "path":"folders/xUnit/Modules/TestModule/Internal.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

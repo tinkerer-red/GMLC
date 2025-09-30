@@ -6,7 +6,7 @@
   "name":"TestAsync",
   "parent":{
     "name":"Tests",
-    "path":"folders/xUnit/Modules/TestModule/Tests.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule/Tests.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

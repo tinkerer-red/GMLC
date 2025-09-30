@@ -6,7 +6,7 @@
   "name":"LoggerAPI",
   "parent":{
     "name":"LoggerModule",
-    "path":"folders/xUnit/Modules/LoggerModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/LoggerModule.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

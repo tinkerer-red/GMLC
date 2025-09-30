@@ -10,7 +10,7 @@
 	deadCodeElimination(ast): Removes parts of the AST that do not affect the program outcome, such as unreachable code.
 	*/
 	#endregion
-	function GMLC_Gen_4_Optimizer(_env) constructor {
+	function GMLC_Gen_4_Optimizer(_env) constructor  {
 		env = _env;
 		
 		//init variables:
@@ -511,6 +511,8 @@
 			
 			switch (_node.type) {
 				case __GMLC_NodeType.BinaryExpression:{
+					
+					// double litteral
 					if (_node.left.type == __GMLC_NodeType.Literal && _node.right.type == __GMLC_NodeType.Literal) {
 					    // Both _nodes are literals, perform constant folding
 					    switch (_node.operator) {
@@ -607,6 +609,8 @@
 							break;}
 						}
 					}
+					
+					//single literal
 					else if (_node.left.type == __GMLC_NodeType.Literal || _node.right.type == __GMLC_NodeType.Literal) {
 					    switch (_node.operator) {
 							case "+":{
@@ -728,6 +732,7 @@
 							
 					    }
 					}
+					
 				break;}
 				case __GMLC_NodeType.LogicalExpression:{
 					if (_node.left.type == __GMLC_NodeType.Literal && _node.right.type == __GMLC_NodeType.Literal) {
@@ -2196,7 +2201,6 @@
 		    //    - Merging adjacent operations (e.g., a = b; b = a can be optimized away).
 		    // 3. Return the optimized AST node.
 		}
-		
 		
 		
 		//array_push(parserSteps, constantFolding);

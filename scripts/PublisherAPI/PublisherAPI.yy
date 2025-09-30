@@ -6,7 +6,7 @@
   "name":"PublisherAPI",
   "parent":{
     "name":"PublisherModule",
-    "path":"folders/xUnit/Modules/PublisherModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/PublisherModule.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -1,3 +1,22 @@
+var globalsBag = {
+	scale_mult: 2,
+	base_value: 10
+};
+
+
+var env = new GMLC_Env(globalsBag).set_exposure(GMLC_EXPOSURE.NATIVE);
+
+// script A: uses scale_mult
+var progA = env.compile("show_debug_message(global);");
+
+// script B: uses the same globals
+var progB = env.compile("return global.base_value + global.scale_mult;");
+
+show_debug_message("A=" + string(progA())); // -> 20
+show_debug_message("B=" + string(progB())); // -> 12
+
+/*
+
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
 
 gmlc.__log_tokenizer_results      = true;

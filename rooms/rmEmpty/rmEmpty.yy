@@ -14,7 +14,7 @@
   "name":"rmEmpty",
   "parent":{
     "name":"TestModule",
-    "path":"folders/xUnit/Modules/TestModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

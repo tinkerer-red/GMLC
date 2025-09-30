@@ -6,7 +6,7 @@
   "name":"PropertyHolder",
   "parent":{
     "name":"PropertyModule",
-    "path":"folders/xUnit/Modules/PropertyModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/PropertyModule.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

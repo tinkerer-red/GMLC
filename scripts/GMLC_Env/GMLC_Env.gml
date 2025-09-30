@@ -1,3 +1,10 @@
+#region jsDoc
+/// @func	GMLC_Env()
+/// @desc	Constructs a new GMLC compiler/evaluator environment. Sets up keyword/operator/variable exposure, wires the full pipeline
+///			(tokenizer -> preprocessor -> parser -> post-processor -> optional optimizer -> compiler),
+///			and provides methods to configure exposure tiers and compile source text.
+/// @returns {Struct.GMLC_Env}
+#endregion
 function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	should_optimize = false;
@@ -530,13 +537,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 	}
 	_var_map[$ "self"] = {
-		get: function(){ return global.selfInstance; },
+		get: function(){ return global.gmlc_self_instance; },
 		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable self"+$"\n(line {line}) -\t{lineString}") },
 	};
 	_var_map[$ "other"] = {
-		get: function(){ return global.otherInstance; },
+		get: function(){ return global.gmlc_other_instance; },
 		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable other"+$"\n(line {line}) -\t{lineString}") },
 	};
+	
 	exposeVariables(_var_map);
 	#endregion
 	
@@ -545,10 +553,20 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	parser         = new GMLC_Gen_2_Parser(self);
 	post_processor = new GMLC_Gen_3_PostProcessor(self);
 	optimizer      = new GMLC_Gen_4_Optimizer(self);
+	compiler       = new GMLC_Gen_5_Compiler(self);
 	
 	#endregion
 	
 	#region Public
+	
+	#region jsDoc
+	/// @func    compile()
+	/// @desc    Runs the complete compilation pipeline on the given source text. Optionally receives a globals struct that is forwarded to the compiler stage for symbol/environment binding.
+	/// @self    GMLC_Env
+	/// @param   {String} sourceCode : Source text to compile
+	/// @param   {Struct} globalsStruct : Optional globals or configuration map passed into the compiler (default: {})
+	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_5_Compiler
+	#endregion
 	static compile = function(_sourceCode) {
 		tokenizer.initialize(_sourceCode);
 		var tokens = tokenizer.parseAll();
@@ -572,13 +590,32 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			if (__log_optimizer_results) json_save("optimizer.json", ast)
 		}
 		
-		return compileProgram(ast);
+		compiler.initialize(ast);
+		var program = compiler.parseAll();
+		if (__log_compiler_results) json_save("post_processor.json", ast)
+		
+		return program;
 	}
+	
+	#region jsDoc
+	/// @func    enable_optimizer()
+	/// @desc    Enables or disables the optimizer pass between post-processing and compilation.
+	/// @self    GMLC_Env
+	/// @param   {Bool} shouldEnable : True to enable optimizer, false to disable
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static enable_optimizer = function(_bool) {
 		should_optimize = _bool;
 		return self;
 	}
 	
+	#region jsDoc
+	/// @func    set_exposure()
+	/// @desc    Convenience method that applies the selected exposure tier by invoking expose_constants(), expose_user_assets(), and expose_functions() accordingly.
+	/// @self    GMLC_Env
+	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier (NONE, SAFE, MODERATE, ALL, FULL, NATIVE)
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static set_exposure = function(_expose_level=GMLC_EXPOSURE.SAFE) {
 		expose_constants(_expose_level);
 		expose_user_assets(_expose_level);
@@ -587,6 +624,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return self;
 	}
 	
+	#region jsDoc
+	/// @func    expose_constants()
+	/// @desc    Exposes core engine constants from the spec and selected build metadata. When exposureLevel is FULL, also exposes the real global object as a constant named "global"; otherwise exposes an empty struct.
+	/// @self    GMLC_Env
+	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier used to decide whether "global" is real or empty
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_constants = function(_expose_level=GMLC_EXPOSURE.SAFE) {
 		var _spec = __GmlSpec();
 		var _map = struct_filter(_spec, function(_key, _val) {
@@ -610,6 +654,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		});
 		return self;
 	}
+	#region jsDoc
+	/// @func    expose_user_assets()
+	/// @desc    Exposes all user assets by name as read-only constants mapping to their asset IDs. Skips exposure when exposureLevel is below SAFE or equals NATIVE.
+	/// @self    GMLC_Env
+	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier controlling whether assets are exposed
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_user_assets = function(_expose_level=GMLC_EXPOSURE.SAFE) {
 		if (_expose_level < GMLC_EXPOSURE.SAFE) 
 		|| (_expose_level == GMLC_EXPOSURE.NATIVE) {
@@ -632,6 +683,18 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		exposeConstants(_cont_map);
 		return self;
 	}
+	#region jsDoc
+	/// @func    expose_functions()
+	/// @desc    Exposes functions according to the selected exposure tier:
+	///          - NONE: no functions
+	///          - SAFE: pure built-ins that pass safety filter, plus overwrite shims
+	///          - MODERATE: currently same as SAFE (pending spec/policy expansion), plus overwrite shims
+	///          - ALL: all native built-ins, plus overwrite shims
+	///          - FULL: all native built-ins, user scripts, plus overwrite shims
+	/// @self    GMLC_Env
+	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier controlling function availability
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_functions = function(_expose_level = GMLC_EXPOSURE.SAFE) {
 		switch (_expose_level) {
 			case GMLC_EXPOSURE.NONE: break;
@@ -655,8 +718,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		}
 		return self;
 	};
-
 	
+	#region jsDoc
+	/// @func    expose_pure_functions()
+	/// @desc    Exposes only built-in functions marked pure in the spec and passing the safety filter. Intended for SAFE-tier sandboxes.
+	/// @self    GMLC_Env
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_pure_functions = function() {
 		var _spec = __GmlSpec();
 		var _map = struct_filter(_spec, function(_key, _val) {
@@ -668,6 +736,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		return self;
 	}
+	#region jsDoc
+	/// @func    expose_safe_functions()
+	/// @desc    Exposes a vetted set of built-in functions for moderate trust contexts. As currently implemented, this filters to spec-marked pure functions that pass the safety filter.
+	/// @self    GMLC_Env
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_safe_functions = function() {
 		var _spec = __GmlSpec();
 		
@@ -680,6 +754,15 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		return self;
 	};
+	#region jsDoc
+	/// @func    expose_overwrite_functions()
+	/// @desc    Installs GMLC shims that replace native behaviors for reflection and script dispatch:
+	///          method, typeof, instanceof, is_instanceof, static_get, static_set,
+	///          method_get_index, method_get_self, script_get_name, script_execute, script_execute_ext.
+	///          These route through the sandbox for control and auditing.
+	/// @self    GMLC_Env
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_overwrite_functions = function(){
 		//This will overwrite the existing functions.
 		exposeFunctions({
@@ -697,6 +780,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		})
 		return self;
 	}
+	#region jsDoc
+	/// @func    expose_native_functions()
+	/// @desc    Exposes all built-in engine functions described in the spec, without purity or safety filtering. Use in ALL or FULL tiers.
+	/// @self    GMLC_Env
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_native_functions = function() {
 		var _spec = __GmlSpec();
 		var _map = struct_filter(_spec, function(_key, _val) {
@@ -705,6 +794,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		importSymbolMap(_map);
 		return self;
 	}
+	#region jsDoc
+	/// @func    expose_user_functions()
+	/// @desc    Exposes all user scripts by name, mapping each script name to its script asset ID. Use in FULL tier or when explicitly desired.
+	/// @self    GMLC_Env
+	/// @returns {Struct.GMLC_Env}
+	#endregion
 	static expose_user_functions = function() {
 		var _scripts = asset_get_ids(asset_script);
 		var _func_map = {};
@@ -726,7 +821,17 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_parser_results         = true;
 	__log_post_processer_results = true;
 	__log_optimizer_results      = true;
-	
+	__log_compiler_results       = false;
+
+	#region jsDoc
+	/// @func    __is_safe_function()
+	/// @desc    Internal predicate that returns true when a spec entry represents a built-in function permitted in SAFE-like tiers. Rejects disallowed names and names containing banned substrings.
+	/// @self    GMLC_Env
+	/// @param   {String} funcName : Candidate function name
+	/// @param   {Struct} specEntry : Corresponding spec entry (must have type and feather fields as expected)
+	/// @returns {Bool}
+	/// @ignore
+	#endregion
 	static __is_safe_function = function(_key, _val) {
 		if (_val[$ "type"] != "envFunctions") return false;
 		
@@ -763,10 +868,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 }
 
-/*
-	GMLC_EXPOSURE defines progressive tiers of symbol visibility and function access for code evaluation.
-	Use this to enforce sandboxing, restrict access to sensitive APIs, or expose just enough for trusted scripts.
-*/
+#region jsDoc
+/// GMLC_EXPOSURE
+/// @desc    Exposure tiers that control symbol visibility and function availability within the GMLC environment:
+///          NONE, SAFE, MODERATE, ALL, FULL, NATIVE, __SIZE__.
+/// @returns {Enum.GMLC_EXPOSURE}
+#endregion
 enum GMLC_EXPOSURE {
 	NONE,
 	/*

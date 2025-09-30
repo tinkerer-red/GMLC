@@ -6,7 +6,7 @@
   "name":"Assert",
   "parent":{
     "name":"Internal",
-    "path":"folders/xUnit/Modules/AssertModule/Internal.yy",
+    "path":"folders/_Libraries/xUnit/Modules/AssertModule/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

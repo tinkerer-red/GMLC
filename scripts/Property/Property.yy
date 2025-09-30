@@ -6,7 +6,7 @@
   "name":"Property",
   "parent":{
     "name":"Internal",
-    "path":"folders/xUnit/Modules/PropertyModule/Internal.yy",
+    "path":"folders/_Libraries/xUnit/Modules/PropertyModule/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

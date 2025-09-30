@@ -6,7 +6,7 @@
   "name":"frameworkSetup",
   "parent":{
     "name":"xUnit",
-    "path":"folders/xUnit.yy",
+    "path":"folders/_Libraries/xUnit.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

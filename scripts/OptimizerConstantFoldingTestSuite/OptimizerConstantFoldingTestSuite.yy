@@ -6,7 +6,7 @@
   "name":"OptimizerConstantFoldingTestSuite",
   "parent":{
     "name":"Optimizers",
-    "path":"folders/xUnit/Tests/TestSuites/Red's Tests/Optimizers.yy",
+    "path":"folders/_Libraries/xUnit/Tests/TestSuites/Red's Tests/Optimizers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

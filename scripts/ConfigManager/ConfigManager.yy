@@ -6,7 +6,7 @@
   "name":"ConfigManager",
   "parent":{
     "name":"Internal",
-    "path":"folders/xUnit/Modules/ConfigModule/Internal.yy",
+    "path":"folders/_Libraries/xUnit/Modules/ConfigModule/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

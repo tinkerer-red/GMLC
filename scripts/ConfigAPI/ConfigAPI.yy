@@ -6,7 +6,7 @@
   "name":"ConfigAPI",
   "parent":{
     "name":"ConfigModule",
-    "path":"folders/xUnit/Modules/ConfigModule.yy",
+    "path":"folders/_Libraries/xUnit/Modules/ConfigModule.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

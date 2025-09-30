@@ -6,7 +6,7 @@
   "name":"struct_from_entries",
   "parent":{
     "name":"Utils",
-    "path":"folders/xUnit/Modules/LoggerModule/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Modules/LoggerModule/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

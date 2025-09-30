@@ -1,29 +1,71 @@
+#region Compiler.gml
+	#region Compiler Module
+	/*
+	Purpose: To build the AST into a set of callable functions.
+	
+	Methods:
+	
+	optimize(ast): Entry function that takes an AST and returns an optimized AST.
+	constantFolding(ast): Traverses the AST and evaluates expressions that can be determined at compile-time.
+	deadCodeElimination(ast): Removes parts of the AST that do not affect the program outcome, such as unreachable code.
+	*/
+	#endregion
+	function GMLC_Gen_5_Compiler(_env) constructor  {
+		env = _env;
+		
+		//init variables:
+		
+		ast     = undefined;
+		globals = undefined;
+		
+		static initialize = function(_ast, _globalsStruct={}) {
+			ast = _ast;
+			globals = _globalsStruct;
+		}
+		
+		static cleanup = function() {
+		
+		}
+		
+		static parseAll = function() {
+			return __GMLCcompileProgram(ast, globals);
+		}
+		
+		static nextNode = function() {
+			//This is intended to one day allow for async compiling but until that day this is a place holder.
+		};
+		
+	}
+#endregion
+
+// Private //////////////////////////
+
 #region Macros
 #region Globals for `self` and `other`
 #macro __GMLC_DEFAULT_SELF_AND_OTHER	var _entered_on_this_function = false;\
-										if (global.otherInstance == undefined)\
-										&& (global.selfInstance == undefined) {\
+										if (global.gmlc_other_instance == undefined)\
+										&& (global.gmlc_self_instance == undefined) {\
 											_entered_on_this_function = true;\
-											global.otherInstance = global.selfInstance ?? (self[$ "rootNode"] ? rootNode[$ "globals"] : other) ?? other;\
-											global.selfInstance = other\
+											global.gmlc_other_instance = global.gmlc_self_instance ?? (self[$ "rootNode"] ? rootNode[$ "globals"] : other) ?? other;\
+											global.gmlc_self_instance = other\
 										}
 
 #macro __GMLC_RESET_DEFAULT_SELF_AND_OTHER	if (_entered_on_this_function) {\
-												global.otherInstance = undefined;\
-												global.selfInstance = undefined;\
+												global.gmlc_other_instance = undefined;\
+												global.gmlc_self_instance = undefined;\
 											}
 
-#macro __GMLC_UPDATE_SELF_AND_OTHER	var _pre_other = global.otherInstance;\
-									var _pre_self = global.selfInstance;\
+#macro __GMLC_UPDATE_SELF_AND_OTHER	var _pre_other = global.gmlc_other_instance;\
+									var _pre_self = global.gmlc_self_instance;\
 									var _desired_self = other;\
 									;\ //dont update scope if we are already on the correct scope,
 									;\ // and dont update scope if it's an unbound method
 									if (_desired_self != undefined) {\
-										global.otherInstance = _pre_self ?? rootNode.globals;\
-										global.selfInstance = _desired_self;\
+										global.gmlc_other_instance = _pre_self ?? rootNode.globals;\
+										global.gmlc_self_instance = _desired_self;\
 									}
-#macro __GMLC_RESET_SELF_AND_OTHER	global.otherInstance = _pre_other;\
-									global.selfInstance = _pre_self
+#macro __GMLC_RESET_SELF_AND_OTHER	global.gmlc_other_instance = _pre_other;\
+									global.gmlc_self_instance = _pre_self
 #endregion
 
 #region Locals
@@ -61,6 +103,7 @@
 #macro __GMLC_INIT_ARGUMENT_COUNT	var _arg_count = max(argument_count, argumentCount)
 
 #macro __GMLC_POPULATE_ARGUMENTS	prevArgCount = _arg_count;\
+									array_resize(arguments, argument_count)\
 									var _i=argument_count-1; repeat(argument_count) {\
 										arguments[_i] = argument[_i];\
 									_i--}\
@@ -107,6 +150,7 @@
 						__GMLC_RESET_DEFAULT_SELF_AND_OTHER
 #endregion
 
+#region Compiler Functions
 
 ///NOTE: all of these should be build into the parent programs struct, and all children should
 // have a reference to that struct to access the locals and arguments when ever needed
@@ -118,19 +162,16 @@ enum FLOW_MASK {
     RETURN   = 4, // 0b100
 }
 
-global.selfInstance = undefined;
-global.otherInstance = undefined;
+global.gmlc_self_instance = undefined;
+global.gmlc_other_instance = undefined;
 //global.callStack = [];
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-function compileProgram(_AST, _globalStruct={}) {
-	return __GMLCcompileProgram(_AST, _globalStruct);
-}
 function executeProgram(_program) {
 	//this function should never be called inside a prgroam, for that use `__executeProgram`
-	global.selfInstance = self;
-    global.otherInstance = other;
+	global.gmlc_self_instance = self;
+    global.gmlc_other_instance = other;
     
 	return _program();
 }
@@ -450,13 +491,13 @@ function __GMLCexecuteConstructor() constructor {
 										
 		if (_program_data[$ "hasParentConstructor"]) {
 			parentConstructorCall(arguments)
-			var _obj_statics = static_get(global.selfInstance);
+			var _obj_statics = static_get(global.gmlc_self_instance);
 			static_set(_statics, _obj_statics);
 		}
 		__GMLC_INIT_STATICS
 	}
 	
-	static_set(global.selfInstance, _statics);
+	static_set(global.gmlc_self_instance, _statics);
 	method_call(_program, _arguments);
 	
 	if (_is_new_expression) {
@@ -980,13 +1021,13 @@ function __GMLCexecuteWith() {
     var _inst = expression()
 	if (_inst == undefined) return undefined
     
-    var _self = global.selfInstance;
-    var _other = global.otherInstance;
+    var _self = global.gmlc_self_instance;
+    var _other = global.gmlc_other_instance;
     
     //this mimics a with statement, but ultimately its not actually need to use `with`
     // until we hit a natively compiled function, as all glmc functions will directly
     // handle the instance
-    global.otherInstance = global.selfInstance
+    global.gmlc_other_instance = global.gmlc_self_instance
     
 	var _methodself   = self;
 	var _parentNode   = parentNode;
@@ -995,7 +1036,7 @@ function __GMLCexecuteWith() {
 	//var _method = myMethod;
 	static __empty_arr = [];
     with (_inst) {
-		global.selfInstance = self;
+		global.gmlc_self_instance = self;
 		
 		method_call(_methodself.blockStatement, __empty_arr);
 		
@@ -1021,8 +1062,8 @@ function __GMLCexecuteWith() {
 	
     
     //reset
-    global.selfInstance = _self;
-    global.otherInstance = _other;
+    global.gmlc_self_instance = _self;
+    global.gmlc_other_instance = _other;
 }
 function __GMLCcompileWith(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileWith", "<Missing Error Message>", _node.line, _node.lineString);
@@ -1268,14 +1309,14 @@ function __GMLCexecuteCallExpression() {
 	_i--}
 	
 	if (shouldUpdateInstanceScoping) {
-		var _prevUpdateOther = global.otherInstance;
-		var _prevUpdateSelf  = global.selfInstance;
+		var _prevUpdateOther = global.gmlc_other_instance;
+		var _prevUpdateSelf  = global.gmlc_self_instance;
 		
 		var _target = updateScopingTarget();
 		if (_target != undefined)
 		&& (_target != _prevUpdateSelf) {
-			global.otherInstance = _prevUpdateSelf;
-			global.selfInstance = _target;
+			global.gmlc_other_instance = _prevUpdateSelf;
+			global.gmlc_self_instance = _target;
 		}
 	}
 	
@@ -1298,23 +1339,23 @@ function __GMLCexecuteCallExpression() {
 			var _self = method_get_self(_func);
 			var _args = arguments;
 			
-			var _prevOther = global.otherInstance;
-			var _prevSelf  = global.selfInstance;
-			global.otherInstance = _prevSelf;
-			global.selfInstance = _self;
+			var _prevOther = global.gmlc_other_instance;
+			var _prevSelf  = global.gmlc_self_instance;
+			global.gmlc_other_instance = _prevSelf;
+			global.gmlc_self_instance = _self;
 			
 			//why am i doing this?
 			with (_prevSelf) {
 				_return = method_call(_func, _args);
 			}
 		
-			global.otherInstance = _prevOther;
-			global.selfInstance  = _prevSelf;
+			global.gmlc_other_instance = _prevOther;
+			global.gmlc_self_instance  = _prevSelf;
 		}
 	}
 	else {
 		var _args = arguments;
-		with (global.otherInstance) with (global.selfInstance) {
+		with (global.gmlc_other_instance) with (global.gmlc_self_instance) {
 			//try {
 				_return = script_execute_ext(_func, _args);
 			//}
@@ -1329,8 +1370,8 @@ function __GMLCexecuteCallExpression() {
 	}
 	
 	if (shouldUpdateInstanceScoping) {
-		global.otherInstance = _prevUpdateOther;
-		global.selfInstance  = _prevUpdateSelf;
+		global.gmlc_other_instance = _prevUpdateOther;
+		global.gmlc_self_instance  = _prevUpdateSelf;
 	}
 	
 	if (--recursionCount) {
@@ -1926,4 +1967,6 @@ function __GMLC_Constructor_Statics(_construct_name) : __GMLC_Statics(_construct
 
 #endregion
 
+
+#endregion
 

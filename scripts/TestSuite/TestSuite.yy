@@ -6,7 +6,7 @@
   "name":"TestSuite",
   "parent":{
     "name":"Collections",
-    "path":"folders/xUnit/Modules/TestModule/Collections.yy",
+    "path":"folders/_Libraries/xUnit/Modules/TestModule/Collections.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

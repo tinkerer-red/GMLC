@@ -74,7 +74,7 @@ function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _li
 }
 
 
-function ASTScript(_line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTScript() : ASTNode(0, "") constructor {
 	type = __GMLC_NodeType.Script;
 	GlobalVar = {};
 	
@@ -88,9 +88,9 @@ function ASTScript(_line, _lineString) : ASTNode(_line, _lineString) constructor
 	//////////////////////////////////
 	
 	//use a blank argument array for consistancy sake
-	arguments = new ASTArgumentList([], _line, _lineString)
+	arguments = new ASTArgumentList([], 0, "")
 	
-	statements = new ASTBlockStatement([], _line, _lineString);
+	statements = new ASTBlockStatement([], 0, "");
 	
 	static get_children = function(_top_down) {
 		var _arr = [];

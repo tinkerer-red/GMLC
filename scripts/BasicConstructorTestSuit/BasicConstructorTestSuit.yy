@@ -6,7 +6,7 @@
   "name":"BasicConstructorTestSuit",
   "parent":{
     "name":"Red's Tests",
-    "path":"folders/xUnit/Tests/TestSuites/Red's Tests.yy",
+    "path":"folders/_Libraries/xUnit/Tests/TestSuites/Red's Tests.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

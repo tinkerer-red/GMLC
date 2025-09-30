@@ -44,7 +44,3 @@ function compile_code(_string) {
 	return _program;
 	
 }
-
-function execute_code(_program) {
-	return executeProgram(_program)
-}

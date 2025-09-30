@@ -1,8 +1,21 @@
+#region jsDoc
+/// @func    __EnvironmentClass()
+/// @desc    Core symbol environment. Stores an indexed table of named symbols with value, type, getter, setter, and highlight metadata. Provides typed expose/remove/clear/get APIs for keywords, constants, enums, functions, variables, macros, and operators. Also supports cloning, importing, resolving in context, and bulk symbol population.
+/// @returns {Struct.__EnvironmentClass}
+#endregion
 function __EnvironmentClass() constructor {
 	// === Internal Stores ===
 	envSymbols = {};
 	
 	#region Public
+	#region jsDoc
+	/// @func    importSymbolMap()
+	/// @desc    Bulk-imports a spec-shaped map of symbols into the environment, optionally overwriting existing entries. Each entry should include at minimum a string `type` and a `value`. Optional `getter`, `setter`, and `highlight` fields are respected; otherwise defaults are synthesized based on `type`. Optional `feather` metadata is preserved.
+	/// @self    __EnvironmentClass
+	/// @param   {Struct} symbolMap  : Map of symbolName -> { value, type, getter?, setter?, highlight?, feather? }
+	/// @param   {Bool}   overwrite  : If true, replace existing entries with the same name (default: false)
+	/// @returns {Struct.__EnvironmentClass}
+	#endregion
 	static importSymbolMap = function(symbolMap, overwrite = false) {
 		if (!is_struct(symbolMap)) {
 			throw "importSymbolMap() expects a struct as input.";
@@ -40,6 +53,13 @@ function __EnvironmentClass() constructor {
 		
 		return self;
 	};
+	#region jsDoc
+	/// @func    setHighlight()
+	/// @desc    Assigns a custom highlight tag per symbol name. Creates placeholders when the symbol does not yet exist, so highlighters can be configured before population.
+	/// @self    __EnvironmentClass
+	/// @param   {Struct} conf : Map of symbolName -> highlightTag
+	/// @returns {Struct.__EnvironmentClass}
+	#endregion
 	static setHighlight = function(conf) {
 		if (!is_struct(conf)) throw "env.setHighlight() expects a struct as an input"
 		
@@ -58,15 +78,36 @@ function __EnvironmentClass() constructor {
 		}
 		return self;
 	};
+	#region jsDoc
+	/// @func    importFrom()
+	/// @desc    Merges the contents of another environment instance into this one. Existing keys in the target are overwritten by the source.
+	/// @self    __EnvironmentClass
+	/// @param   {Struct.__EnvironmentClass} envOther : Environment to import from
+	/// @returns {Struct.__EnvironmentClass}
+	#endregion
 	static importFrom = function(_env) {
 		__mergeStruct(envSymbols, _env.envSymbols);
 		return self;
 	};
+	#region jsDoc
+	/// @func    clone()
+	/// @desc    Creates a deep clone of the environment, including all symbol entries and metadata.
+	/// @self    __EnvironmentClass
+	/// @returns {Struct.__EnvironmentClass}
+	#endregion
 	static clone = function() {
 		var newEnv = new __EnvironmentClass();
 		newEnv.envSymbols = variable_clone(envSymbols, 1);
 		return newEnv;
 	};
+	#region jsDoc
+	/// @func    resolve()
+	/// @desc    Looks up a symbol entry by name. If found, attaches the given context to the entry and returns it. Returns undefined if the symbol is not present.
+	/// @self    __EnvironmentClass
+	/// @param   {String} name    : Symbol name to resolve
+	/// @param   {Any}    context : Optional context object stored on the returned entry (default: undefined)
+	/// @returns {Struct|Undefined} Returns the symbol struct { value, type, getter, setter, highlight, feather?, context? } or undefined
+	#endregion
 	static resolve = function(name, context=undefined) {
 		if (is_undefined(envSymbols[$ name])) return undefined;
 		
@@ -74,6 +115,14 @@ function __EnvironmentClass() constructor {
 		entry.context = context;
 		return entry;
 	};
+	#region jsDoc
+	/// @func    addSymbol()
+	/// @desc    Adds all fields from the given struct into the environment as symbols of the provided type, using default getter, setter, and highlight rules for that type.
+	/// @self    __EnvironmentClass
+	/// @param   {Struct} sourceStruct : Struct whose fields will be added as symbols
+	/// @param   {String} symbolType   : Type tag to assign (e.g., "envConstants", "envFunctions", etc.)
+	/// @returns {Struct.__EnvironmentClass}
+	#endregion
 	static addSymbol = function(_struct, _type) {
 		__populateSymbols(_struct, _type);
 		return self;

@@ -194,3 +194,72 @@ function __GmlSpec() {
 	return GmlSpec;
 }
 __GmlSpec();
+
+
+// Place holder code i frequently use to parse gml spec for information.
+// this is not actually a part of gmlc for any real reason, feel free to leave commented or remove
+
+/*
+var _struct = __GmlSpec();
+struct_foreach(_struct, function(_key, _value) {
+	if (string_starts_with(_key, "ds_"))
+	&& (_value.type == "envFunctions") {
+		_value = _value.feather;
+		
+		//pprint(_value)
+		var _func = _key;
+		var _new_name = "fs_" + string_copy(_func, 4, string_length(_func) - 3);
+		
+		var _desc = _value.description;
+		
+		var _arg_doc = "";
+		var _arg_str = "";
+		for (var i=0; i<array_length(_value.parameters); i++) {
+			var _arg = _value.parameters[i];
+			var _name = (string_pos(" (optional)", _arg.name)) ? string_copy(_arg.name, 0, string_length(_arg.name) - string_length(" (optional)")) : _arg.name;
+			var _type = "{"+_arg.type+"}"
+			_arg_doc += $"\n/// @param   { _type } {_name} : {_arg.description}"
+			_arg_str += (_arg.optional) ? $"_{_name}=undefined, " : $"_{_name}, ";
+		}
+		_arg_str = string_copy(_arg_str, 0, string_length(_arg_str) - 2);
+		
+		var _return = _value.returnType;
+		
+		var _pure = (_value.pure) ? "\n/// @pure" : ""
+		var _deprecated = (_value.pure) ? "\n/// @deprecated" : ""
+		
+		if (array_length(_value.parameters)) {
+			var _first_arg = _value.parameters[0].name;
+			var _first_arg_remap = $"\n	_{_first_arg} = _{_first_arg}.value;"
+		}
+		else {
+			var _first_arg_remap = ""
+		}
+		
+		var str = string(@"#region JsDocs
+/// @func    {0}()
+/// @desc    {1}{2}
+/// @return  {{{3}}}{4}{5}
+#endregion
+function {6}({7}) {{{8}
+	return {9}({10})
+}",
+_new_name,
+_desc,
+_arg_doc,
+_return,
+_pure,
+_deprecated,
+_new_name,
+_arg_str,
+_first_arg_remap,
+_func,
+_arg_str
+)
+	
+		show_debug_message(str)
+	}
+	
+})
+
+*/
