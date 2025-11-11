@@ -3,17 +3,21 @@ var globalsBag = {
 	base_value: 10
 };
 
-
-var env = new GMLC_Env(globalsBag).set_exposure(GMLC_EXPOSURE.NATIVE);
+var env = new GMLC_Env();
+env.exposeConstants({"global": globalsBag})
 
 // script A: uses scale_mult
-var progA = env.compile("show_debug_message(global);");
+var progA = env.compile("return global.base_value * global.scale_mult;");
 
 // script B: uses the same globals
 var progB = env.compile("return global.base_value + global.scale_mult;");
 
+// script B: uses the same globals
+var progC = env.compile(@'return variable_global_get("scale_mult")');
+
 show_debug_message("A=" + string(progA())); // -> 20
 show_debug_message("B=" + string(progB())); // -> 12
+show_debug_message("C=" + string(progC())); // -> 2
 
 /*
 

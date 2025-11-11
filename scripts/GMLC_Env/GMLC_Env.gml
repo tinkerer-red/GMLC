@@ -100,6 +100,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	_op_map[$ "|="] = true;
 	exposeOperators(_op_map)
 	#endregion
+	#region Expose Functions
+	//exposeFunctions(_func_map);
+	#endregion
 	#region Expose Variables
 	var _var_map = {
 		"visible":{
@@ -555,16 +558,18 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	optimizer      = new GMLC_Gen_4_Optimizer(self);
 	compiler       = new GMLC_Gen_5_Compiler(self);
 	
+	//expose_pure_functions();
+	expose_functions(GMLC_EXPOSURE.SAFE);
+	
 	#endregion
 	
 	#region Public
 	
 	#region jsDoc
 	/// @func    compile()
-	/// @desc    Runs the complete compilation pipeline on the given source text. Optionally receives a globals struct that is forwarded to the compiler stage for symbol/environment binding.
+	/// @desc    Runs the complete compilation pipeline on the given source text.
 	/// @self    GMLC_Env
 	/// @param   {String} sourceCode : Source text to compile
-	/// @param   {Struct} globalsStruct : Optional globals or configuration map passed into the compiler (default: {})
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_5_Compiler
 	#endregion
 	static compile = function(_sourceCode) {
@@ -596,7 +601,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		return program;
 	}
-	
+
 	#region jsDoc
 	/// @func    enable_optimizer()
 	/// @desc    Enables or disables the optimizer pass between post-processing and compilation.
@@ -628,7 +633,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @func    expose_constants()
 	/// @desc    Exposes core engine constants from the spec and selected build metadata. When exposureLevel is FULL, also exposes the real global object as a constant named "global"; otherwise exposes an empty struct.
 	/// @self    GMLC_Env
-	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier used to decide whether "global" is real or empty
+	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier used
 	/// @returns {Struct.GMLC_Env}
 	#endregion
 	static expose_constants = function(_expose_level=GMLC_EXPOSURE.SAFE) {
@@ -729,9 +734,20 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _spec = __GmlSpec();
 		var _map = struct_filter(_spec, function(_key, _val) {
 			return (_val[$ "type"] == "envFunctions")
-				&& (_val[$ "feather"][$ "pure"])
+				&& (!_val[$ "feather"][$ "pure"])
 				&& __is_safe_function(_key, _val);
 		});
+		//
+		//var _arr = struct_get_names(_map)
+		//array_sort(_arr, true)
+		//pprint(_arr)
+		
+		//var _map = struct_filter(_spec, __is_pure_function);
+		
+		var _arr = struct_get_names(_map)
+		array_sort(_arr, true)
+		pprint(_arr)
+		
 		importSymbolMap(_map);
 		
 		return self;
@@ -750,6 +766,10 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			return _val[$ "feather"][$ "pure"]; // Only allow pure built-ins
 		});
 		
+		var _arr = struct_get_names(_map)
+		array_sort(_arr, true)
+		pprint(_arr)
+		
 		importSymbolMap(_map);
 		
 		return self;
@@ -765,6 +785,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static expose_overwrite_functions = function(){
 		//This will overwrite the existing functions.
+		var _env = self;
 		exposeFunctions({
 			"method":             __gmlc_method,
 			"typeof":             __gmlc_typeof,
@@ -777,6 +798,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			"script_get_name":    __gmlc_script_get_name,
 			"script_execute":     __gmlc_script_execute,
 			"script_execute_ext": __gmlc_script_execute_ext,
+			"variable_global_exists" : __vanilla_method(_env, __gmlc_variable_global_exists),
+			"variable_global_get" : __vanilla_method(_env, __gmlc_variable_global_get),
+			"variable_global_set" : __vanilla_method(_env, __gmlc_variable_global_set),
 		})
 		return self;
 	}
@@ -822,7 +846,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_post_processer_results = true;
 	__log_optimizer_results      = true;
 	__log_compiler_results       = false;
-
+	
 	#region jsDoc
 	/// @func    __is_safe_function()
 	/// @desc    Internal predicate that returns true when a spec entry represents a built-in function permitted in SAFE-like tiers. Rejects disallowed names and names containing banned substrings.
@@ -865,7 +889,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return true;
 	}
 	
-	#endregion
+	
+	#endregion	
+	
 }
 
 #region jsDoc
@@ -875,46 +901,66 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 /// @returns {Enum.GMLC_EXPOSURE}
 #endregion
 enum GMLC_EXPOSURE {
-	NONE,
-	/*
-		Nothing is exposed by default.
-		No assets, no constants, no functions — built-in or user-defined — are available.
-	*/
-	SAFE,
-	/*
-		Exposes only native constants, built-in *pure* functions (no side effects),
-		and user assets such as sprites, objects, fonts, rooms, etc.
-		User-defined scripts are not included.
-	*/
-	MODERATE,
-	/*
-		Extends SAFE by allowing built-in *non-pure* functions such as random, instance creation,
-		and timeline manipulation — as long as they do not access external systems.
-		Still excludes functions that touch local files, networking, extensions, or raw buffers.
-		User-defined scripts are not included.
-	*/
-	ALL,
-	/*
-		Exposes the entire native GML runtime — including all built-in functions for file access,
-		buffer manipulation, networking, and system-level operations.
-		However, user-defined scripts and functions are still excluded in this mode.
-		This is a trusted runtime with full engine access but without user script inclusion.
-	*/
-	FULL,
-	/*
-		Unrestricted access: includes all built-in constants and functions, including those for
-		file I/O, networking, extensions, and buffer operations.
-		Also includes **all user-defined scripts automatically**.
-		This mode disables all safety restrictions and assumes a trusted environment.
-	*/
-	NATIVE,
-	/*
-		Grants access to the full native GML runtime, including all built-in functions and constants.
-		Unlike ALL or FULL, this level excludes all user-defined assets, constants, and scripts.
-		Primarily intended for emulating a fully trusted GML environment without sandbox restrictions,
-		while keeping the user runtime completely isolated.
-	*/
-	__SIZE__,
+    NONE,
+    /*
+        Nothing is exposed.
+        No assets, no constants, no functions — built-in or user-defined — are available.
+    */
+
+    PURE,
+    /*
+        Exposes native constants and built-in pure functions only.
+        Pure means: no side effects, no logging/UI, no access to engine state, time, or global RNG.
+        Examples: math helpers, deterministic string/array/struct transforms.
+        Excludes: show_debug_message, random/time, draw/UI, instance/asset/buffer/surface ops.
+    */
+
+    SAFE,
+    /*
+        Extends PURE with tightly sandboxed side-effecting intrinsics.
+        Allowed: show_debug_message; data-structure and buffer operations on resources
+        created inside the sandbox; mutations of caller-provided arrays/structs.
+        Not allowed: filesystem, networking/web, OS/environment, external_*,
+        asset enumeration/reflection, and any instance/asset access outside the sandbox registry.
+        User-defined scripts are not included.
+    */
+
+    MODERATE,
+    /*
+        Extends SAFE by allowing controlled access to engine assets and instances
+        strictly via allow-lists supplied by the host (no global enumeration).
+        Allowed: random/time; getters on sprites/fonts/tilesets/objects only when the id
+        comes from the allow-list; instance operations only on sandbox-registered instances;
+        buffer/surface/texture ops only on sandbox-created resources.
+        Still not allowed: filesystem, networking/web, OS/environment, external_*, global
+        reflection/enumeration (e.g., handle_parse, asset_* listings, texturegroup_get_* listings).
+        User-defined scripts are not included.
+    */
+
+    ALL,
+    /*
+        Exposes the entire native GML runtime — including all built-in functions for file access,
+        buffer manipulation, networking, and system-level operations.
+        However, user-defined scripts and functions are still excluded in this mode.
+        This is a trusted runtime with full engine access but without user script inclusion.
+    */
+
+    FULL,
+    /*
+        Unrestricted access to the entire engine plus automatic inclusion of all
+        user-defined scripts, assets, and constants. No safety restrictions.
+        Intended only for fully trusted environments.
+    */
+
+    NATIVE, // Deprecated: alias of ALL for backward compatibility
+    /*
+        Grants access to the full native GML runtime, including all built-in functions and constants.
+        Unlike ALL or FULL, this level excludes all user-defined assets, constants, and scripts.
+        Primarily intended for emulating a fully trusted GML environment without sandbox restrictions,
+        while keeping the user runtime completely isolated.
+    */
+
+    __SIZE__,
 }
 
 

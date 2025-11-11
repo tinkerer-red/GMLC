@@ -369,7 +369,24 @@ function __gmlc_script_get_name(ind) {
 	
 }
 
-
+////////////////////////////////////////////////
+//These need to be methoded to the ENV
+////////////////////////////////////////////////
+function __gmlc_variable_global_exists(_name) {
+	var _global = self.getConstant("global");
+	return (is_struct(_global)) ? struct_exists(_global.getter(), _name) : throw_gmlc_error("`variable_global_exists()` can not opperate on `global`.");
+}
+function __gmlc_variable_global_get(_name) {
+	var _global = self.getConstant("global");
+	return (is_struct(_global)) ? struct_get(_global.getter(), _name) : throw_gmlc_error("`variable_global_get()` can not opperate on `global`.");
+}
+function __gmlc_variable_global_set(_name, _val) {
+	var _global = self.getConstant("global");
+	return (is_struct(_global)) ? struct_set(_global.getter(), _name, _val) : throw_gmlc_error("`variable_global_set()` can not opperate on `global`.");
+}
+////////////////////////////////////////////////
+////////////////////////////////////////////////
+////////////////////////////////////////////////
 
 function __NewGMLArray() {
 	var _arr = [];

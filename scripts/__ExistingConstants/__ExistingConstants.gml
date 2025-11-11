@@ -566,7 +566,7 @@ function __ExistingConstants() {
 //	"other": other,
 //	"all": all,
 //	"noone": noone,
-	"global": global,
+//	"global": global,
 	"undefined": undefined,
 	"pointer_invalid": pointer_invalid,
 	"pointer_null": pointer_null,
