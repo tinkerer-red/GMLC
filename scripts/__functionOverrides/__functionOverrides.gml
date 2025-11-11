@@ -402,6 +402,9 @@ function __NewGMLStruct() {
 		_struct[$ argument[_i]] = argument[_i+1];
 	_i+=2;}//end repeat loop
 	
+	//set the statics so they are unique
+	static_set(_struct, {});
+	
 	return _struct;
 }
 
