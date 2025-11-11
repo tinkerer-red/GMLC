@@ -558,8 +558,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	optimizer      = new GMLC_Gen_4_Optimizer(self);
 	compiler       = new GMLC_Gen_5_Compiler(self);
 	
-	//expose_pure_functions();
-	expose_functions(GMLC_EXPOSURE.SAFE);
+	set_exposure(GMLC_EXPOSURE.SAFE);
 	
 	#endregion
 	
