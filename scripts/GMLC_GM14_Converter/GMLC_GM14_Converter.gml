@@ -4,7 +4,6 @@
 
 
 
-#macro GML_COMPILER_GM1_4 false
 /* allows for
 // #define
 // multiline strings with out @ accessor
@@ -12,12 +11,11 @@
 // hashtags in strings represent newlines
 // array 2d `arr[x, y]`
 */
-#macro GML_COMPILER_DEBUG false
 
 
 
-#region GMLC_GM1_4_Converter.gml
-	#region GMLC_GM1_4_Converter Module
+#region GMLC_GM14_Converter.gml
+	#region GMLC_GM14_Converter Module
 	/*
 	Purpose: There are a lot of deprocated function calls and assignments which need to be converted to modern gml standards. This module supports many of those conversions
 	
@@ -28,7 +26,7 @@
 	deadCodeElimination(ast): Removes parts of the AST that do not affect the program outcome, such as unreachable code.
 	*/
 	#endregion
-	function GMLC_GM1_4_Converter() constructor {
+	function GMLC_GM14_Converter() constructor {
 		//init variables:
 		
 		ast = undefined;

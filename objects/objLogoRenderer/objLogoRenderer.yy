@@ -6,8 +6,8 @@
   "name":"objLogoRenderer",
   "overriddenProperties":[],
   "parent":{
-    "name":"Rendering",
-    "path":"folders/GMLCompiler/__Final/Rendering.yy",
+    "name":"GML Compiler",
+    "path":"GML Compiler.yyp",
   },
   "parentObjectId":null,
   "persistent":true,

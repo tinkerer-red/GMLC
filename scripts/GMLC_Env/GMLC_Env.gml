@@ -736,16 +736,10 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				&& (!_val[$ "feather"][$ "pure"])
 				&& __is_safe_function(_key, _val);
 		});
-		//
+		
 		//var _arr = struct_get_names(_map)
 		//array_sort(_arr, true)
 		//pprint(_arr)
-		
-		//var _map = struct_filter(_spec, __is_pure_function);
-		
-		var _arr = struct_get_names(_map)
-		array_sort(_arr, true)
-		pprint(_arr)
 		
 		importSymbolMap(_map);
 		
@@ -765,9 +759,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			return _val[$ "feather"][$ "pure"]; // Only allow pure built-ins
 		});
 		
-		var _arr = struct_get_names(_map)
-		array_sort(_arr, true)
-		pprint(_arr)
+		//var _arr = struct_get_names(_map)
+		//array_sort(_arr, true)
+		//pprint(_arr)
 		
 		importSymbolMap(_map);
 		

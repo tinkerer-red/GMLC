@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GM14Compatibility",
   "parent":{
-    "name":"old",
-    "path":"folders/GMLCompiler/__Final/Internal/old.yy",
+    "name":"GM14",
+    "path":"folders/GMLCompiler/Internal/GM14.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

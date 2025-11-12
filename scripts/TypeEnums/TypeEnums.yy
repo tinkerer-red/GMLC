@@ -6,7 +6,7 @@
   "name":"TypeEnums",
   "parent":{
     "name":"_Internal",
-    "path":"folders/GMLCompiler/__Final/Parsers/_Internal.yy",
+    "path":"folders/GMLCompiler/Parsers/_Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

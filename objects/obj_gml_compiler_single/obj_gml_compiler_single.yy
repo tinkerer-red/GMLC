@@ -8,8 +8,8 @@
   "name":"obj_gml_compiler_single",
   "overriddenProperties":[],
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"objects",
+    "path":"folders/Tests/objects.yy",
   },
   "parentObjectId":null,
   "persistent":false,

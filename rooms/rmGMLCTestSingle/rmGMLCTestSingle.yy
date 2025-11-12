@@ -17,8 +17,8 @@
   ],
   "name":"rmGMLCTestSingle",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"rooms",
+    "path":"folders/Tests/rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

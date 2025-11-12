@@ -14,9 +14,6 @@
 	function GMLC_Gen_2_Parser(_env) constructor {
 		env = _env;
 		
-		//init scope tokens
-		ScopeType();
-		
 		finished = false;
 		tokens = undefined;
 		currentTokenIndex = 0;
@@ -86,15 +83,6 @@
 				
 				if (statement) {
 					array_push(scriptAST.statements.statements, statement);
-				}
-				
-				if (GML_COMPILER_DEBUG) {
-					static __lastString = ""
-					var _str = string(currentTokenIndex/array_length(tokens)/10)
-					if (__lastString != _str) {
-						pprint($"{real(_str)*1000}% Finished")
-						__lastString = _str;
-					}
 				}
 			}
 			else {
@@ -1677,7 +1665,7 @@
 				throw_gmlc_error($"Unexpected end of input. Expected {expectedValue} but found EOF.");
 			}
 			if (currentToken.type != expectedType || currentToken.value != expectedValue) {
-				pprint("lastFiveTokens :: ",lastFiveTokens)
+				//pprint("lastFiveTokens :: ",lastFiveTokens)
 				throw_gmlc_error($"Syntax Error: Expected {expectedValue} at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.");
 			}
 			nextToken();

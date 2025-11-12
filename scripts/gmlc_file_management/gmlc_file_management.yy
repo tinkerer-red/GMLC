@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_1_PreProcessor",
+  "%Name":"gmlc_file_management",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_1_PreProcessor",
+  "name":"gmlc_file_management",
   "parent":{
-    "name":"Parsers",
-    "path":"folders/GMLCompiler/Parsers.yy",
+    "name":"util scripts",
+    "path":"folders/Tests/util scripts.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

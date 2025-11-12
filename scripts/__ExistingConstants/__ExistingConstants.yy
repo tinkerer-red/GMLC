@@ -6,7 +6,7 @@
   "name":"__ExistingConstants",
   "parent":{
     "name":"LookupTables",
-    "path":"folders/GMLCompiler/__Final/Internal/LookupTables.yy",
+    "path":"folders/GMLCompiler/Internal/LookupTables.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

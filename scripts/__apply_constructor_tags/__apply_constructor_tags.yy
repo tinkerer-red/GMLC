@@ -6,7 +6,7 @@
   "name":"__apply_constructor_tags",
   "parent":{
     "name":"_Init",
-    "path":"folders/GMLCompiler/__Final/Internal/_Init.yy",
+    "path":"folders/GMLCompiler/Internal/_Init.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

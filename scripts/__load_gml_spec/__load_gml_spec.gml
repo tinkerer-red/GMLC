@@ -198,7 +198,36 @@ __GmlSpec();
 
 // Place holder code i frequently use to parse gml spec for information.
 // this is not actually a part of gmlc for any real reason, feel free to leave commented or remove
-
+var _struct = __GmlSpec();
+struct_foreach(_struct, function(_key, _value) {
+	static __keywords = ["sound", "audio"];
+	
+	if (_value.type == "envFunctions") {
+		var _name = _key;
+		var _desc = _value.feather.description;
+		var _args = array_map(_value.feather.parameters, function(_elem, _index) {
+			var _name = _elem.name;
+			var _desc = _elem.description;
+			var _type = _elem.type;
+			
+			return {
+				name: _name,
+				desc: _desc,
+				type: _type
+			}
+		})
+		
+		if (string_pos("grid", _name)){
+			show_debug_message($"Function :: {_name}\nDescription :: {_desc}\nArgs :: ")
+			pprint(_args)
+			
+		}
+		else {
+			
+		}
+		
+	}
+})
 /*
 var _struct = __GmlSpec();
 struct_foreach(_struct, function(_key, _value) {

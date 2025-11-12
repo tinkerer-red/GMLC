@@ -209,16 +209,7 @@
 								_parent[$ _child_data.key] = _return;
 							}
 							else {
-								//try {
 								_parent[$ _child_data.key][_child_data.index] = _return;
-								//}
-								//catch(err) {
-								//	pprint(_node)
-								//	pprint(_child_data)
-								//	pprint(_node[$ _child_data.key])
-								//	pprint(_return)
-								//	throw "fuck it"
-								//}
 							}
 						}
 						else if (_return == true) {

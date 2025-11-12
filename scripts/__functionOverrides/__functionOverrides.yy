@@ -6,7 +6,7 @@
   "name":"__functionOverrides",
   "parent":{
     "name":"Internal",
-    "path":"folders/GMLCompiler/__Final/Internal.yy",
+    "path":"folders/GMLCompiler/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

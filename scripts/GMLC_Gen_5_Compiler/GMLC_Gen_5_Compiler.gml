@@ -241,10 +241,6 @@ function __GMLCcompileProgram(_node, _globalsStruct) {
 
 function __GMLCexecuteExpression() {};
 function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
-	//log("\n\n")
-	//pprint(_node)
-	//log($"TYPE :: {_node.type}\nLINE :: {struct_exists(_node, "lineString") ? _node.lineString : "<undefined>"}\nNODE :: {json_stringify(_node, true)}")
-	
 	if (_parentNode=undefined && _node==undefined) {
 		throw_gmlc_error("Red forgot to add the `rootNode` and `parentNode` when calling `__GMLCcompileExpression`!")
 	}
