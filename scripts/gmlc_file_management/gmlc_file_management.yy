@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"gmlc_file_management",
   "parent":{
-    "name":"util scripts",
-    "path":"folders/Tests/util scripts.yy",
+    "name":"GMLC Util",
+    "path":"folders/GMLCompiler/Internal/GMLC Util.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

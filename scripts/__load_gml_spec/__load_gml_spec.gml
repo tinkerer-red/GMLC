@@ -198,6 +198,7 @@ __GmlSpec();
 
 // Place holder code i frequently use to parse gml spec for information.
 // this is not actually a part of gmlc for any real reason, feel free to leave commented or remove
+/*
 var _struct = __GmlSpec();
 struct_foreach(_struct, function(_key, _value) {
 	static __keywords = ["sound", "audio"];

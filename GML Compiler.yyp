@@ -86,6 +86,7 @@
     {"$GMFolder":"","%Name":"Internal","folderPath":"folders/GMLCompiler/Internal.yy","name":"Internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"_Init","folderPath":"folders/GMLCompiler/Internal/_Init.yy","name":"_Init","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"GM14","folderPath":"folders/GMLCompiler/Internal/GM14.yy","name":"GM14","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"GMLC Util","folderPath":"folders/GMLCompiler/Internal/GMLC Util.yy","name":"GMLC Util","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"LookupTables","folderPath":"folders/GMLCompiler/Internal/LookupTables.yy","name":"LookupTables","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"__Deprocated","folderPath":"folders/GMLCompiler/Internal/LookupTables/__Deprocated.yy","name":"__Deprocated","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"__Shouldnt be needed","folderPath":"folders/GMLCompiler/Internal/LookupTables/__Shouldnt be needed.yy","name":"__Shouldnt be needed","resourceType":"GMFolder","resourceVersion":"2.0",},
@@ -94,7 +95,6 @@
     {"$GMFolder":"","%Name":"_Internal","folderPath":"folders/GMLCompiler/Parsers/_Internal.yy","name":"_Internal","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Misc.","folderPath":"folders/Misc..yy","name":"Misc.","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Tests","folderPath":"folders/Tests.yy","name":"Tests","resourceType":"GMFolder","resourceVersion":"2.0",},
-    {"$GMFolder":"","%Name":"util scripts","folderPath":"folders/Tests/util scripts.yy","name":"util scripts","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"objects","folderPath":"folders/Tests/objects.yy","name":"objects","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"rooms","folderPath":"folders/Tests/rooms.yy","name":"rooms","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"TestResources","folderPath":"folders/Tests/TestResources.yy","name":"TestResources","resourceType":"GMFolder","resourceVersion":"2.0",},
@@ -116,6 +116,7 @@
     {"$GMFolder":"","%Name":"sounds","folderPath":"folders/Tests/TestResources/sounds.yy","name":"sounds","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"sprites","folderPath":"folders/Tests/TestResources/sprites.yy","name":"sprites","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"tilesets","folderPath":"folders/Tests/TestResources/tilesets.yy","name":"tilesets","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"util scripts","folderPath":"folders/Tests/util scripts.yy","name":"util scripts","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
   "ForcedPrefabProjectReferences":[],
   "IncludedFiles":[
