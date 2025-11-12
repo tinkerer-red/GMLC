@@ -191,5 +191,11 @@ function script_get_index(_script_name) {
 	return __built_in_lookup[$ _script_name] ?? asset_get_index(_script_name);
 }
 
-
+// please dont use this in a final project.
+function execute_string(_string) {
+	static gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
+	var _program = gmlc.compile(_string);
+	var _r = executeProgram(_program);
+	return _r;
+}
 
