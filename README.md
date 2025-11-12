@@ -97,3 +97,7 @@ Yes. Use the sandbox capability system (`pure`, `safe`, `moderate`, `unsafe`) to
 **Q: Can I expose my own functions?**  
 Yes. Yes please see the variety of `expose_*` in `GMLC_Env`.
 
+
+---
+
+inspiration from NerriKiffu: https://discord.com/channels/724320164371497020/724320751624257646/1178721426983882915
