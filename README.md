@@ -78,6 +78,8 @@ That’s all you need for a first run, but you may want to:
 
 * Read about **sandbox profiles** `GMLC_EXPOSURE` enum if you plan to expose runtime functions safely.
 * Use **hooks** if you want your compiled code to integrate into native events (`create`, `step`, `draw`, etc.).
+* Special thanks to Juju Adams for use SNAP's XML parser until a stand alone design is finished.
+* Special thanks to TabularElf for the many talks about his GMLSpeak, and improvements and design changes. Much of our work is shared between the projects.
 
 ## ❓ **FAQ**
 
