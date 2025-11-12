@@ -594,13 +594,29 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			if (__log_optimizer_results) json_save("optimizer.json", ast)
 		}
 		
-		compiler.initialize(ast);
+		var _global = getConstant("global");
+		var _globals = (is_struct(_global)) ? _global.value : {};
+		compiler.initialize(ast, _globals);
 		var program = compiler.parseAll();
 		if (__log_compiler_results) json_save("post_processor.json", ast)
 		
 		return program;
 	}
-
+	
+	#region jsDoc
+	/// @func    get()
+	/// @desc    Fetch a function from the global struct
+	/// @self    GMLC_Env
+	/// @param   {String} func : The name of the function to get from the global struct
+	/// @returns {Any} Compiled function artifact produced by GMLC_Gen_5_Compiler
+	#endregion
+	static get = function(_func) {
+		var _globals = getConstant("global").value;
+		
+		return struct_get(_globals, _func);
+	}
+	
+	
 	#region jsDoc
 	/// @func    enable_optimizer()
 	/// @desc    Enables or disables the optimizer pass between post-processing and compilation.
@@ -945,12 +961,12 @@ enum GMLC_EXPOSURE {
         Intended only for fully trusted environments.
     */
 
-    NATIVE, // Deprecated: alias of ALL for backward compatibility
+    NATIVE,
     /*
         Grants access to the full native GML runtime, including all built-in functions and constants.
         Unlike ALL or FULL, this level excludes all user-defined assets, constants, and scripts.
         Primarily intended for emulating a fully trusted GML environment without sandbox restrictions,
-        while keeping the user runtime completely isolated.
+        while keeping the user runtime completely isolated from global where possible
     */
 
     __SIZE__,

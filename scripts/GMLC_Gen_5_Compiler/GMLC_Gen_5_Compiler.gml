@@ -186,6 +186,8 @@ function executeProgram(_program) {
 //}
 #endregion
 function __GMLCexecuteProgram() {
+	static globals = function(){ return method_get_self(self).globals }
+	
 	__GMLC_DEFAULT_SELF_AND_OTHER
 	__GMLC_PRE_FUNC
 	
