@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"RedsMacros",
   "parent":{
-    "name":"GML Compiler",
-    "path":"GML Compiler.yyp",
+    "name":"Tests",
+    "path":"folders/Tests.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

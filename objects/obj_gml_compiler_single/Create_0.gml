@@ -1,13 +1,51 @@
 var env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-function foo() {
-	return "bar";
+function factorial(_number) {
+    if (_number <= 1) {
+        return 1;
+    }
+    return _number * factorial(_number - 1);
 }
+
+function star_pattern(_depth) {
+    if (_depth <= 1) {
+        return "*";
+    }
+
+    var _inner_pattern = star_pattern(_depth - 1);
+    return "[" + _inner_pattern + _inner_pattern + "]";
+}
+
+var _max_value = 6;
+var _index = 0;
+var _factorial_values = [];
+
+show_debug_message("GMLC demo: factorials and recursive star pattern");
+
+repeat (_max_value) {
+    var _current_factorial = factorial(_index);
+    var _current_pattern = star_pattern(max(1, _index));
+
+    var _line =
+        "n=" + string(_index) +
+        "  factorial=" + string(_current_factorial) +
+        "  pattern=" + _current_pattern;
+
+    show_debug_message(_line);
+
+    array_push(_factorial_values, _current_factorial);
+    _index += 1;
+}
+
+var _summary = {
+    values: _factorial_values,
+    note: "returned this struct from inside the compiled program"
+};
+
+return _summary;
 ');
 
-var _foo = env.get("foo");
-show_debug_message(_foo())
-show_debug_message(global.foo())
+show_debug_message(program())
 
 /*
 

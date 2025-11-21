@@ -1622,3 +1622,13 @@ function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _incr
 
 #endregion
 
+function struct_get_chained(_struct) {
+	if !is_struct(_struct) return undefined;
+    var _current = _struct
+	for(var i = 1; i < argument_count; i++) {
+        if (_current == undefined) return undefined;
+        _current = _current[$ argument[i]]
+    }
+    return _current
+}
+

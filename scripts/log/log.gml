@@ -3,7 +3,7 @@ function json(_input) {
 }
 
 
-
+show_debug_overlay(true)
 
 #macro pprint repeat (__pprint_pre(_GMFILE_, _GMFUNCTION_, string(_GMLINE_))) __pprint
 /// @param ...args

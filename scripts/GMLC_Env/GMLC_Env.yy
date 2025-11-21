@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Env",
   "parent":{
-    "name":"Internal",
-    "path":"folders/GMLCompiler/Internal.yy",
+    "name":"GMLCompiler",
+    "path":"folders/GMLCompiler.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

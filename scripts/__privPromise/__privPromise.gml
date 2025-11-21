@@ -69,14 +69,18 @@ function __handleAsyncEvent(_async_type, _async_load) {
 				// Remove the handler
 				struct_remove(_type_struct, _async_id);
 			}
-			else if (_async_load[? "status"] == 0) {
+			else if (_handler.type == ASYNC_EVENT.DIALOG && _async_load[? "status"] == 1) {
 				_handler.resolve_callback(_async_load);
 				// Remove the handler
 				struct_remove(_type_struct, _async_id);
 			}
+			else if (_handler.type == ASYNC_EVENT.HTTP && _async_load[? "status"] == 0) {
+				_handler.resolve_callback(_async_load);
+				// Remove the handler
+				struct_remove(_type_struct, _async_id);
+			}
+			
 		}
-		
-		
 		
 	}
 }
