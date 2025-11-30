@@ -13,14 +13,14 @@ function __RefuseTest(_desc="Red Manually refused this test") {
 
 // some of the internal tests require us to include these somewhere.
 var _unused = [
-//fx_create("_filter_colourise"),
-//fx_create("_filter_edgedetect"),
-//fx_create("_filter_greyscale"),
-//fx_create("_filter_large_blur"),
-//fx_create("_filter_pixelate"),
-//fx_create("_filter_posterise"),
-//fx_create("_filter_screenshake"),
-//fx_create("_filter_tintfilter"),
+fx_create("_filter_colourise"),
+fx_create("_filter_edgedetect"),
+fx_create("_filter_greyscale"),
+fx_create("_filter_large_blur"),
+fx_create("_filter_pixelate"),
+fx_create("_filter_posterise"),
+fx_create("_filter_screenshake"),
+fx_create("_filter_tintfilter"),
 
 ////These go unused in the test suites, just leaving them here incase they get added in.
 //fx_create("_filter_blocks"),

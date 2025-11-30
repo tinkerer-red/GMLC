@@ -5,7 +5,7 @@
 // making this a `//*` will toggle this for you
 
 #region NodeType
-//*
+/*
 	enum __GMLC_NodeType {
 		EmptyNode,
 		AccessorExpression,
@@ -96,7 +96,7 @@
 //*/
 #endregion
 #region AccessorType
-//*
+/*
 	enum __GMLC_AccessorType {
 		Array,
 		Grid,
@@ -121,7 +121,7 @@
 #endregion
 #region ScopeType
 // add or remove a slash here to toggle between enums and string lookups
-//*
+/*
 enum ScopeType {
 	MACRO,
 	GLOBAL,
@@ -213,7 +213,7 @@ OpCode()
 //*/
 #endregion
 #region TokenType
-//*
+/*
 enum __GMLC_TokenType {
 	Whitespace,
 	Identifier,

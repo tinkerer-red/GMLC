@@ -116,23 +116,24 @@ gmlc.exposeConstants({
 })
 
 //// Register your test suites here...
-//testFramework.addSuite(OptimizerConstantFoldingTestSuite);
-//testFramework.addSuite(OptimizerConstantPropagationTestSuite);
-//testFramework.addSuite(OptimizerUnreachableCodeTestSuite);
-//testFramework.addSuite(BasicEscapeCharacterTestSuite);
-//testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
+testFramework.addSuite(OptimizerConstantFoldingTestSuite);
+testFramework.addSuite(OptimizerConstantPropagationTestSuite);
+testFramework.addSuite(OptimizerUnreachableCodeTestSuite);
+testFramework.addSuite(BasicEscapeCharacterTestSuite);
+testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
 testFramework.addSuite(BasicConstructorTestSuit);
 testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
 
+var _added_tests = []
 
-/*
+//*
 // Add all of the official test suites from their .gml files in included folder \__TEST\*.gml
 var _file_names = file_find_all("__TESTS/*gml");
 for(var i=0; i<array_length(_file_names); i++) {
 	//log(_file_names[i]);
-	var _script_str = file_read_all_text("__TESTS/"+_file_names[i]);
+	var _script_str = "\n\n\n"+file_read_all_text("__TESTS/"+_file_names[i]);
 	//log(string_replace_all(string_replace_all(string_copy(_script_str, 0, 200), "\t", ""), "\n", ""));
 	var _program = gmlc.compile(_script_str);
 	//pprint(_program)
@@ -145,11 +146,16 @@ for(var i=0; i<array_length(_file_names); i++) {
 		if (!string_starts_with(_global_name, "GMLC"))
 		&& (string_pos("TestSuite", _global_name))
 		{
-			show_debug_message(_global_name);
 			var _func = _program_data.globals[$ _global_name];
-			testFramework.addSuite(_func);
+			if (is_gmlc_constructor(_func))
+			&& (!array_contains(_added_tests, _func)) {
+				show_debug_message(_global_name);
+				testFramework.addSuite(_func);
+				array_push(_added_tests, _func);
+			}
 		}
 	}
+	
 }
 //*/
 

@@ -118,7 +118,16 @@
     {"$GMFolder":"","%Name":"tilesets","folderPath":"folders/Tests/TestResources/tilesets.yy","name":"tilesets","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"util scripts","folderPath":"folders/Tests/util scripts.yy","name":"util scripts","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
-  "ForcedPrefabProjectReferences":[],
+  "ForcedPrefabProjectReferences":[
+    {"link":"io.gamemaker.gm_filter_colourise-1.0.0","name":"io.gamemaker.gm_filter_colourise-1.0.0","path":"io.gamemaker.gm_filter_colourise-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_edgedetect-1.0.0","name":"io.gamemaker.gm_filter_edgedetect-1.0.0","path":"io.gamemaker.gm_filter_edgedetect-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_greyscale-1.0.0","name":"io.gamemaker.gm_filter_greyscale-1.0.0","path":"io.gamemaker.gm_filter_greyscale-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_large_blur-1.0.0","name":"io.gamemaker.gm_filter_large_blur-1.0.0","path":"io.gamemaker.gm_filter_large_blur-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_pixelate-1.0.0","name":"io.gamemaker.gm_filter_pixelate-1.0.0","path":"io.gamemaker.gm_filter_pixelate-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_posterise-1.0.0","name":"io.gamemaker.gm_filter_posterise-1.0.0","path":"io.gamemaker.gm_filter_posterise-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_screenshake-1.0.0","name":"io.gamemaker.gm_filter_screenshake-1.0.0","path":"io.gamemaker.gm_filter_screenshake-1.0.0.yyp",},
+    {"link":"io.gamemaker.gm_filter_tintfilter-1.0.0","name":"io.gamemaker.gm_filter_tintfilter-1.0.0","path":"io.gamemaker.gm_filter_tintfilter-1.0.0.yyp",},
+  ],
   "IncludedFiles":[
     {"$GMIncludedFile":"","%Name":"BasicAccessorExpressionsTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicAccessorExpressionsTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"BasicArrayTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicArrayTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
@@ -655,8 +664,8 @@
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
     {"roomId":{"name":"rmGMLCTestFramework","path":"rooms/rmGMLCTestFramework/rmGMLCTestFramework.yy",},},
-    {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"rmGMLCTestSingle","path":"rooms/rmGMLCTestSingle/rmGMLCTestSingle.yy",},},
+    {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"rmGMLCWebDemo","path":"rooms/rmGMLCWebDemo/rmGMLCWebDemo.yy",},},
     {"roomId":{"name":"room1","path":"rooms/room1/room1.yy",},},
     {"roomId":{"name":"room0","path":"rooms/room0/room0.yy",},},
