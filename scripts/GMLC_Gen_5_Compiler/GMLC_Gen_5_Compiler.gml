@@ -594,10 +594,13 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	var _names = struct_get_names(_rootNode.globals);
 	var _i=0; repeat(array_length(_names)) {
 		var _global = _globals[$ _names[_i]];
+		
 		if (is_gmlc_constructor(_global)) {
 			var _data = method_get_self(_global);
-			if (_data.parentConstructorName == _node.name) {
-				static_set(static_get(_data), _output.statics)
+			if (_data != undefined) {
+				if (_data.parentConstructorName == _node.name) {
+					static_set(static_get(_data), _output.statics)
+				}
 			}
 		}
 	_i++};
