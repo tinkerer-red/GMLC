@@ -68,10 +68,15 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		finished = false;
 		
 		//update our env lookup tables
-		__keyword_lookup  = __gmlc_convert_to_array_map(env.getAllKeywords());
-		__function_lookup = __gmlc_convert_to_array_map(env.getAllFunctions());
-		__constant_lookup = __gmlc_convert_to_array_map(env.getAllConstants());
-		__variable_lookup = __gmlc_convert_to_array_map(env.getAllVariables());
+		env.__keyword_lookup  ??= __gmlc_convert_to_array_map(env.getAllKeywords());
+		env.__function_lookup ??= __gmlc_convert_to_array_map(env.getAllFunctions());
+		env.__constant_lookup ??= __gmlc_convert_to_array_map(env.getAllConstants());
+		env.__variable_lookup ??= __gmlc_convert_to_array_map(env.getAllVariables());
+		
+		__keyword_lookup  = env.__keyword_lookup;
+		__function_lookup = env.__function_lookup;
+		__constant_lookup = env.__constant_lookup;
+		__variable_lookup = env.__variable_lookup;
 		
 		__nextToken();
 		
