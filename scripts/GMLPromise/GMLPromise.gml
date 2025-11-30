@@ -42,6 +42,28 @@ function Promise(_executor) constructor {
 		return _this_promise;
 	};
 	#region jsDoc
+	/// @method    Wait()
+	/// @desc    The Wait() method of Promise instances takes a real value of seconds before proceeding to the next task. It immediately returns another Promise object, allowing you to chain calls to other promise methods.
+	/// @self    Promise
+	/// @param   {Real} _seconds : The seconds to wait before proceeding to the next task
+	/// @returns {Struct.Promise}
+	#endregion
+	static Wait = function(_seconds) {
+		var _this_promise = (is_instanceof(self, Promise)) ? self : new Promise();
+		
+		array_push(_this_promise.executors, method({ms: _seconds*1000, start_time: undefined}, function() {
+			if (start_time == undefined) {
+				start_time = current_time;
+				end_time = start_time + ms;
+			}
+			if (current_time < end_time) {
+				PromisePostponeTaskRemoval();
+			}
+		}));
+		
+		return _this_promise;
+	};
+	#region jsDoc
 	/// @method    Catch()
 	/// @desc    The Catch() method of Promise instances schedules a function to be called when the promise is rejected. It immediately returns another Promise object, allowing you to chain calls to other promise methods.
 	/// @self    Promise
@@ -378,7 +400,7 @@ function Promise(_executor) constructor {
 		if (state == PROMISE_STATE.REJECTED) {
 			if (on_rejected != undefined) {
 				var _error = (is_struct(reason)) ? reason.message : reason;
-				on_rejected(json( reason ));
+				on_rejected(_error);
 			}
 		}
 			

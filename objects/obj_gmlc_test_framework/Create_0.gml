@@ -2,7 +2,7 @@
 /// This is the entry point for the frameowork execution.
 testFramework = new TestFrameworkRun();
 
-gmlc = new GMLC_Env();
+gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 //sprites
 gmlc.exposeConstants({
 	"sprTileset": sprTileset,
@@ -115,38 +115,15 @@ gmlc.exposeConstants({
 	},
 })
 
-gmlc.set_exposure(GMLC_EXPOSURE.FULL)
-
-// ################# TEST SUITE REGISTRATION #################
-//var _string = @'
-//function test() : TestSuite() constructor {
-//	static func_static = true;
-//	func_local = true;
-//	pprint(self)
-//	pprint(static_get(self))
-//	pprint(static_get(static_get(self)))
-//	show_debug_message(addFact)
-//}
-//'
-
-//var _program = gmlc.compile(_string);
-//var _self = method_get_self(_program)
-//var t = new _self.globals.test();
-//log(instanceof(t));
-//log(t);
-//var t = constructor_call_ext(_self.globals.test);
-//log(instanceof(t));
-//log(t);
-
 //// Register your test suites here...
 //testFramework.addSuite(OptimizerConstantFoldingTestSuite);
 //testFramework.addSuite(OptimizerConstantPropagationTestSuite);
 //testFramework.addSuite(OptimizerUnreachableCodeTestSuite);
 //testFramework.addSuite(BasicEscapeCharacterTestSuite);
 //testFramework.addSuite(BasicCompoundAssignmentAccessorsTestSuite);
-//testFramework.addSuite(BasicConstructorTestSuit);
-//testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
-//testFramework.addSuite(BinaryConditionTestSuite);
+testFramework.addSuite(BasicConstructorTestSuit);
+testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
+testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
 
 

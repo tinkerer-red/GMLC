@@ -1,11 +1,11 @@
 {
   "$GMObject":"",
-  "%Name":"obj_gml_compiler_test_framework",
+  "%Name":"obj_gmlc_test_github",
   "eventList":[
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
   ],
   "managed":true,
-  "name":"obj_gml_compiler_test_framework",
+  "name":"obj_gmlc_test_github",
   "overriddenProperties":[],
   "parent":{
     "name":"objects",

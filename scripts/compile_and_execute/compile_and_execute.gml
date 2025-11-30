@@ -1,46 +1,34 @@
-global.TestSpeeds = json_load("PrevTestSpeeds.json") ?? {};
-global.TestFailed = {};
-
 function compile_and_execute(_string) {
 	static __faster = 0;
 	
 	static gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 	var _program = gmlc.compile(_string);
 	
-	//GC_START
-	var _start = get_timer();
-	var _r = executeProgram(_program);
-	var _end = get_timer() - _start;
-	//GC_LOG
+	var _did_crash = false;
+	var _crash_report = undefined;
+	
+	try {
+		var _r = executeProgram(_program);
+	}
+	catch(err) {
+		_did_crash = true;
+		_crash_report = json_stringify(__reStruct(err));
+	}
 	
 	if (global.gCurrentTest != undefined) {
-		var _succeeded = (array_length(struct_get_names(global.gCurrentTest.getDiagnostics())) == 0)
-		var _prev_time = global.TestSpeeds[$ global.gCurrentTest.getName()] ?? infinity;
-		var _current_time = _end/1_000
+		var _succeeded = (array_length(struct_get_names(global.gCurrentTest.getDiagnostics())) == 0);
 		if (_succeeded) {
-			if (_current_time < _prev_time*0.5) {
-				log("Current Test is significantly ::FASTER::")
-				global.TestSpeeds[$ global.gCurrentTest.getName()] = _end/1_000;
-				json_save("PrevTestSpeeds.json", global.TestSpeeds)
-			}
-			if (_current_time > _prev_time/0.5) {
-				log("Current Test is significantly ::SLOWER::")
-			}
-			//we do not log tests which are with in a varying degree of results
+			// Check github issues to see if we need to close an open issue about the test.
 		}
 		else {
-			global.TestFailed[$ global.gCurrentTest.getName()] = global.gCurrentTest.getDiagnostics()
-			json_save("PrevTestSpeeds.json", global.TestSpeeds)
+			var _test_name = global.gCurrentTest.getName();
+			var _diagnostics = global.gCurrentTest.getDiagnostics();
+			global.TestFailed[$ _test_name] = _diagnostics;
+			
+			// open a github issue.
+			
 		}
 	}
 	
 	return _r;
-}
-
-function compile_code(_string) {
-	static gmlc = new GMLC_Env()
-	var _program = gmlc.compile(_string);
-	
-	return _program;
-	
 }

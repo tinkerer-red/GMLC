@@ -279,7 +279,7 @@ function http_post_string_promise(
 /// @desc    With this function, you can create an HTTP header request to define the operating parameters of an HTTP transaction, which can be used for many things like (for example) authentication via HTTP headers if you use RESTful APIs. The function requires the full IP address of the server to request from as well as the type of request to make (as a string, see the note below): "GET", "HEAD", "POST", "PUT", "DELETE", "TRACE", "OPTIONS", or "CONNECT". You will also need to supply a DS map of key/value pairs (as strings, where the key is the header field and the value is the required data for the header), and the final argument is an optional data string that you can add to the request, and if it's not needed then it can be either 0 or an empty string "". Note that you can also send a buffer (see the section on Buffers for more details), in which case the last argument would be the "handle" of the buffer to send.
 /// @param   {String} url : The web address of the server that you wish to get information from
 /// @param   {String} method : The request method (normally "POST" or "GET", but all methods are supported)
-/// @param   {Id.DsMap} header_map : A ds_map with the required header fields
+/// @param   {Id.DsMap | Id.Struct} header_map : A ds_map with the required header fields
 /// @param   {Real,String,Id.Buffer} body : The data to be transmitted following the headers (can be a binary buffer handle)
 /// @param   {Function} callback : A function to asynchronously execute when this promise becomes settled. Its return value is ignored unless the returned value is a rejected promise.
 /// @param   {Function} errback : A function to asynchronously execute when this promise becomes rejected. Its return value becomes the fulfillment value of the promise returned by catch().
@@ -294,8 +294,17 @@ function http_request_promise(
 	_reject_callback=function(_reason){ show_debug_message("Promise :: http_request_promise :: Failed with error : "+_reason) }
 )
 {
+	var _should_delete = false;
+	if (is_struct(header_map)) {
+		header_map = json_decode(json_stringify(header_map));
+		_should_delete = true;
+	};
+	
 	var _async_type = ASYNC_EVENT.HTTP;
 	var _async_id = http_request(url, _method, header_map, body);
+	
+	if (_should_delete) ds_map_destroy(header_map);
+	
 	return __registerAsyncHandler(_async_type, _async_id, _resolve_callback, _reject_callback);
 }
 #region jsDoc

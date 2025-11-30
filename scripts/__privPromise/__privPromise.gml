@@ -18,7 +18,10 @@ function __PromiseNamespace__() {
 				
 				_promise.Execute(__global.time_to_live);
 				
-				if (_promise.state == PROMISE_STATE.RESOLVED)
+				if (__global.postpone_task_removal) {
+					__global.postpone_task_removal = false;
+				}
+				else if (_promise.state == PROMISE_STATE.RESOLVED)
 				|| (_promise.state == PROMISE_STATE.REJECTED)
 				|| (_promise.state == PROMISE_STATE.CANCELED)
 				{
@@ -45,7 +48,8 @@ function __PromiseNamespace__() {
 			time_source_destroy(__global.async_obj_spawn_time_source, true);
 		}, [], 1),
 		active_promises : [],
-		async_handlers: {},
+		async_promises: {},
+		async_listeners: {},
 		time_to_live: get_timer() + PROMISE_MAX_TIME,
 		postpone_task_removal: false,
 	};
@@ -57,7 +61,7 @@ function __PromiseNamespace__() {
 function __handleAsyncEvent(_async_type, _async_load) {
 	static __global = __PromiseNamespace__();
 	
-	var _type_struct = __global.async_handlers[$ _async_type];
+	var _type_struct = __global.async_promises[$ _async_type];
 	if (_type_struct != undefined) {
 		
 		var _async_id = _async_load[? "id"];
@@ -69,20 +73,42 @@ function __handleAsyncEvent(_async_type, _async_load) {
 				// Remove the handler
 				struct_remove(_type_struct, _async_id);
 			}
-			else if (_handler.type == ASYNC_EVENT.DIALOG && _async_load[? "status"] == 1) {
+			else if (_async_load[? "status"] == 0 || _async_load[? "status"] == undefined) {
 				_handler.resolve_callback(_async_load);
 				// Remove the handler
 				struct_remove(_type_struct, _async_id);
 			}
-			else if (_handler.type == ASYNC_EVENT.HTTP && _async_load[? "status"] == 0) {
-				_handler.resolve_callback(_async_load);
-				// Remove the handler
-				struct_remove(_type_struct, _async_id);
-			}
-			
 		}
 		
 	}
+	
+	var _type_struct = __global.async_listeners[$ _async_type];
+	if (_type_struct != undefined) {
+		
+		var _async_id = _async_load[? "id"];
+		var _listeners = _type_struct[$ _async_id];
+		
+		if (_listeners != undefined) {
+			
+			var _i=0; repeat(array_length(_listeners)) {
+				var _listener = _listeners[_i];
+				
+				if (_async_load[? "status"] < 0) {
+					_listener.reject_callback(_async_load[? "http_status"] ?? ":: Unknown Error occurred in async operation, ID = "+string(_async_id)+" ::");
+					// Remove the handler
+					struct_remove(_type_struct, _async_id);
+				}
+				else if (_async_load[? "status"] == 0) {
+					_listener.resolve_callback(_async_load);
+					// Remove the handler
+					struct_remove(_type_struct, _async_id);
+				}
+				
+			_i++}
+		}
+	}
+	
+	
 }
 
 //Use this function if you would like to add promises to your library.
@@ -113,13 +139,28 @@ function __registerAsyncHandler(_async_type, _async_id, _resolve_callback, _reje
 	};
 	
 	//add a new reference
-	if (!struct_exists(__global.async_handlers, _async_type)) __global.async_handlers[$ _async_type] = {};
+	if (!struct_exists(__global.async_promises, _async_type)) __global.async_promises[$ _async_type] = {};
 	
 	//add handler
-	if (!struct_exists(__global.async_handlers[$ _async_type], _async_id)) __global.async_handlers[$ _async_type][$ _async_id] = handler;
+	if (!struct_exists(__global.async_promises[$ _async_type], _async_id)) __global.async_promises[$ _async_type][$ _async_id] = handler;
 	
 	return _promise;
 }
+
+//ev_async_web_image_load // Image Loaded event
+//ev_async_web // HTTP event
+//ev_async_dialog // Dialog event
+//ev_async_web_iap // In-App Purchase event
+//ev_async_web_cloud // Cloud event
+//ev_async_web_networking // Networking event
+//ev_async_web_steam // Steam event
+//ev_async_social // Social event
+//ev_async_push_notification // Push Notification event
+//ev_async_save_load // Save/Load Event
+//ev_async_audio_recording // Audio Recording event
+//ev_async_audio_playback // Audio Playback event
+//ev_async_audio_playback_ended // Audio Playback Ended event
+//ev_async_system_event // System event
 
 /// @ignore
 enum ASYNC_EVENT {

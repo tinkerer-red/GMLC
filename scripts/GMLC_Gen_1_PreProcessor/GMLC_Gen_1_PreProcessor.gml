@@ -302,10 +302,6 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				// Check for line break not preceded by a backslash escape
 				if (currentToken.type == __GMLC_TokenType.Whitespace)
 				&& (currentToken.value == "\n") {
-					
-					//alright we're breaking here for some reason, print the god damn thing
-					log("Region Title Is :: " + title);
-					
 					break;  // End of macro body
 				}
 				
