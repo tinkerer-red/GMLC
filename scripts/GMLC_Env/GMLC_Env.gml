@@ -146,76 +146,80 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		//	set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative"+$"\n(line {line}) -\t{lineString}") },
 		//},
 		"argument":{
-			get: function(){ return parentNode.arguments; },
-			set: function(value){ parentNode.arguments = value; },
+			get: method(undefined, function(){
+				return parentNode.arguments;
+			}),
+			set: method(undefined, function(value){ parentNode.arguments = value; }),
 		},
 		"argument0":{
-			get: function(){ return parentNode.arguments[0]; },
-			set: function(value){ parentNode.arguments[0] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[0]; }),
+			set: method(undefined, function(value){ parentNode.arguments[0] = value; }),
 		},
 		"argument1":{
-			get: function(){ return parentNode.arguments[1]; },
-			set: function(value){ parentNode.arguments[1] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[1]; }),
+			set: method(undefined, function(value){ parentNode.arguments[1] = value; }),
 		},
 		"argument2":{
-			get: function(){ return parentNode.arguments[0]; },
-			set: function(value){ parentNode.arguments[0] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[0]; }),
+			set: method(undefined, function(value){ parentNode.arguments[0] = value; }),
 		},
 		"argument3":{
-			get: function(){ return parentNode.arguments[3]; },
-			set: function(value){ parentNode.arguments[3] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[3]; }),
+			set: method(undefined, function(value){ parentNode.arguments[3] = value; }),
 		},
 		"argument4":{
-			get: function(){ return parentNode.arguments[4]; },
-			set: function(value){ parentNode.arguments[4] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[4]; }),
+			set: method(undefined, function(value){ parentNode.arguments[4] = value; }),
 		},
 		"argument5":{
-			get: function(){ return parentNode.arguments[5]; },
-			set: function(value){ parentNode.arguments[5] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[5]; }),
+			set: method(undefined, function(value){ parentNode.arguments[5] = value; }),
 		},
 		"argument6":{
-			get: function(){ return parentNode.arguments[6]; },
-			set: function(value){ parentNode.arguments[6] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[6]; }),
+			set: method(undefined, function(value){ parentNode.arguments[6] = value; }),
 		},
 		"argument7":{
-			get: function(){ return parentNode.arguments[7]; },
-			set: function(value){ parentNode.arguments[7] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[7]; }),
+			set: method(undefined, function(value){ parentNode.arguments[7] = value; }),
 		},
 		"argument8":{
-			get: function(){ return parentNode.arguments[8]; },
-			set: function(value){ parentNode.arguments[8] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[8]; }),
+			set: method(undefined, function(value){ parentNode.arguments[8] = value; }),
 		},
 		"argument9":{
-			get: function(){ return parentNode.arguments[9]; },
-			set: function(value){ parentNode.arguments[9] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[9]; }),
+			set: method(undefined, function(value){ parentNode.arguments[9] = value; }),
 		},
 		"argument10":{
-			get: function(){ return parentNode.arguments[10]; },
-			set: function(value){ parentNode.arguments[10] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[10]; }),
+			set: method(undefined, function(value){ parentNode.arguments[10] = value; }),
 		},
 		"argument11":{
-			get: function(){ return parentNode.arguments[11]; },
-			set: function(value){ parentNode.arguments[11] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[11]; }),
+			set: method(undefined, function(value){ parentNode.arguments[11] = value; }),
 		},
 		"argument12":{
-			get: function(){ return parentNode.arguments[12]; },
-			set: function(value){ parentNode.arguments[12] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[12]; }),
+			set: method(undefined, function(value){ parentNode.arguments[12] = value; }),
 		},
 		"argument13":{
-			get: function(){ return parentNode.arguments[13]; },
-			set: function(value){ parentNode.arguments[13] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[13]; }),
+			set: method(undefined, function(value){ parentNode.arguments[13] = value; }),
 		},
 		"argument14":{
-			get: function(){ return parentNode.arguments[14]; },
-			set: function(value){ parentNode.arguments[14] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[14]; }),
+			set: method(undefined, function(value){ parentNode.arguments[14] = value; }),
 		},
 		"argument15":{
-			get: function(){ return parentNode.arguments[15]; },
-			set: function(value){ parentNode.arguments[15] = value; },
+			get: method(undefined, function(){ return parentNode.arguments[15]; }),
+			set: method(undefined, function(value){ parentNode.arguments[15] = value; }),
 		},
 		"argument_count":{
-			get: function(){ return array_length(parentNode.arguments); },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_count"+$"\n(line {line}) -\t{lineString}") },
+			get: method(undefined, function(){
+				return array_length(parentNode.arguments);
+			}),
+			set: method(undefined, function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_count"+$"\n(line {line}) -\t{lineString}") }),
 		},
 		"debug_mode":{
 			get: function(){ return debug_mode; },

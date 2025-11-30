@@ -326,7 +326,7 @@ function __gmlc_script_execute_ext(ind, array=undefined, offset=0, num_args=arra
 			} // end else
 	
 	
-			var n = offset, i=num_args-offset;
+			var n = offset, i=0;
 			repeat (num_args) {
 				__argArr[i] = array[n];
 			++i; n+=dir}
