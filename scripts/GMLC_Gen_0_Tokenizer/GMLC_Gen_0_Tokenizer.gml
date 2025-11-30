@@ -260,15 +260,41 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				}
 				
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _return.value, _start_line, _start_column, _byte_start, bytePos);
-				array_push(tokens, _token);
-				return _token;
+				
+				if (_identifier == "nameof") // will only occure when the vanilla `nameof` is exposed
+				&& (_return.value == -1) // only possible for compile time operations
+				&& (currentCharCode == ord("(")){
+					var _startCharCode = currentCharCode;
+					var _byte_start = bytePos;
+					var _start_line = line;
+					var _start_column = column;
+					
+					__expectUTF8(ord("(")); //consume (
+					
+					var _raw_string = "nameof("
+					var _string = __fetchAllUntil(ord(")"));
+					_raw_string += _string+")";
+			
+					nextToken();
+					var _token = new __GMLC_create_token(__GMLC_TokenType.String, _raw_string, _string, _start_line, _start_column, _byte_start, bytePos);
+					array_push(tokens, _token);
+					return _token;
+					
+				}
+				else {
+					var _token = new __GMLC_create_token(__GMLC_TokenType.Function, _identifier, _return.value, _start_line, _start_column, _byte_start, bytePos);
+					array_push(tokens, _token);
+					return _token;
+				}
 			}
 		}
 		
 		//show_debug_message($":: parseIdentifier :: Could not parse char : {_startCharCode} '{chr(_startCharCode)}'")
 		return false;
 	};
+	
+
+	
 	
 	static parseConstants = function() {
 		var _start_line = line;
