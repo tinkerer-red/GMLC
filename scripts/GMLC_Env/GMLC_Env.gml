@@ -856,6 +856,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_optimizer_results      = true;
 	__log_compiler_results       = false;
 	
+	__keyword_lookup  = undefined;
+	__function_lookup = undefined;
+	__constant_lookup = undefined;
+	__variable_lookup = undefined;
+	
 	#region jsDoc
 	/// @func    __is_safe_function()
 	/// @desc    Internal predicate that returns true when a spec entry represents a built-in function permitted in SAFE-like tiers. Rejects disallowed names and names containing banned substrings.
