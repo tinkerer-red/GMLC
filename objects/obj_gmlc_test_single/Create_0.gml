@@ -1,26 +1,17 @@
 
 var env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-function TestAudioEffectMembers(audioEffectType, membersArray) {
-	
-	// Loop through all members of audio effect and check if it exists
-	for (var i = 0; i < array_length(membersArray); i++) {
-		
-		var output = variable_struct_exists(audioEffectType, membersArray[i]);
-		assert_true(output, string(audioEffectType) + " should contain " + string(membersArray[i]) + " as a member");
-		
-	}
-	
-}
-
-var members = ["type", "bypass", "gain", "factor", "resolution", "mix"];
-
-var effect = audio_effect_create(AudioEffectType.Bitcrusher);
-
-TestAudioEffectMembers(effect, members);
+var vstring = "Hello World!";
+// Check that using an index beyond the size of the string will clamp to the string size
+return string_delete(vstring, 100, 1);
 ');
 
+var vstring = "Hello World!";
+// Check that using an index beyond the size of the string will clamp to the string size
+var res = string_delete(vstring, 100, 1);
+
 show_debug_message(program())
+show_debug_message(res)
 
 /*
 

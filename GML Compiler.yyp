@@ -137,7 +137,7 @@
     {"$GMIncludedFile":"","%Name":"BasicStringTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicStringTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"BasicSurfaceTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicSurfaceTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"BasicTilemapTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicTilemapTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
-    {"$GMIncludedFile":"","%Name":"BasicUnaryUpdateExpressions.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicUnaryUpdateExpressions.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+    {"$GMIncludedFile":"","%Name":"BasicUnaryUpdateExpressionsTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicUnaryUpdateExpressionsTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"BasicVariableTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicVariableTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"BasicWeakRefsTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS","name":"BasicWeakRefsTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
     {"$GMIncludedFile":"","%Name":"BasicShaderTestSuite.gml","CopyToMask":-1,"filePath":"datafiles/__TESTS/Not planned to get working","name":"BasicShaderTestSuite.gml","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
@@ -647,8 +647,8 @@
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"rmGMLCTestSingle","path":"rooms/rmGMLCTestSingle/rmGMLCTestSingle.yy",},},
     {"roomId":{"name":"rmGMLCTestFramework","path":"rooms/rmGMLCTestFramework/rmGMLCTestFramework.yy",},},
+    {"roomId":{"name":"rmGMLCTestSingle","path":"rooms/rmGMLCTestSingle/rmGMLCTestSingle.yy",},},
     {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"rmGMLCWebDemo","path":"rooms/rmGMLCWebDemo/rmGMLCWebDemo.yy",},},
     {"roomId":{"name":"room1","path":"rooms/room1/room1.yy",},},
