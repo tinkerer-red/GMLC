@@ -15,14 +15,6 @@ function __GMLCexecuteGetPropertySelf() {
 		return _target[$ key];
 	}
 	
-	// this is a safety check for a bug in GML
-	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	//var _inst_of = instanceof(_target);
-	//if (_inst_of == "Object")
-	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	//}
-	
 	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
@@ -389,7 +381,57 @@ function __GMLCexecuteArraySet(){
 	var _target = target();
 	_target[key()] = expression()
 }
+function __GMLCexecuteArrayCreateAndSetSelf(){
+	var _self = global.gmlc_self_instance;
+	var _target = _self[$ key];
+	var _index = index();
+	
+	if (!is_array(_target)) {
+		_target = array_create(_index+1);
+		_self[$ key] = _target;
+	}
+	
+	_target[_index] = expression();
+}
+function __GMLCexecuteArrayCreateAndSetLocal(){
+	var _target = locals[localIndex];
+	var _index = index();
+	
+	if (!is_array(_target)) {
+		_target = array_create(_index+1);
+		locals[localIndex] = _target;
+		localsWrittenTo[localIndex] = true;
+	}
+	
+	_target[_index] = expression();
+}
 function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
+	if (_target.type == __GMLC_NodeType.Identifier) {
+		if (_target.scope == ScopeType.LOCAL) {
+			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _line, _lineString);	
+			
+			_output.locals          = _parentNode.locals;
+			_output.localIndex      = _parentNode.localLookUps[$ _target.name];
+			_output.localsWrittenTo = _parentNode.localsWrittenTo;
+			
+			_output.index = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+			_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);;
+			
+			return __vanilla_method(_output, __GMLCexecuteArrayCreateAndSetLocal);
+		}
+		if (_target.scope == ScopeType.SELF) {
+			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _line, _lineString);	
+			
+			_output.key = _target.name;
+			
+			_output.index = __GMLCcompileExpression(_rootNode, _parentNode, _key);
+			_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);;
+			
+			return __vanilla_method(_output, __GMLCexecuteArrayCreateAndSetSelf);
+		}
+		
+	}
+	
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArraySet", "<Missing Error Message>", _line, _lineString);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
