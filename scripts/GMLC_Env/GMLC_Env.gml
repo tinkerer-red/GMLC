@@ -676,6 +676,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		exposeConstants({
 			"global": (_expose_level == GMLC_EXPOSURE.FULL) ? global : {},
 		});
+		//expose enums
+		exposeEnums(__ExistingEnums());
+		
 		return self;
 	}
 	#region jsDoc

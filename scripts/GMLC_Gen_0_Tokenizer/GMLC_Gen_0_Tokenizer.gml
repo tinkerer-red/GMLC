@@ -686,7 +686,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//ensure the resulting string of a #color is exactly 6 digits long
 			if (_is_color)
 			&& (_len != 6) {
-				throw_gmlc_error($"Script: \{Script1\} at line { _start_line } : css hex color needs to be 6 digits\n{_raw_string}")
+				throw_gmlc_error($"Script: \{Script1\} at line { _start_line} : css hex color needs to be 6 digits\n{_raw_string}")
 			}
 			
 			//ensure hex numbers are less then 16 digits long
@@ -955,7 +955,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					_temp_identifier += chr(_nextIterToken);
 					
 					if (array_contains(_enum_tail_arr, _temp_identifier)) {
-						var _val = _index.value[$ _temp_identifier].value;
+						var _val = _index.value[$ _temp_identifier];
 						var _token = new __GMLC_create_token(__GMLC_TokenType.Number, _temp_identifier, _val, _start_line, _start_column, _byte_start, bytePos);
 						_found = true;
 						break;
@@ -964,8 +964,10 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				_i+=1;}//end repeat loop
 				
 				if (_found) {
-					var _jump = string_length(_temp_identifier)+1;
+					var _jump = _offset+string_length(_temp_identifier);
 					repeat (_jump) __nextUTF8();
+					
+					__nextUTF8() //we do one extra to continue to the next
 					
 					array_push(tokens, _token);
 					return _token;
