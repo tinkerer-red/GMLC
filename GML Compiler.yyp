@@ -647,10 +647,10 @@
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"rmGMLCTestFramework","path":"rooms/rmGMLCTestFramework/rmGMLCTestFramework.yy",},},
     {"roomId":{"name":"rmGMLCTestSingle","path":"rooms/rmGMLCTestSingle/rmGMLCTestSingle.yy",},},
-    {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"rmGMLCWebDemo","path":"rooms/rmGMLCWebDemo/rmGMLCWebDemo.yy",},},
+    {"roomId":{"name":"rmGMLCTestFramework","path":"rooms/rmGMLCTestFramework/rmGMLCTestFramework.yy",},},
+    {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"room1","path":"rooms/room1/room1.yy",},},
     {"roomId":{"name":"room0","path":"rooms/room0/room0.yy",},},
     {"roomId":{"name":"handle_testRoom","path":"rooms/handle_testRoom/handle_testRoom.yy",},},

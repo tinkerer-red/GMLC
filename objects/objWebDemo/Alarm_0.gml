@@ -73,4 +73,4 @@ if (!compile_pending) {
 	
 }
 
-alarm[0] = 1
+alarm[0] = 60*3

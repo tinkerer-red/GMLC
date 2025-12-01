@@ -73,7 +73,7 @@ function __handleAsyncEvent(_async_type, _async_load) {
 				// Remove the handler
 				struct_remove(_type_struct, _async_id);
 			}
-			else if (_async_load[? "status"] == 0 || _async_load[? "status"] == undefined) {
+			else if (_async_load[? "status"] >= 0 || _async_load[? "status"] == undefined) {
 				_handler.resolve_callback(_async_load);
 				// Remove the handler
 				struct_remove(_type_struct, _async_id);
