@@ -694,12 +694,33 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			return;
 		}
 		
+		var _arr_obje = asset_get_ids(asset_object),        
+		var _arr_spri = asset_get_ids(asset_sprite),
+		var _arr_soun = asset_get_ids(asset_sound),
+		var _arr_room = asset_get_ids(asset_room),
+		var _arr_tile = asset_get_ids(asset_tiles),
+		var _arr_path = asset_get_ids(asset_path),
+		var _arr_font = asset_get_ids(asset_font),
+		var _arr_time = asset_get_ids(asset_timeline),
+		var _arr_shad = asset_get_ids(asset_shader),
+		var _arr_anim = asset_get_ids(asset_animationcurve),
+		var _arr_sequ = asset_get_ids(asset_sequence),
+		var _arr_part = asset_get_ids(asset_particlesystem)
+		
+		//var _test_arr = [];
+		//var _i=0; repeat(array_length(_arr_shad)) {
+		//	var _asset = _arr_shad[_i];
+		//	var _name = shader_get_name(_asset);
+		//	_test_arr[_i] = _name;
+		//_i++};
+		
 		var _arr = array_concat(
-			asset_get_ids(asset_object),         asset_get_ids(asset_sprite),   asset_get_ids(asset_sound),
-			asset_get_ids(asset_room),           asset_get_ids(asset_tiles),    asset_get_ids(asset_path),
-			asset_get_ids(asset_font),           asset_get_ids(asset_timeline), asset_get_ids(asset_shader),
-			asset_get_ids(asset_animationcurve), asset_get_ids(asset_sequence), asset_get_ids(asset_particlesystem)
+			_arr_obje,	_arr_spri,	_arr_soun,
+			_arr_room,	_arr_tile,	_arr_path,
+			_arr_font,	_arr_time,	_arr_shad,
+			_arr_anim,	_arr_sequ,	_arr_part
 		)
+		
 		var _cont_map = {};
 		var _i=0; repeat(array_length(_arr)) {
 			var _asset = _arr[_i];
