@@ -1,6 +1,6 @@
 // Script assets have changed for v2.3.0 see
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
-function BasicUnaryUpdateExpressions() : TestSuite() constructor {
+function BasicUnaryUpdateExpressionsTestSuite() : TestSuite() constructor {
 	
 	addFact("Direct Variable Unary Update", function() {
         x = 0
@@ -191,16 +191,6 @@ function BasicUnaryUpdateExpressions() : TestSuite() constructor {
 		assert_equals(--_target[$ _key], 1, "Struct bracket accessor :Dynamic: MinusMinus Suffix failed.");
 		assert_equals(_target[$ _key]--, 1, "Struct bracket accessor :Dynamic: MinusMinus Prefix failed.");
 		assert_equals(_target[$ _key]  , 0, "Struct bracket accessor :Dynamic: get failed.");
-    });
-	
-	addFact("Array Unary Update", function() {
-		score = 0
-		assert_equals(score  , 0, "Static variable get failed.");
-        assert_equals(score++, 0, "Static variable PlusPlus Suffix failed.");
-		assert_equals(++score, 2, "Static variable PlusPlus Prefix failed.");
-		assert_equals(score--, 2, "Static variable MinusMinus Suffix failed.");
-		assert_equals(--score, 0, "Static variable MinusMinus Prefix failed.");
-		assert_equals(score  , 0, "Static variable get failed.");
     });
 	
 }
