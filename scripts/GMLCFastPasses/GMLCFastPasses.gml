@@ -17,11 +17,11 @@ function __GMLCexecuteGetPropertySelf() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	var _inst_of = instanceof(_target);
-	if (_inst_of == "Object")
-	|| (_inst_of == undefined) {
-		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
+	//var _inst_of = instanceof(_target);
+	//if (_inst_of == "Object")
+	//|| (_inst_of == undefined) {
+	//	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -580,11 +580,11 @@ function __GMLCexecuteStructDotAccGet(){
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	var _inst_of = instanceof(_target);
-	if (_inst_of == "Object")
-	|| (_inst_of == undefined) {
-		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
+	//var _inst_of = instanceof(_target);
+	//if (_inst_of == "Object")
+	//|| (_inst_of == undefined) {
+	//	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -649,8 +649,6 @@ function __GMLCexecuteStructDotAccSet(){
 		_target[$ key] = expression();
 		return
 	}	
-	
-	
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -1472,11 +1470,11 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	var _inst_of = instanceof(_target);
-	if (_inst_of == "Object")
-	|| (_inst_of == undefined) {
-		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
+	//var _inst_of = instanceof(_target);
+	//if (_inst_of == "Object")
+	//|| (_inst_of == undefined) {
+	//	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -1504,11 +1502,11 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	var _inst_of = instanceof(_target);
-	if (_inst_of == "Object")
-	|| (_inst_of == undefined) {
-		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
+	//var _inst_of = instanceof(_target);
+	//if (_inst_of == "Object")
+	//|| (_inst_of == undefined) {
+	//	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -1538,11 +1536,11 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	var _inst_of = instanceof(_target);
-	if (_inst_of == "Object")
-	|| (_inst_of == undefined) {
-		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
+	//var _inst_of = instanceof(_target);
+	//if (_inst_of == "Object")
+	//|| (_inst_of == undefined) {
+	//	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -1570,11 +1568,11 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	
 	// this is a safety check for a bug in GML
 	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	var _inst_of = instanceof(_target);
-	if (_inst_of == "Object")
-	|| (_inst_of == undefined) {
-		throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
-	}
+	//var _inst_of = instanceof(_target);
+	//if (_inst_of == "Object")
+	//|| (_inst_of == undefined) {
+	//	throw_gmlc_error($"Variable <unknown_object>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
