@@ -177,7 +177,8 @@ config_set("TestFrameworkRun", {
 		
 		if (is_array(_resultBag[$ "failed"])) {
 			array_foreach(_resultBag[$ "failed"], function(_failure) {
-				log_info($"FAILED: {json_stringify(_failure)}");
+				log_info($"FAILED: ");
+				pprint(_failure);
 			});
 		}
 		
