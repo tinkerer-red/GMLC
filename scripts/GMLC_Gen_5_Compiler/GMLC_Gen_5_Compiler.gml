@@ -84,7 +84,9 @@
 						        array_resize(backupLocalsWrittenTo, _local_offset)
 
 #macro __GMLC_RESET_LOCALS	array_resize(locals, 0);\
-							array_resize(localsWrittenTo, 0)
+							array_resize(localsWrittenTo, 0);\
+							array_resize(locals, localCount);\
+							array_resize(localsWrittenTo, localCount)
 #endregion
 
 #region Arguments
