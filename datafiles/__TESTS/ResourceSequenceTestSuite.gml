@@ -1390,78 +1390,78 @@ function ResourceSequenceTestSuite() : TestSuite() constructor {
 			layer_destroy(_testLayer);
 		})
 
-		addFact("track.visible_test", function() {
+addFact("track.visible_test", function() {
 
-			var _elmID, _seqInst, _seq, _track, _output;
+	var _elmID, _seqInst, _seq, _track, _output;
 
-			var _testLayer = layer_create(100, "testLayer");
-			
-			_output = layer_exists(_testLayer);
-			assert_true(_output, "#0 layer_create(), failed to create a layer (exiting)");
-			
-			if (_output == false) return; // We don't have a layer to work with
+	var _testLayer = layer_create(100, "testLayer");
+	
+	_output = layer_exists(_testLayer);
+	assert_true(_output, "#0 layer_create(), failed to create a layer (exiting)");
+	
+	if (_output == false) return; // We don't have a layer to work with
 
-			_elmID = layer_sequence_create(_testLayer, 0, 0, Sequence1);
-			_seqInst = layer_sequence_get_instance(_elmID);
-			_seq = _seqInst.sequence;
-			_track = _seq.tracks[0];
+	_elmID = layer_sequence_create(_testLayer, 0, 0, Sequence1);
+	_seqInst = layer_sequence_get_instance(_elmID);
+	_seq = _seqInst.sequence;
+	_track = _seq.tracks[0];
 
-			var _valueDetails, _valueDetailsCount, _valueType, _value, _details, _expected;
-			
-			// #### POSITIVE VALUES ####
-			
-			_valueDetails = [
-				[ true,				"bool" ],
-				[ 0.55,				"number" ],
-				[ "0.6",			"string" ],
-				[ 0.9,				"number" ],
-				[ int32(1000),		"int32" ],
-				[ int64(0x1000000),	"int64" ],
-				[ infinity,			"infinity" ] ]; 
+	var _valueDetails, _valueDetailsCount, _valueType, _value, _details, _expected;
+	
+	// #### POSITIVE VALUES ####
+	
+	_valueDetails = [
+		[ true,				"bool" ],
+		[ 0.55,				"number" ],
+		[ "0.6",			"string" ],
+		[ 0.9,				"number" ],
+		[ int32(1000),		"int32" ],
+		[ int64(0x1000000),	"int64" ],
+		[ infinity,			"infinity" ] ]; 
 
-			
-			_valueDetailsCount = array_length(_valueDetails);
-			for (var _j = 0; _j < _valueDetailsCount; _j++) {
-				
-				_valueType = _valueDetails[_j];
-				_value = _valueType[0];
-				_details = _valueType[1];
-				
-				_track.visible = _value;
-				_output = _track.visible;
-				
-				assert_true(_output, "#1 get/set track.visible ["+_details+"], failed to set the correct value");
-			}	
-			
-			// #### NEGATIVE VALUES ####
-			
-			_valueDetails = [
-				[ false,			"bool" ],
-				[ "-0.3",			"string" ],
-				[ -0.5,				"number" ],
-				[ int32(-20),		"int32" ],
-				[ int64(-199),		"int64" ],
-				[ -infinity,		"infinity" ] ]; 
+	
+	_valueDetailsCount = array_length(_valueDetails);
+	for (var _j = 0; _j < _valueDetailsCount; _j++) {
+		
+		_valueType = _valueDetails[_j];
+		_value = _valueType[0];
+		_details = _valueType[1];
+		
+		_track.visible = _value;
+		_output = _track.visible;
+		
+		assert_true(_output, "#1 get/set track.visible ["+_details+"], failed to set the correct value");
+	}	
+	
+	// #### NEGATIVE VALUES ####
+	
+	_valueDetails = [
+		[ false,			"bool" ],
+		[ "-0.3",			"string" ],
+		[ -0.5,				"number" ],
+		[ int32(-20),		"int32" ],
+		[ int64(-199),		"int64" ],
+		[ -infinity,		"infinity" ] ]; 
 
+	
+	_valueDetailsCount = array_length(_valueDetails);
+	for (var _j = 0; _j < _valueDetailsCount; _j++) {
+		
+		_valueType = _valueDetails[_j];
+		_value = _valueType[0];
+		_details = _valueType[1];
 			
-			_valueDetailsCount = array_length(_valueDetails);
-			for (var _j = 0; _j < _valueDetailsCount; _j++) {
-				
-				_valueType = _valueDetails[_j];
-				_value = _valueType[0];
-				_details = _valueType[1];
-					
-				_track.visible = _value;
-				_output = _track.visible;
-				
-				assert_false(_output, "#2 get/set track.visible ["+_details+"], failed to set the correct value (negative)");
-			}	
-			
-			// Clean up
-			layer_sequence_destroy(_elmID);
-			layer_destroy(_testLayer);
-			
-		})
+		_track.visible = _value;
+		_output = _track.visible;
+		
+		assert_false(_output, "#2 get/set track.visible ["+_details+"], failed to set the correct value (negative)");
+	}	
+	
+	// Clean up
+	layer_sequence_destroy(_elmID);
+	layer_destroy(_testLayer);
+	
+})
 	
 }
 

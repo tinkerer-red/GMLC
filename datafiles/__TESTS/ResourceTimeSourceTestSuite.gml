@@ -459,7 +459,7 @@ function ResourceTimeSourceTestSuite() : TestSuite() constructor {
 	
 	},
     {
-        timeoutMillis: 3000,
+        test_timeout_millis: 3000,
     });
 
 	addTestAsync("Time Sources: Self Destruction", objTestAsync, {

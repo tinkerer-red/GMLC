@@ -1,4 +1,3 @@
-#macro TEST_INVALID_ARGS false
 
 function ResourceEventsTestSuite() : TestSuite() constructor {
 

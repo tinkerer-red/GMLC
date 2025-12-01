@@ -2,6 +2,10 @@
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
 function ResourceAudioSynchronisationTestSuite() : TestSuite() constructor {
 
+	config({
+		suite_filter: runtime_not_gmrt
+	});
+
 	addFact("Sync group creation and playback #1", function() {
 		
 		// Create the sync group
@@ -199,7 +203,7 @@ function ResourceAudioSynchronisationTestSuite() : TestSuite() constructor {
 	});
 
 	config({
-		platformFilter: runtime_not_gmrt
+		suite_filter: runtime_not_gmrt
 	});
 
 }

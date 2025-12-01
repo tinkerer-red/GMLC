@@ -432,19 +432,24 @@ function BasicBufferTestSuite() : TestSuite() constructor {
     });
     
 	addFact("buffer_write_test #1", function() {
+		show_debug_message("1")
         // Set lower epsilon value to ensure rounding errors don't interfere with test results
         math_set_epsilon(0.01);
-        
+        show_debug_message("2")
         // For all buffer data types, create a buffer, write some data to it, then check that the data was correctly written
         RunForAllBufferDataTypes (function(testBuffer, type, value, typeString, typeSize) {
-        
+			show_debug_message("3")
             buffer_write(testBuffer, type, value);
+			show_debug_message("4")
             var output = buffer_peek(testBuffer, 0, type);
+			show_debug_message("5")
             assert_equals(output, value, "buffer_write/peek(), failed to write/peek the correct value (type: "+typeString+")");
+			show_debug_message("6")
         });
-        
+        show_debug_message("7")
         // Reset to default epsilon value
         math_set_epsilon(0.00001);
+		show_debug_message("8")
     });
     
     addFact("buffer_write_test #2", function() {
@@ -674,7 +679,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         file_delete("Buffer.sav");
         buffer_delete(testBuffer);
         
-    }, { platformFilter: platform_not_console });
+    }, { test_filter: platform_not_console });
     
     addFact("buffer_save_ext_test", function() {
         // Create a buffer and fill the second half of it with 8-bit integers with a value of 10
@@ -690,7 +695,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         file_delete("BufferExt.sav");
         buffer_delete(testBuffer);
         
-    }, { platformFilter: platform_not_console });
+    }, { test_filter: platform_not_console });
     
     addFact("buffer_load_test #1", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save it to a file called "Buffer.sav"
@@ -712,7 +717,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { platformFilter: platform_not_console });
+    }, { test_filter: platform_not_console });
     
     addFact("buffer_load_test #2", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save that half to a file called "BufferExt.sav"
@@ -734,7 +739,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { platformFilter: platform_not_console });
+    }, { test_filter: platform_not_console });
     
     addFact("buffer_load_ext_test", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save it to a file called "Buffer.sav"
@@ -755,7 +760,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { platformFilter: platform_not_console });
+    }, { test_filter: platform_not_console });
     
     addFact("buffer_load_partial_test", function() {
         // Create a buffer, fill the second half of it with 8-bit integers with a value of 10, and save it to a file called "Buffer.sav"
@@ -776,7 +781,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
         buffer_delete(testBuffer);
         buffer_delete(loadedBuffer);
         
-    }, { platformFilter: platform_not_console });
+    }, { test_filter: platform_not_console });
 
 	// #### ASYNC ####
 
@@ -806,7 +811,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
 			test_end();
 		},
 		
-	}, { platformFilter: platform_not_console, timeoutMillis: 3000 });
+	}, { test_filter: platform_not_console, test_timeout_millis: 3000 });
 		
 	addTestAsync("buffer_save_async_group_test", objTestAsyncSaveLoad, {
 			
@@ -842,7 +847,7 @@ function BasicBufferTestSuite() : TestSuite() constructor {
 			test_end();
 		}
 			
-    }, { platformFilter: platform_not_console, timeoutMillis: 3000 });
+    }, { test_filter: platform_not_console, test_timeout_millis: 3000 });
 		
 	addTestAsync("buffer_load_async_test", objTestAsyncSaveLoad, {
 			
@@ -871,37 +876,36 @@ function BasicBufferTestSuite() : TestSuite() constructor {
 			test_end();
 		}
 			
-    }, { platformFilter: platform_not_console, timeoutMillis: 3000 });
+    }, { test_filter: platform_not_console, test_timeout_millis: 3000 });
 		
 	config({
-		platformFilter: platform_not_browser
+		suite_filter: platform_not_browser
 	})
+		
+	addFact("buffer_get_used_size", function() {
 	
-	////GMLC DOESNT SUPPORT THIS FEATURE YET
-	////addFact("buffer_get_used_size", function() {
-	////
-	////	var _size, _used_size, _tell;
-	////
-	////	var _buff = buffer_create(1024, buffer_grow, 1);
-	////	_size = buffer_get_size(_buff);
-	////	_used_size = buffer_get_used_size(_buff);
-	////	_tell = buffer_tell(_buff);
-	////	
-	////	assert_equals(_size, 1024, "The size of a created buffer doesn't match the defined size.");
-	////	assert_equals(_used_size, 0, "The used size of a newly created buffer is not 0.");
-	////	assert_equals(_tell, 0, "The tell|cursor of a newly created buffer is not 0.");
-	////
-	////	buffer_poke(_buff, 500, buffer_f32, 77);
-	////	_size = buffer_get_size(_buff);
-	////	_used_size = buffer_get_used_size(_buff);
-	////	_tell = buffer_tell(_buff);
-	////	
-	////	assert_equals(_size, 1024, "After a within bounds poke the size of the buffer is not maintained.");
-	////	assert_equals(_used_size, 504, "After a within bounds poke the used size didn't match");
-	////	assert_equals(_tell, 0, "After a poke the tell changed value");
-	////
-	////	buffer_delete(_buff);
-	////
-	////});
+		var _size, _used_size, _tell;
+	
+		var _buff = buffer_create(1024, buffer_grow, 1);
+		_size = buffer_get_size(_buff);
+		_used_size = buffer_get_used_size(_buff);
+		_tell = buffer_tell(_buff);
+		
+		assert_equals(_size, 1024, "The size of a created buffer doesn't match the defined size.");
+		assert_equals(_used_size, 0, "The used size of a newly created buffer is not 0.");
+		assert_equals(_tell, 0, "The tell|cursor of a newly created buffer is not 0.");
+
+		buffer_poke(_buff, 500, buffer_f32, 77);
+		_size = buffer_get_size(_buff);
+		_used_size = buffer_get_used_size(_buff);
+		_tell = buffer_tell(_buff);
+		
+		assert_equals(_size, 1024, "After a within bounds poke the size of the buffer is not maintained.");
+		assert_equals(_used_size, 504, "After a within bounds poke the used size didn't match");
+		assert_equals(_tell, 0, "After a poke the tell changed value");
+
+		buffer_delete(_buff);
+	
+	});
 	
 }

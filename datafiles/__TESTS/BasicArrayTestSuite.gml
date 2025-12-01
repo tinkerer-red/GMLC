@@ -1,8 +1,3 @@
-enum RainbowColors {
-	Red, Orange, Yellow,
-	Green, Blue, Indigo,
-	Violet
-}
 
 function BasicArrayTestSuite() : TestSuite() constructor {
 
@@ -323,25 +318,6 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 		}
 		
 	});
-	
-	////GMLC WONT SUPPORT THIS
-	////addFact("array_create test #12", function() {
-	////	
-	////	/// @DEPRECATED
-	////	//#12 array_create ( int macro, array2d local )
-	////	var _array2D;
-	////	_array2D[1,2] = 2;
-	////	var _arraySize = 100;
-	////	var _failed = false;
-	////	var _result = array_create(_arraySize, _array2D);
-	////	for(var _i = 0; _i < _arraySize; ++_i)
-	////	{
-	////		var _arraysEqual = array_equals(_result[_i], _array2D);
-	////		_failed |= !assert_true(_arraysEqual, "array_create ( int macro, array2d local )");
-	////		if (_failed) break;
-	////	}
-	////	
-	////});
 	
 	addFact("array_create test #13", function() {
 		
@@ -793,25 +769,6 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 		assert_equals(_result, _arraySize, "the 1st dimension of a pre-filled 2d array");
 		
 	});
-	
-	addFact("array_length test #7", function() {
-		
-		var _arraySize = 17;
-		var _array2D1 = [];
-		for(var _i = 0; _i < _arraySize; ++_i)
-		{	
-			for(var _j = 0; _j < _arraySize - 3; ++_j)
-			{
-				_array2D1[_i, _j] = _i + (_i*_j);
-			}
-		}
-
-			
-		//#7 array_length, the 2nd dimension of a pre-filled 2d array
-		var _result = array_length(_array2D1[4]);
-		assert_equals(_result, _arraySize - 3, "the 2nd dimension of a pre-filled 2d array");
-		
-	});
 
 	addFact("array_length test #8", function() {
 			
@@ -942,20 +899,6 @@ function BasicArrayTestSuite() : TestSuite() constructor {
 		assert_equals(_dest[_idx], _array1D, "array_push ( array:local, array1d:local )");
 
 	});
-	
-	////GMLC WONT SUPPORT THIS
-	////addFact("array_push test #8", function() {
-	////
-	////	var _idx, _dest = [];
-	////	var _array2D;
-	////	_array2D[1,2] = 2;
-	////		
-	////	//#8 array_push ( array 1d local, array2d local )
-	////	array_push(_dest, _array2D);
-	////	_idx = array_length(_dest) - 1;
-	////	assert_equals(_dest[_idx], _array2D, "array_push ( array:local, array2d:local )");
-	////
-	////});
 	
 	addFact("array_push test #9", function() {
 

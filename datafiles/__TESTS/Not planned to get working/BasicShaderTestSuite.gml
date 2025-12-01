@@ -59,7 +59,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -115,7 +115,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -198,7 +198,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -232,7 +232,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -315,7 +315,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -390,7 +390,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -478,7 +478,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -558,7 +558,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	addTestAsync("shader_set_uniform_i_array", objTestAsyncDraw, {
@@ -632,7 +632,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	addTestAsync("shader_get_sampler_index", objTestAsyncDraw, {
@@ -700,7 +700,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -756,7 +756,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -810,7 +810,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	
@@ -852,7 +852,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	addTestAsync("gl_frag_coord/sv_position", objTestAsyncDraw, {
@@ -864,7 +864,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 			verify_shader_compiled(test_shader);
 			
 			// Generate rectangle data to draw, filling the window
-			rect = new Rect(0, 0, window_get_width(), window_get_height());
+			rect = new Rect(0, 0, 256, 256);
 			
 			// Get window resolution uniform handle
 			u_resolution = shader_get_uniform(test_shader, "u_resolutionPS");
@@ -875,12 +875,12 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 			var _test_fail_message = test_current().name +", failed draw buffer comparison";
 			
 			// Start draw buffer comparison
-			var _test_surface = start_draw_comparison();
+			var _test_surface = start_draw_comparison(rect.right, rect.bottom);
 			
 			// Start using shader
 			shader_set(test_shader);
 				// Set the resolution uniform
-				shader_set_uniform_f(u_resolution, window_get_width(), window_get_height());
+				shader_set_uniform_f(u_resolution, rect.right, rect.bottom);
 				// Draw rectangle
 				draw_rect(rect);
 			// Stop using shader
@@ -894,7 +894,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	addTestAsync("gl_max_draw_buffers", objTestAsyncDraw, {
@@ -932,10 +932,10 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}	
 	},
 	{ 
-		timeoutMillis: 3000,
+		test_timeout_millis: 3000,
 		// gl_max_draw_buffers is only present in glsl, so no need to do this test on platforms that use hlsl
-		platformFilter: platform_windows,
-		platformFilter: platform_console
+		test_filter: platform_windows,
+		test_filter: platform_console
 	});
 	
 	addTestAsync("gl_frag_data/sv_target", objTestAsyncDraw, {
@@ -977,7 +977,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 
 	addTestAsync("3d_rendering", objTestAsyncDraw, {
@@ -1035,7 +1035,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	addTestAsync("normals_test", objTestAsyncDraw, {
@@ -1111,7 +1111,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 		}
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	addTestAsync("gl_front_facing/sv_is_front_face", objTestAsyncDraw, {
@@ -1189,7 +1189,7 @@ function BasicShaderTestSuite() : TestSuite() constructor {
 	
 	},
 	{ 
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 
 }

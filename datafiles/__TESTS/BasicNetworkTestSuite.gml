@@ -19,8 +19,8 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 		
 		ev_create: function() {
 		
-			var _server_address = "127.0.0.1";
-			var _server_port = 8080;
+			var _server_address = config_get_param("test_server_address");
+			var _server_port = config_get_param("test_server_port");
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -47,16 +47,16 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 	
 	},
 	{ 
-		timeoutMillis: 3000,
-		platformFilter: platform_not_browser
+		test_timeout_millis: 3000,
+		test_filter: platform_not_browser
 	});
 	
 	addTestAsync("network_connect_fail", objTestAsyncNetworking, {
 		
 		ev_create: function() {
 		
-			var _server_address = "127.0.0.1";
-			var _server_port = 8080;
+			var _server_address = config_get_param("test_server_address");
+			var _server_port = config_get_param("test_server_port");
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -82,16 +82,16 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 	
 	}, 
 	{ 
-		timeoutMillis: 3000,
-		platformFilter: platform_not_browser
+		test_timeout_millis: 3000,
+		test_filter: platform_not_browser
 	});
 		
 	addTestAsync("network_connect_raw_test", objTestAsyncNetworking, {
 		
 		ev_create: function() {
 		
-			var _server_address = "127.0.0.1";
-			var _server_port = 8080;
+			var _server_address = config_get_param("test_server_address");
+			var _server_port = config_get_param("test_server_port");
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -117,16 +117,16 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 	
 	},
 	{
-		timeoutMillis: 3000,
-		platformFilter: platform_not_browser
+		test_timeout_millis: 3000,
+		test_filter: platform_not_browser
 	});
 	
 	addTestAsync("network_send_packet_test", objTestAsyncNetworking, {
 		
 		ev_create: function() {
 		
-			var _server_address = "127.0.0.1";
-			var _server_port = 8080;
+			var _server_address = config_get_param("test_server_address");
+			var _server_port = config_get_param("test_server_port");
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -179,16 +179,16 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 	
 	}, 
 	{ 
-		timeoutMillis: 3000,
-		platformFilter: platform_not_browser
+		test_timeout_millis: 3000,
+		test_filter: platform_not_browser
 	});
 
 	addTestAsync("network_send_packet_handshake_test", objTestAsyncNetworking, {
 		
 		ev_create: function() {
 		
-			var _server_address = "127.0.0.1";
-			var _server_port = 8080;
+			var _server_address = config_get_param("test_server_address");
+			var _server_port = config_get_param("test_server_port");
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -241,16 +241,16 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 	
 	}, 
 	{ 
-		timeoutMillis: 3000,
-		platformFilter: platform_not_browser
+		test_timeout_millis: 3000,
+		test_filter: platform_not_browser
 	});
 	
 	addTestAsync("network_send_packet_handshake_limit_test", objTestAsyncNetworking, {
 		
 		ev_create: function() {
 		
-			var _server_address = "127.0.0.1";
-			var _server_port = 8080;
+			var _server_address = config_get_param("test_server_address");
+			var _server_port = config_get_param("test_server_port");
 		
 			network_set_config(network_config_connect_timeout, 2000);
 			network_set_config(network_config_use_non_blocking_socket, true);
@@ -297,7 +297,7 @@ function BasicNetworkTestSuite() : TestSuite() constructor {
 	
 	}, 
 	{ 
-		timeoutMillis: 3000,
-		platformFilter: platform_not_browser
+		test_timeout_millis: 3000,
+		test_filter: platform_not_browser
 	});
 }

@@ -333,5 +333,5 @@ function BasicIniTestSuite() : TestSuite() constructor {
         assert_not_equals(_output, "", "#6 ini_close ( ), shouldn't have returned an empty string");
     })
     
-    config({ platformFilter: platform_not_console });
+    config({ suite_filter: platform_not_console });
 }

@@ -818,7 +818,7 @@ function BasicDateTimeTestSuite() : TestSuite() constructor {
 		assert_equals(date_time_string(dateTime), "09:43:44", "date_time_string returned the wrong value");
 			
 			
-	}, { platformFilter: function() { return platform_windows() || platform_browser(); } });
+	}, { test_filter: function() { return platform_windows() || platform_browser(); } });
 		
 	addFact("date_datetime_string_macos_ios_android", function() {
 			
@@ -831,6 +831,6 @@ function BasicDateTimeTestSuite() : TestSuite() constructor {
 		assert_equals(date_date_string(dateTime), dateString, "date_date_string returned the wrong value");
 		assert_equals(date_time_string(dateTime), "09:43:44", "date_time_string returned the wrong value");
 			
-	}, { platformFilter: function() { return platform_macosx() || platform_browser(); } });
+	}, { test_filter: function() { return platform_macosx() || platform_browser(); } });
 */
 }

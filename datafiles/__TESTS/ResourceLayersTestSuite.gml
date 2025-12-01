@@ -1,6 +1,3 @@
-#macro TEST_INVALID_ARGS false
-
-
 function ResourceLayersTestSuite() : TestSuite() constructor {
 
 	addFact("layer_get_set_test", function() {
@@ -501,7 +498,7 @@ function ResourceLayersTestSuite() : TestSuite() constructor {
 		layer_destroy(testLayer);
 
 	}, {
-		platformFilter: runtime_not_gmrt
+		test_filter: runtime_not_gmrt
 	})
 
 	addFact("layer_instance_test", function() {

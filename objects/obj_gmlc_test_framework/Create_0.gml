@@ -125,6 +125,8 @@ gmlc.exposeMacros({
 	"suite_filter": "platformFilter",
 	"suite_bail_on_fail": "bailOnFail",
 	"suite_delay_seconds": "delaySeconds",
+	
+	"TEST_INVALID_ARGS": "false",
 })
 
 gmlc.exposeEnums({
@@ -145,7 +147,7 @@ gmlc.exposeEnums({
 #macro SINGLE_TEST_MODE false
 
 // If single test mode is set to true this will be the path to the test being run
-single_test_path = "BasicArrayTestSuite@array_copy test #1";
+single_test_path = "BasicDataTypesTestSuite@int64_test #9";
 
 /// @description Start Framework
 /// This is the entry point for the frameowork execution.

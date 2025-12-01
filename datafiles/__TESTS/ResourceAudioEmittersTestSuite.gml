@@ -2,6 +2,10 @@
 // https://help.yoyogames.com/hc/en-us/articles/360005277377 for more information
 function ResourceAudioEmittersTestSuite() : TestSuite() constructor {
 	
+	config({
+		suite_filter: runtime_not_gmrt
+	});
+	
 	addFact("Audio emitter creation test #1", function() {
 		
 		// create emitter
@@ -244,7 +248,7 @@ function ResourceAudioEmittersTestSuite() : TestSuite() constructor {
 	});
 	
 	config({
-		platformFilter: runtime_not_gmrt
+		suite_filter: runtime_not_gmrt
 	});
 	
 }

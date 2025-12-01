@@ -1,5 +1,3 @@
-#macro TEST_INVALID_ARGS false
-
 /// @function CreateTestLayer()
 /// @description Creates a new layer for testing. Returns undefined and fails the test if the layer has not been created correctly.
 /// @return {Id.layer}
@@ -362,7 +360,7 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	},
 	{ 
 		// This will end the test if the test runs for 3 seconds without a change in frame being detected
-		timeoutMillis: 3000
+		test_timeout_millis: 3000
 	});
 	
 	// Test for tilemap_get_tile_width()
@@ -793,7 +791,7 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	
 	},
 	{ 
-		timeoutMillis: 3000,
+		test_timeout_millis: 3000,
 	});
 	
 	// Test for tile_set_empty() and tile_get_empty()
@@ -1040,6 +1038,6 @@ function BasicTilemapTestSuite() : TestSuite() constructor {
 	
 	},
 	{ 
-		timeoutMillis: 3000,
+		test_timeout_millis: 3000,
 	});
 }

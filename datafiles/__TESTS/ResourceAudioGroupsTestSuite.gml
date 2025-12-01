@@ -22,6 +22,10 @@ function getAudioGroups() {
 	
 function ResourceAudioGroupsTestSuite() : TestSuite() constructor {
 	
+	config({
+		suite_filter: runtime_not_gmrt
+	});
+	
 	addFact("Default audio group test #1", function() {
 		
 		var loaded = audio_group_is_loaded(audiogroup_default);
@@ -302,7 +306,7 @@ function ResourceAudioGroupsTestSuite() : TestSuite() constructor {
 	});
 	
 	config({
-		platformFilter: runtime_not_gmrt
+		suite_filter: runtime_not_gmrt
 	});
 	
 }

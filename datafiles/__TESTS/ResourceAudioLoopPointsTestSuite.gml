@@ -1,5 +1,9 @@
 function ResourceAudioLoopPointsTestSuite() : TestSuite() constructor {
 	
+	config({
+		suite_filter: runtime_not_gmrt
+	});
+	
 	addFact("Audio loop point getters / setters test #1", function() {
 		
 		// Create play sound and set it to loop
@@ -82,7 +86,7 @@ function ResourceAudioLoopPointsTestSuite() : TestSuite() constructor {
 	});
 	
 	config({
-		platformFilter: runtime_not_gmrt
+		suite_filter: runtime_not_gmrt
 	});
 	
 }

@@ -290,7 +290,7 @@ function BasicDataStructuresMapTestSuite() : TestSuite() constructor {
 		assert_true(_output, "ds_map_secure_load(), failed to load correct data (could be a ds_map_secure_save problem)");
 		
 	}, {
-		platformFilter: platform_not_browser
+		test_filter: platform_not_browser
 	});
 	
 	addFact("ds_map_secure_save_load_test #2", function() {
@@ -323,7 +323,7 @@ function BasicDataStructuresMapTestSuite() : TestSuite() constructor {
 		buffer_delete(_mapSaveBuffer);
 		ds_map_destroy(_map);
 	}, {
-		platformFilter: platform_not_browser
+		test_filter: platform_not_browser
 	});
 	
 	// MAP REFERENCE KEY TESTS
