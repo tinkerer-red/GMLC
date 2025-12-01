@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"filesystem_is_sandboxed",
+  "%Name":"make_pow2",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"filesystem_is_sandboxed",
+  "name":"make_pow2",
   "parent":{
     "name":"Utils",
-    "path":"folders/_Libraries/xUnit/Modules/ConfigModule/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

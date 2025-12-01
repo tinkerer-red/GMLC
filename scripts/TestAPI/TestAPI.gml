@@ -6,7 +6,7 @@
 // ################################### INTERNAL API ####################################
 // These function are used internally inside the objAsyncTask* objects to handle test
 // execution. They should not be called from within tests, with the exception of the
-// function test_end this function should be called to finish an async test.
+// function 'test_end' this function should be called to finish an async test.
 // #####################################################################################
 
 global.gCurrentTest = undefined;
@@ -71,7 +71,7 @@ function test_current() {
 }
 
 /// @function test_run_event()
-/// @description Runs the given event of the current test (doesnt throw)
+/// @description Runs the given event of the current test (doesn't throw)
 function test_run_event(_eventName) {
 	
 	var _test = global.gCurrentTest;
@@ -82,7 +82,7 @@ function test_run_event(_eventName) {
 	
 	if (!is_callable(_func)) return;
 	
-	if (ShouldTryCatch) {
+	if (FRAMEWORK_SHOULD_CATCH) {
 		try {
 			_func();
 		}
@@ -91,7 +91,7 @@ function test_run_event(_eventName) {
 		}
 	}
 	else {
-		_func()
+		_func();
 	}
 }
 
@@ -119,10 +119,12 @@ function test_end(_forcedResult = TestResult.Unset) {
 	_test.result = _forcedResult;
 	_test.endTimestamp = _timestamp;
 	
-	// Run the ev_cleanup in-place (if there is one)
+	// Run the 'ev_cleanup' in-place (if there is one)
 	test_run_event("ev_cleanup");
 	instance_destroy(self, true);
 	
 	_test.postRunFunc();
+	
+	room_goto(rmEmpty);
 }
 

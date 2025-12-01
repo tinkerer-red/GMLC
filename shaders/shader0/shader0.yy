@@ -4,7 +4,7 @@
   "name":"shader0",
   "parent":{
     "name":"shaders",
-    "path":"folders/Tests/TestResources/shaders.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/shaders.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

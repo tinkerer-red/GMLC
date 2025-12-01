@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"OptimizerUnreachableCodeTestSuite",
   "parent":{
-    "name":"Optimizers",
-    "path":"folders/_Libraries/xUnit/Tests/TestSuites/Red's Tests/Optimizers.yy",
+    "name":"Red's Tests",
+    "path":"folders/Tests/Red's Tests.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -1,29 +1,25 @@
 
 var env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-function addArguments() 
-{
-    var _result = 0;
-    
-    for (var _n = argument_count - 1; _n>=0; --_n) {
-        _result += argument[_n];
-    }
-    return _result;
+function TestAudioEffectMembers(audioEffectType, membersArray) {
+	
+	// Loop through all members of audio effect and check if it exists
+	for (var i = 0; i < array_length(membersArray); i++) {
+		
+		var output = variable_struct_exists(audioEffectType, membersArray[i]);
+		assert_true(output, string(audioEffectType) + " should contain " + string(membersArray[i]) + " as a member");
+		
+	}
+	
 }
 
-var _array = [ 10, 20, 30, 40, 50, 60];
+var members = ["type", "bypass", "gain", "factor", "resolution", "mix"];
 
-// Execute addArguments and check that it correctly sums the inputted array
-var _result = script_execute_ext(addArguments, _array);
-return _result;
+var effect = audio_effect_create(AudioEffectType.Bitcrusher);
+
+TestAudioEffectMembers(effect, members);
 ');
 
-show_debug_message(program())
-show_debug_message(program())
-show_debug_message(program())
-show_debug_message(program())
-show_debug_message(program())
-show_debug_message(program())
 show_debug_message(program())
 
 /*

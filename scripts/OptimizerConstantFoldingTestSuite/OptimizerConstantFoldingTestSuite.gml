@@ -1,5 +1,3 @@
-
-
 function OptimizerConstantFoldingTestSuite() : TestSuite() constructor {
 
 	// Test 1: Basic constant folding with addition

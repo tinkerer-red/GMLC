@@ -4,7 +4,7 @@
   "name":"note_handleResources",
   "parent":{
     "name":"handles",
-    "path":"folders/Tests/TestResources/handles.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/handles.yy",
   },
   "resourceType":"GMNotes",
   "resourceVersion":"2.0",

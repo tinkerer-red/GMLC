@@ -18,7 +18,7 @@ function PropertyHolder() : IConfigurable() constructor {
 	static addProperty = function(_propName, _defaultValue = undefined, _validator = undefined, _setter = undefined, _getter = undefined, _access = undefined) {
 
 		if (variable_struct_exists(properties, _propName)) {
-			log_warning("addProperty : redeclaration of property {0}", _propName);
+			log_warning("addProperty : redeclaration of property '{0}'", _propName);
 			removeProperty(_propName);
 		}
 		
@@ -32,7 +32,7 @@ function PropertyHolder() : IConfigurable() constructor {
 	static removeProperty = function(_propName) {
 		
 		if (!variable_struct_exists(properties, _propName)) {
-			log_warning("removeProperty :: trying to remove unexisting property {0}", _propName);
+			log_warning("removeProperty :: trying to remove unexisting property '{0}'", _propName);
 			return;
 		}
 		
@@ -50,7 +50,7 @@ function PropertyHolder() : IConfigurable() constructor {
 		
 		// Check if property can be set
 		if (!variable_struct_exists(properties, _propName))
-			throw log_error("set :: trying to set {0}, property doesnt exist.", _propName);
+			throw log_error("set :: trying to set '{0}', property doesn't exist.", _propName);
 		
 		// Set property
 		properties[$ _propName].set(_val);
@@ -64,7 +64,7 @@ function PropertyHolder() : IConfigurable() constructor {
 	
 		// Check if property can be set
 		if (!variable_struct_exists(properties, _propName))
-			throw log_error("get :: trying to get {0}, property doesnt exist.", _propName);
+			throw log_error("get :: trying to get '{0}', property doesn't exist.", _propName);
 
 		// Get property
 		return properties[$ _propName].get();
@@ -75,18 +75,18 @@ function PropertyHolder() : IConfigurable() constructor {
 	/// @param {Bool} _all Show all properies or only public ones.
 	static showProperties = function(_all = false) {
 		
-		var _header = string("# {0} Property List ####################", instanceof(self));
-		pprint(_header);
+		var _header = string("# '{0}' Property List ####################", instanceof(self));
+		show_debug_message(_header);
 		var _names = variable_struct_get_names(properties);
 		var _i = 0;
 		repeat (variable_struct_names_count(properties)) {
 			var _name = _names[_i++];
 			var _property = properties[$ _name];
 			if (!_all && _property.private) continue;
-			pprint(properties[$ _name]);
+			show_debug_message(properties[$ _name]);
 		}
 		var _footer = string_repeat("#", string_length(_header))
-		pprint(_footer);
+		show_debug_message(_footer);
 	}
 
 	/// @function config(configuration)

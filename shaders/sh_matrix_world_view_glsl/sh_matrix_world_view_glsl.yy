@@ -4,7 +4,7 @@
   "name":"sh_matrix_world_view_glsl",
   "parent":{
     "name":"GLSL",
-    "path":"folders/Tests/TestResources/shaders/ShaderUniformTests/GLSL.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/shaders/ShaderUniformTests/GLSL.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

@@ -50,7 +50,7 @@ function TestAsync(_name, _object, _events = undefined, _options = undefined) : 
 			call_cancel(timeoutHandle);
 		}
 		
-		// If we dont have a state yet (there was no forced state, ie.: Skipped, Bailed, Expired)
+		// If we don't have a state yet (there was no forced state, ie.: Skipped, Bailed, Expired)
 		if (result == TestResult.Unset) result = hasDiagnostics() ? TestResult.Failed : TestResult.Passed;
 		
 		// Pop test from global scope

@@ -6,7 +6,7 @@
   "name":"BasicEscapeCharacterTestSuite",
   "parent":{
     "name":"Red's Tests",
-    "path":"folders/_Libraries/xUnit/Tests/TestSuites/Red's Tests.yy",
+    "path":"folders/Tests/Red's Tests.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

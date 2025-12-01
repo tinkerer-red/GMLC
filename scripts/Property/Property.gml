@@ -25,11 +25,11 @@ function Property(_owner, _name, _value = undefined, _validator = undefined, _se
 	static set = function(_value) {
 		
 		if (access & AccessMode.Write == 0)
-			throw log_error("set :: writing to property {0} is not allowed.", name);
+			throw log_error("set :: writing to property '{0}' is not allowed.", name);
 		
 		// Check if there is a validator functions call it
 		if (is_callable(validator) && !validator(_value))
-			throw log_error("set :: trying to set property {0} with an invalid value: {1}", name, _value);
+			throw log_error("set :: trying to set property '{0}' with an invalid value: {1}", name, _value);
 		
 		// If there is a setter function call it (else set the value directly)
 		var _setter = setter;
@@ -42,7 +42,7 @@ function Property(_owner, _name, _value = undefined, _validator = undefined, _se
 	
 		// Check if property can be set
 		if (access & AccessMode.Read == 0)
-			throw log_error("get :: accessing property {0} is not allowed.", name);
+			throw log_error("get :: accessing property '{0}' is not allowed.", name);
 		
 		// If there is a setter function call it (else set the value directly)
 		var _getter = getter;

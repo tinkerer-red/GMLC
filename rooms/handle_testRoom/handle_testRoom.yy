@@ -14,7 +14,7 @@
   "name":"handle_testRoom",
   "parent":{
     "name":"handles",
-    "path":"folders/Tests/TestResources/handles.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/handles.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

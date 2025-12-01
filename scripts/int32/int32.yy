@@ -6,7 +6,7 @@
   "name":"int32",
   "parent":{
     "name":"Utils",
-    "path":"folders/_Libraries/xUnit/Tests/Utils.yy",
+    "path":"folders/_Libraries/xUnit/Utils.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

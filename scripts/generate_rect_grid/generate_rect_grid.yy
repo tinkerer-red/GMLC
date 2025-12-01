@@ -6,7 +6,7 @@
   "name":"generate_rect_grid",
   "parent":{
     "name":"Rects",
-    "path":"folders/_Libraries/xUnit/Tests/Utils/ShaderTests/Rects.yy",
+    "path":"folders/_Libraries/xUnit/Utils/ShaderTests/Rects.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

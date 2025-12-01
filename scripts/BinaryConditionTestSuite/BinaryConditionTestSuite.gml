@@ -60,4 +60,4 @@ function BinaryConditionTestSuite() : TestSuite() constructor {
         assert_equals(result, 1, "Nested binary expression in condition failed");
         //')
     });
-} 
+}

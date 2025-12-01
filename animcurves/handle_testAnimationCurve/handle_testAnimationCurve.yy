@@ -11,7 +11,7 @@
   "name":"handle_testAnimationCurve",
   "parent":{
     "name":"handles",
-    "path":"folders/Tests/TestResources/handles.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/handles.yy",
   },
   "resourceType":"GMAnimCurve",
   "resourceVersion":"2.0",

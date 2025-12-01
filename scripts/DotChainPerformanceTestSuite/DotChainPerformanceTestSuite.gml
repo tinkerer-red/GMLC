@@ -132,4 +132,4 @@ function DotChainPerformanceTestSuite() : TestSuite() constructor {
 	    ')
 	});
 
-} 
+}

@@ -29,7 +29,7 @@ var _i=0; repeat(array_length(_func_arr)) {
 	}
 	
 	if (_is_constructor) {
-		show_debug_message($"Adding \"@@constructor\" tag to :: {script_get_name(_func)}")
+		//show_debug_message($"Adding \"@@constructor\" tag to :: {script_get_name(_func)}")
 		asset_add_tags(_func, "@@constructor");
 	}
 	

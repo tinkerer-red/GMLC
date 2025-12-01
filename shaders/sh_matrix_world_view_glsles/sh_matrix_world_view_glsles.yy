@@ -4,7 +4,7 @@
   "name":"sh_matrix_world_view_glsles",
   "parent":{
     "name":"GLSLES",
-    "path":"folders/Tests/TestResources/shaders/ShaderUniformTests/GLSLES.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/shaders/ShaderUniformTests/GLSLES.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

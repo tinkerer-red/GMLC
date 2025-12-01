@@ -15,7 +15,7 @@
   "name":"snd_coinpickup_OGG",
   "parent":{
     "name":"sounds",
-    "path":"folders/Tests/TestResources/sounds.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/sounds.yy",
   },
   "preload":false,
   "resourceType":"GMSound",

@@ -84,4 +84,4 @@ function EmptyBlockAcceptanceTestSuite() : TestSuite() constructor {
         assert_equals(result, 1, "Nested empty blocks should not error");
         ')
     });
-} 
+}

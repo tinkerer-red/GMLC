@@ -4,7 +4,7 @@
   "name":"sh_vs_fog_enabled_hlsl",
   "parent":{
     "name":"HLSL",
-    "path":"folders/Tests/TestResources/shaders/ShaderUniformTests/HLSL.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/shaders/ShaderUniformTests/HLSL.yy",
   },
   "resourceType":"GMShader",
   "resourceVersion":"2.0",

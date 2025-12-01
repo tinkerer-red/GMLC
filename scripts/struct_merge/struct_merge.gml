@@ -14,7 +14,7 @@ function struct_merge(_src, _dest, _add = true) {
 	for (var _i = 0; _i < _count; _i++) {
 		var _name = _names[_i];
 		
-		// If the variable name exists on destination (or _add is true)
+		// If the variable name exists on destination (or '_add' is true)
 		if (variable_struct_exists(_dest, _name) || _add) {
 			_dest[$ _name] = _src[$ _name];
 		}		

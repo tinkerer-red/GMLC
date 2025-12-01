@@ -1,4 +1,3 @@
-/*
 function BasicTernaryOperatorTestSuite() : TestSuite() constructor {
 
     // Simple ternary truthy

@@ -19,7 +19,7 @@
   "name":"room0",
   "parent":{
     "name":"rooms",
-    "path":"folders/Tests/TestResources/rooms.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/rooms.yy",
   },
   "parentRoom":null,
   "physicsSettings":{

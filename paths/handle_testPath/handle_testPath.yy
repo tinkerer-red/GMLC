@@ -6,7 +6,7 @@
   "name":"handle_testPath",
   "parent":{
     "name":"handles",
-    "path":"folders/Tests/TestResources/handles.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/handles.yy",
   },
   "points":[],
   "precision":4,

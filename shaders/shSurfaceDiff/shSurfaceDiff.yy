@@ -1,0 +1,12 @@
+{
+  "$GMShader":"",
+  "%Name":"shSurfaceDiff",
+  "name":"shSurfaceDiff",
+  "parent":{
+    "name":"Internal",
+    "path":"folders/_Libraries/xUnit/Modules/AssertModule/Internal.yy",
+  },
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

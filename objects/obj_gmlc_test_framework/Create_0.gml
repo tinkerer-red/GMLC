@@ -1,13 +1,5 @@
-/// @description Start Framework
-/// This is the entry point for the frameowork execution.
-testFramework = new TestFrameworkRun();
-
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
-//sprites
-gmlc.exposeConstants({
-	"sprTileset": sprTileset,
-	"sprTilesetReplacement": sprTilesetReplacement,
-})
+
 //audio groups
 gmlc.exposeConstants({
 	"audiogroup_default": audiogroup_default,
@@ -115,6 +107,20 @@ gmlc.exposeConstants({
 	},
 })
 
+
+
+#macro FRAMEWORK_SHOULD_CATCH true
+
+#macro SINGLE_TEST_MODE false
+
+// If single test mode is set to true this will be the path to the test being run
+single_test_path = "BasicArrayTestSuite@array_copy test #1";
+
+/// @description Start Framework
+/// This is the entry point for the frameowork execution.
+testFramework = new TestFrameworkRun();
+
+// ################# TEST SUITE REGISTRATION #################
 //// Register your test suites here...
 testFramework.addSuite(OptimizerConstantFoldingTestSuite);
 testFramework.addSuite(OptimizerConstantPropagationTestSuite);
@@ -159,8 +165,38 @@ for(var i=0; i<array_length(_file_names); i++) {
 }
 //*/
 
+socket = undefined;
+network_buffer = undefined; 
+using_remote_server = false;
+
 // ###########################################################
 
-testFramework.run(undefined, {});
+// Only update the remote server flag if this is NOT a single test mode
+if (!SINGLE_TEST_MODE) {
+	using_remote_server = config_get_param("remote_server");
+}
 
-
+if (using_remote_server) { 
+ 
+	// Using remote server 
+	socket = network_create_socket(network_socket_tcp); 
+	network_buffer = buffer_create(1, buffer_grow, 1); 
+	 
+	var _url = config_get_param("remote_server_address"); 
+	var _port = config_get_param("remote_server_port");
+	 
+	network_connect_raw_async(socket, _url, _port); 
+} else {
+	
+	if (SINGLE_TEST_MODE) {
+		var _test = testFramework.findTestByPath(single_test_path);
+		_test.run(function(_test) {
+	
+			show_debug_message(_test.getResultData());
+	
+		}, { suite: "Unknown", results_to_publish: [] });
+	} 
+	else {		
+		testFramework.run(undefined, {});
+	}
+}

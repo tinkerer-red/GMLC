@@ -1,5 +1,3 @@
-
-
 function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 
 	// Test 1: Basic constant propagation
@@ -624,6 +622,3 @@ function OptimizerConstantPropagationTestSuite() : TestSuite() constructor {
 	#endregion
 	
 }
-
-
-

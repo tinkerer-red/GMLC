@@ -22,7 +22,7 @@ function Test(_name = undefined) : Task() constructor {
 	/// @ignore
 	endHook = addProperty("endHook", undefined, is_callable);
 	/// @ignore
-	timeoutMillis = addProperty("timeoutMillis", 5000, is_real);
+	timeoutMillis = addProperty("timeoutMillis", 60000, is_real);
 	/// @ignore
 	platformFilter = addProperty("platformFilter", undefined, is_callable);
 	
@@ -53,7 +53,7 @@ function Test(_name = undefined) : Task() constructor {
 		
 		endTimestamp = get_timer();
 		
-		// If we dont have a state yet (there was no forced state, ie.: Skipped, Bailed, Expired)
+		// If we don't have a state yet (there was no forced state, ie.: Skipped, Bailed, Expired)
 		if (result == TestResult.Unset) result = hasDiagnostics() ? TestResult.Failed : TestResult.Passed;
 		
 		callEndHook();
@@ -80,7 +80,6 @@ function Test(_name = undefined) : Task() constructor {
 	/// @param {Function} callbackFunc The function to be called at the end of execution.
 	/// @param {Any} resultBag The result collector that is carried along between nested tests.
 	static run = function(_callbackFunc = undefined, _resultBag = undefined) {
-		
 		resultBag = _resultBag;
 		run_Task(_callbackFunc);
 	}
@@ -98,7 +97,7 @@ function Test(_name = undefined) : Task() constructor {
 	static getResultString = function() {
 		return resultStrings[result];
 	}
-	
+		
 	/// @function getDuration()
 	/// @description Gets the test duration (micros)
 	/// @returns {Real}
@@ -132,11 +131,10 @@ function Test(_name = undefined) : Task() constructor {
 				break;
 			
 			case TestResult.Expired:
-				
 			case TestResult.Failed:
 				_summary.duration = getDuration();
-				_summary.errors = getDiagnostics("error");
-				_summary.exceptions = getDiagnostics("exception");
+				_summary.errors = getDiagnostics("error") ?? [];
+				_summary.exceptions = getDiagnostics("exception") ?? [];
 				break;
 				
 			case TestResult.Skipped:
@@ -165,7 +163,7 @@ function Test(_name = undefined) : Task() constructor {
 	/// @function callStartHook()
 	/// @description Calls the hook function assigned to the start of the execution.
 	static callStartHook = function() {
-		if (is_callable(startHook)) startHook(self);
+		if (is_callable(startHook)) startHook(self, resultBag);
 	}
 	
 	/// @function callEndHook()

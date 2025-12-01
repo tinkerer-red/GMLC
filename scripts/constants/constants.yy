@@ -6,7 +6,7 @@
   "name":"constants",
   "parent":{
     "name":"scripts",
-    "path":"folders/Tests/TestResources/scripts.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/scripts.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

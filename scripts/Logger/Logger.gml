@@ -43,12 +43,12 @@ function Logger(_configuration = undefined) : PropertyHolder() constructor {
 		["{level}", "{2}"], 
 	]);
 	
-	/// @function do_log(level, message, args...)
-	/// @description Logs a message with integer level level on this logger.
+	/// @function print(level, message, args...)
+	/// @description Logs a message with integer level 'level' on this logger.
 	/// @param {Real} The level of the logged message.
 	/// @param {String} message The message to be logged.
 	/// @param {Array} args A set of arguments to be replaced in the logged message.
-	static do_log = function(_level, _message, _args = undefined) {
+	static print = function(_level, _message, _args = undefined) {
 		
 		if (_level < level) return;
 		
@@ -74,7 +74,7 @@ function Logger(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} message The message to be logged.
 	/// @param {Array} args A set of arguments to be replaced in the logged message.
 	static debug = function(_message, _args = undefined) {
-		return do_log(LoggerLevel.Debug, _message, _args);
+		return print(LoggerLevel.Debug, _message, _args);
 	}
 	
 	/// @function info(message, args...)
@@ -82,7 +82,7 @@ function Logger(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} message The message to be logged.
 	/// @param {Array} args A set of arguments to be replaced in the logged message.
 	static info = function(_message, _args = undefined) {
-		return do_log(LoggerLevel.Info, _message, _args);
+		return print(LoggerLevel.Info, _message, _args);
 	}
 
 	/// @function warning(message, args...)
@@ -90,7 +90,7 @@ function Logger(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} message The message to be logged.
 	/// @param {Array} args A set of arguments to be replaced in the logged message.
 	static warning = function(_message, _args = undefined) {
-		return do_log(LoggerLevel.Warning, _message, _args);
+		return print(LoggerLevel.Warning, _message, _args);
 	}
 	
 	/// @function error(message, args...)
@@ -98,7 +98,7 @@ function Logger(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} message The message to be logged.
 	/// @param {Array} args A set of arguments to be replaced in the logged message.
 	static error = function(_message, _args = undefined) {
-		return do_log(LoggerLevel.Error, _message, _args);
+		return print(LoggerLevel.Error, _message, _args);
 	}
 	
 	/// @function critical(message, args...)
@@ -106,7 +106,7 @@ function Logger(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} message The message to be logged.
 	/// @param {Array} args A set of arguments to be replaced in the logged message.
 	static critical = function(_message, _args = undefined) {
-		return do_log(LoggerLevel.Critical, _message, _args);
+		return print(LoggerLevel.Critical, _message, _args);
 	}
 
 	/// @function basicConfig(level, format, timeFormat)

@@ -7,7 +7,7 @@
   "overriddenProperties":[],
   "parent":{
     "name":"Object Parents",
-    "path":"folders/Tests/TestResources/objects/Object Parents.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/objects/Object Parents.yy",
   },
   "parentObjectId":{
     "name":"oGrandParent",

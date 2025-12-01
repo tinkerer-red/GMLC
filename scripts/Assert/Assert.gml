@@ -16,21 +16,38 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	stackBaseDepth = addProperty("stackBaseDepth", 4, is_numeric);
 	/// @ignore
 	stackDepth = addProperty("stackDepth", 0, is_numeric);
-		
+	
 	/// @ignore
 	assertDepth = 0;
 	/// @ignore
 	userData = undefined;
+	/// @ignore
+	assertionCount = 0;
+	
 	
 	/// @function setUserData(data)
-	/// @description Allows to set some userData that will be carried over and passed to the passHook and failHook functions.
+	/// @description Allows to set some 'userData' that will be carried over and passed to the 'passHook' and 'failHook' functions.
 	/// @param {Any} data
 	static setUserData = function(_data) {
 		userData = _data;
 	}
 	
+	
+	/// @function resetAssertionCount()
+	/// @description Resets the assertion number counter
+	static resetAssertionCount = function() {
+		assertionCount = 0;
+	}
+	
+	/// @function getAssertionCount()
+	/// @description Gets the number of assertions since last reset.
+	/// @returns {Real}
+	static getAssertionCount = function() {
+		return assertionCount;
+	}
+	
 	/// @function reset()
-	/// @description Resets the current assert_true section including assertDepth and userData.
+	/// @description Resets the current assert_true section including 'assertDepth' and 'userData'.
 	static reset = function() {
 		assertDepth = 0;
 		userData = undefined;
@@ -47,12 +64,15 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	/// @returns {Bool}
 	static fail = function(_title, _description, _value = undefined, _expected = undefined) {
 		
-		if (assertDepth != 0 || !is_callable(failHook)) return false;
+		if (assertDepth != 0) return false;
+		
+		assertionCount++;
+		if (!is_callable(failHook)) return false;
 		
 		// Select only the stack portion we want
 		var _stack = debug_get_callstack(stackBaseDepth + stackDepth);
 		array_delete(_stack, 0, stackBaseDepth - 1);
-		
+				
 		failHook(_title, _description, _value, _expected, _stack, userData);
 		
 		return false;
@@ -67,7 +87,10 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	/// @returns {Bool}
 	static pass = function(_title, _description, _value = undefined, _expected = undefined) {
 
-		if (assertDepth != 0 || !is_callable(passHook)) return true;
+		if (assertDepth != 0) return true;
+		
+		assertionCount++;
+		if (!is_callable(passHook)) return true;
 
 		// Select only the stack portion we want
 		var _stack = debug_get_callstack(stackBaseDepth + stackDepth);
@@ -181,7 +204,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted value to be any of the values in the array";
 	
-		if (!is_array(_expected)) throw log_error("any_of :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("any_of :: argument 'expected' must be of type {Array}");
 		
 		var _resolver = array_contains(_expected, _value) ? pass : fail;
 		
@@ -228,7 +251,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Expected array to contain value";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
 	
 		var _resolver = array_contains(_array, _expected) ? pass : fail;
@@ -246,9 +269,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Expected array to contain all values";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
-		if (!is_array(_expected)) throw log_error("arrayContainsAll :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("arrayContainsAll :: argument 'expected' must be of type {Array}");
 	
 		var _resolver = array_contains_ext(_array, _expected, true) ? pass : fail;
 		
@@ -265,9 +288,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert array to contain any value";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
-		if (!is_array(_expected)) throw log_error("arrayContainsAny :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("arrayContainsAny :: argument 'expected' must be of type {Array}");
 	
 		var _resolver = array_contains_ext(_array, _expected, false) ? pass : fail;
 		
@@ -283,7 +306,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert array to be empty";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
 	
 		// Logical operation
@@ -303,9 +326,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert two arrays to be equal";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
-		if (!is_array(_expected)) throw log_error("arrayEquals :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("arrayEquals :: argument 'expected' must be of type {Array}");
 
 		// Define temporary passed variable.
 		var _passed = true;
@@ -350,7 +373,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert array length to be exactly";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
 
 		var _result = array_length(_array);
@@ -368,7 +391,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert array to not be empty";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_array(_array)) return false;
 
 		var _result = array_length(_array);
@@ -391,7 +414,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert buffer alignment to match";
 	
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Assertion logic
@@ -411,9 +434,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert buffers to be equal (MD5 hash)";
 	
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer1)) return false;
-		if (!buffer_exists(_buffer2)) throw log_error("bufferEquals :: argument expected must be of type {Id.Buffer}");
+		if (!buffer_exists(_buffer2)) throw log_error("bufferEquals :: argument 'expected' must be of type {Id.Buffer}");
 
 		// Check if buffers are equal using MD5
 		var _result = buffer_md5(_buffer1, 0, buffer_get_size(_buffer1));
@@ -435,7 +458,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert buffer size to match";
 	
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Assertion logic
@@ -455,7 +478,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert buffer type to match";
 	
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Assertion logic
@@ -480,7 +503,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 
 		static assertTitle = "Assert surface buffer {0} channel data to equal";
 
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Store old position for reset
@@ -519,7 +542,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 
 		static assertTitle = "Assert surface buffer {0} channel data to be less than";
 
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Store old position for reset
@@ -558,7 +581,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 
 		static assertTitle = "Assert surface buffer {0} channel data to be less or equal to";
 
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Store old position for reset
@@ -597,7 +620,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 
 		static assertTitle = "Assert surface buffer {0} channel data to be greater than";
 
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Store old position for reset
@@ -636,7 +659,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 
 		static assertTitle = "Assert surface buffer {0} channel data to greater of equal to";
 
-		// If no buffer exists for this index then exit (but dont fail)
+		// If no buffer exists for this index then exit (but don't fail)
 		if (!buffer_exists(_buffer)) return false;
 
 		// Store old position for reset
@@ -667,6 +690,55 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	
 	#endregion
 
+	#region Sprite Asserts
+
+	/// @function spriteEquals(sprite1, sprite2, max_error, description)
+	/// @param {Asset.GMSprite} sprite1 The sprite to be compared.
+	/// @param {Asset.GMSprite} sprite2 The sprite to compare to.
+	/// @param {Real} [max_error] The maximum error allowed to tell that the sprites are equal.
+	/// Use values in range 0..100, where 0 means no error (all pixels match exactly) and 100
+	/// means 100% error (none of the pixels match).
+	/// @param {String} [description] An optional description for this assert.
+	/// @returns {Bool}
+	static spriteEquals = function(_sprite1, _sprite2, _max_error = 0, _description = undefined) {
+		var _width = sprite_get_width(_sprite1);
+		var _height = sprite_get_height(_sprite1);
+
+		// If the sprites aren't the same size then they can't be equal
+		if (sprite_get_width(_sprite2) != _width
+			|| sprite_get_height(_sprite2) != _height) {
+			return false;
+		}
+
+		// Draw the sprites into surfaces so we can use the surface compare function
+		var _surface1 = surface_create(_width, _height);
+		var _surface2 = surface_create(_width, _height);
+
+		gpu_push_state();
+		gpu_set_blendenable(false);
+
+		surface_set_target(_surface1);
+		draw_sprite(_sprite1, 0, 0, 0);
+		surface_reset_target();
+
+		surface_set_target(_surface2);
+		draw_sprite(_sprite2, 0, 0, 0);
+		surface_reset_target();
+
+		gpu_pop_state();
+
+		// Compare
+		var _resolver = _surfaceEqualsImpl(_surface1, _surface2, _max_error) ? pass : fail;
+
+		// Free created resources from memory
+		surface_free(_surface1);
+		surface_free(_surface2);
+
+		return _resolver("Sprites asserted to be equal", _description);
+	}
+
+	#endregion
+
 	#region Surface Asserts
 	
 	/// @function surfaceAll(surface, func, description)
@@ -679,12 +751,12 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert surface data to match a predicate";
 	
-		// If no surface exists for this index then exit (but dont fail)
+		// If no surface exists for this index then exit (but don't fail)
 		if (!surface_exists(_surface)) return false;
 
-		// Only surface_rgba8unorm format is supported
+		// Only 'surface_rgba8unorm' format is supported
 		if (surface_get_format(_surface) != surface_rgba8unorm) {
-			return log_warning("Trying to run assert_surface_foreach with an incompatible format (only supports surface_rgba8unorm)")
+			return log_warning("Trying to run assert_surface_foreach with an incompatible format (only supports 'surface_rgba8unorm')")
 		}
 
 		// Get width and height of the surface
@@ -722,12 +794,12 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Assert surface data to match a predicate";
 	
-		// If no surface exists for this index then exit (but dont fail)
+		// If no surface exists for this index then exit (but don't fail)
 		if (!surface_exists(_surface)) return false;
 
-		// Only surface_rgba8unorm format is supported
+		// Only 'surface_rgba8unorm' format is supported
 		if (surface_get_format(_surface) != surface_rgba8unorm) {
-			return log_warning("Trying to run assert_surface_foreach with an incompatible format (only supports surface_rgba8unorm)")
+			return log_warning("Trying to run assert_surface_foreach with an incompatible format (only supports 'surface_rgba8unorm')")
 		}
 
 		// Get width and height of the surface
@@ -754,7 +826,136 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	
 		return _resolver(assertTitle, _description);
 	}
+
+	/// @function _surfaceEqualsImpl(surface1, surface2, max_error)
+	/// @param {Id.Surface} surface1
+	/// @param {Id.Surface} surface2
+	/// @param {Real} [max_error]
+	/// @returns {Bool}
+	/// @private
+	static _surfaceEqualsImpl = function(_surface1, _surface2, _max_error = 0) {
+		
+		var _width = surface_get_width(_surface1);
+		var _height = surface_get_height(_surface1);
+
+		// If the surfaces aren't the same size then they can't be equal
+		var _width_other = surface_get_width(_surface2);
+		var _height_other = surface_get_height(_surface2);
+
+		log_debug($"_surfaceEqualsImpl :: comparing surfaces - {_width}x{_height}px vs {_width_other}x{_height_other}px");
+
+		if (_width_other != _width || _height_other != _height) {
+			log_error("_surfaceEqualsImpl :: surface sizes aren't the same - returning false!");
+			return false;
+		}
+
+		// Remember the original size of the surfaces
+		var _width_original = _width;
+		var _height_original = _height;
+
+		// Round the size up to closest power-of-two value
+		_width = make_pow2(_width);
+		_height = make_pow2(_height);
+
+		if (_width != _width_original || _height != _height_original) {
+			log_debug($"_surfaceEqualsImpl :: rounded size up to the closest power-of-two - {_width}x{_height}px");
+		}
+
+		var _format = surface_rgba16float;
+		if (!surface_format_is_supported(_format)) {
+			throw log_error($"_surfaceEqualsImpl :: surface format 'surface_rgba16float' is required for sprite/surface comparison!");
+		}
+
+		// Set GPU state used while diff generation and downsampling
+		gpu_push_state();
+		gpu_set_blendenable(false);
+		gpu_set_tex_filter(false);
+		gpu_set_tex_repeat(false);
+		gpu_set_tex_mip_enable(mip_off);
+		gpu_set_zwriteenable(false);
+		gpu_set_ztestenable(false);
+
+		// Get per-pixel diff of the two surfaces
+		var _surface_diff = surface_create(_width, _height, _format);
+		surface_set_target(_surface_diff);
+		draw_clear_alpha(0, 0);
+		shader_set(shSurfaceDiff);
+		texture_set_stage(
+			shader_get_sampler_index(shader_current(), "u_surface2"),
+			surface_get_texture(_surface2));
+		draw_surface(_surface1, 0, 0);
+		shader_reset();
+		surface_reset_target();
+
+		// Downsample the diff to 1x1 surface
+		shader_set(shSurfaceDiffDownsample);
+
+		var _u_texture_size = shader_get_uniform(shSurfaceDiffDownsample, "u_texture_size");
+		var _surface_prev = _surface_diff;
+		var _downsample_count = 0;
+
+		while (_width > 1 || _height > 1) {
+			var _width_prev = _width;
+			var _height_prev = _height;
+
+			_width = max(floor(_width / 2), 1);
+			_height = max(floor(_height / 2), 1);
 	
+			var _surface_temp = surface_create(_width, _height, _format);
+			surface_set_target(_surface_temp);
+			shader_set_uniform_f(_u_texture_size, _width_prev, _height_prev);
+			draw_surface(_surface_prev, 0, 0);
+			surface_reset_target();
+
+			surface_free(_surface_prev);
+			_surface_prev = _surface_temp;
+
+			++_downsample_count;
+		}
+
+		log_debug($"_surfaceEqualsImpl :: downsampled to 1x1px in {_downsample_count} steps");
+
+		shader_reset();
+
+		// Read the 1x1 downsampled surface using a buffer
+		var _channelSize = buffer_sizeof(buffer_f16);
+		var _buffer = buffer_create(_channelSize * 4, buffer_fixed, 1);
+		buffer_get_surface(_buffer, _surface_prev, 0);
+		var _diff_sum = buffer_peek(_buffer, 0, buffer_f16)
+			+ buffer_peek(_buffer, _channelSize * 1, buffer_f16)
+			+ buffer_peek(_buffer, _channelSize * 2, buffer_f16)
+			+ buffer_peek(_buffer, _channelSize * 3, buffer_f16);
+
+		// Calculate the error percentage
+		var _error = (_diff_sum / (_width_original * _height_original * 4)) * 100;
+		var _result = (_error < _max_error);
+
+		log_debug($"_surfaceEqualsImpl :: resulting error {_error}% out of maximum allowed {_max_error}% - returning {_result ? "true" : "false"}");
+
+		// Free created resources from memory
+		buffer_delete(_buffer);
+		surface_free(_surface_prev);
+
+		// Restore previous GPU state
+		gpu_pop_state();
+
+		return _result;
+	}
+
+	/// @function surfaceEquals(surface1, surface2, max_error, description)
+	/// @param {Id.Surface} surface1 The surface to be compared.
+	/// @param {Id.Surface} surface2 The surface to compare to.
+	/// @param {Real} [max_error] The maximum error allowed to tell that the surfaces are equal.
+	/// Use values in range 0..100, where 0 means no error (all pixels match exactly) and 100
+	/// means 100% error (none of the pixels match).
+	/// @param {String} [description] An optional description for this assert.
+	/// @returns {Bool}
+	static surfaceEquals = function(_surface1, _surface2, _max_error = 0, _description = undefined) {
+		
+		var _resolver = _surfaceEqualsImpl(_surface1, _surface2, _max_error) ? pass : fail;
+		return _resolver("Surfaces asserted to be equal", _description);
+	}
+
 	#endregion
 
 	#region Grid Asserts
@@ -769,10 +970,10 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_grid to be similar to array";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_grid, ds_type_grid) == false) return false;
 
-		if (!is_array(_expected)) throw log_error("gridEqualsArray :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("gridEqualsArray :: argument 'expected' must be of type {Array}");
 	
 		var _width = ds_grid_width(_grid);
 		var _height = ds_grid_height(_grid);
@@ -808,11 +1009,11 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two ds_grids to be equal to each other";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_value, ds_type_grid) == false) return false;
 
 		if (ds_exists(_expected, ds_type_grid) == false)
-			throw log_error("gridEquals :: argument expected must be of type {grid}");
+			throw log_error("gridEquals :: argument 'expected' must be of type {grid}");
 	
 		var _width = ds_grid_width(_value);
 		var _height = ds_grid_height(_value);
@@ -846,11 +1047,11 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type 
 		static assertTitle = "Asserted two ds_grids to NOT be equal to each other";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_value, ds_type_grid) == false) return false;
 
 		if (ds_exists(_expected, ds_type_grid) == false)
-			throw log_error("gridNotEquals :: argument expected must be of type {grid}");
+			throw log_error("gridNotEquals :: argument 'expected' must be of type {grid}");
 
 		assertDepth++;
 		var _passed = gridEquals(_value, _expected, _description);
@@ -875,7 +1076,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_list size to be equal to";
 	
-		// If no ds_list of this index exists then exit (but dont fail)
+		// If no ds_list of this index exists then exit (but don't fail)
 		if (ds_exists(_list, ds_type_list) == false) return false;
 
 		var _result = ds_list_size(_list);
@@ -893,7 +1094,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_list to be empty";
 	
-		// If no ds_list of this index exists then exit (but dont fail)
+		// If no ds_list of this index exists then exit (but don't fail)
 		if (ds_exists(_list, ds_type_list) == false) return false;
 
 		var _resolver = ds_list_empty(_list) ? pass : fail;
@@ -911,15 +1112,15 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two ds_lists to be equal to each other";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_list, ds_type_list) == false) return false;
 
-		if (ds_exists(_expected, ds_type_list) == false) throw log_error("listEquals :: argument expected must be of type {list}");
+		if (ds_exists(_expected, ds_type_list) == false) throw log_error("listEquals :: argument 'expected' must be of type {list}");
 
 		// Assume the assertion passes
 		var _passed = true;
 	
-		// Early fail if size doesnt match
+		// Early fail if size doesn't match
 		var _size = ds_list_size(_list);
 		if (_size != ds_list_size(_expected)) _passed = false;
 	
@@ -968,13 +1169,13 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_list to be similar to array";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_list, ds_type_list) == false) return false;
-		if (!is_array(_expected)) throw log_error("listEqualsArray :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("listEqualsArray :: argument 'expected' must be of type {Array}");
 
 		var _passed = true;
 
-		// Early fail if sizes dont match
+		// Early fail if sizes don't match
 		var _length = array_length(_expected);
 		if (_length != ds_list_size(_list)) _passed = false;
 	
@@ -1000,7 +1201,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_list to not be empty";
 	
-		// If no ds_list of this index exists then exit (but dont fail)
+		// If no ds_list of this index exists then exit (but don't fail)
 		if (ds_exists(_list, ds_type_list) == false) return false;
 		
 		var _resolver = !ds_list_empty(_list) ? pass : fail;
@@ -1022,7 +1223,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_map size to be";
 	
-		// If no ds_map of this index exists then exit (but dont fail)
+		// If no ds_map of this index exists then exit (but don't fail)
 		if (ds_exists(_map, ds_type_map) == false) return false;
 
 		// Assertion logic
@@ -1042,7 +1243,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_map to be empty";
 	
-		// If no ds_map of this index exists then exit (but dont fail)
+		// If no ds_map of this index exists then exit (but don't fail)
 		if (ds_exists(_map, ds_type_map) == false) return false;
 
 		// Assertion logic
@@ -1062,9 +1263,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two ds_maps to be equal to each other";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_map, ds_type_map) == false) return false;
-		if (ds_exists(_expected, ds_type_map) == false) throw log_error("mapEquals :: argument expected must be of type {Id.DsMap}");
+		if (ds_exists(_expected, ds_type_map) == false) throw log_error("mapEquals :: argument 'expected' must be of type {Id.DsMap}");
 	
 		// Assume the assertion passes
 		var _passed = true;
@@ -1124,9 +1325,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_map to be similar to array";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_map, ds_type_map) == false) return false;
-		if (!is_array(_expected)) throw log_error("mapEqualsArray :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("mapEqualsArray :: argument 'expected' must be of type {Array}");
 
 		// Assume the assertion passes.
 		var _passed = true;
@@ -1156,7 +1357,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_map to not be empty";
 	
-		// If no ds_map of this index exists then exit (but dont fail)
+		// If no ds_map of this index exists then exit (but don't fail)
 		if (ds_exists(_map, ds_type_map) == false) return false;
 
 		// Assertion logic
@@ -1180,7 +1381,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_queue size to match";
 	
-		// If no ds_queue of this index exists then exit (but dont fail)
+		// If no ds_queue of this index exists then exit (but don't fail)
 		if (ds_exists(_queue, ds_type_queue) == false) return false;
 
 		var _result = ds_queue_size(_queue);
@@ -1198,7 +1399,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_queue to be empty";
 	
-		// If no ds_queue of this index exists then exit (but dont fail)
+		// If no ds_queue of this index exists then exit (but don't fail)
 		if (ds_exists(_queue, ds_type_queue) == false) return false;
 
 		var _resolver = ds_queue_empty(_queue) ? pass : fail;
@@ -1216,9 +1417,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two ds_queues to be equal to each other";
 	
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_queue, ds_type_queue) == false) return false;
-		if (ds_exists(_expected, ds_type_queue) == false) throw log_error("queueEquals :: argument expected must be of type {Id.DsQueue}");
+		if (ds_exists(_expected, ds_type_queue) == false) throw log_error("queueEquals :: argument 'expected' must be of type {Id.DsQueue}");
 
 		// Assume the assertion passes
 		var _passed = true;
@@ -1227,7 +1428,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		var _length = ds_queue_size(_queue);
 		if (_length != ds_queue_size(_expected)) _passed = false;
 	
-		// If it hasnt failed already
+		// If it hasn't failed already
 		if (_passed) {
 			repeat (_length) {
 
@@ -1271,9 +1472,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_queue to be equal to array";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_queue, ds_type_queue) == false) return false;
-		if (!is_array(_expected)) throw log_error("queueEqualsArray :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("queueEqualsArray :: argument 'expected' must be of type {Array}");
 	
 		// Assume the assertion passes
 		var _passed = true;
@@ -1282,7 +1483,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		var _length = array_length(_expected);
 		if (_length != ds_queue_size(_queue)) _passed = false;
 	
-		// If it hasnt failed already
+		// If it hasn't failed already
 		if (_passed) {
 			for (var _i = 0; _i < _length; _i++) {
 		
@@ -1322,7 +1523,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_queue to not be empty";
 	
-		// If no ds_queue of this index exists then exit (but dont fail)
+		// If no ds_queue of this index exists then exit (but don't fail)
 		if (ds_exists(_queue, ds_type_queue) == false) return false;
 
 		var _resolver = !ds_queue_empty(_queue) ? pass : fail;
@@ -1344,7 +1545,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_stack size to match";
 	
-		// If no ds_queue of this index exists then exit (but dont fail)
+		// If no ds_queue of this index exists then exit (but don't fail)
 		if (ds_exists(_stack, ds_type_queue) == false) return false;
 
 		var _result = ds_stack_size(_stack);
@@ -1362,7 +1563,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_stack to be empty";
 	
-		// If no ds_queue of this index exists then exit (but dont fail)
+		// If no ds_queue of this index exists then exit (but don't fail)
 		if (ds_exists(_stack, ds_type_queue) == false) return false;
 
 		var _resolver = ds_stack_empty(_stack) ? pass : fail;
@@ -1380,9 +1581,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two ds_stacks to be equal to each other";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_stack, ds_type_stack) == false) return false;
-		if (ds_exists(_expected, ds_type_stack) == false) throw log_error("stackEquals :: argument expected must be of type {Id.DsStack}");
+		if (ds_exists(_expected, ds_type_stack) == false) throw log_error("stackEquals :: argument 'expected' must be of type {Id.DsStack}");
 	
 		// Assume the assertion passes
 		var _passed = true;
@@ -1437,9 +1638,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_stack to be similar to array";
 
-		// If this isnt a grid then exit (but dont fail)
+		// If this isn't a grid then exit (but don't fail)
 		if (ds_exists(_stack, ds_type_stack) == false) return false;
-		if (!is_array(_expected)) throw log_error("stackEqualsArray :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("stackEqualsArray :: argument 'expected' must be of type {Array}");
 	
 		// Assume the assertion passed
 		var _passed = true;
@@ -1488,7 +1689,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted ds_stack size to not be empty";
 	
-		// If no ds_queue of this index exists then exit (but dont fail)
+		// If no ds_queue of this index exists then exit (but don't fail)
 		if (ds_exists(_stack, ds_type_queue) == false) return false;
 
 		var _resolver = ds_stack_empty(_stack) ? pass : fail;
@@ -1510,7 +1711,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted struct length to match";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_struct(_struct)) return false;
 
 		var _result = variable_struct_names_count(_struct);
@@ -1528,7 +1729,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted struct to be empty";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_struct(_struct)) return false;
 
 		var _result = variable_struct_names_count(_struct);
@@ -1543,13 +1744,13 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 	/// @param {String} [description] An optional description for this assert_true.
 	/// @returns {Bool}
 	static structEquals = function(_struct, _expected, _description = undefined) {
-		
+
 		// Assert type
 		static assertTitle = "Asserted two structs to be equal";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_struct(_struct)) return false;
-		if (!is_struct(_expected)) throw log_error("structEquals :: argument expected must be of type {Struct}");
+		if (!is_struct(_expected)) throw log_error("structEquals :: argument 'expected' must be of type {Struct}");
 
 		// Assume the assertion passed
 		var _passed = true;
@@ -1582,7 +1783,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 				_passed = false;
 			}
 		}
-		
+	
 		var _resolver = _passed ? pass : fail;
 	
 		return _resolver(assertTitle, _description, _struct, _expected);
@@ -1598,7 +1799,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted struct to not be empty";
 	
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_struct(_struct)) return false;
 
 		var _result = variable_struct_names_count(_struct);
@@ -1620,7 +1821,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted function call to not throw an error";
 		
-		// If this isnt a method then exit (but dont fail)
+		// If this isn't a method then exit (but don't fail)
 		if (!is_method(_func)) return false;
 		
 		var _passed = true;
@@ -1645,7 +1846,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted function call to throw an error";
 		
-		// If this isnt a method then exit (but dont fail)
+		// If this isn't a method then exit (but don't fail)
 		if (!is_method(_func)) return false;
 	
 		var _passed = true;
@@ -1674,9 +1875,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to contain a substring";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringContains :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringContains :: argument 'expected' must be of type {String}");
 	
 		// Try to find the position of the substring inside the string
 		var _pos = string_pos(_expected, _string);
@@ -1696,9 +1897,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to contain all substrings";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_array(_expected)) throw log_error("stringContainsAll :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("stringContainsAll :: argument 'expected' must be of type {Array}");
 	
 		var _found = 0, _length = array_length(_expected);
 		for (var _i = 0; _i < _length; _i++) {
@@ -1721,9 +1922,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to contain any substrings";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_array(_expected)) throw log_error("stringContainsAny :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("stringContainsAny :: argument 'expected' must be of type {Array}");
 	
 		var _passed = false;
 	
@@ -1751,9 +1952,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to end with a substring";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringEndsWith :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringEndsWith :: argument 'expected' must be of type {String}");
 	
 		var _resolver = string_ends_with(_string, _expected) ? pass : fail;
 	
@@ -1771,9 +1972,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to end with any of the substrings";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_array(_expected)) throw log_error("stringEndsWithAny :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("stringEndsWithAny :: argument 'expected' must be of type {Array}");
 	
 		var _passed = false;
 	
@@ -1801,9 +2002,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two strings to equal (ignoring case)";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringEqualsIgnoreCase :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringEqualsIgnoreCase :: argument 'expected' must be of type {String}");
 
 		var _resolver = (string_lower(_string) == string_lower(_expected)) ? pass : fail;
 	
@@ -1820,9 +2021,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to not to contain a substring";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringNotContains :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringNotContains :: argument 'expected' must be of type {String}");
 	
 		// Try to find the position of the substring inside the string
 		var _pos = string_pos(_expected, _string);
@@ -1842,9 +2043,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to not end with a substring";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringNotEndsWith :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringNotEndsWith :: argument 'expected' must be of type {String}");
 	
 		// Try to find the position of the substring inside the string
 		var _resolver = !string_ends_with(_string, _expected) ? pass : fail;
@@ -1863,9 +2064,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted two strings to equal (ignoring case)";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringNotEqualsIgnoreCase :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringNotEqualsIgnoreCase :: argument 'expected' must be of type {String}");
 	
 		var _resolver = (string_lower(_string) != string_lower(_expected)) ? pass : fail;
 	
@@ -1883,9 +2084,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to not start with a substring";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringNotStartsWith :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringNotStartsWith :: argument 'expected' must be of type {String}");
 	
 		// Try to find the position of the substring inside the string
 		var _resolver = !string_starts_with(_string, _expected) ? pass : fail;
@@ -1904,9 +2105,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to start with a substring";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_string(_expected)) throw log_error("stringStartsWith :: argument expected must be of type {String}");
+		if (!is_string(_expected)) throw log_error("stringStartsWith :: argument 'expected' must be of type {String}");
 	
 		// Try to find the position of the substring inside the string
 		var _resolver = string_starts_with(_string, _expected) ? pass : fail;
@@ -1925,9 +2126,9 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		// Assert type
 		static assertTitle = "Asserted string to start with any of the substrings";
 
-		// If this isnt an array then exit (but dont fail)
+		// If this isn't an array then exit (but don't fail)
 		if (!is_string(_string)) return false;
-		if (!is_array(_expected)) throw log_error("stringStartsWithAny :: argument expected must be of type {Array}");
+		if (!is_array(_expected)) throw log_error("stringStartsWithAny :: argument 'expected' must be of type {Array}");
 	
 		var _passed = false;
 	
@@ -1961,7 +2162,7 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		var _resolver = typeof(_value) == _expected ? pass : fail;
 	
 		if (_resolver == fail) {
-			pprint($"{_value} :: {typeof(_value)} != {_expected}");
+			show_debug_message($"{_value} :: {typeof(_value)} != {_expected}");
 		}
 	
 		return _resolver(assertTitle, _description, typeof(_value), _expected);
@@ -2080,10 +2281,10 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		static assertTitle = "Asserted instance to be a child of";
 
 		// If argument0 is not an instance then fail
-		if (!instance_exists(_instance)) throw log_error("isChildOf :: argument value must be of type {Id.Instance}");
+		if (!instance_exists(_instance)) throw log_error("isChildOf :: argument 'value' must be of type {Id.Instance}");
 
 		// If argument1 is not an object ID then fail
-		if (!object_exists(_expected)) throw log_error("isChildOf :: argument expected must be of type {Asset.GMObject}");
+		if (!object_exists(_expected)) throw log_error("isChildOf :: argument 'expected' must be of type {Asset.GMObject}");
 
 		var _passed = true;
 
@@ -2107,10 +2308,10 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		static assertTitle = "Asserted value to be an instance of";
 
 		// If argument0 is not an instance then fail
-		if (!instance_exists(_instance)) throw log_error("isInstanceOf :: argument value must be of type {Id.Instance}");
+		if (!instance_exists(_instance)) throw log_error("isInstanceOf :: argument 'value' must be of type {Id.Instance}");
 
 		// If argument1 is not an object ID then fail
-		if (!object_exists(_expected)) throw log_error("isInstanceOf :: argument expected must be of type {Asset.GMObject}");
+		if (!object_exists(_expected)) throw log_error("isInstanceOf :: argument 'expected' must be of type {Asset.GMObject}");
 
 		var _passed = true;
 		
@@ -2134,10 +2335,10 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		static assertTitle = "Asserted instance to not be a child of";
 
 		// If argument0 is not an instance then fail
-		if (!instance_exists(_instance)) throw log_error("isNotChildOf :: argument value must be of type {Id.Instance}");
+		if (!instance_exists(_instance)) throw log_error("isNotChildOf :: argument 'value' must be of type {Id.Instance}");
 
 		// If argument1 is not an object ID then fail
-		if (!object_exists(_expected)) throw log_error("isNotChildOf :: argument expected must be of type {Asset.GMObject}");
+		if (!object_exists(_expected)) throw log_error("isNotChildOf :: argument 'expected' must be of type {Asset.GMObject}");
 		
 		var _passed = true;
 
@@ -2162,10 +2363,10 @@ function Assert(_configuration = undefined) : PropertyHolder() constructor {
 		static assertTitle = "Asserted value to not be an instance of";
 
 		// If argument0 is not an instance then fail
-		if (!instance_exists(_instance)) throw log_error("isNotInstanceOf :: argument value must be of type {Id.Instance}");
+		if (!instance_exists(_instance)) throw log_error("isNotInstanceOf :: argument 'value' must be of type {Id.Instance}");
 
 		// If argument1 is not an object ID then fail
-		if (!object_exists(_expected)) throw log_error("isNotInstanceOf :: argument expected must be of type {Asset.GMObject}");
+		if (!object_exists(_expected)) throw log_error("isNotInstanceOf :: argument 'expected' must be of type {Asset.GMObject}");
 
 		var _passed = true;
 		

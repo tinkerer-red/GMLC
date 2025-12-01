@@ -52,7 +52,8 @@ function Task() : PropertyHolder() constructor {
 	static doRun = function() {
 		
 		state = TaskState.Running;
-		if (ShouldTryCatch) {
+		
+		if (FRAMEWORK_SHOULD_CATCH) {
 			try {
 				preRunFunc();
 			}

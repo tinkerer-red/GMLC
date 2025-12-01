@@ -1,5 +1,3 @@
-
-
 function OptimizerUnreachableCodeTestSuite() : TestSuite() constructor {
 
 	// Test 1: Code after return statement should be removed

@@ -27,7 +27,7 @@
   "name":"handle_testSequence",
   "parent":{
     "name":"handles",
-    "path":"folders/Tests/TestResources/handles.yy",
+    "path":"folders/_Libraries/xUnit/TestResources/handles.yy",
   },
   "playback":0,
   "playbackSpeed":60.0,
