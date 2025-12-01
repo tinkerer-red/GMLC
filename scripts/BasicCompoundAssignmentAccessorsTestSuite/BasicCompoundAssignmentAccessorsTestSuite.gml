@@ -159,7 +159,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound *= with map accessor", function() {
+	addFact("Compound *= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": 4 };
 		foo[$ "bar"] *= 2;
@@ -230,7 +230,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound /= with map accessor", function() {
+	addFact("Compound /= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": 8 };
 		foo[$ "bar"] /= 2;
@@ -301,7 +301,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound %= with map accessor", function() {
+	addFact("Compound %= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": 10 };
 		foo[$ "bar"] %= 3;
@@ -372,7 +372,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound |= with map accessor", function() {
+	addFact("Compound |= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": 0b0101 };
 		foo[$ "bar"] |= 0b1000;
@@ -443,7 +443,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound &= with map accessor", function() {
+	addFact("Compound &= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": 0b1101 };
 		foo[$ "bar"] &= 0b0101;
@@ -514,7 +514,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound ^= with map accessor", function() {
+	addFact("Compound ^= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": 0b1101 };
 		foo[$ "bar"] ^= 0b0101;
@@ -585,7 +585,7 @@ function BasicCompoundAssignmentAccessorsTestSuite() : TestSuite() constructor {
 		')
 	});
 
-	addFact("Compound ??= with map accessor", function() {
+	addFact("Compound ??= with struct accessor", function() {
 		compile_and_execute(@'
 		var foo = { "bar": undefined };
 		foo[$ "bar"] ??= 99;
