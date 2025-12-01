@@ -1033,13 +1033,8 @@ function __GMLCexecuteWith() {
 	var _methodself   = self;
 	var _parentNode   = parentNode;
 	
-	var _entered = false;
-	
-	//var _index  = myIndex;
-	//var _method = myMethod;
 	static __empty_arr = [];
 	with (_inst) {
-		_entered = true;
 		global.gmlc_self_instance = self;
 		
 		method_call(_methodself.blockStatement, __empty_arr);
@@ -1062,15 +1057,6 @@ function __GMLCexecuteWith() {
 			}
 		}
 		
-	}
-	if (!_entered) {
-		show_debug_message($"value={_inst}")
-		show_debug_message($"_inst.x={_inst.x}")
-		show_debug_message($"typeof={typeof(_inst)}")
-		show_debug_message($"instance_exists={instance_exists(_inst)}")
-		show_debug_message($"object_exists={object_exists(_inst)}")
-		pprint(debug_get_callstack())
-		show_debug_message("")
 	}
     
     //reset
