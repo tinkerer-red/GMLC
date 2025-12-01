@@ -576,6 +576,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_5_Compiler
 	#endregion
 	static compile = function(_sourceCode) {
+		//append the macros to the end of the source code.
+		_sourceCode = __appendMacros(_sourceCode);
+		
 		tokenizer.initialize(_sourceCode);
 		var tokens = tokenizer.parseAll();
 		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
@@ -931,6 +934,27 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return true;
 	}
 	
+	#region jsDoc
+	/// @func    __appendMacros()
+	/// @desc    Appends exposed macros on new lines at the bottom of the source code provided.
+	/// @self    GMLC_Env
+	/// @param   {String} sourceCode : Source code to append exposed macros to.
+	/// @returns {String}
+	/// @ignore
+	#endregion
+	static __appendMacros = function(_sourceCode) {
+		//tokenize exposed macros
+		var _exposed_macro_str = "\n// Start of appended macros which were exposed\n\n";
+		var _macros = getAllMacros();
+		var _names = struct_get_names(_macros);
+		var _i=0; repeat(array_length(_names)) {
+			var _name = _names[_i];
+			var _macro_struct = _macros[$ _name];
+			_exposed_macro_str += $"#macro {_name} {_macro_struct.value}\n";
+		_i++;}
+		
+		return _sourceCode + _exposed_macro_str;
+	}
 	
 	#endregion	
 	
