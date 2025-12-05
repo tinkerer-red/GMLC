@@ -1,3 +1,47 @@
+//feather ignore all
+#region TokenType
+#macro __GMLC_TokenType_Whitespace 0
+#macro __GMLC_TokenType_Identifier 1
+#macro __GMLC_TokenType_Number 2
+#macro __GMLC_TokenType_Operator 3
+#macro __GMLC_TokenType_Keyword 4
+#macro __GMLC_TokenType_Function 5
+#macro __GMLC_TokenType_Punctuation 6
+#macro __GMLC_TokenType_UniqueVariable 7
+#macro __GMLC_TokenType_String 8
+#macro __GMLC_TokenType_TemplateStringBegin 9
+#macro __GMLC_TokenType_TemplateStringMiddle 10
+#macro __GMLC_TokenType_TemplateStringEnd 11
+#macro __GMLC_TokenType_EscapeOperator 12
+#macro __GMLC_TokenType_Comment 13
+#macro __GMLC_TokenType_Macro 14
+#macro __GMLC_TokenType_Region 15
+#macro __GMLC_TokenType_Enum 16
+#macro __GMLC_TokenType_Define 17
+#macro __GMLC_TokenType_NoOpPragma 18
+#macro __GMLC_TokenType_Illegal 19
+#macro __GMLC_TokenType_SIZE 20
+#macro Debug:__GMLC_TokenType_Whitespace "__GMLC_TokenType_Whitespace"
+#macro Debug:__GMLC_TokenType_Identifier "__GMLC_TokenType_Identifier"
+#macro Debug:__GMLC_TokenType_Number "__GMLC_TokenType_Number"
+#macro Debug:__GMLC_TokenType_Operator "__GMLC_TokenType_Operator"
+#macro Debug:__GMLC_TokenType_Keyword "__GMLC_TokenType_Keyword"
+#macro Debug:__GMLC_TokenType_Function "__GMLC_TokenType_Function"
+#macro Debug:__GMLC_TokenType_Punctuation "__GMLC_TokenType_Punctuation"
+#macro Debug:__GMLC_TokenType_UniqueVariable "__GMLC_TokenType_UniqueVariable"
+#macro Debug:__GMLC_TokenType_String "__GMLC_TokenType_String"
+#macro Debug:__GMLC_TokenType_TemplateStringBegin "__GMLC_TokenType_TemplateStringBegin"
+#macro Debug:__GMLC_TokenType_TemplateStringMiddle "__GMLC_TokenType_TemplateStringMiddle"
+#macro Debug:__GMLC_TokenType_TemplateStringEnd "__GMLC_TokenType_TemplateStringEnd"
+#macro Debug:__GMLC_TokenType_EscapeOperator "__GMLC_TokenType_EscapeOperator"
+#macro Debug:__GMLC_TokenType_Comment "__GMLC_TokenType_Comment"
+#macro Debug:__GMLC_TokenType_Macro "__GMLC_TokenType_Macro"
+#macro Debug:__GMLC_TokenType_Region "__GMLC_TokenType_Region"
+#macro Debug:__GMLC_TokenType_Enum "__GMLC_TokenType_Enum"
+#macro Debug:__GMLC_TokenType_Define "__GMLC_TokenType_Define"
+#macro Debug:__GMLC_TokenType_NoOpPragma "__GMLC_TokenType_NoOpPragma"
+#macro Debug:__GMLC_TokenType_Illegal "__GMLC_TokenType_Illegal"
+#endregion
 #region NodeType
 #macro __GMLC_NodeType_EmptyNode 0
 #macro __GMLC_NodeType_AccessorExpression 1
@@ -81,21 +125,6 @@
 #macro Debug:__GMLC_NodeType_WithStatement "__GMLC_NodeType_WithStatement"
 
 #endregion
-#region AccessorType
-#macro __GMLC_AccessorType_Array 0
-#macro __GMLC_AccessorType_Grid 1
-#macro __GMLC_AccessorType_List 2
-#macro __GMLC_AccessorType_Map 3
-#macro __GMLC_AccessorType_Struct 4
-#macro __GMLC_AccessorType_Dot 5
-#macro __GMLC_AccessorType_SIZE 6
-#macro Debug:__GMLC_AccessorType_Array "__GMLC_AccessorType_Array"
-#macro Debug:__GMLC_AccessorType_Grid "__GMLC_AccessorType_Grid"
-#macro Debug:__GMLC_AccessorType_List "__GMLC_AccessorType_List"
-#macro Debug:__GMLC_AccessorType_Map "__GMLC_AccessorType_Map"
-#macro Debug:__GMLC_AccessorType_Struct "__GMLC_AccessorType_Struct"
-#macro Debug:__GMLC_AccessorType_Dot "__GMLC_AccessorType_Dot"
-#endregion
 #region ScopeType
 #macro ScopeType_MACRO 0
 #macro ScopeType_GLOBAL 1
@@ -117,46 +146,18 @@
 #macro Debug:ScopeType_OTHER "ScopeType_OTHER"
 #macro Debug:ScopeType_CONST "ScopeType_CONST"
 #endregion
-#region TokenType
-#macro __GMLC_TokenType_Whitespace 0
-#macro __GMLC_TokenType_Identifier 1
-#macro __GMLC_TokenType_Number 2
-#macro __GMLC_TokenType_Operator 3
-#macro __GMLC_TokenType_Keyword 4
-#macro __GMLC_TokenType_Function 5
-#macro __GMLC_TokenType_Punctuation 6
-#macro __GMLC_TokenType_UniqueVariable 7
-#macro __GMLC_TokenType_String 8
-#macro __GMLC_TokenType_TemplateStringBegin 9
-#macro __GMLC_TokenType_TemplateStringMiddle 10
-#macro __GMLC_TokenType_TemplateStringEnd 11
-#macro __GMLC_TokenType_EscapeOperator 12
-#macro __GMLC_TokenType_Comment 13
-#macro __GMLC_TokenType_Macro 14
-#macro __GMLC_TokenType_Region 15
-#macro __GMLC_TokenType_Enum 16
-#macro __GMLC_TokenType_Define 17
-#macro __GMLC_TokenType_NoOpPragma 18
-#macro __GMLC_TokenType_Illegal 19
-#macro __GMLC_TokenType_SIZE 20
-#macro Debug:__GMLC_TokenType_Whitespace "__GMLC_TokenType_Whitespace"
-#macro Debug:__GMLC_TokenType_Identifier "__GMLC_TokenType_Identifier"
-#macro Debug:__GMLC_TokenType_Number "__GMLC_TokenType_Number"
-#macro Debug:__GMLC_TokenType_Operator "__GMLC_TokenType_Operator"
-#macro Debug:__GMLC_TokenType_Keyword "__GMLC_TokenType_Keyword"
-#macro Debug:__GMLC_TokenType_Function "__GMLC_TokenType_Function"
-#macro Debug:__GMLC_TokenType_Punctuation "__GMLC_TokenType_Punctuation"
-#macro Debug:__GMLC_TokenType_UniqueVariable "__GMLC_TokenType_UniqueVariable"
-#macro Debug:__GMLC_TokenType_String "__GMLC_TokenType_String"
-#macro Debug:__GMLC_TokenType_TemplateStringBegin "__GMLC_TokenType_TemplateStringBegin"
-#macro Debug:__GMLC_TokenType_TemplateStringMiddle "__GMLC_TokenType_TemplateStringMiddle"
-#macro Debug:__GMLC_TokenType_TemplateStringEnd "__GMLC_TokenType_TemplateStringEnd"
-#macro Debug:__GMLC_TokenType_EscapeOperator "__GMLC_TokenType_EscapeOperator"
-#macro Debug:__GMLC_TokenType_Comment "__GMLC_TokenType_Comment"
-#macro Debug:__GMLC_TokenType_Macro "__GMLC_TokenType_Macro"
-#macro Debug:__GMLC_TokenType_Region "__GMLC_TokenType_Region"
-#macro Debug:__GMLC_TokenType_Enum "__GMLC_TokenType_Enum"
-#macro Debug:__GMLC_TokenType_Define "__GMLC_TokenType_Define"
-#macro Debug:__GMLC_TokenType_NoOpPragma "__GMLC_TokenType_NoOpPragma"
-#macro Debug:__GMLC_TokenType_Illegal "__GMLC_TokenType_Illegal"
+#region AccessorType
+#macro __GMLC_AccessorType_Array 0
+#macro __GMLC_AccessorType_Grid 1
+#macro __GMLC_AccessorType_List 2
+#macro __GMLC_AccessorType_Map 3
+#macro __GMLC_AccessorType_Struct 4
+#macro __GMLC_AccessorType_Dot 5
+#macro __GMLC_AccessorType_SIZE 6
+#macro Debug:__GMLC_AccessorType_Array "__GMLC_AccessorType_Array"
+#macro Debug:__GMLC_AccessorType_Grid "__GMLC_AccessorType_Grid"
+#macro Debug:__GMLC_AccessorType_List "__GMLC_AccessorType_List"
+#macro Debug:__GMLC_AccessorType_Map "__GMLC_AccessorType_Map"
+#macro Debug:__GMLC_AccessorType_Struct "__GMLC_AccessorType_Struct"
+#macro Debug:__GMLC_AccessorType_Dot "__GMLC_AccessorType_Dot"
 #endregion
