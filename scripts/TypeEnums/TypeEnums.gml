@@ -1,285 +1,162 @@
-
-//for debugging purposes I make use of strings,
-// if you would like to make use of Enums instead
-// please add an additional `/` to the first `/*`
-// making this a `//*` will toggle this for you
-
 #region NodeType
-/*
-	enum __GMLC_NodeType {
-		EmptyNode,
-		AccessorExpression,
-		AssignmentExpression,
-		Base,
-		BinaryExpression,
-		BlockStatement,
-		BreakStatement,
-		CallExpression,
-		CaseDefault,
-		CaseExpression,
-		ConditionalExpression,
-		ConstructorDeclaration,
-		ContinueStatement,
-		DoUntilStatement,
-		ExitStatement,
-		ExpressionStatement,
-		ForStatement,
-		FunctionDeclaration,
-		ArgumentList,
-		Argument,
-		Identifier,
-		IfStatement,
-		Literal,
-		UniqueIdentifier,
-		LogicalExpression,
-		NewExpression,
-		NullishExpression,
-		PostfixExpression,
-		RepeatStatement,
-		ReturnStatement,
-		Script,
-		SwitchStatement,
-		TryStatement,
-		UnaryExpression,
-		UpdateExpression,
-		VariableDeclaration,
-		VariableDeclarationList,
-		WhileStatement,
-		WithStatement,
-		
-		__SIZE__
-	}
-/*/
-	function __GMLC_NodeType() {
-		static EmptyNode = "__GMLC_NodeType.EmptyNode"
-		static AccessorExpression = "__GMLC_NodeType.AccessorExpression"
-		static AssignmentExpression = "__GMLC_NodeType.AssignmentExpression"
-		static Base = "__GMLC_NodeType.Base"
-		static BinaryExpression = "__GMLC_NodeType.BinaryExpression"
-		static BlockStatement = "__GMLC_NodeType.BlockStatement"
-		static BreakStatement = "__GMLC_NodeType.BreakStatement"
-		static CallExpression = "__GMLC_NodeType.CallExpression"
-		static CaseDefault = "__GMLC_NodeType.CaseDefault"
-		static CaseExpression = "__GMLC_NodeType.CaseExpression"
-		static ConditionalExpression = "__GMLC_NodeType.ConditionalExpression"
-		static ConstructorDeclaration = "__GMLC_NodeType.ConstructorDeclaration"
-		static ContinueStatement = "__GMLC_NodeType.ContinueStatement"
-		static DoUntilStatement = "__GMLC_NodeType.DoUntilStatement"
-		static ExitStatement = "__GMLC_NodeType.ExitStatement"
-		static ExpressionStatement = "__GMLC_NodeType.ExpressionStatement"
-		static ForStatement = "__GMLC_NodeType.ForStatement"
-		static FunctionDeclaration = "__GMLC_NodeType.FunctionDeclaration"
-		static ArgumentList = "__GMLC_NodeType.ArgumentList"
-		static Argument = "__GMLC_NodeType.Argument"
-		static Identifier = "__GMLC_NodeType.Identifier"
-		static IfStatement = "__GMLC_NodeType.IfStatement"
-		static Literal = "__GMLC_NodeType.Literal"
-		static UniqueIdentifier = "__GMLC_NodeType.UniqueIdentifier"
-		static LogicalExpression = "__GMLC_NodeType.LogicalExpression"
-		static NewExpression = "__GMLC_NodeType.NewExpression"
-		static NullishExpression = "__GMLC_NodeType.NullishExpression"
-		static PostfixExpression = "__GMLC_NodeType.PostfixExpression"
-		static RepeatStatement = "__GMLC_NodeType.RepeatStatement"
-		static ReturnStatement = "__GMLC_NodeType.ReturnStatement"
-		static Script = "__GMLC_NodeType.Script"
-		static SwitchStatement = "__GMLC_NodeType.SwitchStatement"
-		static TryStatement = "__GMLC_NodeType.TryStatement"
-		static UnaryExpression = "__GMLC_NodeType.UnaryExpression"
-		static UpdateExpression = "__GMLC_NodeType.UpdateExpression"
-		static VariableDeclaration = "__GMLC_NodeType.VariableDeclaration"
-		static VariableDeclarationList = "__GMLC_NodeType.VariableDeclarationList"
-		static WhileStatement = "__GMLC_NodeType.WhileStatement"
-		static WithStatement = "__GMLC_NodeType.WithStatement"
-		
-	}
-	__GMLC_NodeType();
-//*/
+#macro __GMLC_NodeType_EmptyNode 0
+#macro __GMLC_NodeType_AccessorExpression 1
+#macro __GMLC_NodeType_AssignmentExpression 2
+#macro __GMLC_NodeType_Base 3
+#macro __GMLC_NodeType_BinaryExpression 4
+#macro __GMLC_NodeType_BlockStatement 5
+#macro __GMLC_NodeType_BreakStatement 6
+#macro __GMLC_NodeType_CallExpression 7
+#macro __GMLC_NodeType_CaseDefault 8
+#macro __GMLC_NodeType_CaseExpression 9
+#macro __GMLC_NodeType_ConditionalExpression 10
+#macro __GMLC_NodeType_ConstructorDeclaration 11
+#macro __GMLC_NodeType_ContinueStatement 12
+#macro __GMLC_NodeType_DoUntilStatement 13
+#macro __GMLC_NodeType_ExitStatement 14
+#macro __GMLC_NodeType_ExpressionStatement 15
+#macro __GMLC_NodeType_ForStatement 16
+#macro __GMLC_NodeType_FunctionDeclaration 17
+#macro __GMLC_NodeType_ArgumentList 18
+#macro __GMLC_NodeType_Argument 19
+#macro __GMLC_NodeType_Identifier 20
+#macro __GMLC_NodeType_IfStatement 21
+#macro __GMLC_NodeType_Literal 22
+#macro __GMLC_NodeType_UniqueIdentifier 23
+#macro __GMLC_NodeType_LogicalExpression 24
+#macro __GMLC_NodeType_NewExpression 25
+#macro __GMLC_NodeType_NullishExpression 26
+#macro __GMLC_NodeType_PostfixExpression 27
+#macro __GMLC_NodeType_RepeatStatement 28
+#macro __GMLC_NodeType_ReturnStatement 29
+#macro __GMLC_NodeType_Script 30
+#macro __GMLC_NodeType_SwitchStatement 31
+#macro __GMLC_NodeType_TryStatement 32
+#macro __GMLC_NodeType_UnaryExpression 33
+#macro __GMLC_NodeType_UpdateExpression 34
+#macro __GMLC_NodeType_VariableDeclaration 35
+#macro __GMLC_NodeType_VariableDeclarationList 36
+#macro __GMLC_NodeType_WhileStatement 37
+#macro __GMLC_NodeType_WithStatement 38
+#macro __GMLC_NodeType_SIZE 39
+
+#macro Debug:__GMLC_NodeType_EmptyNode "__GMLC_NodeType_EmptyNode"
+#macro Debug:__GMLC_NodeType_AccessorExpression "__GMLC_NodeType_AccessorExpression"
+#macro Debug:__GMLC_NodeType_AssignmentExpression "__GMLC_NodeType_AssignmentExpression"
+#macro Debug:__GMLC_NodeType_Base "__GMLC_NodeType_Base"
+#macro Debug:__GMLC_NodeType_BinaryExpression "__GMLC_NodeType_BinaryExpression"
+#macro Debug:__GMLC_NodeType_BlockStatement "__GMLC_NodeType_BlockStatement"
+#macro Debug:__GMLC_NodeType_BreakStatement "__GMLC_NodeType_BreakStatement"
+#macro Debug:__GMLC_NodeType_CallExpression "__GMLC_NodeType_CallExpression"
+#macro Debug:__GMLC_NodeType_CaseDefault "__GMLC_NodeType_CaseDefault"
+#macro Debug:__GMLC_NodeType_CaseExpression "__GMLC_NodeType_CaseExpression"
+#macro Debug:__GMLC_NodeType_ConditionalExpression "__GMLC_NodeType_ConditionalExpression"
+#macro Debug:__GMLC_NodeType_ConstructorDeclaration "__GMLC_NodeType_ConstructorDeclaration"
+#macro Debug:__GMLC_NodeType_ContinueStatement "__GMLC_NodeType_ContinueStatement"
+#macro Debug:__GMLC_NodeType_DoUntilStatement "__GMLC_NodeType_DoUntilStatement"
+#macro Debug:__GMLC_NodeType_ExitStatement "__GMLC_NodeType_ExitStatement"
+#macro Debug:__GMLC_NodeType_ExpressionStatement "__GMLC_NodeType_ExpressionStatement"
+#macro Debug:__GMLC_NodeType_ForStatement "__GMLC_NodeType_ForStatement"
+#macro Debug:__GMLC_NodeType_FunctionDeclaration "__GMLC_NodeType_FunctionDeclaration"
+#macro Debug:__GMLC_NodeType_ArgumentList "__GMLC_NodeType_ArgumentList"
+#macro Debug:__GMLC_NodeType_Argument "__GMLC_NodeType_Argument"
+#macro Debug:__GMLC_NodeType_Identifier "__GMLC_NodeType_Identifier"
+#macro Debug:__GMLC_NodeType_IfStatement "__GMLC_NodeType_IfStatement"
+#macro Debug:__GMLC_NodeType_Literal "__GMLC_NodeType_Literal"
+#macro Debug:__GMLC_NodeType_UniqueIdentifier "__GMLC_NodeType_UniqueIdentifier"
+#macro Debug:__GMLC_NodeType_LogicalExpression "__GMLC_NodeType_LogicalExpression"
+#macro Debug:__GMLC_NodeType_NewExpression "__GMLC_NodeType_NewExpression"
+#macro Debug:__GMLC_NodeType_NullishExpression "__GMLC_NodeType_NullishExpression"
+#macro Debug:__GMLC_NodeType_PostfixExpression "__GMLC_NodeType_PostfixExpression"
+#macro Debug:__GMLC_NodeType_RepeatStatement "__GMLC_NodeType_RepeatStatement"
+#macro Debug:__GMLC_NodeType_ReturnStatement "__GMLC_NodeType_ReturnStatement"
+#macro Debug:__GMLC_NodeType_Script "__GMLC_NodeType_Script"
+#macro Debug:__GMLC_NodeType_SwitchStatement "__GMLC_NodeType_SwitchStatement"
+#macro Debug:__GMLC_NodeType_TryStatement "__GMLC_NodeType_TryStatement"
+#macro Debug:__GMLC_NodeType_UnaryExpression "__GMLC_NodeType_UnaryExpression"
+#macro Debug:__GMLC_NodeType_UpdateExpression "__GMLC_NodeType_UpdateExpression"
+#macro Debug:__GMLC_NodeType_VariableDeclaration "__GMLC_NodeType_VariableDeclaration"
+#macro Debug:__GMLC_NodeType_VariableDeclarationList "__GMLC_NodeType_VariableDeclarationList"
+#macro Debug:__GMLC_NodeType_WhileStatement "__GMLC_NodeType_WhileStatement"
+#macro Debug:__GMLC_NodeType_WithStatement "__GMLC_NodeType_WithStatement"
+
 #endregion
 #region AccessorType
-/*
-	enum __GMLC_AccessorType {
-		Array,
-		Grid,
-		List,
-		Map,
-		Struct,
-		Dot,
-		
-		__SIZE__
-	}
-/*/
-	function __GMLC_AccessorType() {
-		static Array = "__GMLC_AccessorType.Array";
-		static Grid = "__GMLC_AccessorType.Grid";
-		static List = "__GMLC_AccessorType.List";
-		static Map = "__GMLC_AccessorType.Map";
-		static Struct = "__GMLC_AccessorType.Struct";
-		static Dot = "__GMLC_AccessorType.Dot";
-	}
-	__GMLC_AccessorType();
-//*/
+#macro __GMLC_AccessorType_Array 0
+#macro __GMLC_AccessorType_Grid 1
+#macro __GMLC_AccessorType_List 2
+#macro __GMLC_AccessorType_Map 3
+#macro __GMLC_AccessorType_Struct 4
+#macro __GMLC_AccessorType_Dot 5
+#macro __GMLC_AccessorType_SIZE 6
+#macro Debug:__GMLC_AccessorType_Array "__GMLC_AccessorType_Array"
+#macro Debug:__GMLC_AccessorType_Grid "__GMLC_AccessorType_Grid"
+#macro Debug:__GMLC_AccessorType_List "__GMLC_AccessorType_List"
+#macro Debug:__GMLC_AccessorType_Map "__GMLC_AccessorType_Map"
+#macro Debug:__GMLC_AccessorType_Struct "__GMLC_AccessorType_Struct"
+#macro Debug:__GMLC_AccessorType_Dot "__GMLC_AccessorType_Dot"
 #endregion
 #region ScopeType
-// add or remove a slash here to toggle between enums and string lookups
-/*
-enum ScopeType {
-	MACRO,
-	GLOBAL,
-	ENUM,
-	UNIQUE,
-	LOCAL,
-	STATIC,
-	SELF,
-	OTHER,
-	CONST,
-		
-	__SIZE__
-}
-enum OpCode {
-	REMAINDER,    // The remainder `%` operator.
-	MULTIPLY,    // The `*` operator.
-	DIVIDE,    // The `/` operator.
-	DIVIDE_INT,    // The integer division `//` operator.
-	SUBTRACT,    // The `-` operator.
-	PLUS,    // The `+` operator.
-	EQUAL,    // The `==` operator.
-	NOT_EQUAL,    // The `!=` operator.
-	GREATER,    // The `>` operator.
-	GREATER_EQUAL,    // The `>=` operator.
-	LESS,    // The `<` operator.
-	LESS_EQUAL,    // The `<=` operator.
-	NOT,    // The logical negation `!` operator.
-	BITWISE_NOT,    // The bitwise negation `~` operator.
-	SHIFT_RIGHT,    // The bitwise right shift `>>` operator.
-	SHIFT_LEFT,    // The bitwise left shift `<<` operator.
-	BITWISE_AND,    // The bitwise AND `&` operator.
-	BITWISE_XOR,    // The bitwise XOR `^` operator.
-	BITWISE_OR,    // The bitwise OR `|` operator.
-	OR,    // The logical OR operator.
-	AND,    // The logical AND operator.
-	XOR,    // The logical XOR operator.
-	NEGATE,    // The negation prefix.
-	INC,    // increment.
-	DEC,    // decrement.
-		
-	__SIZE__
-}
-/*/
-function ScopeType() {
-	static MACRO = "ScopeType.MACRO";
-	static GLOBAL = "ScopeType.GLOBAL";
-	static ENUM = "ScopeType.ENUM";
-	static UNIQUE = "ScopeType.UNIQUE";
-	static LOCAL = "ScopeType.LOCAL";
-	static STATIC = "ScopeType.STATIC";
-	static SELF = "ScopeType.SELF";
-	static OTHER = "ScopeType.OTHER";
-	static CONST = "ScopeType.CONST";
-		
-	static __SIZE__ = "__SIZE__";
-}
-function OpCode() {
-	static REMAINDER = "OpCode.REMAINDER";
-	static MULTIPLY = "OpCode.MULTIPLY";
-	static DIVIDE = "OpCode.DIVIDE";
-	static DIVIDE_INT = "OpCode.DIVIDE_INT";
-	static SUBTRACT = "OpCode.SUBTRACT";
-	static PLUS = "OpCode.PLUS";
-	static EQUAL = "OpCode.EQUAL";
-	static NOT_EQUAL = "OpCode.NOT_EQUAL";
-	static GREATER = "OpCode.GREATER";
-	static GREATER_EQUAL = "OpCode.GREATER_EQUAL";
-	static LESS = "OpCode.LESS";
-	static LESS_EQUAL = "OpCode.LESS_EQUAL";
-	static NOT = "OpCode.NOT";
-	static BITWISE_NOT = "OpCode.BITWISE_NOT";
-	static SHIFT_RIGHT = "OpCode.SHIFT_RIGHT";
-	static SHIFT_LEFT = "OpCode.SHIFT_LEFT";
-	static BITWISE_AND = "OpCode.BITWISE_AND";
-	static BITWISE_XOR = "OpCode.BITWISE_XOR";
-	static BITWISE_OR = "OpCode.BITWISE_OR";
-	static OR = "OpCode.OR";
-	static AND = "OpCode.AND";
-	static XOR = "OpCode.XOR";
-	static NEGATE = "OpCode.NEGATE";
-	static INC = "OpCode.INC";
-	static DEC = "OpCode.DEC";
-	static NULLISH = "OpCode.NULLISH";
-		
-	static __SIZE__ = "__SIZE__";
-}
-ScopeType()
-OpCode()
-//*/
+#macro ScopeType_MACRO 0
+#macro ScopeType_GLOBAL 1
+#macro ScopeType_ENUM 2
+#macro ScopeType_UNIQUE 3
+#macro ScopeType_LOCAL 4
+#macro ScopeType_STATIC 5
+#macro ScopeType_SELF 6
+#macro ScopeType_OTHER 7
+#macro ScopeType_CONST 8
+#macro ScopeType_SIZE 9
+#macro Debug:ScopeType_MACRO "ScopeType_MACRO"
+#macro Debug:ScopeType_GLOBAL "ScopeType_GLOBAL"
+#macro Debug:ScopeType_ENUM "ScopeType_ENUM"
+#macro Debug:ScopeType_UNIQUE "ScopeType_UNIQUE"
+#macro Debug:ScopeType_LOCAL "ScopeType_LOCAL"
+#macro Debug:ScopeType_STATIC "ScopeType_STATIC"
+#macro Debug:ScopeType_SELF "ScopeType_SELF"
+#macro Debug:ScopeType_OTHER "ScopeType_OTHER"
+#macro Debug:ScopeType_CONST "ScopeType_CONST"
 #endregion
 #region TokenType
-/*
-enum __GMLC_TokenType {
-	Whitespace,
-	Identifier,
-	Number,
-	Operator,
-	Keyword,
-	Function,
-	Punctuation,
-	
-	UniqueVariable,
-	
-	String,
-	
-	TemplateStringBegin,
-	TemplateStringMiddle,
-	TemplateStringEnd,
-	
-	EscapeOperator,
-	
-	Comment,
-	
-	Macro,
-	Region,
-	Enum,
-	Define,
-	
-	NoOpPragma,
-	
-	Illegal,
-	
-	SIZE
-}
-/*/
-//used for debugging
-function __GMLC_TokenType() {
-	static Whitespace = "__GMLC_TokenType.Whitespace";
-	static Identifier = "__GMLC_TokenType.Identifier";
-	static Number = "__GMLC_TokenType.Number";
-	static Operator = "__GMLC_TokenType.Operator";
-	static Keyword = "__GMLC_TokenType.Keyword";
-	static Function = "__GMLC_TokenType.Function";
-	static Punctuation = "__GMLC_TokenType.Punctuation";
-	
-	static UniqueVariable = "__GMLC_TokenType.UniqueVariable";
-	
-	static String = "__GMLC_TokenType.String";
-	
-	static TemplateStringBegin = "__GMLC_TokenType.TemplateStringBegin";
-	static TemplateStringMiddle = "__GMLC_TokenType.TemplateStringMiddle";
-	static TemplateStringEnd = "__GMLC_TokenType.TemplateStringEnd";
-	
-	static EscapeOperator = "__GMLC_TokenType.EscapeOperator";
-	
-	static Comment = "__GMLC_TokenType.Comment";
-	
-	static Macro = "__GMLC_TokenType.Macro";
-	static Region = "__GMLC_TokenType.Region";
-	static Enum = "__GMLC_TokenType.Enum";
-	static Define = "__GMLC_TokenType.Define";
-	
-	static NoOpPragma = "__GMLC_TokenType.NoOpPragma";
-	
-	static Illegal = "__GMLC_TokenType.Illegal";
-	
-	static SIZE = "SIZE"
-}
-__GMLC_TokenType();
-//*/
+#macro __GMLC_TokenType_Whitespace 0
+#macro __GMLC_TokenType_Identifier 1
+#macro __GMLC_TokenType_Number 2
+#macro __GMLC_TokenType_Operator 3
+#macro __GMLC_TokenType_Keyword 4
+#macro __GMLC_TokenType_Function 5
+#macro __GMLC_TokenType_Punctuation 6
+#macro __GMLC_TokenType_UniqueVariable 7
+#macro __GMLC_TokenType_String 8
+#macro __GMLC_TokenType_TemplateStringBegin 9
+#macro __GMLC_TokenType_TemplateStringMiddle 10
+#macro __GMLC_TokenType_TemplateStringEnd 11
+#macro __GMLC_TokenType_EscapeOperator 12
+#macro __GMLC_TokenType_Comment 13
+#macro __GMLC_TokenType_Macro 14
+#macro __GMLC_TokenType_Region 15
+#macro __GMLC_TokenType_Enum 16
+#macro __GMLC_TokenType_Define 17
+#macro __GMLC_TokenType_NoOpPragma 18
+#macro __GMLC_TokenType_Illegal 19
+#macro __GMLC_TokenType_SIZE 20
+#macro Debug:__GMLC_TokenType_Whitespace "__GMLC_TokenType_Whitespace"
+#macro Debug:__GMLC_TokenType_Identifier "__GMLC_TokenType_Identifier"
+#macro Debug:__GMLC_TokenType_Number "__GMLC_TokenType_Number"
+#macro Debug:__GMLC_TokenType_Operator "__GMLC_TokenType_Operator"
+#macro Debug:__GMLC_TokenType_Keyword "__GMLC_TokenType_Keyword"
+#macro Debug:__GMLC_TokenType_Function "__GMLC_TokenType_Function"
+#macro Debug:__GMLC_TokenType_Punctuation "__GMLC_TokenType_Punctuation"
+#macro Debug:__GMLC_TokenType_UniqueVariable "__GMLC_TokenType_UniqueVariable"
+#macro Debug:__GMLC_TokenType_String "__GMLC_TokenType_String"
+#macro Debug:__GMLC_TokenType_TemplateStringBegin "__GMLC_TokenType_TemplateStringBegin"
+#macro Debug:__GMLC_TokenType_TemplateStringMiddle "__GMLC_TokenType_TemplateStringMiddle"
+#macro Debug:__GMLC_TokenType_TemplateStringEnd "__GMLC_TokenType_TemplateStringEnd"
+#macro Debug:__GMLC_TokenType_EscapeOperator "__GMLC_TokenType_EscapeOperator"
+#macro Debug:__GMLC_TokenType_Comment "__GMLC_TokenType_Comment"
+#macro Debug:__GMLC_TokenType_Macro "__GMLC_TokenType_Macro"
+#macro Debug:__GMLC_TokenType_Region "__GMLC_TokenType_Region"
+#macro Debug:__GMLC_TokenType_Enum "__GMLC_TokenType_Enum"
+#macro Debug:__GMLC_TokenType_Define "__GMLC_TokenType_Define"
+#macro Debug:__GMLC_TokenType_NoOpPragma "__GMLC_TokenType_NoOpPragma"
+#macro Debug:__GMLC_TokenType_Illegal "__GMLC_TokenType_Illegal"
 #endregion

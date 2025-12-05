@@ -231,10 +231,10 @@ function __GMLCcompileProgram(_node, _globalsStruct) {
 		var _name = _names[_i];
 		var _sub_node = _node.GlobalVar[$ _name];
 		
-		if (_sub_node.type == __GMLC_NodeType.FunctionDeclaration) {
+		if (_sub_node.type == __GMLC_NodeType_FunctionDeclaration) {
 			_output.globals[$ _name] = __GMLCcompileFunction(_output, undefined, _sub_node);
 		}
-		else if (_sub_node.type == __GMLC_NodeType.ConstructorDeclaration) {
+		else if (_sub_node.type == __GMLC_NodeType_ConstructorDeclaration) {
 			_output.globals[$ _name] = __GMLCcompileConstructor(_output, undefined, _sub_node);
 		}
 		
@@ -256,138 +256,138 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
     // this is essentially our lookup table for that
 	
 	switch (_node.type) {
-		case __GMLC_NodeType.FunctionDeclaration:{
+		case __GMLC_NodeType_FunctionDeclaration:{
 			return __GMLCcompileFunction(_rootNode, undefined, _node);
 		break;}
-		case __GMLC_NodeType.ConstructorDeclaration:{
+		case __GMLC_NodeType_ConstructorDeclaration:{
 			return __GMLCcompileConstructor(_rootNode, undefined, _node);
 		break;}
-		case __GMLC_NodeType.ArgumentList:{
+		case __GMLC_NodeType_ArgumentList:{
 			throw_gmlc_error("not done yet")
 		break;}
-		case __GMLC_NodeType.Argument:{
+		case __GMLC_NodeType_Argument:{
 			throw_gmlc_error("not done yet")
 		break;}
 		
-		case __GMLC_NodeType.BlockStatement:{
+		case __GMLC_NodeType_BlockStatement:{
 			return __GMLCcompileBlockStatement(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.IfStatement:{
+		case __GMLC_NodeType_IfStatement:{
 			return __GMLCcompileIf(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.ForStatement:{
+		case __GMLC_NodeType_ForStatement:{
 			return __GMLCcompileFor(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.WhileStatement:{
+		case __GMLC_NodeType_WhileStatement:{
 			return __GMLCcompileWhile(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.RepeatStatement:{
+		case __GMLC_NodeType_RepeatStatement:{
 			return __GMLCcompileRepeat(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.DoUntilStatement:{
+		case __GMLC_NodeType_DoUntilStatement:{
 			return __GMLCcompileDoUntil(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.WithStatement:{
+		case __GMLC_NodeType_WithStatement:{
 			return __GMLCcompileWith(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.TryStatement:{
+		case __GMLC_NodeType_TryStatement:{
 			return __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.SwitchStatement:{
+		case __GMLC_NodeType_SwitchStatement:{
 			return __GMLCcompileSwitch(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.CaseExpression:
-		case __GMLC_NodeType.CaseDefault:{
+		case __GMLC_NodeType_CaseExpression:
+		case __GMLC_NodeType_CaseDefault:{
 			return __GMLCcompileCase(_rootNode, _parentNode, _node)
 		break;}
 		
-		case __GMLC_NodeType.BreakStatement:{
+		case __GMLC_NodeType_BreakStatement:{
 			return __GMLCcompileBreak(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.ContinueStatement:{
+		case __GMLC_NodeType_ContinueStatement:{
 			return __GMLCcompileContinue(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.ExitStatement:{
+		case __GMLC_NodeType_ExitStatement:{
 			return __GMLCcompileExit(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.ReturnStatement:{
+		case __GMLC_NodeType_ReturnStatement:{
 			return __GMLCcompileReturn(_rootNode, _parentNode, _node)
 		break;}
 		
-		case __GMLC_NodeType.VariableDeclarationList:{
+		case __GMLC_NodeType_VariableDeclarationList:{
 			return __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.VariableDeclaration:{
+		case __GMLC_NodeType_VariableDeclaration:{
 			return __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node);
 		break;}
 		
-		case __GMLC_NodeType.CallExpression:{
+		case __GMLC_NodeType_CallExpression:{
 			return __GMLCcompileCallExpression(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.NewExpression:{
+		case __GMLC_NodeType_NewExpression:{
 			return __GMLCcompileNewExpression(_rootNode, _parentNode, _node)
 		break;}
 		
-		case __GMLC_NodeType.ExpressionStatement:{
+		case __GMLC_NodeType_ExpressionStatement:{
 			//NOTE: Logging this incase we are generating unneeded AST nodes.
 			throw_gmlc_error("There shouldnt be any of these")
 			return __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
 		break;}
-		case __GMLC_NodeType.AssignmentExpression:{
+		case __GMLC_NodeType_AssignmentExpression:{
 			return __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.BinaryExpression:{
+		case __GMLC_NodeType_BinaryExpression:{
 			return __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.LogicalExpression:{
+		case __GMLC_NodeType_LogicalExpression:{
 			return __GMLCcompileLogicalExpression(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.NullishExpression:{
+		case __GMLC_NodeType_NullishExpression:{
 			return __GMLCcompileNullishExpression(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.UnaryExpression:{
+		case __GMLC_NodeType_UnaryExpression:{
 			return __GMLCcompileUnaryExpression(_rootNode, _parentNode, _node)
 		break;}
-		case __GMLC_NodeType.UpdateExpression:{
+		case __GMLC_NodeType_UpdateExpression:{
 			return __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node)
 		break;}
 				
-		case __GMLC_NodeType.ConditionalExpression:{
+		case __GMLC_NodeType_ConditionalExpression:{
 			return __GMLCcompileTernaryExpression(_rootNode, _parentNode, _node);
 		break;}
 		
-		case __GMLC_NodeType.Literal:{
+		case __GMLC_NodeType_Literal:{
 			return __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node);
 		break;}
-		case __GMLC_NodeType.Identifier:{
+		case __GMLC_NodeType_Identifier:{
 			return __GMLCcompileIdentifier(_rootNode, _parentNode, _node)
 		break;}
 				
-		case __GMLC_NodeType.UniqueIdentifier:{
+		case __GMLC_NodeType_UniqueIdentifier:{
 			//we should only ever make it here if we are `getting` the unique identifier.
 			return __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node)
 		break;}
 				
-		case __GMLC_NodeType.AccessorExpression:{
+		case __GMLC_NodeType_AccessorExpression:{
 			return __GMLCcompileAccessor(_rootNode, _parentNode, _node)
 		break;}
 		
-		case __GMLC_NodeType.EmptyNode:{
+		case __GMLC_NodeType_EmptyNode:{
 			//return a completely empty function, ideally we would not even enter a function but thats for a future task for the optimizer and fast passes to deal with.
 			return function(){};
 		}
 		
 		/*
-		case __GMLC_NodeType.PropertyAccessor:{
+		case __GMLC_NodeType_PropertyAccessor:{
 			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 		break;}
-		case __GMLC_NodeType.AccessorExpression:{
+		case __GMLC_NodeType_AccessorExpression:{
 			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 		break;}
-		case __GMLC_NodeType.MethodVariableConstructor:{
+		case __GMLC_NodeType_MethodVariableConstructor:{
 			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 		break;}
-		case __GMLC_NodeType.MethodVariableFunction:{
+		case __GMLC_NodeType_MethodVariableFunction:{
 			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 		break;}
 		//*/
@@ -684,12 +684,12 @@ function __GMLCexecuteBlockStatement() {
 	i++;}
 }
 function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
-    if (_node.type == __GMLC_NodeType.EmptyNode) {
+    if (_node.type == __GMLC_NodeType_EmptyNode) {
 		return function(){};
 	}
 	
 	// If the node is not a block, simply compile it as an expression.
-    if (_node.type != __GMLC_NodeType.BlockStatement) {
+    if (_node.type != __GMLC_NodeType_BlockStatement) {
         return __GMLCcompileExpression(_rootNode, _parentNode, _node);
     }
     
@@ -700,11 +700,11 @@ function __GMLCcompileBlockStatement(_rootNode, _parentNode, _node) {
     
 	var _i = 0; repeat(array_length(_statements)) {
 		var _statement = _statements[_i];
-		if (_statement.type == __GMLC_NodeType.EmptyNode) {
+		if (_statement.type == __GMLC_NodeType_EmptyNode) {
 			//dont compile and continue on
 		}
         
-		if (_statement.type == __GMLC_NodeType.BlockStatement) {
+		if (_statement.type == __GMLC_NodeType_BlockStatement) {
 			//compile but take out the statements and inject them in this one.
 			var _compiled_child_block = __GMLCcompileBlockStatement(_rootNode, _parentNode, _statement);
 			var _child_block = method_get_self(_compiled_child_block)
@@ -769,7 +769,7 @@ function __GMLCcompileIf(_rootNode, _parentNode, _node) {
     
 	//if it's an empty `else` block statement
 	if (_node.alternate != undefined)
-	&& (_node.alternate.type == __GMLC_NodeType.BlockStatement)
+	&& (_node.alternate.type == __GMLC_NodeType_BlockStatement)
 	&& (array_length(_node.alternate.statements) == 0) {
 		_node.alternate = undefined;
 	}
@@ -1427,12 +1427,12 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 function __GMLCcompileVariableDeclaration(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileVariableDeclaration", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.key = _node.identifier.value;
-	if (_node.scope == ScopeType.LOCAL) {
+	if (_node.scope == ScopeType_LOCAL) {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
-	else if (_node.scope == ScopeType.GLOBAL) {
+	else if (_node.scope == ScopeType_GLOBAL) {
 		_output.globals = _rootNode.globals;
 	}
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
@@ -1449,16 +1449,16 @@ function __GMLCcompileVariableDeclarationList(_rootNode, _parentNode, _node) {
 #region Math Expressions
 
 function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
-	if (_node.left.type == __GMLC_NodeType.AccessorExpression) {
+	if (_node.left.type == __GMLC_NodeType_AccessorExpression) {
 		
 		if (_node.operator == "=") {
 			switch (_node.left.accessorType) {
-				case __GMLC_AccessorType.Array:  return __GMLCcompileArraySet       (_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
-				case __GMLC_AccessorType.Grid:   return __GMLCcompileGridSet		(_rootNode, _parentNode, _node.left.expr, _node.left.val1, _node.left.val2, _node.right, _node.line, _node.lineString);
-				case __GMLC_AccessorType.List:   return __GMLCcompileListSet		(_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
-				case __GMLC_AccessorType.Map:    return __GMLCcompileMapSet		    (_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
-				case __GMLC_AccessorType.Struct: return __GMLCcompileStructSet      (_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
-				case __GMLC_AccessorType.Dot:    return __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
+				case __GMLC_AccessorType_Array:  return __GMLCcompileArraySet       (_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
+				case __GMLC_AccessorType_Grid:   return __GMLCcompileGridSet		(_rootNode, _parentNode, _node.left.expr, _node.left.val1, _node.left.val2, _node.right, _node.line, _node.lineString);
+				case __GMLC_AccessorType_List:   return __GMLCcompileListSet		(_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
+				case __GMLC_AccessorType_Map:    return __GMLCcompileMapSet		    (_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
+				case __GMLC_AccessorType_Struct: return __GMLCcompileStructSet      (_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
+				case __GMLC_AccessorType_Dot:    return __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _node.left.expr, _node.left.val1,                  _node.right, _node.line, _node.lineString);
 			}
 		}
 		else {
@@ -1480,23 +1480,23 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			var _getter = undefined;
 			var _setter = undefined;
 			switch (_node.left.accessorType) {
-				case __GMLC_AccessorType.Array:  _getter = __GMLCexecuteArrayGet       ; _setter = __GMLCexecuteArraySet       ; break;
-				case __GMLC_AccessorType.Grid:   _getter = __GMLCexecuteGridGet        ; _setter = __GMLCexecuteGridSet        ; break;
-				case __GMLC_AccessorType.List:   _getter = __GMLCexecuteListGet		   ; _setter = __GMLCexecuteListSet		   ; break;
-				case __GMLC_AccessorType.Map:    _getter = __GMLCexecuteMapGet		   ; _setter = __GMLCexecuteMapSet		   ; break;
-				case __GMLC_AccessorType.Struct: _getter = __GMLCexecuteStructGet      ; _setter = __GMLCexecuteStructSet      ; break;
-				case __GMLC_AccessorType.Dot:    _getter = __GMLCexecuteStructDotAccGet; _setter = __GMLCexecuteStructDotAccSet; break;
+				case __GMLC_AccessorType_Array:  _getter = __GMLCexecuteArrayGet       ; _setter = __GMLCexecuteArraySet       ; break;
+				case __GMLC_AccessorType_Grid:   _getter = __GMLCexecuteGridGet        ; _setter = __GMLCexecuteGridSet        ; break;
+				case __GMLC_AccessorType_List:   _getter = __GMLCexecuteListGet		   ; _setter = __GMLCexecuteListSet		   ; break;
+				case __GMLC_AccessorType_Map:    _getter = __GMLCexecuteMapGet		   ; _setter = __GMLCexecuteMapSet		   ; break;
+				case __GMLC_AccessorType_Struct: _getter = __GMLCexecuteStructGet      ; _setter = __GMLCexecuteStructSet      ; break;
+				case __GMLC_AccessorType_Dot:    _getter = __GMLCexecuteStructDotAccGet; _setter = __GMLCexecuteStructDotAccSet; break;
 			}
 			
 			
 			//compile the getter
 			var _output0 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);
 			_output0.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
-			if (_node.left.accessorType = __GMLC_AccessorType.Grid) {
+			if (_node.left.accessorType = __GMLC_AccessorType_Grid) {
 				_output0.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 				_output0.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
 			}
-			else if (_node.left.accessorType = __GMLC_AccessorType.Dot) {
+			else if (_node.left.accessorType = __GMLC_AccessorType_Dot) {
 				_output0.key = _node.left.val1.value;
 			}
 			else {
@@ -1518,11 +1518,11 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			var _output2 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
 			_output2.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
 			_output2.expression = _expression;
-			if (_node.left.accessorType == __GMLC_AccessorType.Grid) {
+			if (_node.left.accessorType == __GMLC_AccessorType_Grid) {
 				_output2.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 				_output2.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
 			}
-			else if (_node.left.accessorType = __GMLC_AccessorType.Dot) {
+			else if (_node.left.accessorType = __GMLC_AccessorType_Dot) {
 				_output2.key = _node.left.val1.value;
 			}
 			else {
@@ -1534,14 +1534,14 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		}
 	}
 	
-	if (_node.left.type == __GMLC_NodeType.Identifier)
-	|| (_node.left.type == __GMLC_NodeType.UniqueIdentifier) {
+	if (_node.left.type == __GMLC_NodeType_Identifier)
+	|| (_node.left.type == __GMLC_NodeType_UniqueIdentifier) {
 		
 		//var _name = undefined;
-		//if (_node.left.type == __GMLC_NodeType.Identifier) {
+		//if (_node.left.type == __GMLC_NodeType_Identifier) {
 		//	_name = _node.left.name
 		//}
-		//if (_node.left.type == __GMLC_NodeType.UniqueIdentifier) {
+		//if (_node.left.type == __GMLC_NodeType_UniqueIdentifier) {
 		//	_name = 
 		//}
 		
@@ -1567,12 +1567,12 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		//compile the getter
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);	
 		_output.key = _node.left.name;
-		if (_node.left.scope == ScopeType.LOCAL) {
+		if (_node.left.scope == ScopeType_LOCAL) {
 			_output.locals     = _parentNode.locals;
 			_output.localsWrittenTo = _parentNode.localsWrittenTo;
 			_output.localIndex = _parentNode.localLookUps[$ _output.key];
 		}
-		else if (_node.left.scope == ScopeType.GLOBAL) {
+		else if (_node.left.scope == ScopeType_GLOBAL) {
 			_output.globals = _rootNode.globals;
 		}
 		var _getter_expression = __vanilla_method(_output, _getter);
@@ -1586,12 +1586,12 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		//compile the actual method we will be calling
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
 		_output.key        = _node.left.name;
-		if (_node.left.scope == ScopeType.LOCAL) {
+		if (_node.left.scope == ScopeType_LOCAL) {
 			_output.locals     = _parentNode.locals;
 			_output.localsWrittenTo = _parentNode.localsWrittenTo;
 			_output.localIndex = _parentNode.localLookUps[$ _output.key];
 		}
-		else if (_node.left.scope == ScopeType.GLOBAL) {
+		else if (_node.left.scope == ScopeType_GLOBAL) {
 			_output.globals = _rootNode.globals;
 		}
 		_output.expression = _expression;
@@ -1772,8 +1772,8 @@ function __GMLCcompileTernaryExpression(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node) {
-	if (_node.expr.type == __GMLC_NodeType.Identifier)
-	|| (_node.expr.type == __GMLC_NodeType.UniqueIdentifier) {
+	if (_node.expr.type == __GMLC_NodeType_Identifier)
+	|| (_node.expr.type == __GMLC_NodeType_UniqueIdentifier) {
 		
 		var _key = _node.expr.value;
 		var _increment = (_node.operator == "++") ? true : false;
@@ -1781,15 +1781,15 @@ function __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node) {
 		
 		return __GMLCcompileUpdateVariable(_rootNode, _parentNode, _node.expr.scope, _key, _increment, _prefix, _node.line, _node.lineString)
 	}
-	else if (_node.expr.type == __GMLC_NodeType.AccessorExpression) {
+	else if (_node.expr.type == __GMLC_NodeType_AccessorExpression) {
 		
 		switch (_node.expr.accessorType) {
-			case __GMLC_AccessorType.Array:  return __GMLCcompileUpdateArray  (_rootNode, _parentNode, _node);
-			case __GMLC_AccessorType.Grid:   return __GMLCcompileUpdateGrid   (_rootNode, _parentNode, _node);
-			case __GMLC_AccessorType.List:   return __GMLCcompileUpdateList   (_rootNode, _parentNode, _node);
-			case __GMLC_AccessorType.Map:    return __GMLCcompileUpdateMap    (_rootNode, _parentNode, _node);
-			case __GMLC_AccessorType.Struct: return __GMLCcompileUpdateStruct (_rootNode, _parentNode, _node);
-			case __GMLC_AccessorType.Dot:    return __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node);
+			case __GMLC_AccessorType_Array:  return __GMLCcompileUpdateArray  (_rootNode, _parentNode, _node);
+			case __GMLC_AccessorType_Grid:   return __GMLCcompileUpdateGrid   (_rootNode, _parentNode, _node);
+			case __GMLC_AccessorType_List:   return __GMLCcompileUpdateList   (_rootNode, _parentNode, _node);
+			case __GMLC_AccessorType_Map:    return __GMLCcompileUpdateMap    (_rootNode, _parentNode, _node);
+			case __GMLC_AccessorType_Struct: return __GMLCcompileUpdateStruct (_rootNode, _parentNode, _node);
+			case __GMLC_AccessorType_Dot:    return __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node);
 		}
 		
 	}
@@ -1806,59 +1806,59 @@ function __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node) {
 //these are used when the target is an expected result, self, other, global, static, var, or a known unique variabke like `room` or `fps`
 function __GMLCGetScopeGetter(_scopeType) {
 	switch (_scopeType) {
-		case ScopeType.GLOBAL:   return __GMLCexecuteGetPropertyGlobal    break;
-		case ScopeType.LOCAL:    return __GMLCexecuteGetPropertyVarLocal  break;
-		case ScopeType.STATIC:   return __GMLCexecuteGetPropertyVarStatic break;
-		case ScopeType.SELF:     return __GMLCexecuteGetPropertySelf      break;
-		case ScopeType.CONST:    return __GMLCexecuteGetPropertyConstant  break;
-		case ScopeType.UNIQUE:   return __GMLCexecuteGetPropertyUnique    break;
+		case ScopeType_GLOBAL:   return __GMLCexecuteGetPropertyGlobal    break;
+		case ScopeType_LOCAL:    return __GMLCexecuteGetPropertyVarLocal  break;
+		case ScopeType_STATIC:   return __GMLCexecuteGetPropertyVarStatic break;
+		case ScopeType_SELF:     return __GMLCexecuteGetPropertySelf      break;
+		case ScopeType_CONST:    return __GMLCexecuteGetPropertyConstant  break;
+		case ScopeType_UNIQUE:   return __GMLCexecuteGetPropertyUnique    break;
 		default: throw_gmlc_error($"Unsupported scope to be written to :: {_scopeType}");
 	}
 }
 function __GMLCGetScopeSetter(_scopeType) {
 	switch (_scopeType) {
-		case ScopeType.GLOBAL:   return __GMLCexecuteSetPropertyGlobal    break;
-		case ScopeType.LOCAL:    return __GMLCexecuteSetPropertyVarLocal  break;
-		case ScopeType.STATIC:   return __GMLCexecuteSetPropertyVarStatic break;
-		case ScopeType.SELF:     return __GMLCexecuteSetPropertySelf      break;
-		case ScopeType.CONST:    return __GMLCexecuteSetPropertyConstant  break;
-		case ScopeType.UNIQUE:   return __GMLCexecuteSetPropertyUnique    break;
+		case ScopeType_GLOBAL:   return __GMLCexecuteSetPropertyGlobal    break;
+		case ScopeType_LOCAL:    return __GMLCexecuteSetPropertyVarLocal  break;
+		case ScopeType_STATIC:   return __GMLCexecuteSetPropertyVarStatic break;
+		case ScopeType_SELF:     return __GMLCexecuteSetPropertySelf      break;
+		case ScopeType_CONST:    return __GMLCexecuteSetPropertyConstant  break;
+		case ScopeType_UNIQUE:   return __GMLCexecuteSetPropertyUnique    break;
 		default: throw_gmlc_error($"Unsupported scope to be written to :: {_scopeType}");
 	}
 }
 function __GMLCGetScopeUpdater(_scopeType, _increment, _prefix) {
 	switch (_scopeType){
-		case ScopeType.SELF:{
+		case ScopeType_SELF:{
 			if (_increment  &&  _prefix) return __GMLCexecuteUpdatePropertySelfPlusPlusPrefix;
 			if (_increment  && !_prefix) return __GMLCexecuteUpdatePropertySelfPlusPlusPostfix;
 			if (!_increment &&  _prefix) return __GMLCexecuteUpdatePropertySelfMinusMinusPrefix;
 			if (!_increment && !_prefix) return __GMLCexecuteUpdatePropertySelfMinusMinusPostfix;
 		break;}
-		case ScopeType.OTHER:{
+		case ScopeType_OTHER:{
 			if (_increment  &&  _prefix) return __GMLCexecuteUpdatePropertyOtherPlusPlusPrefix;
 			if (_increment  && !_prefix) return __GMLCexecuteUpdatePropertyOtherPlusPlusPostfix;
 			if (!_increment &&  _prefix) return __GMLCexecuteUpdatePropertyOtherMinusMinusPrefix;
 			if (!_increment && !_prefix) return __GMLCexecuteUpdatePropertyOtherMinusMinusPostfix;
 		break;}
-		case ScopeType.GLOBAL:{
+		case ScopeType_GLOBAL:{
 			if (_increment  &&  _prefix) return __GMLCexecuteUpdatePropertyGlobalPlusPlusPrefix;
 			if (_increment  && !_prefix) return __GMLCexecuteUpdatePropertyGlobalPlusPlusPostfix;
 			if (!_increment &&  _prefix) return __GMLCexecuteUpdatePropertyGlobalMinusMinusPrefix;
 			if (!_increment && !_prefix) return __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix;
 		break;}
-		case ScopeType.LOCAL:{
+		case ScopeType_LOCAL:{
 			if (_increment  &&  _prefix) return __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix;
 			if (_increment  && !_prefix) return __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix;
 			if (!_increment &&  _prefix) return __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix;
 			if (!_increment && !_prefix) return __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix;
 		break;}
-		case ScopeType.STATIC:{
+		case ScopeType_STATIC:{
 			if (_increment  &&  _prefix) return __GMLCexecuteUpdatePropertyStaticPlusPlusPrefix;
 			if (_increment  && !_prefix) return __GMLCexecuteUpdatePropertyStaticPlusPlusPostfix;
 			if (!_increment &&  _prefix) return __GMLCexecuteUpdatePropertyStaticMinusMinusPrefix;
 			if (!_increment && !_prefix) return __GMLCexecuteUpdatePropertyStaticMinusMinusPostfix;
 		break;}
-		case ScopeType.UNIQUE:{
+		case ScopeType_UNIQUE:{
 			if (_increment  &&  _prefix) return __GMLCexecuteUpdatePropertyUniquePlusPlusPrefix;
 			if (_increment  && !_prefix) return __GMLCexecuteUpdatePropertyUniquePlusPlusPostfix;
 			if (!_increment &&  _prefix) return __GMLCexecuteUpdatePropertyUniqueMinusMinusPrefix;
@@ -1871,12 +1871,12 @@ function __GMLCGetScopeUpdater(_scopeType, _increment, _prefix) {
 function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _line, _lineString){
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePropertyGet", "<Missing Error Message>", _line, _lineString);	
 	_output.key      = _leftKey;
-	if (_scope == ScopeType.LOCAL) {
+	if (_scope == ScopeType_LOCAL) {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
-	else if (_scope == ScopeType.GLOBAL) {
+	else if (_scope == ScopeType_GLOBAL) {
 		_output.globals = _rootNode.globals;
 	}
 	return __vanilla_method(_output, __GMLCGetScopeGetter(_scope))
@@ -1887,12 +1887,12 @@ function __GMLCcompilePropertyGet(_rootNode, _parentNode, _scope, _leftKey, _lin
 function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightExpression, _line, _lineString){
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePropertySet", "<Missing Error Message>", _line, _lineString);
 	_output.key = _key;
-	if (_scope == ScopeType.LOCAL) {
+	if (_scope == ScopeType_LOCAL) {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
-	else if (_scope == ScopeType.GLOBAL) {
+	else if (_scope == ScopeType_GLOBAL) {
 		_output.globals = _rootNode.globals;
 	}
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _rightExpression);
@@ -1905,12 +1905,12 @@ function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightEx
 
 function __GMLCcompileAccessor(_rootNode, _parentNode, _node) {
 	switch (_node.accessorType) {
-		case __GMLC_AccessorType.Array:  return __GMLCcompileArrayGet       (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
-		case __GMLC_AccessorType.Grid:   return __GMLCcompileGridGet        (_rootNode, _parentNode, _node.expr, _node.val1, _node.val2, _node.line, _node.lineString)
-		case __GMLC_AccessorType.List:   return __GMLCcompileListGet        (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
-		case __GMLC_AccessorType.Map:    return __GMLCcompileMapGet         (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
-		case __GMLC_AccessorType.Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
-		case __GMLC_AccessorType.Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType_Array:  return __GMLCcompileArrayGet       (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType_Grid:   return __GMLCcompileGridGet        (_rootNode, _parentNode, _node.expr, _node.val1, _node.val2, _node.line, _node.lineString)
+		case __GMLC_AccessorType_List:   return __GMLCcompileListGet        (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType_Map:    return __GMLCcompileMapGet         (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType_Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
+		case __GMLC_AccessorType_Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
 		default: throw_gmlc_error($"Unsupported accessor type: {_node.accessorType}\n{_node}");
 	}
 }
@@ -1918,15 +1918,15 @@ function __GMLCcompileAccessor(_rootNode, _parentNode, _node) {
 function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.key = _node.value;
-	if (_node.scope == ScopeType.LOCAL) {
+	if (_node.scope == ScopeType_LOCAL) {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
-	else if (_node.scope == ScopeType.GLOBAL) {
+	else if (_node.scope == ScopeType_GLOBAL) {
 		_output.globals = _rootNode.globals;
 	}
-	else if (_node.scope == ScopeType.CONST) {
+	else if (_node.scope == ScopeType_CONST) {
 		show_debug_message("wait")
 	}
 	return __vanilla_method(_output, __GMLCGetScopeGetter(_node.scope))

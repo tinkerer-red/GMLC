@@ -150,9 +150,9 @@
 				assignment_node : undefined,
 			}
 			
-			if (_node.type == __GMLC_NodeType.VariableDeclaration)
-			&& (_node.expr.type == __GMLC_NodeType.Literal)
-			&& (_node.expr.scope == ScopeType.LOCAL)
+			if (_node.type == __GMLC_NodeType_VariableDeclaration)
+			&& (_node.expr.type == __GMLC_NodeType_Literal)
+			&& (_node.expr.scope == ScopeType_LOCAL)
 			{
 				_found = true;
 				
@@ -161,10 +161,10 @@
 				_constant_data.known = false; //we only know it when we find this same node inside the parent
 				_constant_data.assignment_node = _node;
 			}
-			if (_node.type == __GMLC_NodeType.AssignmentExpression)
+			if (_node.type == __GMLC_NodeType_AssignmentExpression)
 			&& (_node.operator == "=")
-			&& (_node.left.type == __GMLC_NodeType.Identifier)
-			&& (_node.right.type == __GMLC_NodeType.Literal)
+			&& (_node.left.type == __GMLC_NodeType_Identifier)
+			&& (_node.right.type == __GMLC_NodeType_Literal)
 			{
 				_found = true;
 				
@@ -177,12 +177,12 @@
 			if (_found) {
 				
 				switch (_parent.type) {
-					case __GMLC_NodeType.DoUntilStatement:
-			        case __GMLC_NodeType.ForStatement:
-					case __GMLC_NodeType.RepeatStatement:
-					case __GMLC_NodeType.WhileStatement:
-					case __GMLC_NodeType.WithStatement:
-					case __GMLC_NodeType.UpdateExpression: {
+					case __GMLC_NodeType_DoUntilStatement:
+			        case __GMLC_NodeType_ForStatement:
+					case __GMLC_NodeType_RepeatStatement:
+					case __GMLC_NodeType_WhileStatement:
+					case __GMLC_NodeType_WithStatement:
+					case __GMLC_NodeType_UpdateExpression: {
 						//break propigation
 						return _node;
 						
@@ -238,11 +238,11 @@
 			
 			switch (_node.type) {
 		        //breakers
-				case __GMLC_NodeType.AssignmentExpression: {
+				case __GMLC_NodeType_AssignmentExpression: {
 		            var _left = _node.left;
 		            var _right = _node.right;
 						
-					if (_left.type == __GMLC_NodeType.Identifier) {
+					if (_left.type == __GMLC_NodeType_Identifier) {
 						//propigate to children incase the expression contains it's self and could be constant folded on additional optimize steps
 						// example :: xx = xx + 1;
 						var _return = __propagateConstants(_node.right, _constant_data)
@@ -253,10 +253,10 @@
 						
 					}
 					
-					if (_left.type == __GMLC_NodeType.Identifier)
+					if (_left.type == __GMLC_NodeType_Identifier)
 					&& (_left.value == _constant_identifier)
 					{
-						if (_right.type == __GMLC_NodeType.Literal)
+						if (_right.type == __GMLC_NodeType_Literal)
 						{
 							if (_node.operator == "=")
 							{
@@ -299,7 +299,7 @@
 					return false;
 					
 		        break;}
-                case __GMLC_NodeType.VariableDeclaration: {
+                case __GMLC_NodeType_VariableDeclaration: {
 					
 					//propigate to children incase the expression contains it's self and could be constant folded on additional optimize steps
 					// example :: var xx = xx + 1;
@@ -320,7 +320,7 @@
 					
 		        break;}
                 
-				case __GMLC_NodeType.Identifier: {
+				case __GMLC_NodeType_Identifier: {
 		            
 					if (_node.value == _constant_identifier) {
 						log($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` with `{_constant_data.value}` in line ({_node.line}) `{_node.lineString}`")
@@ -332,9 +332,9 @@
 					
 		        break;}
                 
-				case __GMLC_NodeType.IfStatement:
-		        case __GMLC_NodeType.SwitchStatement:
-		        case __GMLC_NodeType.TryStatement: {
+				case __GMLC_NodeType_IfStatement:
+		        case __GMLC_NodeType_SwitchStatement:
+		        case __GMLC_NodeType_TryStatement: {
 					if (__hasIdentifierAssignment(_node, _constant_data)) {
 						//if it has an assignment to it, then we know we can not ensure safety of constant propigation any longer, and its time to back out.
 						//we could how wever still propigate top down until we run into the assignment 
@@ -345,7 +345,7 @@
 					}
 				break;}
 		        
-				case __GMLC_NodeType.DoUntilStatement: {
+				case __GMLC_NodeType_DoUntilStatement: {
 					if (__hasIdentifierAssignment(_node, _constant_data)) {
 						//break propigation
 						return true;
@@ -353,7 +353,7 @@
 					//this will return false
 					return __propagateToChildren(_node, _constant_data)
 				break;}
-		        case __GMLC_NodeType.ForStatement:{
+		        case __GMLC_NodeType_ForStatement:{
 					if (__hasIdentifierAssignment(_node, _constant_data)) {
 						//we can still safely propaget to the variable declaration
 						var _return = __propagateConstants(_node.initialization, _constant_data)
@@ -368,7 +368,7 @@
 					//this will return false
 					return __propagateToChildren(_node, _constant_data)
 				break;}
-		        case __GMLC_NodeType.RepeatStatement:{
+		        case __GMLC_NodeType_RepeatStatement:{
 					if (__hasIdentifierAssignment(_node.codeBlock, _constant_data)) {
 						//we can still safely propagate to the condition
 						var _return = __propagateConstants(_node.condition, _constant_data)
@@ -383,7 +383,7 @@
 					//this will return false
 					return __propagateToChildren(_node, _constant_data)
 				break;}
-		        case __GMLC_NodeType.WhileStatement:{
+		        case __GMLC_NodeType_WhileStatement:{
 					if (__hasIdentifierAssignment(_node.codeBlock, _constant_data)) {
 						//there is no additional propagation possible
 						
@@ -393,7 +393,7 @@
 					//this will return false
 					return __propagateToChildren(_node, _constant_data)
 				break;}
-		        case __GMLC_NodeType.WithStatement:{
+		        case __GMLC_NodeType_WithStatement:{
 					if (__hasIdentifierAssignment(_node.codeBlock, _constant_data)) {
 						//we can still safely propagate to the condition
 						var _return = __propagateConstants(_node.condition, _constant_data)
@@ -409,8 +409,8 @@
 					return __propagateToChildren(_node, _constant_data)
 				break;}
 		        
-				case __GMLC_NodeType.UpdateExpression: {
-					if (_node.expr.type == __GMLC_NodeType.Identifier) {
+				case __GMLC_NodeType_UpdateExpression: {
+					if (_node.expr.type == __GMLC_NodeType_Identifier) {
 						_constant_data.value += (_node.operator == "++") ? 1 : -1;
 						return false;
 					}
@@ -453,19 +453,19 @@
 		static __hasIdentifierAssignment = function(_node, _constant_data, _break_on_first=true) {
 			var _count = 0;
 			
-			if (_node.type == __GMLC_NodeType.AssignmentExpression)
-			&& (_node.left.type == __GMLC_NodeType.Identifier)
+			if (_node.type == __GMLC_NodeType_AssignmentExpression)
+			&& (_node.left.type == __GMLC_NodeType_Identifier)
 			&& (_node.left.value == _constant_data.identifier) {
 				return true;
 			}
 			
-			if (_node.type == __GMLC_NodeType.VariableDeclaration)
+			if (_node.type == __GMLC_NodeType_VariableDeclaration)
 			&& (_node.identifier == _constant_data.identifier) {
 				return true;
 			}
 			
-			if (_node.type == __GMLC_NodeType.UpdateExpression)
-			&& (_node.expr.type == __GMLC_NodeType.Identifier) {
+			if (_node.type == __GMLC_NodeType_UpdateExpression)
+			&& (_node.expr.type == __GMLC_NodeType_Identifier) {
 				return true;
 			}
 			
@@ -501,10 +501,10 @@
 		    
 			
 			switch (_node.type) {
-				case __GMLC_NodeType.BinaryExpression:{
+				case __GMLC_NodeType_BinaryExpression:{
 					
 					// double litteral
-					if (_node.left.type == __GMLC_NodeType.Literal && _node.right.type == __GMLC_NodeType.Literal) {
+					if (_node.left.type == __GMLC_NodeType_Literal && _node.right.type == __GMLC_NodeType_Literal) {
 					    // Both _nodes are literals, perform constant folding
 					    switch (_node.operator) {
 							case "|":{
@@ -602,28 +602,28 @@
 					}
 					
 					//single literal
-					else if (_node.left.type == __GMLC_NodeType.Literal || _node.right.type == __GMLC_NodeType.Literal) {
+					else if (_node.left.type == __GMLC_NodeType_Literal || _node.right.type == __GMLC_NodeType_Literal) {
 					    switch (_node.operator) {
 							case "+":{
 								//adding zero
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (_node.left.value == 0) {
 									log($"Optimizer :: constantFolding :: Could remove addtion of `0` in line ({_node.line}) `{_node.lineString}`")
 									return _node.right;
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 0) {
 									log($"Optimizer :: constantFolding :: Could remove addtion of `0` in line ({_node.line}) `{_node.lineString}`")
 									return _node.left;
 								}
 								//adding infinity
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.left.value)) {
 									var _value = _node.left.value
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.right.value)) {
 									var _value = _node.right.value
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
@@ -633,24 +633,24 @@
 							break;}
 							case "-":{
 								//subtracting zero
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (_node.left.value == 0) {
 									log($"Optimizer :: constantFolding :: Could remove subtraction of `0` in line ({_node.line}) `{_node.lineString}`")
 									return _node.right;
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 0) {
 									log($"Optimizer :: constantFolding :: Could remove subtraction of `0` in line ({_node.line}) `{_node.lineString}`")
 									return _node.left;
 								}
 								//subtracting infinity
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.left.value)) {
 									var _value = -_node.left.value
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.right.value)) {
 									var _value = -_node.right.value
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
@@ -660,25 +660,25 @@
 							break;}
 							case "*":{
 								//multiply by zero
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (_node.left.value == 0) {
 									var _value = 0;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 0) {
 									var _value = 0;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 								//multiply by 1
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (_node.left.value == 1) {
 									log($"Optimizer :: constantFolding :: Could remove unneeded multiplication of `1` in line ({_node.line}) `{_node.lineString}`")
 									return _node.right;
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 1) {
 									log($"Optimizer :: constantFolding :: Could remove unneeded multiplication of `1` in line ({_node.line}) `{_node.lineString}`")
 									return _node.left;
@@ -687,33 +687,33 @@
 							break;}
 							case "/":{
 								//infinity
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.left.value)) {
 									var _value = 0;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.right.value)) {
 									var _value = 0;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 								//divide by zero
-								if (_node.left.type  == __GMLC_NodeType.Literal)
+								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (_node.left.value == 0) {
 									var _value = 0;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 0) {
 									var _value = 0;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 								//divide by 1
-								if (_node.right.type  == __GMLC_NodeType.Literal)
+								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 1) {
 									log($"Optimizer :: constantFolding :: Could remove unneeded division of `1` in line ({_node.line}) `{_node.lineString}`")
 									return _node.left;
@@ -725,8 +725,8 @@
 					}
 					
 				break;}
-				case __GMLC_NodeType.LogicalExpression:{
-					if (_node.left.type == __GMLC_NodeType.Literal && _node.right.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_LogicalExpression:{
+					if (_node.left.type == __GMLC_NodeType_Literal && _node.right.type == __GMLC_NodeType_Literal) {
 					    switch (_node.operator) {
 							case "||":{
 								var _value = _node.left.value || _node.right.value
@@ -745,27 +745,27 @@
 							break;}
 					    }
 					}
-					else if (_node.left.type == __GMLC_NodeType.Literal || _node.right.type == __GMLC_NodeType.Literal) {
+					else if (_node.left.type == __GMLC_NodeType_Literal || _node.right.type == __GMLC_NodeType_Literal) {
 					    switch (_node.operator) {
 							case "||":{
-								if (_node.left.type  == __GMLC_NodeType.Literal && _node.left.value ) {
+								if (_node.left.type  == __GMLC_NodeType_Literal && _node.left.value ) {
 									var _value = true
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type == __GMLC_NodeType.Literal && _node.right.value) {
+								if (_node.right.type == __GMLC_NodeType_Literal && _node.right.value) {
 									var _value = true
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
 							break;}
 							case "&&":{
-								if (_node.left.type  == __GMLC_NodeType.Literal && !_node.left.value ) {
+								if (_node.left.type  == __GMLC_NodeType_Literal && !_node.left.value ) {
 									var _value = false;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
 								}
-								if (_node.right.type == __GMLC_NodeType.Literal && !_node.right.value) {
+								if (_node.right.type == __GMLC_NodeType_Literal && !_node.right.value) {
 									var _value = false;
 									log($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
 									return new ASTLiteral(_value, _node.line, _node.lineString);
@@ -774,8 +774,8 @@
 					    }
 					}
 				break;}
-				case __GMLC_NodeType.NullishExpression:{
-					if (_node.left.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_NullishExpression:{
+					if (_node.left.type == __GMLC_NodeType_Literal) {
 						if (_node.left.value == undefined) {
 							log($"Optimizer :: constantFolding :: Could collapse nullish express to right side only in line ({_node.line}) `{_node.lineString}`")
 							return _node.right;
@@ -786,8 +786,8 @@
 						}
 					}
 				break;}
-				case __GMLC_NodeType.UnaryExpression:{
-					if (_node.expr.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_UnaryExpression:{
+					if (_node.expr.type == __GMLC_NodeType_Literal) {
 					    switch (_node.operator) {
 							case "!":{
 								var _value = !_node.expr.value
@@ -822,8 +822,8 @@
 					    }
 					}
 				break;}
-				case __GMLC_NodeType.ConditionalExpression:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_ConditionalExpression:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 					    // If the condition is a literal, determine which branch to take
 						if (_node.condition.value) {
 							log($"Optimizer :: constantFolding :: Could collapse ternary expression to right side in line ({_node.line}) `{_node.lineString}`")
@@ -835,15 +835,15 @@
 						}
 					}
 				break;}
-				case __GMLC_NodeType.ExpressionStatement:{
-					if (_node.expr.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_ExpressionStatement:{
+					if (_node.expr.type == __GMLC_NodeType_Literal) {
 					    // If the condition is a literal, determine which branch to take
 						throw "\n\nWhy is this running, we shouldnt have any expression statements anymore\n\n"
 						return new ASTLiteral(_node.expr.value, _node.line, _node.lineString);
 					}
 				break;}
-				case __GMLC_NodeType.CallExpression:{
-					if (_node.callee.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_CallExpression:{
+					if (_node.callee.type == __GMLC_NodeType_Literal) {
 						switch (_node.callee.value) {
 							case abs:{
 								if (array_length(_node.arguments) != 1) {
@@ -1654,7 +1654,7 @@
 								if (__argumentsAreLiteral(_node.arguments)) {
 									return __build_literal_from_function_call_constant_folding(string, _node);
 								}
-								else if (_node.arguments[0].type == __GMLC_NodeType.Literal) {
+								else if (_node.arguments[0].type == __GMLC_NodeType_Literal) {
 									var _arr = _node.arguments;
 									var _exec_arr = [_arr[0].value]; //the execution array
 									var _new_arr = []; // the new arg array
@@ -1663,7 +1663,7 @@
 								
 									var _i=1; repeat(array_length(_arr)-1) {
 										var _sub_node = _arr[_i]
-										if (_sub_node.type == __GMLC_NodeType.Literal) {
+										if (_sub_node.type == __GMLC_NodeType_Literal) {
 											_changed = true;
 											array_push(_exec_arr, _sub_node.value);
 										}
@@ -1694,8 +1694,8 @@
 									var _changed = false;
 							
 									var _i=0; repeat(array_length(_arr)-1) {
-										if (_arr[_i].type == __GMLC_NodeType.Literal)
-										&& (_arr[_i+1].type == __GMLC_NodeType.Literal) {
+										if (_arr[_i].type == __GMLC_NodeType_Literal)
+										&& (_arr[_i+1].type == __GMLC_NodeType_Literal) {
 											_changed = true;
 											
 											var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
@@ -1722,14 +1722,14 @@
 								if (__argumentsAreLiteral(_node.arguments)) {
 									return __build_literal_from_function_call_constant_folding(string_join, _node);
 								}
-								else if (_node.arguments[0].type == __GMLC_NodeType.Literal) { // delimiter is literal
+								else if (_node.arguments[0].type == __GMLC_NodeType_Literal) { // delimiter is literal
 									var _arr = _node.arguments;
 									var _changed = false;
 									
 									var _i=1; repeat(array_length(_arr)-2) {
 										
-										if (_arr[_i].type == __GMLC_NodeType.Literal)
-										&& (_arr[_i+1].type == __GMLC_NodeType.Literal) {
+										if (_arr[_i].type == __GMLC_NodeType_Literal)
+										&& (_arr[_i+1].type == __GMLC_NodeType_Literal) {
 											_changed = true;
 											
 											var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
@@ -1774,8 +1774,8 @@
 			var _index  = _node_data.index;
 		    
 			switch (_node.type) {
-				case __GMLC_NodeType.IfStatement:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_IfStatement:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (_node.condition.value) {
 							log($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `true` block only in line ({_node.line}) `{_node.lineString}`")
 							return _node.consequent;
@@ -1792,32 +1792,32 @@
 						}
 					}
 				break;}
-				case __GMLC_NodeType.ForStatement:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_ForStatement:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (!_node.condition.value) {
 							log($"Optimizer :: eliminateDeadCode :: Could optimize `for` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
 				break;}
-				case __GMLC_NodeType.WhileStatement:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_WhileStatement:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (!_node.condition.value) {
 							log($"Optimizer :: eliminateDeadCode :: Could optimize `while` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
 				break;}
-				case __GMLC_NodeType.RepeatStatement:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_RepeatStatement:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (!_node.condition.value) {
 							log($"Optimizer :: eliminateDeadCode :: Could optimize `repeat` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
 				break;}
-				case __GMLC_NodeType.DoUntilStatement:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_DoUntilStatement:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						
 						/// There isnt really a way to optimizer this on the AST level, we can convert this into a breakable block statement on compile level, however if we want to re export as a string we dont want to mess with this on the AST optimization level.
 						
@@ -1827,16 +1827,16 @@
 						//}
 					}
 				break;}
-				case __GMLC_NodeType.WithStatement:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_WithStatement:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (_node.condition.value == noone) {
 							log($"Optimizer :: eliminateDeadCode :: Could optimize `with` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
 							return new ASTEmpty(_node.line, _node.lineString);
 						}
 					}
 				break;}
-				case __GMLC_NodeType.SwitchStatement:{
-					if (_node.switchExpression.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_SwitchStatement:{
+					if (_node.switchExpression.type == __GMLC_NodeType_Literal) {
 						
 						/// this was trash and doesnt account for inner statements breaking out, additionally it complicates break statements, and re exporting the code.
 						
@@ -1880,8 +1880,8 @@
 						//return _return;
 					}
 				break;}
-				case __GMLC_NodeType.ConditionalExpression:{
-					if (_node.condition.type == __GMLC_NodeType.Literal) {
+				case __GMLC_NodeType_ConditionalExpression:{
+					if (_node.condition.type == __GMLC_NodeType_Literal) {
 					    // If the condition is a literal, determine which branch to take
 						log($"Optimizer :: eliminateDeadCode :: Could optimize ternary expression given a condition of {_node.condition.value} in line ({_node.line}) `{_node.lineString}`")
 						return (_node.condition.value) ? _node.trueExpr : _node.falseExpr;
@@ -1906,19 +1906,19 @@
 			
 			// Convert struct access using literals to hashed access
 			//new ASTNode(Function, {value: currentToken.value, name: currentToken.name})
-			if (_node.type == __GMLC_NodeType.CallExpression) {
+			if (_node.type == __GMLC_NodeType_CallExpression) {
 				switch (_node.callee.value) {
 					case struct_get:
 					case variable_struct_get:{
 						// Convert struct access using literals to hashed access
 						var _arg = _node.arguments[1];
-						if (_arg.type == __GMLC_NodeType.Literal) 
+						if (_arg.type == __GMLC_NodeType_Literal) 
 						&& (typeof(_arg.value) == "string") {
-							return new ASTNode(__GMLC_NodeType.CallExpression, {
+							return new ASTNode(__GMLC_NodeType_CallExpression, {
 								callee: new ASTLiteral(struct_get_from_hash, _node.line, _node.lineString, "struct_get_from_hash"),
 								arguments: [
 									_node.arguments[0],
-									new ASTNode(__GMLC_NodeType.Literal, {value: variable_get_hash(_arg.value), scope: ScopeType.CONST})
+									new ASTNode(__GMLC_NodeType_Literal, {value: variable_get_hash(_arg.value), scope: ScopeType_CONST})
 								]
 							});
 						}
@@ -1928,13 +1928,13 @@
 					case variable_struct_set:{
 						// Convert struct access using literals to hashed access
 						var _arg = _node.arguments[1];
-						if (_arg.type == __GMLC_NodeType.Literal) 
+						if (_arg.type == __GMLC_NodeType_Literal) 
 						&& (typeof(_arg.value) == "string") {
-							return new ASTNode(__GMLC_NodeType.CallExpression, {
+							return new ASTNode(__GMLC_NodeType_CallExpression, {
 								callee: new ASTLiteral(struct_set_from_hash, _node.line, _node.lineString, "struct_set_from_hash"),
 								arguments: [
 									_node.arguments[0],
-									new ASTNode(__GMLC_NodeType.Literal, {value: variable_get_hash(_arg.value), scope: ScopeType.CONST}),
+									new ASTNode(__GMLC_NodeType_Literal, {value: variable_get_hash(_arg.value), scope: ScopeType_CONST}),
 									_node.arguments[2]
 								]
 							});
@@ -1945,8 +1945,8 @@
 						// String with single argument is faster to use string_concat
 						if (array_length(_node.arguments) == 1) {
 							var _arg = _node.arguments[0]
-							if (_arg.type != __GMLC_NodeType.Literal) {
-								return new ASTNode(__GMLC_NodeType.CallExpression, {
+							if (_arg.type != __GMLC_NodeType_Literal) {
+								return new ASTNode(__GMLC_NodeType_CallExpression, {
 									callee: new ASTLiteral(string_concat, _node.line, _node.lineString, "string_concat"),
 									arguments: _node.arguments
 								});
@@ -2223,7 +2223,7 @@
 		#region Helper Functions
 		static __argumentsAreLiteral = function(_arguments) {
 			var _i=0; repeat(array_length(_arguments)) {
-				if (_arguments[_i].type != __GMLC_NodeType.Literal) {
+				if (_arguments[_i].type != __GMLC_NodeType_Literal) {
 					return false;
 				}
 			_i+=1;}//end repeat loop

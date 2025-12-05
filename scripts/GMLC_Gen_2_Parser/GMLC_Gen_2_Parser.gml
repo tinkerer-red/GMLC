@@ -19,7 +19,7 @@
 		currentTokenIndex = 0;
 		currentToken = undefined;
 		currentFunction = undefined;
-		currentScope = ScopeType.GLOBAL; //used to change `function(){}` into `method(self, function(){}` when applicable
+		currentScope = ScopeType_GLOBAL; //used to change `function(){}` into `method(self, function(){}` when applicable
 		scriptAST = undefined;
 		
 		lastFiveTokens = array_create(5, undefined);
@@ -72,14 +72,14 @@
 			if (currentToken != undefined) {
 				
 				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 				
 				if (currentToken == undefined) return;
 				
 				var statement = parseStatement();
 				
 				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 				
 				if (statement) {
 					array_push(scriptAST.statements.statements, statement);
@@ -123,11 +123,11 @@
 				for (var _i = 0; _i < array_length(_tokens); _i++) {
 					var _token = _tokens[_i];
 				
-					if (_token.type == __GMLC_TokenType.Identifier) {
+					if (_token.type == __GMLC_TokenType_Identifier) {
 					
 						var _scopeType = __find_ScopeType_from_string(_token.value);
 					
-						if (_scopeType == ScopeType.MACRO) {
+						if (_scopeType == ScopeType_MACRO) {
 							
 							var _macroTokens = currentScript.MacroVar[$ _token.value];
 							
@@ -141,7 +141,7 @@
 							//_token.byteEnd
 							//_token.column
 							
-							//"type":"__GMLC_TokenType.Punctuation",
+							//"type":"__GMLC_TokenType_Punctuation",
 							//"line":4.0,
 							//"lineString":"\tfoo = 123;",
 							//"name":";",
@@ -156,13 +156,13 @@
 							_hasChanged = true;
 						}
 					
-						if (_scopeType == ScopeType.ENUM) {
+						if (_scopeType == ScopeType_ENUM) {
 							var _header = _token.value;
 							
 							if (_i < array_length(_tokens)-2)
-							&& (_tokens[_i+1].type == __GMLC_TokenType.Punctuation)
+							&& (_tokens[_i+1].type == __GMLC_TokenType_Punctuation)
 							&& (_tokens[_i+1].value == ".")
-							&& (_tokens[_i+2].type == __GMLC_TokenType.Identifier) {
+							&& (_tokens[_i+2].type == __GMLC_TokenType_Identifier) {
 								
 								var _member = _tokens[_i+2].value;
 								var _enumTokens = currentScript.EnumVar[$ _header][$ _member];
@@ -223,7 +223,7 @@
 				while (currentToken != undefined && currentToken.value != "}") {
 					//specifically Juju Adams will use `;` in macros to denote the next line, i really only ever expect a block statement to start with a `;` if its a Juju macro
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 					
 					var _statement = parseStatement();
 					
@@ -232,14 +232,14 @@
 					}
 					
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 					
 					// Parse each statement until } is found
 					// Optional: Handle error checking for unexpected end of file
 				}
 				
 				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 				
 				nextToken(); // Consume the }
 				
@@ -259,7 +259,7 @@
 				var singleStatement = parseStatement();
 				
 				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 				
 				return new ASTBlockStatement([singleStatement], line, lineString);
 			}
@@ -275,7 +275,7 @@
 			// Assume currentToken is if
 			nextToken(); // Move past if
 			var _condition = parseConditionalExpression();
-			optionalToken(__GMLC_TokenType.Keyword, "then")
+			optionalToken(__GMLC_TokenType_Keyword, "then")
 			var _codeBlock = parseBlock();
 			var _elseBlock = undefined;
 			
@@ -294,7 +294,7 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Move past for
-			expectToken(__GMLC_TokenType.Punctuation, "(");
+			expectToken(__GMLC_TokenType_Punctuation, "(");
 			
 			//example of a really cursed for statement, but it is valid syntax
 			//////////////////////////////////////////////////////////////
@@ -320,7 +320,7 @@
 			else {
 				var _initialization = undefined;
 			}
-			expectToken(__GMLC_TokenType.Punctuation, ";");
+			expectToken(__GMLC_TokenType_Punctuation, ";");
 			
 			//it's possible to make a for statement with no conditional statement
 			if (currentToken.name != ";") {
@@ -329,7 +329,7 @@
 			else {
 				var _condition = undefined;
 			}
-			expectToken(__GMLC_TokenType.Punctuation, ";");
+			expectToken(__GMLC_TokenType_Punctuation, ";");
 			
 			if (currentToken.name != ")" && currentToken.name != ";") {
 				var _increment = parseBlock();
@@ -340,9 +340,9 @@
 			
 			//these are typically already handled by the parseBlock
 			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-			while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+			while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 			
-			expectToken(__GMLC_TokenType.Punctuation, ")");
+			expectToken(__GMLC_TokenType_Punctuation, ")");
 			
 			var _codeBlock = parseBlock();
 			return new ASTForStatement(_initialization, _condition, _increment, _codeBlock, line, lineString);
@@ -377,7 +377,7 @@
 			// Assume currentToken is do
 			nextToken(); // Move past do
 			var _codeBlock = parseBlock();
-			expectToken(__GMLC_TokenType.Keyword, "until");
+			expectToken(__GMLC_TokenType_Keyword, "until");
 			var _condition = parseConditionalExpression();
 			return new ASTDoUntilStatement(_condition, _codeBlock, line, lineString);
 		};
@@ -389,21 +389,21 @@
 		    nextToken(); // Move past switch
 		    var switchExpression = parseExpression(); // Parse the switch expression
 		    
-			expectToken(__GMLC_TokenType.Punctuation, "{"); // Ensure { and consume it
+			expectToken(__GMLC_TokenType_Punctuation, "{"); // Ensure { and consume it
 			
 			var cases = [];
 		    var statements = undefined;
 		    
 		    while (currentToken != undefined && currentToken.value != "}") {
-				if (currentToken.type == __GMLC_TokenType.Keyword) {
+				if (currentToken.type == __GMLC_TokenType_Keyword) {
 					if (currentToken.value == "case") {
 						var caseLine = currentToken.line;
 						var caseLineString = currentToken.lineString;
 						
-						expectToken(__GMLC_TokenType.Keyword, "case"); //consume case
+						expectToken(__GMLC_TokenType_Keyword, "case"); //consume case
 						var _label = parseExpression();
 						
-						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure : and consume it
+						expectToken(__GMLC_TokenType_Punctuation, ":"); // Ensure : and consume it
 						
 						statements = [];
 						array_push(cases, new ASTCaseExpression(_label, statements, caseLine, caseLineString));
@@ -414,7 +414,7 @@
 						
 						nextToken(); //consume default
 						
-						expectToken(__GMLC_TokenType.Punctuation, ":"); // Ensure : and consume it
+						expectToken(__GMLC_TokenType_Punctuation, ":"); // Ensure : and consume it
 						
 						statements = [];
 						array_push(cases, new ASTCaseDefault(statements, line, lineString));
@@ -423,7 +423,7 @@
 						array_push(statements, parseStatement());
 						
 						//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-						while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+						while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 						
 					}
 				}
@@ -431,15 +431,15 @@
 					array_push(statements, parseStatement());
 					
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 					
 				}
 		    }
 
-		    expectToken(__GMLC_TokenType.Punctuation, "}"); // Ensure } and consume it
+		    expectToken(__GMLC_TokenType_Punctuation, "}"); // Ensure } and consume it
 			
 			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-			while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+			while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 
 		    return new ASTSwitchStatement(switchExpression, cases, line, lineString);
 		};
@@ -459,7 +459,7 @@
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Keyword, "try");  // Expect the try keyword
+			expectToken(__GMLC_TokenType_Keyword, "try");  // Expect the try keyword
 			var _tryBlock = parseBlock();  // Parse the block of statements under try
 			
 			var _catchBlock = undefined;
@@ -467,14 +467,14 @@
 			if (currentToken != undefined)
 			&& (currentToken.value == "catch") {
 				nextToken();  // Move past catch
-				expectToken(__GMLC_TokenType.Punctuation, "(");
+				expectToken(__GMLC_TokenType_Punctuation, "(");
 				
 				//parse and identify the exception variable as a local variable.
 				_exceptionVar = currentToken.value;  // Parse the exception variable
 				array_push((currentFunction ?? scriptAST).LocalVarNames, _exceptionVar);
 				
 				nextToken();  // Move past Identifier
-				expectToken(__GMLC_TokenType.Punctuation, ")");
+				expectToken(__GMLC_TokenType_Punctuation, ")");
 				_catchBlock = parseBlock();  // Parse the block of statements under catch
 			}
 			
@@ -492,7 +492,7 @@
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Keyword, "throw");  // Expect the try keyword
+			expectToken(__GMLC_TokenType_Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
 			return new ASTCallExpression(new ASTLiteral(throw_gmlc_error, line, lineString, "throw_gmlc_error"), [_err_message], line, lineString);
@@ -533,11 +533,11 @@
 			if (currentToken.name == ";") {
 				// dont attempt to parse if its expected to return undefined
 			}
-			else if (currentToken.type == __GMLC_TokenType.Keyword)
+			else if (currentToken.type == __GMLC_TokenType_Keyword)
 			&& (currentToken.value != "new") {
 				// dont attempt to parse keywords if new block is starting
 			}
-			else if (currentToken.type == __GMLC_TokenType.Punctuation)
+			else if (currentToken.type == __GMLC_TokenType_Punctuation)
 			&& (currentToken.value == "}") {
 				// dont attempt to parse if end of block statement
 			}
@@ -566,17 +566,17 @@
 			var lineString = currentToken.lineString;
 			
 			#region `function`
-			expectToken(__GMLC_TokenType.Keyword, "function");
+			expectToken(__GMLC_TokenType_Keyword, "function");
 			#endregion
 			
 			#region function `identifier` :: the function's name if provided
 			var functionName = undefined;
-			if (currentToken.type == __GMLC_TokenType.Identifier) {
+			if (currentToken.type == __GMLC_TokenType_Identifier) {
 				var functionName = currentToken.value;
 				//consume the function's identifier
 				nextToken();
 			}
-			else if (currentToken.type == __GMLC_TokenType.Function) {
+			else if (currentToken.type == __GMLC_TokenType_Function) {
 				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}\nline({line}) {lineString}")
 			}
 			else {
@@ -601,23 +601,23 @@
 			var _parentName = undefined;
 			var _parentCall = undefined;
 			#region function foo() `:` bar() constructor {} :: check and consume the `:` if it has a parent defined
-			if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
+			if (optionalToken(__GMLC_TokenType_Punctuation, ":")) {
 				#region function foo() : `bar`() constructor {} :: parse constructor parent
 				
 				var _parent = parseCallAccessExpression();
 				
 				//if its an internally defined function, like a function defined in the same program we're parsing
-				if (_parent.type != __GMLC_NodeType.CallExpression) {
+				if (_parent.type != __GMLC_NodeType_CallExpression) {
 					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent}")
 				}
 				
 				//if it's a global identifier
 				if (!is_callable(_parent.callee.value))
-				&& (_parent.callee.type == __GMLC_NodeType.Identifier)
-				&& (_parent.callee.scope == ScopeType.GLOBAL)
+				&& (_parent.callee.type == __GMLC_NodeType_Identifier)
+				&& (_parent.callee.scope == ScopeType_GLOBAL)
 				{
 					var _ref = program.GlobalVar[$ _parent.callee.value]
-					if (_ref.type != __GMLC_NodeType.ConstructorDeclaration) {
+					if (_ref.type != __GMLC_NodeType_ConstructorDeclaration) {
 						throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}")
 					}
 				}
@@ -630,7 +630,7 @@
 			}
 			#endregion
 			#region function foo() `constructor` :: parse constructor keyword (if provided)
-			if (optionalToken(__GMLC_TokenType.Keyword, "constructor")) {
+			if (optionalToken(__GMLC_TokenType_Keyword, "constructor")) {
 				_isConstructor = true;
 			}
 			#endregion
@@ -668,7 +668,7 @@
 			currentFunction = globalFunctionNode;
 			
 			//change the scope if needed
-			if (_isConstructor) currentScope = ScopeType.SELF;
+			if (_isConstructor) currentScope = ScopeType_SELF;
 			
 			// Parse the function body and apply it
 			globalFunctionNode.statements = parseBlock();
@@ -681,14 +681,14 @@
 			scriptAST.GlobalVar[$ functionName] = globalFunctionNode;
 			array_push(scriptAST.GlobalVarNames, functionName);
 			
-			var _func_ref = new ASTIdentifier(functionName, ScopeType.GLOBAL, line, lineString);
+			var _func_ref = new ASTIdentifier(functionName, ScopeType_GLOBAL, line, lineString);
 			
 			// now correctly set the assignment, either a global lookup, or a method call, depending on if it's inside a constructor or not
 			switch (currentScope) {
-				case ScopeType.GLOBAL: {
+				case ScopeType_GLOBAL: {
 					var _func = _func_ref;
 				break;}
-				case ScopeType.STATIC: {
+				case ScopeType_STATIC: {
 					var _func = new ASTCallExpression(
 						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
 						[
@@ -699,7 +699,7 @@
 						lineString
 					)
 				break;}
-				case ScopeType.SELF  : {
+				case ScopeType_SELF  : {
 					var _self = new ASTUniqueIdentifier(env.getVariable("self").value, line, lineString);
 					var _func = new ASTCallExpression(
 						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
@@ -721,7 +721,7 @@
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Punctuation, "(");
+			expectToken(__GMLC_TokenType_Punctuation, "(");
 			var parameters = [];
 			while (currentToken.name != ")") {
 			    var _argNode = parseArgumentDefaultSingle()
@@ -747,7 +747,7 @@
 			nextToken();  // Move past Identifier
 			
 			var expr = undefined;
-			if (optionalToken(__GMLC_TokenType.Operator, "=")) {
+			if (optionalToken(__GMLC_TokenType_Operator, "=")) {
 				expr = parseAssignmentExpression(); // Assignment is right-associative
 			}
 			else { 
@@ -771,14 +771,14 @@
 				//	//dont to nuttin`!
 				//break;}
 				case "var":{
-					_variable_scope = ScopeType.LOCAL;
+					_variable_scope = ScopeType_LOCAL;
 				break;}
 				case "static":{
 					_should_hoist = true;
-					_variable_scope = ScopeType.STATIC;
+					_variable_scope = ScopeType_STATIC;
 				break;}
 				case "globalvar":{
-					_variable_scope = ScopeType.GLOBAL;
+					_variable_scope = ScopeType_GLOBAL;
 				break;}
 				default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
 			}
@@ -792,9 +792,9 @@
 					//case "let":{
 					//	//dont to nuttin`!
 					//break;}
-					case ScopeType.LOCAL: _tableArr = scriptAST.LocalVarNames; break;
-					case ScopeType.STATIC: throw_gmlc_error($"Script: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"); break;
-					case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
+					case ScopeType_LOCAL: _tableArr = scriptAST.LocalVarNames; break;
+					case ScopeType_STATIC: throw_gmlc_error($"Script: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"); break;
+					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
 					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
 				}
 					
@@ -805,9 +805,9 @@
 					//case "let":{
 					//	//dont to nuttin`!
 					//break;}
-					case ScopeType.LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
-					case ScopeType.STATIC: _tableArr = currentFunction.StaticVarNames; break;
-					case ScopeType.GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
+					case ScopeType_LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
+					case ScopeType_STATIC: _tableArr = currentFunction.StaticVarNames; break;
+					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
 					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
 				}
 			}
@@ -815,7 +815,7 @@
 			
 			// Cache the scoping and update if needed
 			var _old_scope = currentScope;
-			if (_variable_scope = ScopeType.STATIC) {
+			if (_variable_scope = ScopeType_STATIC) {
 				currentScope = _variable_scope;
 			}
 			
@@ -838,7 +838,7 @@
 				var varLine = currentToken.line;
 				var varLineString = currentToken.lineString;
 				
-				if (currentToken.type != __GMLC_TokenType.Identifier) {
+				if (currentToken.type != __GMLC_TokenType_Identifier) {
 					if (_found_one) {
 						break;
 					}
@@ -849,7 +849,7 @@
 				// we parse anything which starts with an identifier to ensure there is no postfix op attached to it like `++`, and accessor, or function call
 		        var identifier = parsePostfixExpression();
 				
-				if (identifier.type != __GMLC_NodeType.Identifier) {
+				if (identifier.type != __GMLC_NodeType_Identifier) {
 					if (_found_one) {
 						break;
 					}
@@ -866,7 +866,7 @@
 				
 				//fetch expression
 				var expr = undefined;
-				if (optionalToken(__GMLC_TokenType.Operator, "=")) {
+				if (optionalToken(__GMLC_TokenType_Operator, "=")) {
 					expr = parseConditionalExpression();
 					var _declaration = new ASTVariableDeclaration(identifier, expr, _variable_scope, varLine, varLineString);
 					
@@ -875,11 +875,11 @@
 						//case "let":{
 						//	//dont to nuttin`!
 						//break;}
-						case ScopeType.LOCAL:
-						case ScopeType.GLOBAL:{
+						case ScopeType_LOCAL:
+						case ScopeType_GLOBAL:{
 							array_push(declarations, _declaration);
 						break;}
-						case ScopeType.STATIC:{
+						case ScopeType_STATIC:{
 							array_push(currentFunction.StaticVarArray, _declaration)
 						break;}
 						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
@@ -919,7 +919,7 @@
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 			
-			expectToken(__GMLC_TokenType.Keyword, "new");  // Expect the new keyword
+			expectToken(__GMLC_TokenType_Keyword, "new");  // Expect the new keyword
 			
 			var expr = parseAccessExpression();
 			expr = parseFunctionCall(expr);
@@ -966,7 +966,7 @@
 		static parseAssignmentExpression = function() {
 			var expr = parseLogicalOrExpression();
 			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|=", "%=", "??="];
-			if (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && array_contains(__arr, currentToken.value)) {
+			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -982,7 +982,7 @@
 		static parseConditionalEqualityExpression = function() {
 			var expr = parseLogicalOrExpression();
 			static __arr = ["=", "==", "!="];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -997,7 +997,7 @@
 		
 		static parseLogicalOrExpression = function() {
 			var expr = parseLogicalAndExpression();
-			while (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && currentToken.value == "||") {
+			while (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "||") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1011,13 +1011,13 @@
 
 		static parseTerneryExpression = function(expr) {
 			
-			if (currentToken != undefined && currentToken.type == __GMLC_TokenType.Operator && currentToken.value == "?") {
+			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "?") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
-				expectToken(__GMLC_TokenType.Operator, "?"); // Consume ?
+				expectToken(__GMLC_TokenType_Operator, "?"); // Consume ?
 				var trueExpr = parseExpression(); // Parse the true branch
-				expectToken(__GMLC_TokenType.Punctuation, ":"); // Consume :
+				expectToken(__GMLC_TokenType_Punctuation, ":"); // Consume :
 				var falseExpr = parseExpression(); // Parse the false branch
 				expr = new ASTConditionalExpression(expr, trueExpr, falseExpr, line, lineString);
 			}
@@ -1026,7 +1026,7 @@
 
 		static parseLogicalAndExpression = function() {
 			var expr = parseLogicalXorExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (currentToken.value == "&&") {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "&&") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1041,7 +1041,7 @@
 
 		static parseLogicalXorExpression = function() {
 			var expr = parseNullishExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (currentToken.value == "^^") {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "^^") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1056,7 +1056,7 @@
 		
 		static parseNullishExpression = function() {
 			var expr = parseBitwiseOrExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (currentToken.value == "??") {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "??") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1071,7 +1071,7 @@
 		
 		static parseBitwiseOrExpression = function() {
 			var expr = parseBitwiseXorExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (currentToken.value == "|") {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "|") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1101,7 +1101,7 @@
 
 		static parseBitwiseAndExpression = function() {
 			var expr = parseEqualityExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (currentToken.value == "&") {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "&") {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1117,7 +1117,7 @@
 		static parseEqualityExpression = function() {
 			var expr = parseRelationalExpression();
 			static __arr = ["==", "!="];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1134,7 +1134,7 @@
 			
 			static __arr = ["<", "<=", ">", ">="];
 			while (currentToken != undefined)
-			&& (currentToken.type == __GMLC_TokenType.Operator)
+			&& (currentToken.type == __GMLC_TokenType_Operator)
 			&& (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
@@ -1151,7 +1151,7 @@
 		static parseShiftExpression = function() {
 			var expr = parseAdditiveExpression();
 			static __arr = ["<<", ">>"];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1166,7 +1166,7 @@
 		static parseAdditiveExpression = function() {
 			var expr = parseMultiplicativeExpression();
 			static __arr = ["+", "-"];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1181,7 +1181,7 @@
 		static parseMultiplicativeExpression = function() {
 			var expr = parseUnaryExpression();
 			static __arr = ["*", "/", "mod", "div"];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1195,7 +1195,7 @@
 
 		static parseUnaryExpression = function() {
 			static __arr = ["!", "+", "-", "~", "++", "--"];
-			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value)) {
+			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1217,8 +1217,8 @@
 		static parsePostfixExpression = function() {
 			var expr = parseCallAccessExpression();
 			static __arr = ["++", "--"];
-			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType.Operator && (array_contains(__arr, currentToken.value))
-			&& !(expr.type == "Literal" && expr.scope == ScopeType.CONST) {
+			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value))
+			&& !(expr.type == "Literal" && expr.scope == ScopeType_CONST) {
 				var line = currentToken.line;
 				var lineString = currentToken.lineString;
 				
@@ -1234,7 +1234,7 @@
 			var expr = parseAccessExpression();
 			
 			while (currentToken != undefined) {
-				if (currentToken.type == __GMLC_TokenType.Punctuation) {
+				if (currentToken.type == __GMLC_TokenType_Punctuation) {
 					switch (currentToken.value) {
 						case "(": {
 							expr = parseFunctionCall(expr);
@@ -1262,7 +1262,7 @@
 			
 			var _should_break = false;
 			while (currentToken != undefined) {
-				if (currentToken.type == __GMLC_TokenType.Punctuation) {
+				if (currentToken.type == __GMLC_TokenType_Punctuation) {
 					switch (currentToken.value) {
 						case "[": {
 							expr = parseBracketAccessor(expr);
@@ -1291,8 +1291,8 @@
 			}
 			
 			switch (currentToken.type) {
-				case __GMLC_TokenType.Number:
-				case __GMLC_TokenType.String:{
+				case __GMLC_TokenType_Number:
+				case __GMLC_TokenType_String:{
 					
 					// Handle literals
 					var node = new ASTLiteral(currentToken.value, line, lineString);
@@ -1300,11 +1300,11 @@
 					return node;
 					
 				break;}
-				case __GMLC_TokenType.Identifier:{
+				case __GMLC_TokenType_Identifier:{
 					
 					var _scopeType = __find_ScopeType_from_string(currentToken.value);
 					
-					if (_scopeType == ScopeType.MACRO) {
+					if (_scopeType == ScopeType_MACRO) {
 						
 						var _macroTokens = variable_clone(currentScript.MacroVar[$ currentToken.value]);
 						
@@ -1314,10 +1314,10 @@
 						return node;
 					}
 					
-					if (_scopeType == ScopeType.ENUM) {
+					if (_scopeType == ScopeType_ENUM) {
 						var _header = currentToken.value
-						if (optionalToken(__GMLC_TokenType.Punctuation, ".")) {
-							if (currentToken.type == __GMLC_TokenType.Identifier) {
+						if (optionalToken(__GMLC_TokenType_Punctuation, ".")) {
+							if (currentToken.type == __GMLC_TokenType_Identifier) {
 								var _member = currentToken.value;
 								var _enumTokens = variable_clone(currentScript.EnumVar[$ _header][$ _member]);
 								
@@ -1334,14 +1334,14 @@
 						return node;
 					}
 					
-					if (_scopeType == ScopeType.CONST) {
+					if (_scopeType == ScopeType_CONST) {
 						var _data = env.getConstant(currentToken.value) ?? env.getFunction(currentToken.value)
 						var node = new ASTLiteral(_data.value, line, lineString);
 						nextToken(); // Move past the identifier
 						return node;
 					}
 					
-					if (_scopeType == ScopeType.SELF) {
+					if (_scopeType == ScopeType_SELF) {
 						var node = new ASTIdentifier(currentToken.value, undefined, line, lineString);
 						nextToken(); // Move past the identifier
 						return node;
@@ -1353,13 +1353,13 @@
 					return node;
 					
 				break;}
-				case __GMLC_TokenType.Function:{
+				case __GMLC_TokenType_Function:{
 					var node = new ASTLiteral(currentToken.value, line, lineString, currentToken.name);
 					nextToken(); // Move past the identifier
 					return node;
 					
 				break;}
-				case __GMLC_TokenType.Keyword:{
+				case __GMLC_TokenType_Keyword:{
 					switch (currentToken.value) {
 						case "function": return parseFunctionDeclaration();
 						case "new": return parseNewExpression()
@@ -1368,13 +1368,13 @@
 						break;}
 					}
 				break;}
-				case __GMLC_TokenType.Punctuation:{
+				case __GMLC_TokenType_Punctuation:{
 					
 					if (currentToken.name == "(") {
 						// Handle expressions wrapped in parentheses
 						nextToken(); // Consume (
 						var expr = parseConditionalExpression();
-						expectToken(__GMLC_TokenType.Punctuation, ")");
+						expectToken(__GMLC_TokenType_Punctuation, ")");
 						return expr;
 					}
 					
@@ -1387,7 +1387,7 @@
 					}
 					
 				break;}
-				case __GMLC_TokenType.UniqueVariable:{
+				case __GMLC_TokenType_UniqueVariable:{
 					
 					// Handle literals
 					var node = new ASTUniqueIdentifier(currentToken.value, line, lineString);
@@ -1395,7 +1395,7 @@
 					return node;
 					
 				break;}
-				case __GMLC_TokenType.TemplateStringBegin:{
+				case __GMLC_TokenType_TemplateStringBegin:{
 					
 					var _template_string = currentToken.value;
 					
@@ -1404,8 +1404,8 @@
 					
 					var _arguments = [];
 					var _index = 0;
-					while (currentToken != undefined && currentToken.type != __GMLC_TokenType.TemplateStringEnd) {
-						if (currentToken.type == __GMLC_TokenType.TemplateStringMiddle) {
+					while (currentToken != undefined && currentToken.type != __GMLC_TokenType_TemplateStringEnd) {
+						if (currentToken.type == __GMLC_TokenType_TemplateStringMiddle) {
 							_template_string += currentToken.value;
 							nextToken();  // Consume the middle segment
 						}
@@ -1429,12 +1429,12 @@
 					
 					return _node
 				break;}
-				case __GMLC_TokenType.NoOpPragma: {
+				case __GMLC_TokenType_NoOpPragma: {
 					nextToken();
 					if (currentToken == undefined) return undefined;
 					var _node = parseStatement();
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 					_node.skipOptimization = true;
 					return _node;
 					
@@ -1450,7 +1450,7 @@
 			
 			var elements = [];
 		    
-		    expectToken(__GMLC_TokenType.Punctuation, "[");
+		    expectToken(__GMLC_TokenType_Punctuation, "[");
 		    while (currentToken != undefined && currentToken.name != "]") {
 		        var element = parseExpression();
 				array_push(elements, element);
@@ -1459,7 +1459,7 @@
 		            nextToken();  // Skip the comma
 		        }
 		    }
-		    expectToken(__GMLC_TokenType.Punctuation, "]");
+		    expectToken(__GMLC_TokenType_Punctuation, "]");
 			
 			return new ASTCallExpression(new ASTLiteral(__NewGMLArray, line, lineString, "__NewGMLArray"), elements, line, lineString);
 		};
@@ -1470,12 +1470,12 @@
 			
 			var _args = [];
 		    
-		    expectToken(__GMLC_TokenType.Punctuation, "{");
+		    expectToken(__GMLC_TokenType_Punctuation, "{");
 		    while (currentToken != undefined && currentToken.value != "}") {
-		        if (currentToken.type != __GMLC_TokenType.Identifier)
-				&& (currentToken.type != __GMLC_TokenType.String)
-				&& (currentToken.type != __GMLC_TokenType.UniqueVariable)
-				&& (currentToken.type != __GMLC_TokenType.Number)
+		        if (currentToken.type != __GMLC_TokenType_Identifier)
+				&& (currentToken.type != __GMLC_TokenType_String)
+				&& (currentToken.type != __GMLC_TokenType_UniqueVariable)
+				&& (currentToken.type != __GMLC_TokenType_Number)
 				{
 		            throw_gmlc_error($"Expected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}");
 		        }
@@ -1483,18 +1483,18 @@
 		        var key = currentToken;
 		        nextToken();  // Move past the identifier
 				
-				if (optionalToken(__GMLC_TokenType.Punctuation, ":")) {
+				if (optionalToken(__GMLC_TokenType_Punctuation, ":")) {
 					var _prev_scope = currentScope;
-					currentScope = ScopeType.SELF;
+					currentScope = ScopeType_SELF;
 					
 					var value = parseConditionalExpression();
 					
 					currentScope = _prev_scope;
 				}
-				else if (key.type == __GMLC_TokenType.String)
-				     || (key.type == __GMLC_TokenType.Identifier)
-				     || (key.type == __GMLC_TokenType.UniqueVariable)
-				     || (key.type == __GMLC_TokenType.Number)
+				else if (key.type == __GMLC_TokenType_String)
+				     || (key.type == __GMLC_TokenType_Identifier)
+				     || (key.type == __GMLC_TokenType_UniqueVariable)
+				     || (key.type == __GMLC_TokenType_Number)
 				{
 					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), key.line, key.lineString);
 				}
@@ -1503,7 +1503,7 @@
 				}
 		        
 				//correct constants to be the string they are expected to be
-				if (key.type != __GMLC_TokenType.String)
+				if (key.type != __GMLC_TokenType_String)
 				&& (key.value != key.name) {
 					key.value = key.name;
 				}
@@ -1520,7 +1520,7 @@
 		        }
 				
 		    }
-		    expectToken(__GMLC_TokenType.Punctuation, "}");
+		    expectToken(__GMLC_TokenType_Punctuation, "}");
 			
 			// Properties are not all constants, use a runtime function to create the struct
 			return new ASTCallExpression(new ASTLiteral(__NewGMLStruct, line, lineString, "__NewGMLStruct"), _args, line, lineString);
@@ -1539,7 +1539,7 @@
 			var lineString = currentToken.lineString;
 			
 			var _arguments = [];
-			expectToken(__GMLC_TokenType.Punctuation, "("); // Ensure ( and consume it
+			expectToken(__GMLC_TokenType_Punctuation, "("); // Ensure ( and consume it
 			
 			//early out
 			if (currentToken != undefined && currentToken.name != ")") {
@@ -1574,7 +1574,7 @@
 				throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>")
 			}
 			
-			expectToken(__GMLC_TokenType.Punctuation, ")"); // Ensure ) and consume it
+			expectToken(__GMLC_TokenType_Punctuation, ")"); // Ensure ) and consume it
 			
 			return _arguments;
 		}
@@ -1585,8 +1585,8 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume .
-		    if (currentToken.type != __GMLC_TokenType.Identifier)
-		    && (currentToken.type != __GMLC_TokenType.UniqueVariable) {
+		    if (currentToken.type != __GMLC_TokenType_Identifier)
+		    && (currentToken.type != __GMLC_TokenType_UniqueVariable) {
 		        throw_gmlc_error($"Expected identifier after .\n{lineString}\n");
 		    }
 			
@@ -1594,7 +1594,7 @@
 				object,
 				new ASTLiteral(currentToken.value, currentToken.line, currentToken.lineString),
 				undefined,
-				__GMLC_AccessorType.Dot,
+				__GMLC_AccessorType_Dot,
 				line,
 				lineString
 			)
@@ -1609,27 +1609,27 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume [
-			var accessorType = __GMLC_AccessorType.Array; // Default to array accessor
+			var accessorType = __GMLC_AccessorType_Array; // Default to array accessor
 			
 			switch (currentToken.value) {
 				case "|":{
-					accessorType = __GMLC_AccessorType.List;
+					accessorType = __GMLC_AccessorType_List;
 					nextToken(); // Consume |
 				break;}
 				case "?":{
-					accessorType = __GMLC_AccessorType.Map;
+					accessorType = __GMLC_AccessorType_Map;
 					nextToken(); // Consume ?
 				break;}
 				case "#":{
-					accessorType = __GMLC_AccessorType.Grid;
+					accessorType = __GMLC_AccessorType_Grid;
 					nextToken(); // Consume #
 				break;}
 				case "$":{
-					accessorType = __GMLC_AccessorType.Struct;
+					accessorType = __GMLC_AccessorType_Struct;
 					nextToken(); // Consume $
 				break;}
 				case "@":{
-					accessorType = __GMLC_AccessorType.Array;
+					accessorType = __GMLC_AccessorType_Array;
 					nextToken(); // Consume @
 				break;}
 			}
@@ -1643,7 +1643,7 @@
 				var _val2 = parseExpression();
 			}
 			
-			expectToken(__GMLC_TokenType.Punctuation, "]"); // Consume ]
+			expectToken(__GMLC_TokenType_Punctuation, "]"); // Consume ]
 			
 			return new ASTAccessorExpression(
 				object,
@@ -1707,37 +1707,37 @@ function __find_ScopeType_from_string(_string) {
 	gml_pragma("forceinline");
 	// Ordered in priority
 	
-	//ScopeType.MACRO;
-	//ScopeType.GLOBAL;
-	//ScopeType.ENUM;
-	//ScopeType.UNIQUE;
-	//ScopeType.LOCAL;
-	//ScopeType.STATIC;
-	//ScopeType.SELF;
-	//ScopeType.CONST;
+	//ScopeType_MACRO;
+	//ScopeType_GLOBAL;
+	//ScopeType_ENUM;
+	//ScopeType_UNIQUE;
+	//ScopeType_LOCAL;
+	//ScopeType_STATIC;
+	//ScopeType_SELF;
+	//ScopeType_CONST;
 	
-	if array_contains(currentScript.MacroVarNames, _string) return ScopeType.MACRO;
-	if array_contains(currentScript.GlobalVarNames, _string) return ScopeType.GLOBAL;
-	if struct_exists(currentScript.EnumVarNames, _string) return ScopeType.ENUM;
+	if array_contains(currentScript.MacroVarNames, _string) return ScopeType_MACRO;
+	if array_contains(currentScript.GlobalVarNames, _string) return ScopeType_GLOBAL;
+	if struct_exists(currentScript.EnumVarNames, _string) return ScopeType_ENUM;
 	
 	
 	// Asset Handling
 	if (env.isFunction(_string)) {
-		return ScopeType.CONST;
+		return ScopeType_CONST;
 	}
 	else if (env.isConstant(_string)) {
-		return ScopeType.CONST;
+		return ScopeType_CONST;
 	}
 	
 	if (currentFunction != undefined) {
-		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType.LOCAL;
-		if array_contains(currentFunction.StaticVarNames, _string) return ScopeType.STATIC;
+		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType_LOCAL;
+		if array_contains(currentFunction.StaticVarNames, _string) return ScopeType_STATIC;
 	}
 	else {
-		if array_contains(currentScript.LocalVarNames, _string) return ScopeType.LOCAL;
+		if array_contains(currentScript.LocalVarNames, _string) return ScopeType_LOCAL;
 	}
 	
-	return ScopeType.SELF;  // Default to instance if scope is unknown
+	return ScopeType_SELF;  // Default to instance if scope is unknown
 	
 }
 /// @ignore

@@ -406,8 +406,8 @@ function __GMLCexecuteArrayCreateAndSetLocal(){
 	_target[_index] = expression();
 }
 function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-	if (_target.type == __GMLC_NodeType.Identifier) {
-		if (_target.scope == ScopeType.LOCAL) {
+	if (_target.type == __GMLC_NodeType_Identifier) {
+		if (_target.scope == ScopeType_LOCAL) {
 			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _line, _lineString);	
 			
 			_output.locals          = _parentNode.locals;
@@ -419,7 +419,7 @@ function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expressio
 			
 			return __vanilla_method(_output, __GMLCexecuteArrayCreateAndSetLocal);
 		}
-		if (_target.scope == ScopeType.SELF) {
+		if (_target.scope == ScopeType_SELF) {
 			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _line, _lineString);	
 			
 			_output.key = _target.name;
@@ -644,13 +644,13 @@ function __GMLCexecuteStructDotAccGet(){
 function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
 	
 	//incase it's a valid scope, lets hoist it to a better fitted function
-	//if (_target.type == __GMLC_NodeType.Identifier) {
+	//if (_target.type == __GMLC_NodeType_Identifier) {
 	//	var _getter = __GMLCGetScopeGetter(_target.scope)
 		
 	//	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
 	//	_output.key        = _key.value;
 		
-	//	if (_target.scope == ScopeType.GLOBAL) {
+	//	if (_target.scope == ScopeType_GLOBAL) {
 	//		_output.globals = _rootNode.globals;
 	//	}
 		
@@ -710,14 +710,14 @@ function __GMLCexecuteStructDotAccSet(){
 function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
     
 	//incase it's a valid scope, lets hoist it to a better fitted function
-	if (_target.type == __GMLC_NodeType.Identifier) {
+	if (_target.type == __GMLC_NodeType_Identifier) {
 		var _setter = __GMLCGetScopeSetter(_target.scope)
 		
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
 		_output.key        = _key.value;
 		_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
 		
-		if (_target.scope == ScopeType.GLOBAL) {
+		if (_target.scope == ScopeType_GLOBAL) {
 			_output.globals = _rootNode.globals;
 		}
 		
@@ -1647,12 +1647,12 @@ function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node) {
 function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _increment, _prefix, _line, _lineString) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateVariable", "<Missing Error Message>", _line, _lineString);
 	_output.key = _key;
-    if (_scope == ScopeType.LOCAL) {
+    if (_scope == ScopeType_LOCAL) {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
-	else if (_scope == ScopeType.GLOBAL) {
+	else if (_scope == ScopeType_GLOBAL) {
 		_output.globals = _rootNode.globals;
 	}
 	

@@ -62,8 +62,8 @@
 			if (currentNode.node.visited == false) {
 				currentNode.node.visited = true;
 				
-				if (currentNode.node.type == __GMLC_NodeType.FunctionDeclaration)
-				|| (currentNode.node.type == __GMLC_NodeType.ConstructorDeclaration) {
+				if (currentNode.node.type == __GMLC_NodeType_FunctionDeclaration)
+				|| (currentNode.node.type == __GMLC_NodeType_ConstructorDeclaration) {
 					currentFunction = currentNode.node
 				}
 				
@@ -73,7 +73,7 @@
 				currentNode.node.push_children_to_node_stack(nodeStack);
 			}
 			else {
-				if (currentNode.node.type == __GMLC_NodeType.FunctionDeclaration) {
+				if (currentNode.node.type == __GMLC_NodeType_FunctionDeclaration) {
 					currentFunction = undefined;
 				}
 				
@@ -112,26 +112,26 @@
 			}
 			
 			switch (node.type) {
-			    case __GMLC_NodeType.Script:{
+			    case __GMLC_NodeType_Script:{
 					
 				break;}
-				case __GMLC_NodeType.FunctionDeclaration:{
+				case __GMLC_NodeType_FunctionDeclaration:{
 					
 				break;}
-				case __GMLC_NodeType.ArgumentList:{
+				case __GMLC_NodeType_ArgumentList:{
 					
 				break;}
-				case __GMLC_NodeType.Argument:{
+				case __GMLC_NodeType_Argument:{
 					
 				break;}
 				
-				case __GMLC_NodeType.BlockStatement:{
+				case __GMLC_NodeType_BlockStatement:{
 					//iterate through children, and stack block statements together, this includes variable lists.
 					var _new_arr = [];
 					var _i=0; repeat(array_length(node.statements)) {
 						var _child = node.statements[_i];
 						switch (_child.type) {
-							case __GMLC_NodeType.VariableDeclarationList: {
+							case __GMLC_NodeType_VariableDeclarationList: {
 								
 								var _declarations = _child.statements.statements
 								var _j=0; repeat(array_length(_declarations)) {
@@ -139,7 +139,7 @@
 								_j++}
 								
 							break}
-							case __GMLC_NodeType.BlockStatement: {
+							case __GMLC_NodeType_BlockStatement: {
 								
 								var _statements = _child.statements
 								var _j=0; repeat(array_length(_statements)) {
@@ -154,83 +154,83 @@
 					_i++}
 					node.statements = _new_arr;
 				break;}
-				case __GMLC_NodeType.IfStatement:{
+				case __GMLC_NodeType_IfStatement:{
 					
 				break;}
-				case __GMLC_NodeType.ForStatement:{
+				case __GMLC_NodeType_ForStatement:{
 				    
 			    break;}
-				case __GMLC_NodeType.WhileStatement:{
+				case __GMLC_NodeType_WhileStatement:{
 					
 				break;}
-				case __GMLC_NodeType.RepeatStatement:{
+				case __GMLC_NodeType_RepeatStatement:{
 					
 				break;}
-				case __GMLC_NodeType.DoUntilStatement:{
+				case __GMLC_NodeType_DoUntilStatement:{
 					
 				break;}
-				case __GMLC_NodeType.WithStatement:{
+				case __GMLC_NodeType_WithStatement:{
 					
 				break;}
-				case __GMLC_NodeType.TryStatement:{
+				case __GMLC_NodeType_TryStatement:{
 					
 				break;}
-				case __GMLC_NodeType.SwitchStatement:{
+				case __GMLC_NodeType_SwitchStatement:{
 					
 				break;}
-				case __GMLC_NodeType.CaseExpression:
-				case __GMLC_NodeType.CaseDefault:{
-					
-				break;}
-				
-				case __GMLC_NodeType.BreakStatement:
-				case __GMLC_NodeType.ContinueStatement:{
-					
-				break;}
-				case __GMLC_NodeType.ExitStatement:{
-					
-				break;}
-				case __GMLC_NodeType.ReturnStatement:{
+				case __GMLC_NodeType_CaseExpression:
+				case __GMLC_NodeType_CaseDefault:{
 					
 				break;}
 				
-				case __GMLC_NodeType.VariableDeclarationList:{
+				case __GMLC_NodeType_BreakStatement:
+				case __GMLC_NodeType_ContinueStatement:{
+					
+				break;}
+				case __GMLC_NodeType_ExitStatement:{
+					
+				break;}
+				case __GMLC_NodeType_ReturnStatement:{
+					
+				break;}
+				
+				case __GMLC_NodeType_VariableDeclarationList:{
 					//decompress list into a single block statement, which will be extracted by the parent block statement
 					
 				break;}
-				case __GMLC_NodeType.VariableDeclaration:{
+				case __GMLC_NodeType_VariableDeclaration:{
 					
 				break;}
 				
-				case __GMLC_NodeType.CallExpression:{
+				case __GMLC_NodeType_CallExpression:{
 					
 				break;}
-				case __GMLC_NodeType.NewExpression:{
+				case __GMLC_NodeType_NewExpression:{
 					
 				break;}
 				
-				case __GMLC_NodeType.ExpressionStatement:{
+				case __GMLC_NodeType_ExpressionStatement:{
 					
 				break;}
-				case __GMLC_NodeType.AssignmentExpression:{
+				case __GMLC_NodeType_AssignmentExpression:{
 					
-					if (node.left.type == __GMLC_NodeType.AccessorExpression) {
+					if (node.left.type == __GMLC_NodeType_AccessorExpression) {
 						//handled in compiler
 					}
-					else if (node.left.type == __GMLC_NodeType.Identifier) {
+					else if (node.left.type == __GMLC_NodeType_Identifier) {
 						node.left.scope = __determineScopeType(node.left)
 					}
 				break;}
-				case __GMLC_NodeType.BinaryExpression:{
+				case __GMLC_NodeType_BinaryExpression:{
 					
 				break;}
-				case __GMLC_NodeType.LogicalExpression:{
+				case __GMLC_NodeType_LogicalExpression:{
 					
 				break;}
-				case __GMLC_NodeType.NullishExpression:{
+				case __GMLC_NodeType_NullishExpression:{
 					
 				break;}
-				case __GMLC_NodeType.UnaryExpression:{
+				case __GMLC_NodeType_UnaryExpression:{
 					switch (node.operator) {
 						case "!":{
 							
@@ -252,52 +252,52 @@
 						break;}
 					}
 				break;}
-				case __GMLC_NodeType.UpdateExpression:{
-					if (node.expr.type == __GMLC_NodeType.AccessorExpression) {
+				case __GMLC_NodeType_UpdateExpression:{
+					if (node.expr.type == __GMLC_NodeType_AccessorExpression) {
 						// this is handled in the compiler
 					}
-					else if (node.expr.type == __GMLC_NodeType.Identifier) {
+					else if (node.expr.type == __GMLC_NodeType_Identifier) {
 						node.expr.scope = __determineScopeType(node.expr);
 					}
 					
 					return node;
 				break;}
-				case __GMLC_NodeType.AccessorExpression:{
+				case __GMLC_NodeType_AccessorExpression:{
 					
 				break;}
-				case __GMLC_NodeType.ConditionalExpression:{
+				case __GMLC_NodeType_ConditionalExpression:{
 					
 				break;}
 				
-				case __GMLC_NodeType.Literal:{
+				case __GMLC_NodeType_Literal:{
 				    
 			    break;}
-				case __GMLC_NodeType.Identifier:{
+				case __GMLC_NodeType_Identifier:{
 					var _scopeType = __determineScopeType(node)
 					node.scope = _scopeType;
 				break;}
 				
-				case __GMLC_NodeType.UniqueIdentifier:{
+				case __GMLC_NodeType_UniqueIdentifier:{
 					
 				break;}
 				
-				case __GMLC_NodeType.ConstructorDeclaration:{
+				case __GMLC_NodeType_ConstructorDeclaration:{
 					
 				break;}
-				case __GMLC_NodeType.EmptyNode:{
+				case __GMLC_NodeType_EmptyNode:{
 					//do nothing, this is just a place holder
 				break;}
 				/*
-				case __GMLC_NodeType.PropertyAccessor:{
+				case __GMLC_NodeType_PropertyAccessor:{
 					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 				break;}
-				case __GMLC_NodeType.AccessorExpression:{
+				case __GMLC_NodeType_AccessorExpression:{
 					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 				break;}
-				case __GMLC_NodeType.MethodVariableConstructor:{
+				case __GMLC_NodeType_MethodVariableConstructor:{
 					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 				break;}
-				case __GMLC_NodeType.MethodVariableFunction:{
+				case __GMLC_NodeType_MethodVariableFunction:{
 					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 				break;}
 				//*/
@@ -316,7 +316,7 @@
 		#region Helper Functions
 		static __argumentsAreLiteral = function(_arguments) {
 			var _i=0; repeat(array_length(_arguments)) {
-				if (_arguments[_i].type != __GMLC_NodeType.Literal) {
+				if (_arguments[_i].type != __GMLC_NodeType_Literal) {
 					return false;
 				}
 			_i+=1;}//end repeat loop

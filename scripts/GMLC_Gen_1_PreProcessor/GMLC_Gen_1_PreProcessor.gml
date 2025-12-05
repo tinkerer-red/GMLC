@@ -124,21 +124,21 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	#region Parsers
 	
 	static parseWhiteSpaces = function() {
-		if (currentToken.type == __GMLC_TokenType.Comment)
+		if (currentToken.type == __GMLC_TokenType_Comment)
 		{
 			var _str = string_replace_all(string_replace_all(currentToken.value, "\t", ""), " ", "")
 			if string_pos("@NoOp", _str)
 			{
 				//change the token type and mark for processing
-				currentToken.type = __GMLC_TokenType.NoOpPragma;
+				currentToken.type = __GMLC_TokenType_NoOpPragma;
 				array_push(processedTokens, currentToken);
 				__nextToken();
 				return true;
 			}
 		}
-		if (currentToken.type == __GMLC_TokenType.Whitespace)
-		|| (currentToken.type == __GMLC_TokenType.Comment)
-		|| (currentToken.type == __GMLC_TokenType.Region)
+		if (currentToken.type == __GMLC_TokenType_Whitespace)
+		|| (currentToken.type == __GMLC_TokenType_Comment)
+		|| (currentToken.type == __GMLC_TokenType_Region)
 		{
 			__nextToken();
 			return true;
@@ -154,7 +154,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			
 			while (currentTokenIndex < _length) {
 				// Check for line break not preceded by a backslash escape
-				if (currentToken.type == __GMLC_TokenType.Whitespace)
+				if (currentToken.type == __GMLC_TokenType_Whitespace)
 				&& (currentToken.value == "\n") {
 					if (previousTokenWasEscape) {
 						previousTokenWasEscape = false; //begin parsing again
@@ -165,12 +165,12 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				}
 				
 				// Check if current token is an escape operator, and update flag
-				if (currentToken.type == __GMLC_TokenType.EscapeOperator) {
+				if (currentToken.type == __GMLC_TokenType_EscapeOperator) {
 					previousTokenWasEscape = true;
 				}
-				else if (currentToken.type == __GMLC_TokenType.Whitespace)
-				|| (currentToken.type == __GMLC_TokenType.Comment)
-				|| (currentToken.type == __GMLC_TokenType.Region)
+				else if (currentToken.type == __GMLC_TokenType_Whitespace)
+				|| (currentToken.type == __GMLC_TokenType_Comment)
+				|| (currentToken.type == __GMLC_TokenType_Region)
 				|| (previousTokenWasEscape) //specifically completely ignore everything after a `\`
 				{
 					//dont do shit
@@ -186,15 +186,15 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			return body;
 		};
 		
-		if (currentToken.type == __GMLC_TokenType.Operator)
+		if (currentToken.type == __GMLC_TokenType_Operator)
 		&& (currentToken.value == "#")
 		{
 			var _next_token = __peekToken();
-			if (_next_token.type == __GMLC_TokenType.Keyword)
+			if (_next_token.type == __GMLC_TokenType_Keyword)
 			&& (_next_token.value == "macro")
 			{
-				expectToken(__GMLC_TokenType.Operator, "#")
-				expectToken(__GMLC_TokenType.Keyword, "macro")
+				expectToken(__GMLC_TokenType_Operator, "#")
+				expectToken(__GMLC_TokenType_Keyword, "macro")
 				
 				var name = currentToken.value; // Assuming next token is the macro name
 				array_push(program.MacroVarNames, name);
@@ -212,7 +212,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	}
 	
 	static parseEnum = function() {
-		if (currentToken.type == __GMLC_TokenType.Keyword)
+		if (currentToken.type == __GMLC_TokenType_Keyword)
 		&& (currentToken.value == "enum")
 		{
 			var enumName, memberName, _expr;
@@ -220,9 +220,9 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			var defaultValue = 0;  // Default start value for enum members
 			
 			// Ensure the current token is enum
-			expectToken(__GMLC_TokenType.Keyword, "enum")
+			expectToken(__GMLC_TokenType_Keyword, "enum")
 			
-			if (currentToken.type != __GMLC_TokenType.Identifier) {
+			if (currentToken.type != __GMLC_TokenType_Identifier) {
 				throw_gmlc_error($"Enum Declaration expecting Identifier, got :: {currentToken}");
 			}
 			
@@ -231,15 +231,15 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			
 			__nextToken(); // skip enum name
 			skipWhitespaces() // such as optional line breaks
-			expectToken(__GMLC_TokenType.Punctuation, "{") // Expecting a { to start the enum block
+			expectToken(__GMLC_TokenType_Punctuation, "{") // Expecting a { to start the enum block
 			
-			optionalToken(__GMLC_TokenType.Whitespace, "\n");
+			optionalToken(__GMLC_TokenType_Whitespace, "\n");
 			
 			var _length = array_length(tokens);
-			while (currentTokenIndex < _length && !(currentToken.type == __GMLC_TokenType.Punctuation && currentToken.value == "}")) {
+			while (currentTokenIndex < _length && !(currentToken.type == __GMLC_TokenType_Punctuation && currentToken.value == "}")) {
 				skipWhitespaces();
 				
-				if (currentToken.type != __GMLC_TokenType.Identifier) {
+				if (currentToken.type != __GMLC_TokenType_Identifier) {
 					throw_gmlc_error($"Enum.Key Declaration expecting Identifier, got :: {currentToken}");
 				}
 				
@@ -263,7 +263,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				}
 				else {
 					// No explicit value, use the default incremental value
-					_expr = [new __GMLC_create_token(__GMLC_TokenType.Number, currentToken.name, int64(defaultValue), currentToken.line, currentToken.column, currentToken.byteStart, currentToken.byteEnd, currentToken.lineString)];
+					_expr = [new __GMLC_create_token(__GMLC_TokenType_Number, currentToken.name, int64(defaultValue), currentToken.line, currentToken.column, currentToken.byteStart, currentToken.byteEnd, currentToken.lineString)];
 				}
 				
 				// Add member to the list
@@ -281,13 +281,13 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				
 			}
 			
-			expectToken(__GMLC_TokenType.Punctuation, "}")
+			expectToken(__GMLC_TokenType_Punctuation, "}")
 			
 			program.EnumVar[$ enumName] = _enum_struct;
 			program.EnumVarNames[$ enumName] = enumMembers;
 			
 			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-			while (optionalToken(__GMLC_TokenType.Punctuation, ";")) {}
+			while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
 			
 			return true;
 		}
@@ -300,13 +300,13 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			var _length = array_length(tokens)
 			while (currentTokenIndex < _length) {
 				// Check for line break not preceded by a backslash escape
-				if (currentToken.type == __GMLC_TokenType.Whitespace)
+				if (currentToken.type == __GMLC_TokenType_Whitespace)
 				&& (currentToken.value == "\n") {
 					break;  // End of macro body
 				}
 				
 				title += currentToken.name;
-				currentToken.type = __GMLC_TokenType.Comment;
+				currentToken.type = __GMLC_TokenType_Comment;
 				
 				__nextToken();
 			}
@@ -315,14 +315,14 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			return title;
 		};
 		
-		if (currentToken.type == __GMLC_TokenType.Keyword) {
+		if (currentToken.type == __GMLC_TokenType_Keyword) {
 			if (currentToken.value == "#region") {
-				expectToken(__GMLC_TokenType.Keyword, "#region");
+				expectToken(__GMLC_TokenType_Keyword, "#region");
 				var regionTitle = parseRegionTitle();
 				return true;
 			}
 			if (currentToken.value == "#endregion") {
-				expectToken(__GMLC_TokenType.Keyword, "#endregion");
+				expectToken(__GMLC_TokenType_Keyword, "#endregion");
 				return true;
 			}
 		}
@@ -368,8 +368,8 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	
 	static skipWhitespaces = function(){
 		while (currentToken != undefined) {
-			if (currentToken.type == __GMLC_TokenType.Whitespace)
-			|| (currentToken.type == __GMLC_TokenType.Comment) {
+			if (currentToken.type == __GMLC_TokenType_Whitespace)
+			|| (currentToken.type == __GMLC_TokenType_Comment) {
 				__nextToken(); // skip whitespaces
 			}
 			else break;

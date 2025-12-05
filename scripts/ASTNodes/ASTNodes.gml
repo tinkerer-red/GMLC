@@ -10,7 +10,7 @@ Each node type will have specific properties relevant to their type, like body, 
 */
 #endregion
 function ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Base;
+	type = __GMLC_NodeType_Base;
 	visited = false; //used by the post processor
 	line = _line; //used for debugging
 	lineString = _lineString; //used for debugging
@@ -46,12 +46,12 @@ function ASTNode(_line, _lineString) constructor {
 #region Structural Nodes
 
 function ASTEmpty(_line="<EmptyNode>", _lineString="<EmptyNode>") : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.EmptyNode;
+	type = __GMLC_NodeType_EmptyNode;
 	static get_children = function(){ return []; };
 }
 
 function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.BlockStatement;
+	type = __GMLC_NodeType_BlockStatement;
 	statements = _statements
 	
 	static get_children = function(_top_down) {
@@ -75,7 +75,7 @@ function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _li
 
 
 function ASTScript() : ASTNode(0, "") constructor {
-	type = __GMLC_NodeType.Script;
+	type = __GMLC_NodeType_Script;
 	GlobalVar = {};
 	
 	// temporarily used during parser
@@ -123,7 +123,7 @@ function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements
 	LocalVarNames = _local_var_names;
 	//////////////////////////////////
 	
-	type = __GMLC_NodeType.FunctionDeclaration;
+	type = __GMLC_NodeType_FunctionDeclaration;
 	name = _name;
 	arguments = _arguments
 	
@@ -161,7 +161,7 @@ function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, 
 	LocalVarNames = _local_var_names;
 	//////////////////////////////////
 	
-	type = __GMLC_NodeType.ConstructorDeclaration;
+	type = __GMLC_NodeType_ConstructorDeclaration;
 	name = _name;
 	parentName = _parentName;
 	arguments = _arguments;
@@ -188,18 +188,18 @@ function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, 
 	}
 }
 function ASTArgumentList(_statements, _line, _lineString) : ASTBlockStatement(_statements, _line, _lineString) constructor {
-	type = __GMLC_NodeType.ArgumentList;
+	type = __GMLC_NodeType_ArgumentList;
 	statements = _statements;
 	
 	
 	//static get_children :: inheritade from block statement parent constructor
 }
 function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Argument;
+	type = __GMLC_NodeType_Argument;
 	identifier = _identifier;
 	expr = _expr;
 	argument_index = _arg_index
-	scope = ScopeType.LOCAL;
+	scope = ScopeType_LOCAL;
 	
 	static get_children = function(_top_down) {
 		var _arr = [];
@@ -216,7 +216,7 @@ function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNo
 
 #region Statements
 function ASTDoUntilStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.DoUntilStatement;
+	type = __GMLC_NodeType_DoUntilStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
 	
@@ -238,7 +238,7 @@ function ASTDoUntilStatement(_condition, _codeBlock, _line, _lineString) : ASTNo
 }
 
 function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.ForStatement;
+	type = __GMLC_NodeType_ForStatement;
 	initialization = _initialization;
 	condition = _condition;
 	increment = _increment;
@@ -266,7 +266,7 @@ function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _l
 }
 
 function ASTIfStatement(_condition, _consequent, _alternate, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.IfStatement;
+	type = __GMLC_NodeType_IfStatement;
 	condition = _condition;
 	consequent = _consequent;
 	alternate = _alternate;
@@ -291,7 +291,7 @@ function ASTIfStatement(_condition, _consequent, _alternate, _line, _lineString)
 }
 
 function ASTRepeatStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.RepeatStatement;
+	type = __GMLC_NodeType_RepeatStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
 	
@@ -313,7 +313,7 @@ function ASTRepeatStatement(_condition, _codeBlock, _line, _lineString) : ASTNod
 }
 
 function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.SwitchStatement;
+	type = __GMLC_NodeType_SwitchStatement;
 	switchExpression = _switchExpression;
 	cases = _cases;
 	
@@ -339,7 +339,7 @@ function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : AST
 	}
 }
 function ASTCaseDefault(_codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.CaseDefault;
+	type = __GMLC_NodeType_CaseDefault;
 	label = undefined;
 	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
 	
@@ -353,7 +353,7 @@ function ASTCaseDefault(_codeBlock, _line, _lineString) : ASTNode(_line, _lineSt
 	}
 }
 function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.CaseExpression;
+	type = __GMLC_NodeType_CaseExpression;
 	label = _label;
 	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
 	
@@ -376,7 +376,7 @@ function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_li
 }
 
 function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.TryStatement;
+	type = __GMLC_NodeType_TryStatement;
 	tryBlock = _tryBlock;
 	exceptionVar = _exceptionVar;
 	catchBlock = _catchBlock;
@@ -402,7 +402,7 @@ function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _
 }
 
 function ASTWhileStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.WhileStatement;
+	type = __GMLC_NodeType_WhileStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
 	
@@ -424,7 +424,7 @@ function ASTWhileStatement(_condition, _codeBlock, _line, _lineString) : ASTNode
 }
 
 function ASTWithStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.WithStatement;
+	type = __GMLC_NodeType_WithStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
 	
@@ -448,22 +448,22 @@ function ASTWithStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(
 
 #region Keyword Statements
 function ASTBreakStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.BreakStatement;
+	type = __GMLC_NodeType_BreakStatement;
 	static get_children = function(){}
 }
 
 function ASTContinueStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.ContinueStatement;
+	type = __GMLC_NodeType_ContinueStatement;
 	static get_children = function(){}
 }
 
 function ASTExitStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.ExitStatement;
+	type = __GMLC_NodeType_ExitStatement;
 	static get_children = function(){}
 }
 
 function ASTNewExpression(_expression, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.NewExpression;
+	type = __GMLC_NodeType_NewExpression;
 	expression = _expression;
 	
 	static get_children = function(_top_down) {
@@ -477,7 +477,7 @@ function ASTNewExpression(_expression, _line, _lineString) : ASTNode(_line, _lin
 }
 
 function ASTReturnStatement(_expr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.ReturnStatement;
+	type = __GMLC_NodeType_ReturnStatement;
 	expr = _expr;
 	
 	static get_children = function(_top_down) {
@@ -493,7 +493,7 @@ function ASTReturnStatement(_expr, _line, _lineString) : ASTNode(_line, _lineStr
 }
 
 function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.VariableDeclarationList;
+	type = __GMLC_NodeType_VariableDeclarationList;
 	statements = new ASTBlockStatement(_statements, _line, _lineString);
 	scope = _scope;
 	
@@ -507,7 +507,7 @@ function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : A
 	}
 }
 function ASTVariableDeclaration(_identifier, _expr, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.VariableDeclaration;
+	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	expr = _expr;
 	scope = _scope;
@@ -523,34 +523,34 @@ function ASTVariableDeclaration(_identifier, _expr, _scope, _line, _lineString) 
 }
 
 function ASTMacroDeclaration(_identifier, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.VariableDeclaration;
+	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	codeBlock = _codeBlock;
-	scope = ScopeType.MACRO;
+	scope = ScopeType_MACRO;
 }
 function ASTMacroIdentifier(_identifier, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.VariableDeclaration;
+	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
-	scope = ScopeType.MACRO;
+	scope = ScopeType_MACRO;
 }
 
 function ASTEnumDeclaration(_identifier, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.VariableDeclaration;
+	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	codeBlock = _codeBlock;
-	scope = ScopeType.ENUM;
+	scope = ScopeType_ENUM;
 }
 function ASTEnumIdentifier(_identifier, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.VariableDeclaration;
+	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
-	scope = ScopeType.ENUM;
+	scope = ScopeType_ENUM;
 }
 #endregion
 
 #region Expressions
 
 function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-    type = __GMLC_NodeType.CallExpression;
+    type = __GMLC_NodeType_CallExpression;
     callee = _callee;
     arguments = _arguments;
 	
@@ -576,7 +576,7 @@ function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_l
 }
 
 function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.AccessorExpression;
+	type = __GMLC_NodeType_AccessorExpression;
 	expr = _expr;
 	val1 = _val1;
 	val2 = _val2;
@@ -605,7 +605,7 @@ function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _line, _lineS
 
 #region Math Expressions
 function ASTAssignmentExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.AssignmentExpression;
+	type = __GMLC_NodeType_AssignmentExpression;
 	operator = _operator;
 	left = _left;
 	right = _right;
@@ -628,7 +628,7 @@ function ASTAssignmentExpression(_operator, _left, _right, _line, _lineString) :
 }
 
 function ASTBinaryExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.BinaryExpression;
+	type = __GMLC_NodeType_BinaryExpression;
 	operator = _operator;
 	left = _left;
 	right = _right;
@@ -651,7 +651,7 @@ function ASTBinaryExpression(_operator, _left, _right, _line, _lineString) : AST
 }
 
 function ASTLogicalExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.LogicalExpression;
+	type = __GMLC_NodeType_LogicalExpression;
 	operator = _operator;
 	left = _left;
 	right = _right;
@@ -674,7 +674,7 @@ function ASTLogicalExpression(_operator, _left, _right, _line, _lineString) : AS
 }
 
 function ASTNullishExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.NullishExpression;
+	type = __GMLC_NodeType_NullishExpression;
 	operator = _operator;
 	left = _left;
 	right = _right;
@@ -697,7 +697,7 @@ function ASTNullishExpression(_operator, _left, _right, _line, _lineString) : AS
 }
 
 function ASTUnaryExpression(_operator, _expr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.UnaryExpression;
+	type = __GMLC_NodeType_UnaryExpression;
 	operator = _operator;
 	expr = _expr;
 	
@@ -712,7 +712,7 @@ function ASTUnaryExpression(_operator, _expr, _line, _lineString) : ASTNode(_lin
 }
 
 function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.ConditionalExpression;
+	type = __GMLC_NodeType_ConditionalExpression;
 	condition = _condition;
 	trueExpr = _trueExpr;
 	falseExpr = _falseExpr;
@@ -738,7 +738,7 @@ function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lin
 
 function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : ASTNode(_line, _lineString) constructor {
 	//   thing++    thing--    ++thing    or    --thing
-	type = __GMLC_NodeType.UpdateExpression;
+	type = __GMLC_NodeType_UpdateExpression;
     operator = _operator;
     expr = _expr;
     prefix = _prefix;
@@ -756,7 +756,7 @@ function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : AS
 
 #region Identifiers
 function ASTIdentifier(_value, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Identifier;
+	type = __GMLC_NodeType_Identifier;
 	value = _value;
 	hash = variable_get_hash(_value);
 	name  = _value;
@@ -765,17 +765,17 @@ function ASTIdentifier(_value, _scope, _line, _lineString) : ASTNode(_line, _lin
 	static get_children = function(_top_down) {}
 }
 function ASTLiteral(_value, _line, _lineString, _name=undefined) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.Literal;
+	type = __GMLC_NodeType_Literal;
 	value = _value;
-	scope = ScopeType.CONST;
+	scope = ScopeType_CONST;
 	name = _name
 	
 	static get_children = function(_top_down) {}
 }
 function ASTUniqueIdentifier(_value, _line, _lineString) : ASTNode(_line, _lineString) constructor {
-	type = __GMLC_NodeType.UniqueIdentifier;
+	type = __GMLC_NodeType_UniqueIdentifier;
 	value = _value;
-	scope = ScopeType.UNIQUE;
+	scope = ScopeType_UNIQUE;
 	
 	static get_children = function(_top_down) {}
 }
