@@ -100,6 +100,18 @@ Yes. Use the sandbox capability system (`pure`, `safe`, `moderate`, `unsafe`) to
 Yes. Yes please see the variety of `expose_*` in `GMLC_Env`.
 
 
+## 🔀 **Alternatives**
+
+[catspeak-lang](https://github.com/katsaii/catspeak-lang) - Catsaii: An extremely robust modding toolset with long term support.
+
+[gmlspeak](https://github.com/tabularelf/GMLspeak) - TabularElf: An extension to catspeak-lang, which allows for gml like code to be parsed for use inside catspeak
+
+[TXR](https://yellowafterlife.itch.io/gamemaker-txr) - YellowAfterLife: A lightweight and simple expression parser.
+
+[SNAP](https://github.com/JujuAdams/SNAP) - JujuAdams: SNAP contains a module for parsing and executing simple GML.
+
+[RunGML](https://github.com/sdelaughter/RunGML) - sdelaughter: A lisp structured GML executer, very unique!
+
 ---
 
 inspiration from neerikiffu: https://discord.com/channels/724320164371497020/724320751624257646/1178721426983882915
