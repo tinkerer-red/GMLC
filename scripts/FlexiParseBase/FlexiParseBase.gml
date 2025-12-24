@@ -190,23 +190,25 @@ function FlexiParseBase() constructor {
 	static parseNext = function() {
 		if (should_catch_errors) {
 			try {
-				for (var i = 0; i < array_length(parserSteps); i++) {
+				var _length = array_length(parserSteps);
+				var i=0; repeat (_length) {
 					var _shouldBreak = parserSteps[i]();  // Pass the token through each parser step
 					if (_shouldBreak) {
 						break;
 					}
-				}
+				i++}
 			} catch (e) {
 				error_handler(e);
 			}
 		}
 		else {
-			for (var i = 0; i < array_length(parserSteps); i++) {
+			var _length = array_length(parserSteps);
+			var i=0; repeat (_length) {
 				var _shouldBreak = parserSteps[i]();  // Pass the token through each parser step
 				if (_shouldBreak) {
 					break;
 				}
-			}
+			i++}
 		}
 	};
 	
