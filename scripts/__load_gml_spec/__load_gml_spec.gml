@@ -154,7 +154,7 @@ function __GmlSpec() {
 			};
 		}
 	};
-
+	
 	if (GmlSpec = undefined) {
 		var _xml = file_read_all_text("GmlSpec.xml")
 		var _spec = SnapFromXML(_xml)

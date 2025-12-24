@@ -579,21 +579,40 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		//append the macros to the end of the source code.
 		_sourceCode = __appendMacros(_sourceCode);
 		
+		var _time = get_timer();
+		var _step_time = _time;
+		
 		tokenizer.initialize(_sourceCode);
 		var tokens = tokenizer.parseAll();
 		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
+		if (__log_step_times) {
+			show_debug_message($"Tokenizer Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
+		}
 		
 		pre_processor.initialize(tokens);
 		var preprocessedTokens = pre_processor.parseAll();
 		if (__log_pre_processer_results) json_save("pre_processor.json", preprocessedTokens)
+		if (__log_step_times) {
+			show_debug_message($"Pre Processor Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
+		}
 		
 		parser.initialize(preprocessedTokens);
 		var ast = parser.parseAll();
 		if (__log_parser_results) json_save("parser.json", ast)
+		if (__log_step_times) {
+			show_debug_message($"Parser Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
+		}
 		
 		post_processor.initialize(ast);
 		var ast = post_processor.parseAll();
 		if (__log_post_processer_results) json_save("post_processor.json", ast)
+		if (__log_step_times) {
+			show_debug_message($"Post Processor Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
+		}
 		
 		if (should_optimize) {
 			optimizer.initialize(ast);
@@ -606,6 +625,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		compiler.initialize(ast, _globals);
 		var program = compiler.parseAll();
 		if (__log_compiler_results) json_save("post_processor.json", ast)
+		if (__log_step_times) {
+			show_debug_message($"Compile Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
+		}
+		
 		
 		return program;
 	}
@@ -886,6 +910,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_post_processer_results = true;
 	__log_optimizer_results      = true;
 	__log_compiler_results       = false;
+	
+	__log_step_times = true;
 	
 	__keyword_lookup  = undefined;
 	__function_lookup = undefined;

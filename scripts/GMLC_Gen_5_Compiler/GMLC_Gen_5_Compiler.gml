@@ -1356,16 +1356,7 @@ function __GMLCexecuteCallExpression() {
 	else {
 		var _args = arguments;
 		with (global.gmlc_other_instance) with (global.gmlc_self_instance) {
-			//try {
-				_return = script_execute_ext(_func, _args);
-			//}
-			//catch(e) {
-			//	log(_func);
-			//	log(script_get_name(_func));
-			//	log(_args);
-			//	log(e);
-			//	log("\n\n\n");
-			//}
+			_return = script_execute_ext(_func, _args);
 		}
 	}
 	

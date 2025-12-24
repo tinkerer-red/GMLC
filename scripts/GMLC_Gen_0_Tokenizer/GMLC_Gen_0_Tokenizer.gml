@@ -1473,25 +1473,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _start_column = column;
 		var _byte_start = bytePos;
 		
-		log(
-			"Illegal token found! Here is relevant information which may be vital to helping hunt it down,",
-			"Due note if this is a #region, then this will be handled at a later step and this can be ignored. <3",
-			lastFiveTokens,
-			charPos,
-			sourceCodeCharLength,
-			string_copy(sourceCodeString, (charPos-20) ? charPos-20 : 0, charPos)
-		)
-		
 		var illegalChar = chr(currentCharCode);
 		var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : invalid token \"{illegalChar}\"";
 		nextToken();
 		var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, illegalChar, _error, _start_line, _start_column, _byte_start, bytePos);
 		
 		array_push(tokens, _token);
-		
-		//why the fuck did we throw errors here?! that should happen when we actually parse, for all we know a macro or region could make this a string or comment
-		// DONT THROW ERRORS HERE!!!
-		//throw_gmlc_error(_error)
 		
 		return _token;
 	};
