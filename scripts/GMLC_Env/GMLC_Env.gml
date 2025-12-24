@@ -647,7 +647,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return struct_get(_globals, _func);
 	}
 	
-	
 	#region jsDoc
 	/// @func    enable_optimizer()
 	/// @desc    Enables or disables the optimizer pass between post-processing and compilation.
@@ -674,6 +673,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		return self;
 	}
+	
+	#region Specific Exposures
 	
 	#region jsDoc
 	/// @func    expose_constants()
@@ -899,6 +900,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		exposeFunctions(_func_map);
 		return self;
 	}
+	
+	#endregion
+	
 	#endregion
 	
 	#region Private
