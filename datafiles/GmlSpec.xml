@@ -23,7 +23,7 @@
 		<Function Name="animcurve_get_channel" Deprecated="false" ReturnType="Struct.AnimCurveChannel" Pure="true">
 			<Description>This function returns the struct containing the channel data for the channel specified in an animation curve asset or struct (as returned by animcurve_get()).</Description>
 			<Parameter Name="curve_struct_or_id" Type="Asset.GMAnimCurve,Struct.AnimCurve" Optional="false">The ID or struct pointer of the animation curve to target</Parameter>
-			<Parameter Name="channel_name_or_index" Type="String,Real" Optional="false">The channel name (a string) or the channel index (an integer).</Parameter>
+			<Parameter Name="channel_name_or_index" Type="String,Real" Optional="false">The channel name (a string) or the channel index (an integer)</Parameter>
 		</Function>
 		<Function Name="animcurve_get_channel_index" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function returns the index value for any given animation curve channel.
@@ -715,6 +715,13 @@
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be queried.</Parameter>
 			<Parameter Name="relative" Type="Bool" Optional="true">if true then returned coords in struct are relative to parent, otherwise they are absolute (and include parents position), default is true (so relative coords are returned)</Parameter>
 		</Function>
+		<Function Name="flexpanel_set_rounding_scale" Deprecated="false" ReturnType="Undefined" Pure="false">
+			<Description>Sets the scale factor used when rounding layout values. A value of 0 disables rounding.</Description>
+			<Parameter Name="scaleFactor" Type="Real" Optional="false">Rounding scale factor. Default is 1.</Parameter>
+		</Function>
+		<Function Name="flexpanel_get_rounding_scale" Deprecated="false" ReturnType="Real" Pure="true">
+			<Description>Gets the current scale factor used when rounding layout values.</Description>
+		</Function>
 		<Function Name="flexpanel_node_style_set_align_content" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>Sets the alignment of the content of the node.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
@@ -1098,7 +1105,7 @@
 			<Parameter Name="index" Type="Real" Optional="false">The alarm index to set, from 0 to 11.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value (an integer) to set the alarm to.</Parameter>
 		</Function>
-		<Function Name="instance_change" Deprecated="false" ReturnType="Undefined" Pure="false">
+		<Function Name="instance_change" Deprecated="true" ReturnType="Undefined" Pure="false">
 			<Description>You can use this function to change one instance of an object into another instance of a different object, and while doing so decide whether to perform the initial instance's Destroy and Clean Up Events and the new instance's Create Event.</Description>
 			<Parameter Name="obj" Type="Asset.GMObject" Optional="false">The new object the calling object will change into.</Parameter>
 			<Parameter Name="perf" Type="Bool" Optional="false">Whether to perform that new object's create and destroy events (true) or not (false).</Parameter>
@@ -1520,6 +1527,7 @@
 			<Parameter Name="layers" Type="Bool" Optional="true">Add room layer information to the struct (defaults to true)</Parameter>
 			<Parameter Name="layer_elements" Type="Bool" Optional="true">Add layer element information to the struct (defaults to true), NOTE: you must have layers enabled to get any layer_elements</Parameter>
 			<Parameter Name="tilemap_data" Type="Bool" Optional="true">Add tilemap data information to the struct (defaults to true), NOTE: you must have layers and layer_elements enabled to get any tilemap_data (if present)</Parameter>
+			<Parameter Name="live" Type="Bool" Optional="true">if you request the current room then if this is true (default is false) it will report the live data for the current room, otherwise it is the data from the WAD</Parameter>
 		</Function>
 		<Function Name="room_get_viewport" Deprecated="false" ReturnType="Array[Real]" Pure="true">
 			<Description>With this function you can retrieve the details of a viewport in a room other than the current one.</Description>
@@ -2406,7 +2414,7 @@
 			<Parameter Name="layer_id" Type="String,Id.Layer" Optional="false">The unique ID value of the layer to target (or the layer name as a string)</Parameter>
 			<Parameter Name="x" Type="Real" Optional="false">The x position of the tile map in the room</Parameter>
 			<Parameter Name="y" Type="Real" Optional="false">The y position of the tile map in the room</Parameter>
-			<Parameter Name="tile set" Type="Asset.GMTileSet" Optional="false">The tile set index to be used</Parameter>
+			<Parameter Name="tileset" Type="Asset.GMTileSet" Optional="false">The tile set index to be used</Parameter>
 			<Parameter Name="width" Type="Real" Optional="false">The width tile map (in cells)</Parameter>
 			<Parameter Name="height" Type="Real" Optional="false">The height of the tile map (in cells)</Parameter>
 		</Function>
@@ -2476,7 +2484,7 @@
 			<Description>This function can be used to retrieve the bit mask value for the given tile map. For further information on tile map bit masks, see the function tilemap_set_mask().</Description>
 			<Parameter Name="tilemap_element_id" Type="Id.TileMapElement" Optional="false">The unique ID value of the tile map element to get the mask of</Parameter>
 		</Function>
-		<Function Name="tilemap_get_tileset" Deprecated="false" ReturnType="Real" Pure="true">
+		<Function Name="tilemap_get_tileset" Deprecated="false" ReturnType="Asset.GMTileSet" Pure="true">
 			<Description>Using this function you can retrieve the index value of the tile set asset assigned to a given tile map element on a layer.</Description>
 			<Parameter Name="tilemap_element_id" Type="Id.TileMapElement" Optional="false">The unique ID value of the tile map element to get the tile set from</Parameter>
 		</Function>
@@ -3264,7 +3272,7 @@
 			<Parameter Name="xoff" Type="Real" Optional="false">The x position of the origin.</Parameter>
 			<Parameter Name="yoff" Type="Real" Optional="false">The y position of the origin.</Parameter>
 		</Function>
-		<Function Name="sprite_set_speed" Deprecated="false" ReturnType="Real" Pure="false">
+		<Function Name="sprite_set_speed" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to set the base animation speed and type for the sprite asset. This is normally set in the Sprite Editor, but there may be moments when you are required to set this manually for a given sprite.</Description>
 			<Parameter Name="index" Type="Asset.GMSprite" Optional="false">The index of the sprite to get the animation type of</Parameter>
 			<Parameter Name="speed" Type="Real" Optional="false" />
@@ -3762,7 +3770,7 @@
 			<Description>This function gets the current "seek" position for use in other buffer functions.</Description>
 			<Parameter Name="buffer" Type="Id.Buffer" Optional="false">The index of the buffer to use.</Parameter>
 		</Function>
-		<Function Name="buffer_write" Deprecated="false" ReturnType="Any" Pure="false">
+		<Function Name="buffer_write" Deprecated="false" ReturnType="Constant.BufferErrorType" Pure="false">
 			<Description>This function can be used to write data to a previously created buffer.</Description>
 			<Parameter Name="buffer" Type="Id.Buffer" Optional="false">The index of the buffer to write to.</Parameter>
 			<Parameter Name="type" Type="Constant.BufferDataType" Optional="false">The type of data that is to be written to the buffer.</Parameter>
@@ -4029,77 +4037,77 @@
 			<Parameter Name="yspeed" Type="Real" Optional="false">The speed (number of pixels per game frame) that the view should move on the vertical (y) axis</Parameter>
 		</Function>
 		<Function Name="camera_set_view_target" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>You can use this function to set the follow target of the view camera within the room. Note that if you choose an object ID and there is more than one instance of that object in the room, there is no way for GameMaker to know which instance you wish to follow and so it could be any of them.</Description>
+			<Description>You can use this function to set the follow target of the view camera within the room. Note that if you set an object ID and there is more than one instance of that object in the room, there is no way for GameMaker to know which instance you wish to follow and so it could be any of them.</Description>
 			<Parameter Name="camera_id" Type="Id.Camera" Optional="false">The unique camera ID value returned when you created the camera</Parameter>
-			<Parameter Name="instance_id/object_id" Type="Any" Optional="false">Instance or object to have the camera target for following</Parameter>
+			<Parameter Name="id" Type="Id.Instance,Asset.GMObject" Optional="false">Instance or object to have the camera target for following</Parameter>
 		</Function>
 		<Function Name="view_get_camera" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function can be used to retrieve the unique camera ID value for the camera assigned to the given viewport (from 0 - 7). If no camera is assigned, the function will return -1.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_get_hport" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function can be used to retrieve the height of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_get_surface_id" Deprecated="false" ReturnType="Id.Surface" Pure="true">
 			<Description>This function can be used to retrieve the unique ID value for the surface assigned to the given viewport (will return -1 if no surface has been assigned).</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_get_visible" Deprecated="false" ReturnType="Bool" Pure="true">
 			<Description>This function can be used to check the visibility of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_get_wport" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function can be used to retrieve the width of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_get_xport" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function can be used to retrieve the x position of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_get_yport" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function can be used to retrieve the y position of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 		</Function>
 		<Function Name="view_set_camera" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function assigns the given camera to the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="camera_id" Type="Id.Camera" Optional="false">The unique camera ID value returned when you created the camera</Parameter>
 		</Function>
 		<Function Name="view_set_hport" Deprecated="false" ReturnType="Real" Pure="false">
 			<Description>This function can be used to set the height of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="h" Type="Real" Optional="false">The new height (in pixels)</Parameter>
 		</Function>
 		<Function Name="view_set_surface_id" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the surface to draw the contents of the given viewport to.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="surface_id" Type="Id.Surface" Optional="false" />
 		</Function>
 		<Function Name="view_set_visible" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to set the visibility of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="visible" Type="Bool" Optional="false">Visibility toggle (true is visible and false is invisible)</Parameter>
 		</Function>
 		<Function Name="view_set_wport" Deprecated="false" ReturnType="Real" Pure="false">
 			<Description>This function can be used to set the width of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="w" Type="Real" Optional="false">The new width (in pixels)</Parameter>
 		</Function>
 		<Function Name="view_set_xport" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to set the x position of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="x" Type="Real" Optional="false">The new x position</Parameter>
 		</Function>
 		<Function Name="view_set_yport" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to set the y position of the given viewport.</Description>
-			<Parameter Name="view_port" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
+			<Parameter Name="viewport" Type="Real" Optional="false">The viewport to target (0 - 7)</Parameter>
 			<Parameter Name="y" Type="Real" Optional="false">The new y position</Parameter>
 		</Function>
 		<Function Name="window_center" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>With this function you can centre the game window in the display when the target module is Windows, Ubuntu (Linux) or macOS, or you can centre it in the browser if the target module is HTML5.</Description>
 		</Function>
-		<Function Name="window_device" Deprecated="false" ReturnType="Pointer" Pure="true">
+		<Function Name="window_device" Deprecated="true" ReturnType="Pointer" Pure="true">
 			<Description>This function will return the current D3D device pointer, which you can then (for example) pass through to a DLL or Dylib on Windows and macOS.</Description>
 		</Function>
     <Function Name="window_post_message" Deprecated="false" ReturnType="Undefined" Pure="false">
@@ -6097,13 +6105,21 @@
 			<Description>With this function you can clear the indexed system to its default state, removing all emitters and resetting the depth and position (if they had been changed).</Description>
 			<Parameter Name="ind" Type="Id.ParticleSystem" Optional="false">The index of the particle system to clear.</Parameter>
 		</Function>
-		<Function Name="particle_get_info" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>This function is used to retrieve information for the given particle system asset or instance.</Description>
-			<Parameter Name="partsys" Type="Asset.GMParticleSystem,Id.ParticleSystem" Optional="false">The particle system for which information should be retrieved.</Parameter>
+		<Function Name="particle_add" Deprecated="false" ReturnType="Asset.GMParticleSystem" Pure="false">
+			<Description>With this function you can create a new particle system assset from an info struct.</Description>
+			<Parameter Name="info" Type="Struct" Optional="false">The info struct to create a new particle system asset from.</Parameter>
+		</Function>
+		<Function Name="particle_delete" Deprecated="false" ReturnType="Undefined" Pure="false">
+			<Description>With this function you can delete a particle system asset.</Description>
+			<Parameter Name="ind" Type="Asset.GMParticleSystem" Optional="false">The particle system asset to delete.</Parameter>
 		</Function>
 		<Function Name="particle_exists" Deprecated="false" ReturnType="Bool" Pure="true">
 			<Description>With this function you can check to see if a particle system asset with the given index exists or not.</Description>
 			<Parameter Name="ind" Type="Asset.GMParticleSystem" Optional="false">The index of the particle system asset to check for.</Parameter>
+		</Function>
+		<Function Name="particle_get_info" Deprecated="false" ReturnType="Struct" Pure="true">
+			<Description>This function is used to retrieve information for the given particle system asset or instance.</Description>
+			<Parameter Name="partsys" Type="Asset.GMParticleSystem,Id.ParticleSystem" Optional="false">The particle system for which information should be retrieved.</Parameter>
 		</Function>
 		<Function Name="part_system_create" Deprecated="false" ReturnType="Id.ParticleSystem" Pure="false">
 			<Description>This function is used to create a new particle system and will return a unique index number that should be stored and used in all further functions relating to that system. The system will be assigned a managed layer and will be set to have a depth of 0. Managed layers are not accessible to the user and used only for internal management when depth is used instead of layers. Normally you would use the function part_system_create_layer() instead of this one.</Description>
@@ -6757,7 +6773,7 @@
 		</Function>
 		<Function Name="draw_tile" Deprecated="false" ReturnType="Real" Pure="false">
 			<Description>With this function you can draw any given tile from a tile set - complete with rotations, flips and mirrors - setting the frame (if animated) and the position within the room.</Description>
-			<Parameter Name="tile set" Type="Asset.GMTileSet" Optional="false">The ID of the tile set to use</Parameter>
+			<Parameter Name="tileset" Type="Asset.GMTileSet" Optional="false">The ID of the tile set to use</Parameter>
 			<Parameter Name="tiledata" Type="Real" Optional="false">The tile data to use</Parameter>
 			<Parameter Name="frame" Type="Real" Optional="false">The frame number for the animated tile to use (default 0 for non-animated tiles)</Parameter>
 			<Parameter Name="x" Type="Real" Optional="false">The x position within the room to draw at</Parameter>
@@ -8469,15 +8485,15 @@
 		</Function>
 		<Function Name="matrix_build_projection_perspective" Deprecated="false" ReturnType="Array[Real]" Pure="true">
 			<Description>This function builds a perspective projection matrix based on the dimensions of the near clipping plane, using the specified parameters. And can optionally write the result to an existing matrix that you specify.</Description>
-			<Parameter Name="w" Type="Real" Optional="false">The width of the projection at the near Z position.</Parameter>
-			<Parameter Name="h" Type="Real" Optional="false">The height of the projection at the near Z position.</Parameter>
+			<Parameter Name="width" Type="Real" Optional="false">The width of the projection at the near Z position.</Parameter>
+			<Parameter Name="height" Type="Real" Optional="false">The height of the projection at the near Z position.</Parameter>
 			<Parameter Name="znear" Type="Real" Optional="false">The near clipping plane.</Parameter>
 			<Parameter Name="zfar" Type="Real" Optional="false">The far clipping plane.</Parameter>
 			<Parameter Name="result_matrix" Type="Array[Real]" Optional="true">Optionally you can pass in the matrix in which you would like the result to be stored. This can provide better performance.</Parameter>
 		</Function>
 		<Function Name="matrix_build_projection_perspective_fov" Deprecated="false" ReturnType="Array[Real]" Pure="true">
 			<Description>This function builds a perspective projection matrix matrix based on field of view, using the specified parameters. And can optionally write the result to an existing matrix that you specify.</Description>
-			<Parameter Name="fov" Type="Real" Optional="false">The angle of the field of view.</Parameter>
+			<Parameter Name="fov_y" Type="Real" Optional="false">The vertical angle of the field of view.</Parameter>
 			<Parameter Name="aspect" Type="Real" Optional="false">The aspect ratio of the field of view.</Parameter>
 			<Parameter Name="znear" Type="Real" Optional="false">The near clipping plane.</Parameter>
 			<Parameter Name="zfar" Type="Real" Optional="false">The far clipping plane.</Parameter>
@@ -8817,7 +8833,7 @@
 			<Parameter Name="x3" Type="Real" Optional="false">The x coordinate of the third corner of the triangle to check.</Parameter>
 			<Parameter Name="y3" Type="Real" Optional="false">The y coordinate of the third corner of the triangle to check.</Parameter>
 		</Function>
-		<Function Name="position_change" Deprecated="false" ReturnType="Undefined" Pure="false">
+		<Function Name="position_change" Deprecated="true" ReturnType="Undefined" Pure="false">
 			<Description>This function will check a position for a collision with any instances at the given point, and if there is one, it will change all instances in collision to be instances of the chosen object.</Description>
 			<Parameter Name="x" Type="Id.Instance" Optional="false">The x coordinate of where to change colliding instances.</Parameter>
 			<Parameter Name="y" Type="Id.Instance" Optional="false">The y coordinate of where to change colliding instances.</Parameter>
@@ -9243,7 +9259,7 @@
 		<Function Name="gml_pragma" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function affects how the given target compiles your code and should be called with the different commands to further optimise the final compilation of your project. These commands are effectively pre-processed before the game is compiled and so the function can be placed anywhere in your project and it will still be processed before the game is fully compiled.</Description>
 			<Parameter Name="command" Type="String" Optional="false">A string with one of the supported commands.</Parameter>
-			<Parameter Name="optional" Type="Any" Optional="true">Optional argument or arguments for the given command.</Parameter>
+			<Parameter Name="..." Type="ArgumentIdentity" Optional="true">Optional argument or arguments for the given command.</Parameter>
 		</Function>
 		<Function Name="gml_release_mode" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets whether the game is running in release mode. Enabling release mode will disable certain internal error checks at runtime.</Description>
@@ -10491,7 +10507,7 @@
 			<Parameter Name="instance_id/global" Type="Struct,Id.Instance,Constant.All" Optional="false">The unique ID value of the instance to check or the keyword global</Parameter>
 		</Function>
 		<Function Name="variable_instance_names_count" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>With this function you can find the total number number of variables defined for an instance. The function will return an integer value for the number of variables encountered, or -1 if no instance of the given ID exists.</Description>
+			<Description>With this function you can find the total number of variables defined for an instance. The function will return an integer value for the number of variables encountered, or -1 if no instance of the given ID exists.</Description>
 			<Parameter Name="instance_id" Type="Struct,Id.Instance" Optional="false">The unique ID value of the instance to check.</Parameter>
 		</Function>
 		<Function Name="variable_instance_set" Deprecated="false" ReturnType="Undefined" Pure="false">
@@ -10515,7 +10531,7 @@
 			<Parameter Name="struct" Type="Struct" Optional="false">The struct reference to check.</Parameter>
 		</Function>
 		<Function Name="variable_struct_names_count" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>With this function you can find the total number number of variables defined for a struct. The function will return an integer value for the number of variables encountered, or -1 if no struct of the given ID exists.</Description>
+			<Description>With this function you can find the total number of variables defined for a struct. The function will return an integer value for the number of variables encountered, or -1 if no struct of the given ID exists.</Description>
 			<Parameter Name="struct_id" Type="Struct" Optional="false">The unique ID value of the struct to check.</Parameter>
 		</Function>
 		<Function Name="variable_struct_remove" Deprecated="false" ReturnType="Undefined" Pure="false">
@@ -10559,7 +10575,7 @@
 			<Parameter Name="struct" Type="Struct" Optional="false">The struct reference to check.</Parameter>
 		</Function>
 		<Function Name="struct_names_count" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>With this function you can find the total number number of variables defined for a struct. The function will return an integer value for the number of variables encountered, or -1 if no struct of the given ID exists.</Description>
+			<Description>With this function you can find the total number of variables defined for a struct. The function will return an integer value for the number of variables encountered, or -1 if no struct of the given ID exists.</Description>
 			<Parameter Name="struct_id" Type="Struct" Optional="false">The unique ID value of the struct to check.</Parameter>
 		</Function>
 		<Function Name="struct_remove" Deprecated="false" ReturnType="Undefined" Pure="false">
@@ -10934,7 +10950,7 @@
 		</Function>
 		<Function Name="audio_system" Deprecated="true" ReturnType="Undefined" Pure="true" />
 		<Function Name="highscore_clear" Deprecated="false" ReturnType="Undefined" Pure="false" />
-		<Function Name="font_get_first" Deprecated="false" ReturnType="Real" Pure="true">
+		<Function Name="font_get_first" Deprecated="true" ReturnType="Real" Pure="true">
 			<Parameter Name="ind" Type="Asset.GMFont" Optional="false" />
 		</Function>
 		<Function Name="room_set_background_colour" Deprecated="true" ReturnType="Undefined" Locale="GB" Pure="false">
@@ -11792,9 +11808,9 @@
 		<Function Name="time_source_reconfigure" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>Resets and reconfigures the time source, additionally resets all of the time source's children.</Description>
 			<Parameter Name="id" Type="Id.TimeSource" Optional="false">The index of the time source</Parameter>
-			<Parameter Name="period" Type="Real" Optional="true">The period of the time source</Parameter>
-			<Parameter Name="units" Type="Constant.TimeSourceUnits" Optional="true">The units that the period is measured in</Parameter>
-			<Parameter Name="callback" Type="Function" Optional="true">The callback to be invoked when the time source expires</Parameter>
+			<Parameter Name="period" Type="Real" Optional="false">The period of the time source</Parameter>
+			<Parameter Name="units" Type="Constant.TimeSourceUnits" Optional="false">The units that the period is measured in</Parameter>
+			<Parameter Name="callback" Type="Function" Optional="false">The callback to be invoked when the time source expires</Parameter>
 			<Parameter Name="args" Type="Array" Optional="true">The arguments to be passed to the callback</Parameter>
 			<Parameter Name="reps" Type="Real" Optional="true">The number of repetitions the time source should perform</Parameter>
 			<Parameter Name="expiry_type" Type="Constant.TimeSourceExpiryType" Optional="true">The expiry type of the time source</Parameter>
@@ -11992,7 +12008,7 @@
 		<Variable Name="mouse_y" Type="Real" Deprecated="false" Get="true" Set="false" Instance="false">This read-only variable returns the current y axis position of the mouse within the room.</Variable>
 		<Variable Name="cursor_sprite" Type="Asset.GMSprite" Deprecated="false" Get="true" Set="true" Instance="false">Setting this variable will instruct GameMaker to use the designated sprite as a cursor (basically setting it to the current mouse x/y position every step). The default value is -1 which is no sprite for the cursor, but you can assign any sprite index from the game assets or that has been imported from an external resource. Please note that there is no way to control the animation speed or image_index, so if the sprite has sub-images, these will be cycled at the same speed as the room speed. To remove the cursor sprite, you can set this variable to -1 again.</Variable>
 		<Variable Name="game_display_name" Type="String" Deprecated="false" Get="true" Set="false" Instance="false">This read-only variable returns the display name of your game for the target platform, as set in the Game Options.</Variable>
-		<Variable Name="game_id" Type="Real" Deprecated="false" Get="true" Set="false" Instance="false">This read-only variable returns the unique identifier for the game you have created. You can use this if you need a unique file name, or anything else that needs something to identify your game only. This can be set in the Game Options.</Variable>
+		<Variable Name="game_id" Type="Real" Deprecated="true" Get="true" Set="false" Instance="false">This read-only variable returns the unique identifier for the game you have created. You can use this if you need a unique file name, or anything else that needs something to identify your game only. This can be set in the Game Options.</Variable>
 		<Variable Name="game_project_name" Type="String" Deprecated="false" Get="true" Set="false" Instance="false">This read-only variable returns the display name of your game for the target platform in a "save-friendly" format for the target platform. If the display name contains any characters that are not permitted for a file name, they will be replaced automatically with "_". The display name can be set in the Game Options. Note that since there are no restrictions on file names for HTML5, this string will probably be the same as that returned by game_display_name.</Variable>
 		<Variable Name="game_save_id" Type="String" Deprecated="false" Get="true" Set="false" Instance="false">This read-only variable will return the full path ID of the directory that is used by your game to save files to. This directory may or may not be visible to other applications, depending on the platform, and on the HTML5 target it will return an empty string.</Variable>
 		<Variable Name="current_day" Type="Real" Deprecated="false" Get="true" Set="false" Instance="false">This read-only variable will return the day as a value from 1 to 31, depending on the month.</Variable>
@@ -12061,9 +12077,9 @@
 		<Variable Name="in_collision_tree" Type="Bool" Deprecated="false" Get="true" Set="false" Instance="true" />
 		<Variable Name="room_speed" Type="Real" Deprecated="true" Get="true" Set="true" Instance="false" />
 		<Variable Name="room_caption" Type="String" Deprecated="true" Get="true" Set="true" Instance="false" />
-		<Variable Name="score" Type="Real" Deprecated="false" Get="true" Set="true" Instance="false" />
-		<Variable Name="lives" Type="Real" Deprecated="false" Get="true" Set="true" Instance="false" />
-		<Variable Name="health" Type="Real" Deprecated="false" Get="true" Set="true" Instance="false" />
+		<Variable Name="score" Type="Real" Deprecated="true" Get="true" Set="true" Instance="false" />
+		<Variable Name="lives" Type="Real" Deprecated="true" Get="true" Set="true" Instance="false" />
+		<Variable Name="health" Type="Real" Deprecated="true" Get="true" Set="true" Instance="false" />
 		<Variable Name="show_score" Type="Bool" Deprecated="true" Get="true" Set="true" Instance="false" />
 		<Variable Name="show_lives" Type="Bool" Deprecated="true" Get="true" Set="true" Instance="false" />
 		<Variable Name="show_health" Type="Bool" Deprecated="true" Get="true" Set="true" Instance="false" />
@@ -12349,9 +12365,9 @@
 		<Constant Name="buffer_seek_start" Class="SeekOffset" Type="Real" Deprecated="false">The start of the buffer</Constant>
 		<Constant Name="buffer_seek_relative" Class="SeekOffset" Type="Real" Deprecated="false">A position relative to the current read/write position</Constant>
 		<Constant Name="buffer_seek_end" Class="SeekOffset" Type="Real" Deprecated="false">The end of the buffer</Constant>
-		<Constant Name="buffer_error_general" Class="BufferDataType" Type="Real" Deprecated="false">General buffer error.</Constant>
-		<Constant Name="buffer_error_out_of_space" Class="BufferDataType" Type="Real" Deprecated="false">Attempting to write to a buffer that doesn't have enough space for the size of the type being written.</Constant>
-		<Constant Name="buffer_error_invalid_type" Class="BufferDataType" Type="Real" Deprecated="false">Attempting to write an invalid type to a buffer.</Constant>
+		<Constant Name="buffer_error_general" Class="BufferErrorType" Type="Real" Deprecated="false">General buffer error.</Constant>
+		<Constant Name="buffer_error_out_of_space" Class="BufferErrorType" Type="Real" Deprecated="false">Attempting to write to a buffer that doesn't have enough space for the size of the type being written.</Constant>
+		<Constant Name="buffer_error_invalid_type" Class="BufferErrorType" Type="Real" Deprecated="false">Attempting to write an invalid type to a buffer.</Constant>
 		<Constant Name="display_landscape" Type="Real" Deprecated="false">The device is being held horizontally i.e.: The longest edge is from left to right, and the menu button is on the right.</Constant>
 		<Constant Name="display_landscape_flipped" Type="Real" Deprecated="false">As above, only now the menu button is on the left.</Constant>
 		<Constant Name="display_portrait" Type="Real" Deprecated="false">The device is being held vertically i.e.: The longest edge is from top to bottom, and the menu button is at the bottom.</Constant>
@@ -13081,11 +13097,11 @@
 		</Structure>
 		<Structure Name="AnimCurve">
 			<Field Name="name" Type="String" Get="true" Set="true" />
-			<Field Name="graphType" Type="Real" Get="true" Set="true" />
 			<Field Name="channels" Type="Array" Get="true" Set="true" />
 		</Structure>
 		<Structure Name="AnimCurveChannel">
-			<Field Name="type" Type="Constant.AnimCurveChannel" Get="true" Set="true" />
+			<Field Name="name" Type="String" Get="true" Set="true" />
+			<Field Name="type" Type="Constant.AnimCurveInterpolationType" Get="true" Set="true" />
 			<Field Name="iterations" Type="Real" Get="true" Set="true" />
 			<Field Name="points" Type="Real" Get="true" Set="true" />
 		</Structure>
