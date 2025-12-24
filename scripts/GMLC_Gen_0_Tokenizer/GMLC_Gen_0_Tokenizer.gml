@@ -132,6 +132,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				}
 				
 				__nextUTF8();
+				
 			}
 			
 			nextToken();

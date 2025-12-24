@@ -1,5 +1,5 @@
 
-var env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 env.exposeMacros({
 	"test_timeout_millis": "timeoutMillis",
 	"test_filter": "platformFilter",

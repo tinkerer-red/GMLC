@@ -25,7 +25,7 @@ function __GMLCexecuteGetPropertySelf() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	
 }
 #region //{
@@ -625,7 +625,7 @@ function __GMLCexecuteStructDotAccGet(){
 	//var _inst_of = instanceof(_target);
 	//if (_inst_of == "Object")
 	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	//}
 	
 	var _static = __gmlc_static_get(_target)
@@ -638,7 +638,7 @@ function __GMLCexecuteStructDotAccGet(){
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	
 }
 function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
@@ -1515,7 +1515,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	//var _inst_of = instanceof(_target);
 	//if (_inst_of == "Object")
 	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	//}
 	
 	var _static = __gmlc_static_get(_target)
@@ -1528,7 +1528,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	
 }
 function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
@@ -1547,7 +1547,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	//var _inst_of = instanceof(_target);
 	//if (_inst_of == "Object")
 	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	//}
 	
 	var _static = __gmlc_static_get(_target)
@@ -1560,7 +1560,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	
 	var _target = target();
 	return _target[$ key]++;
@@ -1581,7 +1581,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	//var _inst_of = instanceof(_target);
 	//if (_inst_of == "Object")
 	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	//}
 	
 	var _static = __gmlc_static_get(_target)
@@ -1594,7 +1594,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	
 }
 function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
@@ -1613,7 +1613,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	//var _inst_of = instanceof(_target);
 	//if (_inst_of == "Object")
 	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	//}
 	
 	var _static = __gmlc_static_get(_target)
@@ -1626,7 +1626,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json(callstack)}")
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
 	
 }
 function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node) {

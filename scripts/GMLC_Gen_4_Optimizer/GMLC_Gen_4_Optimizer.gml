@@ -120,8 +120,6 @@
 				
 				if (_start_node != _node_data.node) {
 					optimization_occured = true
-					//log("Input Node :: ", json(__reStruct(_start_node)))
-					//log("Output Node :: ", json(__reStruct(_node_data.node)))
 				}
 			}
 			
