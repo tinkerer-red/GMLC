@@ -32,8 +32,7 @@ GMLC depends on **SNAP** by Juju Adams, which must be installed first.
 4. Choose the GMLC `.yymps` file and confirm import.
 5. The GMLC scripts will appear under your project’s resource tree and are immediately ready to use.
 
-No special initialization is required after import. Once SNAP is present, you can begin creating and compiling GML code directly at runtime.
-
+No special initialization is required after import.
 
 ## 🚀 **Quickstart**
 
@@ -64,6 +63,12 @@ show_debug_message(_foo());    // Prints: bar
 ```
 
 If the user declares a constant named `global` or uses GameMaker’s built-in `global`, functions can also be accessed directly via `global.foo`.
+
+
+> **Note:**
+> GMLC can be updated to recognize **newer GML functions** than those bundled with its release by supplying a newer `GmlSpec.xml` file from your local GameMaker runtime cache:
+>
+> `C:\ProgramData\GameMakerStudio2\Cache\runtimes\runtime-<runtime.version>`
 
 ## ⚠️ **Note on `execute_string()`**
 
