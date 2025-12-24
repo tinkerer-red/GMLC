@@ -164,7 +164,7 @@ function static_exists(_struct, _name) {
 }
 
 function throw_gmlc_error(_err) {
-	log(_err)
+	show_debug_message(_err);
 	throw @'
 ===GMLC===
 '+string(_err)+"\n=========\n\n";

@@ -29,7 +29,7 @@ compile_file = function(_file_path) {
 		//log($"\tSuccess:: {_file_path}")
 	}
 	catch (err) {
-		log($"\t\tFailed:: {_file_path}\n{json(err)}")
+		show_debug_message($"\t\tFailed:: {_file_path}\n{json_stringify(err, true)}")
 		_meta = err;
 	}
 			
@@ -83,7 +83,7 @@ var _report_final = compile_struct(_gml_files, _root_dir);
 
 // Save full JSON result
 json_save("compile_report.json", _report_final);
-log("!!!compiling complete!!!")
+show_debug_message("!!!compiling complete!!!")
 
 gmlc = undefined;
 

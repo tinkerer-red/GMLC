@@ -1,38 +1,38 @@
 // unit testing
 function __compare_results(desc, result, expected) {
 	if (is_array(expected)) && (!__array_equals(result, expected)) {
-		log($"!!!   Array Value Mismatch   !!!")
-		log($"expected != result")
-		log($"{expected} != {result}")
-		log("Got :: " + json_stringify(result, true));
+		show_debug_message($"!!!   Array Value Mismatch   !!!")
+		show_debug_message($"expected != result")
+		show_debug_message($"{expected} != {result}")
+		show_debug_message("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (is_struct(expected)) && (!__struct_equals(result, expected)) {
-		log($"!!!   Struct Value Mismatch   !!!")
-		log($"expected != result")
-		log("Expected :: " + json_stringify(expected, true));
-		log("Got :: " + json_stringify(result, true));
+		show_debug_message($"!!!   Struct Value Mismatch   !!!")
+		show_debug_message($"expected != result")
+		show_debug_message("Expected :: " + json_stringify(expected, true));
+		show_debug_message("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (!is_array(expected) && !is_struct(expected)) && (expected != result) {
-		//log("Test Failed: " + description);
-		log($"!!!   Literal Value Mismatch   !!!")
-		log($"expected != result")
-		log($"{expected} != {result}")
-		log("Got :: " + json_stringify(result, true));
+		//show_debug_message("Test Failed: " + description);
+		show_debug_message($"!!!   Literal Value Mismatch   !!!")
+		show_debug_message($"expected != result")
+		show_debug_message($"{expected} != {result}")
+		show_debug_message("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else if (typeof(expected) != typeof(result)) {
-		//log("Test Failed: " + description);
-		log($"!!!   Type Mismatch   !!!")
-		log($"expected != result")
-		log($"{typeof(expected)} != {typeof(result)}")
-		log("Got :: " + json_stringify(result, true));
+		//show_debug_message("Test Failed: " + description);
+		show_debug_message($"!!!   Type Mismatch   !!!")
+		show_debug_message($"expected != result")
+		show_debug_message($"{typeof(expected)} != {typeof(result)}")
+		show_debug_message("Got :: " + json_stringify(result, true));
 		return false;
 	}
 	else {
-        log("		Test Passed: " + desc);
-        //log($"Return :: {result}");
+        show_debug_message("		Test Passed: " + desc);
+        //show_debug_message($"Return :: {result}");
 		return true;
     }
 }
@@ -56,32 +56,32 @@ function __struct_equals(_recieved, _expected, _depth=1) {
 		var _expected_value = _expected[$ _name];
 		
 		if !struct_exists(_recieved, _name) {
-			log($"{string_repeat("\t", _depth)}Recieved struct is missing the expected key {_name}")
+			show_debug_message($"{string_repeat("\t", _depth)}Recieved struct is missing the expected key {_name}")
 		}
 		
 		if (typeof(_expected_value) != typeof(_recieved[$ _name])) {
-			log($"{string_repeat("\t", _depth)}Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
-			log($"{string_repeat("\t", _depth)}Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
-			log($"{string_repeat("\t", _depth)}Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
+			show_debug_message($"{string_repeat("\t", _depth)}Recieved structs key ({_name}) is mismatched typeof() with the expected {_name}")
+			show_debug_message($"{string_repeat("\t", _depth)}Recieved {typeof(_recieved[$ _name])}\nExpected {typeof(_expected_value)}")
+			show_debug_message($"{string_repeat("\t", _depth)}Recieved {_recieved[$ _name]}\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
 				if !__struct_equals(_recieved[$ _name], _expected_value, _depth+1) {
-					log($"{string_repeat("\t", _depth)}Recieved structs child struct is mismatched with the expected key {_name}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved structs child struct is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			case "array":{
 				if !__array_equals(_recieved[$ _name], _expected_value, _depth+1) {
-					log($"{string_repeat("\t", _depth)}Recieved structs child array is mismatched with the expected key {_name}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved structs child array is mismatched with the expected key {_name}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[$ _name] != _expected_value) {
-					log($"{string_repeat("\t", _depth)}Recieved structs key is mismatched with the expected key {_name}")
-					log($"{string_repeat("\t", _depth)}Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved structs key is mismatched with the expected key {_name}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved ({_recieved[$ _name]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
@@ -94,8 +94,8 @@ function __array_equals(_recieved, _expected, _depth=1) {
 	if (_recieved == undefined) return false;
 	
 	if (array_length(_recieved) != array_length(_expected)) {
-		log("Array lengths dont match")
-		log($"Recieved: {array_length(_recieved)}\nExpected: {array_length(_expected)}")
+		show_debug_message("Array lengths dont match")
+		show_debug_message($"Recieved: {array_length(_recieved)}\nExpected: {array_length(_expected)}")
 		return false;
 	}
 	
@@ -103,27 +103,27 @@ function __array_equals(_recieved, _expected, _depth=1) {
 		var _expected_value = _expected[_i];
 		
 		if (typeof(_expected_value) != typeof(_recieved[_i])) {
-			log($"{string_repeat("\t", _depth)}Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
-			log($"{string_repeat("\t", _depth)}Recieved ({_recieved[_i]})\nExpected {_expected_value}")
+			show_debug_message($"{string_repeat("\t", _depth)}Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+			show_debug_message($"{string_repeat("\t", _depth)}Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 		}
 		
 		switch (typeof(_expected_value)) {
 			case "struct":{
 				if !__struct_equals(_recieved[_i], _expected_value, _depth+1) {
-					log($"{string_repeat("\t", _depth)}Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved arrays child struct is mismatched with the expected indexs struct {_i}")
 					return false;
 				}
 			break;}
 			case "array":{
 				if !__array_equals(_recieved[_i], _expected_value, _depth+1) {
-					log($"{string_repeat("\t", _depth)}Recieved arrays child array is mismatched with the expected indexs value {_i}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved arrays child array is mismatched with the expected indexs value {_i}")
 					return false;
 				}
 			break;}
 			default:
 				if (_recieved[_i] != _expected_value) {
-					log($"{string_repeat("\t", _depth)}Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
-					log($"{string_repeat("\t", _depth)}Recieved ({_recieved[_i]})\nExpected {_expected_value}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved arrays index ({_i}) is mismatched with the expected index {_i}")
+					show_debug_message($"{string_repeat("\t", _depth)}Recieved ({_recieved[_i]})\nExpected {_expected_value}")
 					return false;
 				}
 			break;
