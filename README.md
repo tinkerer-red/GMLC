@@ -1,4 +1,4 @@
-# 🎮 **GMLC v1.0.0 – Initial Public Release**
+# 🎮 **GMLC**
 
 ## 📘 **Overview**
 
@@ -19,14 +19,21 @@ The first full public release of **GMLC**, a runtime compiler and interpreter th
 
 ## 🧩 **Setup & Installation**
 
-Importing GMLC into your project works exactly like any other GameMaker library:
+GMLC depends on **SNAP** by Juju Adams, which must be installed first.
 
-1. Download the latest `.yymps` package from the repository or itch.io page.
-2. In the GameMaker IDE, select **Tools → Import Local Package**.
-3. Choose the `.yymps` file and confirm import.
-4. The GMLC scripts will appear under your project’s resource tree and are immediately ready to use.
+### Requirements
+- **SNAP** (required): https://github.com/JujuAdams/SNAP
 
-No special initialization is required after imported, you can begin creating and compiling GML code directly in runtime.
+### Installation Steps
+
+1. Download and import **SNAP** into your project (via its `.yymps` or preferred install method).
+2. Download the latest GMLC `.yymps` package from the repository or itch.io page.
+3. In the GameMaker IDE, select **Tools > Import Local Package**.
+4. Choose the GMLC `.yymps` file and confirm import.
+5. The GMLC scripts will appear under your project’s resource tree and are immediately ready to use.
+
+No special initialization is required after import. Once SNAP is present, you can begin creating and compiling GML code directly at runtime.
+
 
 ## 🚀 **Quickstart**
 
