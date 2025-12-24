@@ -156,6 +156,10 @@ function __GmlSpec() {
 	};
 	
 	if (GmlSpec = undefined) {
+		if (asset_get_index("SnapFromXML") == -1) {
+			show_error("\n\nGMLC relies on the use of SnapFromXML, from Juju Adam's Snap Library.\nPlease import the needed functions which can be found here:\nhttps://github.com/JujuAdams/SNAP\n\n", true);
+		}
+				
 		var _xml = file_read_all_text("GmlSpec.xml")
 		var _spec = SnapFromXML(_xml)
 		
