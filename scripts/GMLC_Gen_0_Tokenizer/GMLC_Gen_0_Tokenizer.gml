@@ -151,30 +151,31 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _char_index = 0;
 		
 		while (true) {
-			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			var _byte = __peekUTF8(_char_index);
 			if (_byte == undefined) break;
-			
+			if (_byte >= 256) break; // non-ASCII can never match a keyword
+
 			var _next = _node[_byte];
 			if (_next == undefined) break;
-			
+
 			_node = _next;
 			_char_index++;
-			
+
 			if (_node[0] != undefined)
 			&& (!__char_is_alphanumeric(__peekUTF8(_char_index))) {
-				
+
 				//skip ahead
 				var _identifier = "";
-				
+
 				repeat(_char_index-1) {
 					_identifier += chr(currentCharCode);
 					__nextUTF8();
 				}
-				
+
 				_identifier += chr(currentCharCode);
-				
+
 				nextToken();
-				
+
 				switch (_identifier) {
 					case "begin":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "{", _start_line, _start_column, _byte_start, bytePos);
@@ -228,11 +229,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		
 		var _node = __function_lookup;
 		var _char_index = 0;
-		
+
 		while (true) {
-			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			var _byte = __peekUTF8(_char_index);
 			if (_byte == undefined) break;
-			
+			if (_byte >= 256) break;
+
 			var _next = _node[_byte];
 			if (_next == undefined) break;
 			
@@ -304,11 +306,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		
 		var _node = __constant_lookup;
 		var _char_index = 0;
-		
+
 		while (true) {
-			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			var _byte = __peekUTF8(_char_index);
 			if (_byte == undefined) break;
-			
+			if (_byte >= 256) break;
+
 			var _next = _node[_byte];
 			if (_next == undefined) break;
 			
@@ -354,11 +357,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		
 		var _node = __variable_lookup;
 		var _char_index = 0;
-		
+
 		while (true) {
-			var _byte = __peekUTF8(_char_index); // you’ll want this to peek *raw bytes*, not chars
+			var _byte = __peekUTF8(_char_index);
 			if (_byte == undefined) break;
-			
+			if (_byte >= 256) break;
+
 			var _next = _node[_byte];
 			if (_next == undefined) break;
 			
