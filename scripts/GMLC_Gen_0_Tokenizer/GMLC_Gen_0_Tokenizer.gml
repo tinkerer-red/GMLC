@@ -636,6 +636,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _startCharCode = currentCharCode;
 		var _next_char = __peekUTF8() ?? 0;
 		var _byte_start = bytePos;
+		
 		if (currentCharCode == ord("$") && __char_is_hex(_next_char))
 		|| (currentCharCode == ord("#") && __char_is_hex(_next_char))
 		|| (currentCharCode == ord("0") && _next_char == ord("x"))
@@ -647,6 +648,16 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _is_color = false;
 			
 			if (currentCharCode == ord("$")) {
+				//check to see if this isnt a struct accessor `[$`
+				var _prev_tok_index = array_length(tokens) - 1;
+				if (_prev_tok_index >= 0) {
+					var _prev_tok = tokens[_prev_tok_index];
+					if (_prev_tok.value == "[")
+					&& (_prev_tok.byteEnd == bytePos) {
+						return false;
+					}
+				}
+				
 				__nextUTF8(); // consume $
 				var _raw_string = "$";
 			}
@@ -2014,7 +2025,8 @@ function __char_is_punctuation(char) {
 	|| (char == ord("["))
 	|| (char == ord("]"))
 	|| (char == ord(":"))
-	|| (char == ord(";"));
+	|| (char == ord(";"))
+	|| (char == ord("$"));
 }
 
 /// @ignore
