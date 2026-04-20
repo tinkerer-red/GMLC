@@ -986,8 +986,322 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return _sourceCode + _exposed_macro_str;
 	}
 	
-	#endregion	
-	
+	#endregion
+
+	#region Batch & Project Compilation
+
+	#region jsDoc
+	/// @func    __run_discovery_pass()
+	/// @desc    Runs only the tokenizer and pre-processor on a source string and returns the
+	///          resulting program object, with MacroVar and EnumVar populated from any
+	///          #macro and enum declarations found in the source.
+	/// @self    GMLC_Env
+	/// @param   {String} sourceCode
+	/// @returns {Struct.__GMLC_ProgramTokens}
+	/// @ignore
+	#endregion
+	static __run_discovery_pass = function(_sourceCode) {
+		_sourceCode = __appendMacros(_sourceCode);
+		tokenizer.initialize(_sourceCode);
+		var _program = tokenizer.parseAll();
+		pre_processor.initialize(_program);
+		pre_processor.parseAll();
+		return _program;
+	}
+
+	#region jsDoc
+	/// @func    __inject_batch_context()
+	/// @desc    Merges batch-level macros and enums into a program without overwriting
+	///          locally-defined symbols.
+	/// @ignore
+	#endregion
+	static __inject_batch_context = function(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
+		var _i = 0; repeat(array_length(_batchMacroNames)) {
+			var _name = _batchMacroNames[_i];
+			if (!variable_struct_exists(_program.MacroVar, _name)) {
+				_program.MacroVar[$ _name] = _batchMacros[$ _name];
+				array_push(_program.MacroVarNames, _name);
+			}
+		_i++;}
+		var _headers = struct_get_names(_batchEnums);
+		var _j = 0; repeat(array_length(_headers)) {
+			var _header = _headers[_j];
+			if (!variable_struct_exists(_program.EnumVar, _header)) {
+				_program.EnumVar[$ _header]      = _batchEnums[$ _header];
+				_program.EnumVarNames[$ _header] = _batchEnumNames[$ _header];
+			}
+		_j++;}
+	}
+
+	#region jsDoc
+	/// @func    __compile_pipeline()
+	/// @desc    Runs the full pipeline from pre-processed program through to compiled output.
+	/// @ignore
+	#endregion
+	static __compile_pipeline = function(_source) {
+		_source = __appendMacros(_source);
+		tokenizer.initialize(_source);
+		var _program = tokenizer.parseAll();
+		pre_processor.initialize(_program);
+		pre_processor.parseAll();
+		return _program;
+	}
+
+	#region jsDoc
+	/// @func    __finish_compile()
+	/// @desc    Runs parser → post-processor → (optimizer) → compiler on an already-preprocessed program.
+	/// @ignore
+	#endregion
+	static __finish_compile = function(_program) {
+		parser.initialize(_program);
+		var _ast = parser.parseAll();
+		post_processor.initialize(_ast);
+		_ast = post_processor.parseAll();
+		if (should_optimize) {
+			optimizer.initialize(_ast);
+			_ast = optimizer.parseAll();
+		}
+		var _global  = getConstant("global");
+		var _globals = is_struct(_global) ? _global.value : {};
+		compiler.initialize(_ast, _globals);
+		compiler.parseAll();
+	}
+
+	#region jsDoc
+	/// @func    compile_batch()
+	/// @desc    Compiles an array of source strings (or {source, name} structs) as a single
+	///          logical unit. A two-phase approach is used: all sources are first scanned for
+	///          #macro and enum declarations which are then made available to every file during
+	///          the full compile pass. Local definitions always take priority over batch-level ones.
+	/// @self    GMLC_Env
+	/// @param   {Array<String|Struct>} sources : Array of source strings or {source, name} structs
+	/// @returns {Struct.GMLC_BatchResult}
+	#endregion
+	static compile_batch = function(_sources) {
+		var _count = array_length(_sources);
+		var _batchMacros     = {};
+		var _batchMacroNames = [];
+		var _batchEnums      = {};
+		var _batchEnumNames  = {};
+
+		// Phase 1 — symbol discovery
+		var _i = 0; repeat(_count) {
+			var _entry  = _sources[_i];
+			var _source = is_string(_entry) ? _entry : _entry.source;
+			//try {
+				var _program = __run_discovery_pass(_source);
+				var _j = 0; repeat(array_length(_program.MacroVarNames)) {
+					var _mname = _program.MacroVarNames[_j];
+					if (!variable_struct_exists(_batchMacros, _mname)) {
+						_batchMacros[$ _mname] = _program.MacroVar[$ _mname];
+						array_push(_batchMacroNames, _mname);
+					}
+				_j++;}
+				var _headers = struct_get_names(_program.EnumVar);
+				var _k = 0; repeat(array_length(_headers)) {
+					var _header = _headers[_k];
+					if (!variable_struct_exists(_batchEnums, _header)) {
+						_batchEnums[$ _header]      = _program.EnumVar[$ _header];
+						_batchEnumNames[$ _header]  = _program.EnumVarNames[$ _header];
+					}
+				_k++;}
+			//}
+			//catch (_err) { /* discovery failures are non-fatal */ }
+		_i++;}
+
+		// Phase 2 — full compile with shared symbol context
+		var _result = new GMLC_BatchResult();
+		_i = 0; repeat(_count) {
+			var _entry   = _sources[_i];
+			var _source  = is_string(_entry) ? _entry : _entry.source;
+			var _name    = is_string(_entry) ? $"source_{_i}" : _entry.name;
+			var _success = false;
+			var _error   = undefined;
+			//try {
+				var _program = __compile_pipeline(_source);
+				__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
+				__finish_compile(_program);
+				_success = true;
+			//}
+			//catch (_err) { _error = _err; }
+			_result.add(_name, _success, _error);
+		_i++;}
+		return _result;
+	}
+
+	/// @ignore
+	static __compile_script_asset = function(_yy, _asset_dir, _result, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
+		var _name     = _yy.name;
+		var _gml_path = _asset_dir + _name + ".gml";
+		var _source   = file_read_all_text(_gml_path);
+		if (_source == undefined) {
+			_result.add(_name, false, { message: $"Could not read file: {_gml_path}" });
+			return;
+		}
+		var _success = false;
+		var _error   = undefined;
+		//try {
+			var _program = __compile_pipeline(_source);
+			__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
+			__finish_compile(_program);
+			_success = true;
+		//}
+		//catch (_err) { _error = _err; }
+		_result.add(_name, _success, _error);
+	}
+
+	/// @ignore
+	static __compile_object_asset = function(_yy, _asset_dir, _result, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
+		var _obj_name = _yy.name;
+		var _files    = gumshoe(_asset_dir, "gml", false);
+		var _i = 0; repeat(array_length(_files)) {
+			var _gml_path   = _files[_i];
+			var _entry_name = _obj_name + "::" + filename_name(_gml_path);
+			var _source     = file_read_all_text(_gml_path);
+			var _success    = false;
+			var _error      = undefined;
+			//try {
+				var _program = __compile_pipeline(_source);
+				__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
+				__finish_compile(_program);
+				_success = true;
+			//}
+			//catch (_err) { _error = _err; }
+			_result.add(_entry_name, _success, _error);
+		_i++;}
+	}
+
+	#region jsDoc
+	/// @func    compile_asset()
+	/// @desc    Compiles a single GMS2 asset from its .yy file content. The resourceType field
+	///          determines dispatch: GMScript compiles the adjacent .gml, GMObject compiles each
+	///          event, all others register the asset name as a known identifier. For cross-asset
+	///          macro sharing, prefer compile_project() instead.
+	/// @self    GMLC_Env
+	/// @param   {String} yyString  : Content of the asset's .yy file
+	/// @param   {String} assetDir  : Directory containing the .yy and its sibling source files
+	/// @returns {Struct.GMLC_BatchResult}
+	#endregion
+	static compile_asset = function(_yy_string, _asset_dir) {
+		if (string_char_at(_asset_dir, string_length(_asset_dir)) != "/") _asset_dir += "/";
+		var _yy     = snap_from_json(_yy_string);
+		var _type   = _yy.resourceType;
+		var _result = new GMLC_BatchResult();
+		var _empty  = {};
+		var _emptyA = [];
+		if (_type == "GMScript") {
+			__compile_script_asset(_yy, _asset_dir, _result, _empty, _emptyA, _empty, _empty);
+		}
+		else if (_type == "GMObject") {
+			__compile_object_asset(_yy, _asset_dir, _result, _empty, _emptyA, _empty, _empty);
+		}
+		else if (variable_struct_exists(_yy, "name") && is_string(_yy.name)) {
+			var _sym = {};
+			_sym[$ _yy.name] = 0;
+			exposeConstants(_sym);
+			_result.add(_yy.name, true);
+		}
+		return _result;
+	}
+
+	#region jsDoc
+	/// @func    compile_project()
+	/// @desc    Compiles an entire GMS2 project from its .yyp file content. All script and
+	///          object events are compiled together with a shared symbol pool so macros defined
+	///          in one asset are available in all others. Non-code assets have their names
+	///          registered as known identifiers.
+	/// @self    GMLC_Env
+	/// @param   {String} yypString : Content of the project's .yyp file
+	/// @param   {String} rootPath  : Absolute path to the directory containing the .yyp
+	/// @returns {Struct.GMLC_BatchResult}
+	#endregion
+	static compile_project = function(_yyp_string, _root_path) {
+		if (string_char_at(_root_path, string_length(_root_path)) != "/") _root_path += "/";
+		var _yyp       = snap_from_json(_yyp_string);
+		var _resources = _yyp.resources;
+		var _count     = array_length(_resources);
+		var _code_assets = [];
+		var _all_sources = [];
+
+		var _i = 0; repeat(_count) {
+			var _resource = _resources[_i];
+			var _rel_path = _resource.id.path;
+			var _slash = 0;
+			var _c = string_length(_rel_path);
+			repeat(_c) {
+				if (string_char_at(_rel_path, _c) == "/") { _slash = _c; break; }
+			_c--;}
+			var _asset_dir = _root_path + string_copy(_rel_path, 1, _slash);
+			var _yy_str    = file_read_all_text(_root_path + _rel_path);
+			if (_yy_str == undefined) { _i++; continue; }
+			var _yy   = snap_from_json(_yy_str);
+			var _type = _yy.resourceType;
+
+			if (_type == "GMScript") {
+				var _source = file_read_all_text(_asset_dir + _yy.name + ".gml");
+				if (_source != undefined) array_push(_all_sources, { source: _source, name: _yy.name });
+				array_push(_code_assets, { yy: _yy, asset_dir: _asset_dir, type: "GMScript" });
+			}
+			else if (_type == "GMObject") {
+				var _files = gumshoe(_asset_dir, "gml", false);
+				var _j = 0; repeat(array_length(_files)) {
+					var _source = file_read_all_text(_files[_j]);
+					if (_source != undefined) array_push(_all_sources, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]) });
+				_j++;}
+				array_push(_code_assets, { yy: _yy, asset_dir: _asset_dir, type: "GMObject" });
+			}
+			else if (variable_struct_exists(_yy, "name") && is_string(_yy.name)) {
+				var _sym = {};
+				_sym[$ _yy.name] = 0;
+				exposeConstants(_sym);
+			}
+		_i++;}
+
+		// Phase 1 — discovery
+		var _batchMacros     = {};
+		var _batchMacroNames = [];
+		var _batchEnums      = {};
+		var _batchEnumNames  = {};
+		_i = 0; repeat(array_length(_all_sources)) {
+			//try {
+				var _program = __run_discovery_pass(_all_sources[_i].source);
+				var _j = 0; repeat(array_length(_program.MacroVarNames)) {
+					var _mname = _program.MacroVarNames[_j];
+					if (!variable_struct_exists(_batchMacros, _mname)) {
+						_batchMacros[$ _mname] = _program.MacroVar[$ _mname];
+						array_push(_batchMacroNames, _mname);
+					}
+				_j++;}
+				var _headers = struct_get_names(_program.EnumVar);
+				var _k = 0; repeat(array_length(_headers)) {
+					var _header = _headers[_k];
+					if (!variable_struct_exists(_batchEnums, _header)) {
+						_batchEnums[$ _header]      = _program.EnumVar[$ _header];
+						_batchEnumNames[$ _header]  = _program.EnumVarNames[$ _header];
+					}
+				_k++;}
+			//}
+			//catch (_err) { /* non-fatal */ }
+		_i++;}
+
+		// Phase 2 — full compile
+		var _result = new GMLC_BatchResult();
+		_i = 0; repeat(array_length(_code_assets)) {
+			var _asset = _code_assets[_i];
+			if (_asset.type == "GMScript") {
+				__compile_script_asset(_asset.yy, _asset.asset_dir, _result,
+					_batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
+			}
+			else {
+				__compile_object_asset(_asset.yy, _asset.asset_dir, _result,
+					_batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
+			}
+		_i++;}
+		return _result;
+	}
+
+	#endregion
+
 }
 
 #region jsDoc
@@ -1059,6 +1373,165 @@ enum GMLC_EXPOSURE {
     __SIZE__,
 }
 
-
-
-
+/*
+static __EventType = {
+	"ev_create": 0,
+	"ev_destroy": 1,
+	"ev_cleanup": 12,
+	"ev_step": 3,
+	"ev_alarm": 2,
+	"ev_keyboard": 5,
+	"ev_mouse": 6,
+	"ev_gesture": 13,
+	"ev_collision": 4,
+	"ev_other": 7,
+	"ev_draw": 8,
+	"ev_keypress": 9,
+	"ev_keyrelease": 10,
+	"ev_trigger": 11,
+}
+static __EventNumber = {
+	"ev_step_normal": 0,
+	"ev_step_begin": 1,
+	"ev_step_end": 2,
+	"ev_left_button": 0,
+	"ev_right_button": 1,
+	"ev_middle_button": 2,
+	"ev_no_button": 3,
+	"ev_left_press": 4,
+	"ev_right_press": 5,
+	"ev_middle_press": 6,
+	"ev_left_release": 7,
+	"ev_right_release": 8,
+	"ev_middle_release": 9,
+	"ev_mouse_enter": 10,
+	"ev_mouse_leave": 11,
+	"ev_mouse_wheel_up": 60,
+	"ev_mouse_wheel_down": 61,
+	"ev_global_left_button": 50,
+	"ev_global_right_button": 51,
+	"ev_global_middle_button": 52,
+	"ev_global_left_press": 53,
+	"ev_global_right_press": 54,
+	"ev_global_middle_press": 55,
+	"ev_global_left_release": 56,
+	"ev_global_right_release": 57,
+	"ev_global_middle_release": 58,
+	"ev_gesture_tap": 0,
+	"ev_gesture_double_tap": 1,
+	"ev_gesture_drag_start": 2,
+	"ev_gesture_dragging": 3,
+	"ev_gesture_drag_end": 4,
+	"ev_gesture_flick": 5,
+	"ev_gesture_pinch_start": 6,
+	"ev_gesture_pinch_in": 7,
+	"ev_gesture_pinch_out": 8,
+	"ev_gesture_pinch_end": 9,
+	"ev_gesture_rotate_start": 10,
+	"ev_gesture_rotating": 11,
+	"ev_gesture_rotate_end": 12,
+	"ev_global_gesture_tap": 64,
+	"ev_global_gesture_double_tap": 65,
+	"ev_global_gesture_drag_start": 66,
+	"ev_global_gesture_dragging": 67,
+	"ev_global_gesture_drag_end": 68,
+	"ev_global_gesture_flick": 69,
+	"ev_global_gesture_pinch_start": 70,
+	"ev_global_gesture_pinch_in": 71,
+	"ev_global_gesture_pinch_out": 72,
+	"ev_global_gesture_pinch_end": 73,
+	"ev_global_gesture_rotate_start": 74,
+	"ev_global_gesture_rotating": 75,
+	"ev_global_gesture_rotate_end": 76,
+	"ev_outside": 0,
+	"ev_boundary": 1,
+	"ev_outside_view0": 40,
+	"ev_boundary_view0": 50,
+	"ev_game_start": 2,
+	"ev_game_end": 3,
+	"ev_room_start": 4,
+	"ev_room_end": 5,
+	"ev_animation_end": 7,
+	"ev_animation_update": 58,
+	"ev_animation_event": 59,
+	"ev_end_of_path": 8,
+	"ev_user0": 10,
+	"ev_broadcast_message": 76,
+	"ev_draw_begin": 72,
+	"ev_draw_end": 73,
+	"ev_draw_pre": 76,
+	"ev_draw_normal": 0,
+	"ev_draw_post": 77,
+	"ev_gui": 64,
+	"ev_gui_begin": 74,
+	"ev_gui_end": 75,
+	"ev_joystick1_left": 16,
+	"ev_joystick1_right": 17,
+	"ev_joystick1_up": 18,
+	"ev_joystick1_down": 19,
+	"ev_joystick1_button1": 21,
+	"ev_joystick1_button2": 22,
+	"ev_joystick1_button3": 23,
+	"ev_joystick1_button4": 24,
+	"ev_joystick1_button5": 25,
+	"ev_joystick1_button6": 26,
+	"ev_joystick1_button7": 27,
+	"ev_joystick1_button8": 28,
+	"ev_joystick2_left": 31,
+	"ev_joystick2_right": 32,
+	"ev_joystick2_up": 33,
+	"ev_joystick2_down": 34,
+	"ev_joystick2_button1": 36,
+	"ev_joystick2_button2": 37,
+	"ev_joystick2_button3": 38,
+	"ev_joystick2_button4": 39,
+	"ev_joystick2_button5": 40,
+	"ev_joystick2_button6": 41,
+	"ev_joystick2_button7": 42,
+	"ev_joystick2_button8": 43,
+	"ev_no_more_lives": 6,
+	"ev_no_more_health": 9,
+	"ev_user1": 11,
+	"ev_user2": 12,
+	"ev_user3": 13,
+	"ev_user4": 14,
+	"ev_user5": 15,
+	"ev_user6": 16,
+	"ev_user7": 17,
+	"ev_user8": 18,
+	"ev_user9": 19,
+	"ev_user10": 20,
+	"ev_user11": 21,
+	"ev_user12": 22,
+	"ev_user13": 23,
+	"ev_user14": 24,
+	"ev_user15": 25,
+	"ev_outside_view1": 41,
+	"ev_outside_view2": 42,
+	"ev_outside_view3": 43,
+	"ev_outside_view4": 44,
+	"ev_outside_view5": 45,
+	"ev_outside_view6": 46,
+	"ev_outside_view7": 47,
+	"ev_boundary_view1": 51,
+	"ev_boundary_view2": 52,
+	"ev_boundary_view3": 53,
+	"ev_boundary_view4": 54,
+	"ev_boundary_view5": 55,
+	"ev_boundary_view6": 56,
+	"ev_boundary_view7": 57,
+	"ev_web_image_load": 60,
+	"ev_web_sound_load": 61,
+	"ev_web_async": 62,
+	"ev_dialog_async": 63,
+	"ev_web_iap": 66,
+	"ev_web_cloud": 67,
+	"ev_web_networking": 68,
+	"ev_web_steam": 69,
+	"ev_social": 70,
+	"ev_push_notification": 71,
+	"ev_audio_recording": 73,
+	"ev_audio_playback": 74,
+	"ev_audio_playback_ended": 80,
+	"ev_system_event": 75,
+}

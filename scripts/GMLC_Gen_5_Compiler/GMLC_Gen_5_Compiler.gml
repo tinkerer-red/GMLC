@@ -324,6 +324,9 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		case __GMLC_NodeType_CallExpression:{
 			return __GMLCcompileCallExpression(_rootNode, _parentNode, _node)
 		break;}
+		case __GMLC_NodeType_CallMethodExpression:{
+			return __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node)
+		break;}
 		case __GMLC_NodeType_NewExpression:{
 			return __GMLCcompileNewExpression(_rootNode, _parentNode, _node)
 		break;}
@@ -1279,6 +1282,140 @@ function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node) {
 }
 
 #region //{
+// used to call a dot-accessor method: target.key(args)
+//    target: <expression>,   — the object before the dot (evaluated once)
+//    key:    <string>,        — the property name
+//    argArr: array<expression>,
+//}
+#endregion
+function __GMLCexecuteCallMethodExpression() {
+	//mostly just used in recursion code
+	var _arg_count = max(argument_count, argumentCount)
+	
+	if (recursionCount++) {
+        // stash the arguments
+        array_copy(backupArguments, array_length(backupArguments), arguments, 0, prevArgCount);
+		array_resize(arguments, 0);
+		array_resize(arguments, _arg_count);
+		array_push(argCountMemory, _arg_count)
+    }
+	
+	//remember how many the function had
+	prevArgCount = _arg_count;
+	
+	
+	//avoids garbage collection lag spikes
+	array_resize(arguments, 0);
+	var _i=argumentCount-1; repeat(argumentCount) {
+		arguments[_i] = argumentExpressions[_i]();
+	_i--}
+	
+	// Evaluate target once — used for both scoping and function lookup
+	var _raw_target = target();
+	var _scope_target = _raw_target;
+	if (is_gmlc_function(_scope_target)) {
+		_scope_target = __gmlc_static_get(_scope_target);
+	}
+
+	// Update scope to the object before the dot
+	var _prevOther = global.gmlc_other_instance;
+	var _prevSelf  = global.gmlc_self_instance;
+	if (_scope_target != undefined)
+	&& (_scope_target != _prevSelf) {
+		global.gmlc_other_instance = _prevSelf;
+		global.gmlc_self_instance  = _scope_target;
+	}
+
+	// Find function in target struct or its static chain
+	var _func = undefined;
+	if (struct_exists(_scope_target, key)) {
+		_func = _scope_target[$ key];
+	}
+	else {
+		var _static = __gmlc_static_get(_scope_target);
+		while (_static != undefined) {
+			if (struct_exists(_static, key)) {
+				_func = _static[$ key];
+				break;
+			}
+			_static = __gmlc_static_get(_static);
+		}
+	}
+
+	if (_func == undefined) {
+		throw_gmlc_error($"Variable <{typeof(_scope_target)}>.{key} not set before reading it.\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
+	}
+
+	var _return = undefined;
+	if (is_method(_func)) {
+		if (is_gmlc_constructor(_func)) {
+			var _program_data = method_get_self(_func);
+			var _program_func = method_get_index(_func);
+			var _arguments = arguments;
+			with (_program_data) {
+				_return = script_execute_ext(_program_func, _arguments);
+			}
+		}
+		else if (is_gmlc_program(_func))
+		|| (is_gmlc_method(_func)) {
+			_return = method_call(_func, arguments);
+		}
+		else {
+			var _self = method_get_self(_func);
+			var _args = arguments;
+			with (_prevSelf) {
+				_return = method_call(_func, _args);
+			}
+		}
+	}
+	else {
+		var _args = arguments;
+		with (global.gmlc_other_instance) with (global.gmlc_self_instance) {
+			_return = script_execute_ext(_func, _args);
+		}
+	}
+	
+	// Restore scope
+	global.gmlc_other_instance = _prevOther;
+	global.gmlc_self_instance  = _prevSelf;
+	
+	if (--recursionCount) {
+		var _prev_arg_count = array_pop(argCountMemory)
+		var _arg_offset = array_length(backupArguments)-_prev_arg_count
+		array_copy(arguments, 0, backupArguments, _arg_offset, _prev_arg_count);
+		array_resize(backupArguments, _arg_offset);
+	}
+	else {
+		array_resize(arguments, 0);
+		if (array_length(backupArguments)) {
+			throw_gmlc_error($"huh... the array sizes aren't correct\narray_length(backupArguments) == {array_length(backupArguments)}")
+		}
+	}
+
+	return _return;
+}
+function __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node) {
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCallMethodExpression", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.object);
+	_output.key    = _node.key;
+
+	_output.recursionCount  = 0;
+	_output.prevArgCount    = 0;
+	_output.argumentCount   = array_length(_node.arguments);
+	_output.argumentExpressions = array_create(_output.argumentCount);
+	_output.arguments       = array_create(_output.argumentCount);
+	_output.backupArguments = [];
+	_output.argCountMemory  = [];
+
+	var _argArr = _node.arguments;
+	var _i=0; repeat(array_length(_argArr)) {
+		_output.argumentExpressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
+	_i++}
+
+	return __vanilla_method(_output, __GMLCexecuteCallMethodExpression);
+}
+
+#region //{
 // used to call functions
 //    callee: <method, function, or program>,
 //    argArr: array<expression>,
@@ -1307,19 +1444,7 @@ function __GMLCexecuteCallExpression() {
 	var _i=argumentCount-1; repeat(argumentCount) {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
-	
-	if (shouldUpdateInstanceScoping) {
-		var _prevUpdateOther = global.gmlc_other_instance;
-		var _prevUpdateSelf  = global.gmlc_self_instance;
-		
-		var _target = updateScopingTarget();
-		if (_target != undefined)
-		&& (_target != _prevUpdateSelf) {
-			global.gmlc_other_instance = _prevUpdateSelf;
-			global.gmlc_self_instance = _target;
-		}
-	}
-	
+
 	var _return = undefined;
 	if (is_method(_func)) {
 		if is_gmlc_constructor(_func) {
@@ -1360,11 +1485,6 @@ function __GMLCexecuteCallExpression() {
 		}
 	}
 	
-	if (shouldUpdateInstanceScoping) {
-		global.gmlc_other_instance = _prevUpdateOther;
-		global.gmlc_self_instance  = _prevUpdateSelf;
-	}
-	
 	if (--recursionCount) {
         // Un-stash the arguments
 		var _prev_arg_count = array_pop(argCountMemory)
@@ -1392,21 +1512,9 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	_output.argumentCount = array_length(_node.arguments);
 	_output.argumentExpressions = array_create(_output.argumentCount);
 	_output.arguments = array_create(_output.argumentCount);
-	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
-	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
-	
-	
-	//handle dot accessor scoping
-	_output.shouldUpdateInstanceScoping = false;
-	var _callee = method_get_self(_output.callee)
-	if (_callee.compilerBase == "__compileStructDotAccGet") {
-		var _target = method_get_self(_callee.target)
-		if (_target.compilerBase == "__GMLCcompileIdentifier") {
-			_output.shouldUpdateInstanceScoping = true;
-			_output.updateScopingTarget = _callee.target;
-		}
-	}
-	
+	_output.backupArguments = [];
+	_output.argCountMemory = [];
+
 	var _argArr = _node.arguments
 	var _i=0; repeat(array_length(_argArr)) {
 		_output.argumentExpressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])

@@ -163,11 +163,16 @@ function static_exists(_struct, _name) {
 	return false;
 }
 
-function throw_gmlc_error(_err) {
-	show_debug_message(_err);
-	throw @'
-===GMLC===
-'+string(_err)+"\n=========\n\n";
+function throw_gmlc_error(_err, _line=line, _line_string=lineString, _file=file) {
+	//show_debug_message(_err);
+	var _error = {
+		"message": "\r\n===GMLC===\r\n" + string(_err) + "\n=========\n\n",
+		"script": _file,
+		"line": _line,
+		"longMessage": _err + "\r\n" + _line_string,
+		"stacktrace": debug_get_callstack(),
+	}
+	throw _error;
 
 }
 

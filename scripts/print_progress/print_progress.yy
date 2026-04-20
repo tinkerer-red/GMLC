@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"print_progress",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"print_progress",
+  "parent":{
+    "name":"_Libraries",
+    "path":"folders/_Libraries.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -260,49 +260,19 @@ function _type_contains(_str) {
 	
 	return false;
 }
+//*/
 
 // Place holder code i frequently use to parse gml spec for information.
 // this is not actually a part of gmlc for any real reason, feel free to leave commented or remove
-//*
+/*
 var _struct = __GmlSpec();
 struct_foreach(_struct, function(_key, _value) {
-	static __keywords = ["sound", "audio"];
-	
-	if (_value.type == "envFunctions") {
-		var _name = _key;
-		if (_name == "draw_primitive_begin_texture") {
-			log("hold")
-		}
-		
-		var _desc = _value.feather.description;
-		var _return_type = _value.feather.returnType;
-		
-		static __closure = {};
-		__closure.should_print = false;
-		
-		var _args = array_map(_value.feather.parameters, method(__closure, function(_elem, _index) {
-			var _name = _elem.name;
-			var _desc = _elem.description;
-			var _type = _elem.type;
-			
-			if (_type_contains(_type)) {
-				should_print = true;
-			}
-			
-			return {
-				name: _name,
-				desc: _desc,
-				type: _type
-			}
-		}))
-		
-		if (__closure.should_print || _type_contains(_return_type)) {
-			show_debug_message(_name);
-		}
-		
+	if (_value.type == "envFunction") {
+		show_debug_message(_value.feather)
 	}
 })
-//*
+
+/*
 var _handles = [
 "ads_set_reward_callback",
 "animcurve_exists",

@@ -161,7 +161,12 @@ function __EnvironmentClass() constructor {
 	static getAllFunctions  = function()     { return __getAllType("envFunctions"); };
 	#endregion
 	#region === Variables ===
-	static exposeVariables  = function(conf) { __exposeType("envVariable", conf);  return self; };
+	static exposeVariables  = function(conf) {
+		struct_foreach(conf, function(_name, _value) {
+			_value.compilerBase = "__GMLCcompileIdentifier";
+		})
+		__exposeType("envVariable", conf);  return self;
+	};
 	static removeVariables  = function(keys) { __removeType("envVariable", keys); return self; };
 	static clearVariables   = function()     { __clearType("envVariable"); return self; };
 	static getVariable      = function(name) { return __getType("envVariable", name); };

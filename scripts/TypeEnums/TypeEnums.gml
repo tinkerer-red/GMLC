@@ -82,7 +82,8 @@
 #macro __GMLC_NodeType_VariableDeclarationList 36
 #macro __GMLC_NodeType_WhileStatement 37
 #macro __GMLC_NodeType_WithStatement 38
-#macro __GMLC_NodeType_SIZE 39
+#macro __GMLC_NodeType_CallMethodExpression 39
+#macro __GMLC_NodeType_SIZE 40
 
 #macro Debug:__GMLC_NodeType_EmptyNode "__GMLC_NodeType_EmptyNode"
 #macro Debug:__GMLC_NodeType_AccessorExpression "__GMLC_NodeType_AccessorExpression"
@@ -123,6 +124,7 @@
 #macro Debug:__GMLC_NodeType_VariableDeclarationList "__GMLC_NodeType_VariableDeclarationList"
 #macro Debug:__GMLC_NodeType_WhileStatement "__GMLC_NodeType_WhileStatement"
 #macro Debug:__GMLC_NodeType_WithStatement "__GMLC_NodeType_WithStatement"
+#macro Debug:__GMLC_NodeType_CallMethodExpression "__GMLC_NodeType_CallMethodExpression"
 
 #endregion
 #region ScopeType

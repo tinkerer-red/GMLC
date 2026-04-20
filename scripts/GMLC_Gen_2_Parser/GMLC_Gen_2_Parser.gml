@@ -1529,9 +1529,15 @@
 		static parseFunctionCall = function(callee) {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
-			
+
 			var arg = parseArgumentInput();
-			
+
+			// Dot accessor callees become CallMethodExpression so scope update is free and target is evaluated once
+			if (callee.type == __GMLC_NodeType_AccessorExpression)
+			&& (callee.accessorType == __GMLC_AccessorType_Dot) {
+				return new ASTCallMethodExpression(callee.expr, callee.val1.value, arg, line, lineString);
+			}
+
 			return new ASTCallExpression(callee, arg, line, lineString);
 		};
 		static parseArgumentInput = function() {

@@ -553,16 +553,15 @@ function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_l
     type = __GMLC_NodeType_CallExpression;
     callee = _callee;
     arguments = _arguments;
-	
+
 	static get_children = function(_top_down) {
 		var _arr = [];
 		var _parent = self;
-		
+
 		if (_top_down) {
 			array_push(_arr, {node: callee, parent: _parent, key: "callee", index: undefined});
 			var _i=0; repeat(array_length(arguments)) {
-				array_push(_arr, {node: arguments[_i], parent: _parent, key: "arguments", index: _i});
-			_i++}
+				array_push(_arr, {node: arguments[_i], parent: _parent, key: "arguments", index: _i});			_i++}
 		}
 		else {
 			var _i=array_length(arguments)-1; repeat(array_length(arguments)) {
@@ -571,6 +570,33 @@ function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_l
 			array_push(_arr, {node: callee, parent: _parent, key: "callee", index: undefined});
 		}
 		
+		return _arr;
+	}
+}
+
+function ASTCallMethodExpression(_object, _key, _arguments, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+	type = __GMLC_NodeType_CallMethodExpression;
+	object = _object;
+	key = _key;
+	arguments = _arguments;
+
+	static get_children = function(_top_down) {
+		var _arr = [];
+		var _parent = self;
+
+		if (_top_down) {
+			array_push(_arr, {node: object, parent: _parent, key: "object", index: undefined});
+			var _i=0; repeat(array_length(arguments)) {
+				array_push(_arr, {node: arguments[_i], parent: _parent, key: "arguments", index: _i});
+			_i++}
+		}
+		else {
+			var _i=array_length(arguments)-1; repeat(array_length(arguments)) {
+				array_push(_arr, {node: arguments[_i], parent: _parent, key: "arguments", index: _i});
+			_i--}
+			array_push(_arr, {node: object, parent: _parent, key: "object", index: undefined});
+		}
+
 		return _arr;
 	}
 }

@@ -203,7 +203,10 @@
 				break;}
 				
 				case __GMLC_NodeType_CallExpression:{
-					
+
+				break;}
+				case __GMLC_NodeType_CallMethodExpression:{
+
 				break;}
 				case __GMLC_NodeType_NewExpression:{
 					
