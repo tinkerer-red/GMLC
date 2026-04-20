@@ -323,6 +323,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			}
 			if (currentToken.value == "#endregion") {
 				expectToken(__GMLC_TokenType_Keyword, "#endregion");
+				var regionTitle = parseRegionTitle(); //apparently endregion can also have a closer title. who knew!
 				return true;
 			}
 		}
