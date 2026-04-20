@@ -124,6 +124,8 @@ Yes. Yes please see the variety of `expose_*` in `GMLC_Env`.
 
 [RunGML](https://github.com/sdelaughter/RunGML) - sdelaughter: A lisp structured GML executer, very unique!
 
+[gml.gml](https://github.com/kenan238/gml.gml/blob/master/gml.gml) - kenan238: A newer lightweight, single script GML interpreter.
+
 ---
 
 inspiration from neerikiffu: https://discord.com/channels/724320164371497020/724320751624257646/1178721426983882915
