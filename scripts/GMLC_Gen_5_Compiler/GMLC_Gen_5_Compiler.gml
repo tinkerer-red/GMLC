@@ -1635,15 +1635,6 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 	
 	if (_node.left.type == __GMLC_NodeType_Identifier)
 	|| (_node.left.type == __GMLC_NodeType_UniqueIdentifier) {
-		
-		//var _name = undefined;
-		//if (_node.left.type == __GMLC_NodeType_Identifier) {
-		//	_name = _node.left.name
-		//}
-		//if (_node.left.type == __GMLC_NodeType_UniqueIdentifier) {
-		//	_name = 
-		//}
-		
 		var _func = undefined;
 		switch (_node.operator) {
 			case "=": return __GMLCcompilePropertySet(_rootNode, _parentNode, _node.left.scope, _node.left.value, _node.right, _node.line, _node.lineString); break;
@@ -1662,19 +1653,25 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		var _getter = __GMLCGetScopeGetter(_node.left.scope);
 		var _setter = __GMLCGetScopeSetter(_node.left.scope);
 		
-		
 		//compile the getter
-		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);	
-		_output.key = _node.left.name;
-		if (_node.left.scope == ScopeType_LOCAL) {
-			_output.locals     = _parentNode.locals;
-			_output.localsWrittenTo = _parentNode.localsWrittenTo;
-			_output.localIndex = _parentNode.localLookUps[$ _output.key];
+		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);
+		if (_node.left.type == __GMLC_NodeType_UniqueIdentifier) {
+			_output.getter = _node.left.value.get;
+			var _getter_expression = __vanilla_method(_output, __GMLCexecuteUniqueGet);
 		}
-		else if (_node.left.scope == ScopeType_GLOBAL) {
-			_output.globals = _rootNode.globals;
+		else {
+			if (_node.left.scope == ScopeType_LOCAL) {
+				_output.key = _node.left.name;
+				_output.locals     = _parentNode.locals;
+				_output.localsWrittenTo = _parentNode.localsWrittenTo;
+				_output.localIndex = _parentNode.localLookUps[$ _output.key];
+			}
+			else if (_node.left.scope == ScopeType_GLOBAL) {
+				_output.key = _node.left.name;
+				_output.globals = _rootNode.globals;
+			}
+			var _getter_expression = __vanilla_method(_output, _getter);
 		}
-		var _getter_expression = __vanilla_method(_output, _getter);
 		
 		//compile the additive method
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Operator", "<Missing Error Message>", _node.line, _node.lineString);
@@ -1684,14 +1681,21 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		
 		//compile the actual method we will be calling
 		var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
-		_output.key        = _node.left.name;
-		if (_node.left.scope == ScopeType_LOCAL) {
-			_output.locals     = _parentNode.locals;
-			_output.localsWrittenTo = _parentNode.localsWrittenTo;
-			_output.localIndex = _parentNode.localLookUps[$ _output.key];
+		
+		if (_node.left.type == __GMLC_NodeType_UniqueIdentifier) {
+			_output.setter = _node.left.value.set;
 		}
-		else if (_node.left.scope == ScopeType_GLOBAL) {
-			_output.globals = _rootNode.globals;
+		else {
+			if (_node.left.scope == ScopeType_LOCAL) {
+				_output.key        = _node.left.name;
+				_output.locals     = _parentNode.locals;
+				_output.localsWrittenTo = _parentNode.localsWrittenTo;
+				_output.localIndex = _parentNode.localLookUps[$ _output.key];
+			}
+			else if (_node.left.scope == ScopeType_GLOBAL) {
+				_output.key        = _node.left.name;
+				_output.globals = _rootNode.globals;
+			}
 		}
 		_output.expression = _expression;
 		return __vanilla_method(_output, _setter);
@@ -2031,12 +2035,26 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 	return __vanilla_method(_output, __GMLCGetScopeGetter(_node.scope))
 }
 
-function __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node) {
-	//var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUniqueIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
-	
-	return _node.value.get;
+// Used for both `=` and compound ops on UniqueIdentifier.
+// setter: the user-registered set closure (takes one GML argument)
+// expression: compiled expression that produces the value to write
+function __GMLCexecuteUniqueGet() {
+	with (global.gmlc_self_instance) {
+		getter();
+	}
 }
-
+function __GMLCexecuteUniqueSet() {
+	var _val = expression()
+	with (global.gmlc_self_instance) {
+		setter(_val);
+	}
+}
+function __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node) {
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUniqueIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
+	_output.getter = _node.value.get;
+	var _getter_expression = __vanilla_method(_output, __GMLCexecuteUniqueGet);
+	return _getter_expression;
+}
 
 #endregion
 
