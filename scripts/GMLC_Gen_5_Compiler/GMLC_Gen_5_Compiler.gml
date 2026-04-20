@@ -1836,7 +1836,7 @@ function __GMLCcompileUnaryExpression(_rootNode, _parentNode, _node) {
 		case "!": return __vanilla_method(_output, __GMLCexecuteOpNot          )
 		case "-": return __vanilla_method(_output, __GMLCexecuteOpNegate       )
 		case "~": return __vanilla_method(_output, __GMLCexecuteOpBitwiseNegate)
-		case "+": return _output.expr;
+		case "+": return _output.right;
 	}
 }
 #region Unary Expressions
