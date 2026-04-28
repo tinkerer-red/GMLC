@@ -218,15 +218,17 @@
 					//specifically Juju Adams will use `;` in macros to denote the next line, i really only ever expect a block statement to start with a `;` if its a Juju macro
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-					
+					if (currentToken == undefined || currentToken.value == "}") break;
+
 					var _statement = parseStatement();
-					
+
 					if (_statement != undefined) {
 						array_push(_statements, _statement);
 					}
-					
+
 					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
+					if (currentToken == undefined || currentToken.value == "}") break;
 					
 					// Parse each statement until } is found
 					// Optional: Handle error checking for unexpected end of file
