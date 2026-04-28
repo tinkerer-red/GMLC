@@ -602,7 +602,7 @@
 				
 				//if its an internally defined function, like a function defined in the same program we're parsing
 				if (_parent.type != __GMLC_NodeType_CallExpression) {
-					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent}")
+					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent}", line, lineString)
 				}
 				
 				//if it's a global identifier
@@ -612,7 +612,7 @@
 				{
 					var _ref = program.GlobalVar[$ _parent.callee.value]
 					if (_ref.type != __GMLC_NodeType_ConstructorDeclaration) {
-						throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}")
+						throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}", line, lineString)
 					}
 				}
 				
@@ -787,7 +787,7 @@
 					//	//dont to nuttin`!
 					//break;}
 					case ScopeType_LOCAL: _tableArr = scriptAST.LocalVarNames; break;
-					case ScopeType_STATIC: throw_gmlc_error($"Script: <SCRIPT_NAME> at line {currentToken.line} : static can only be declared inside a function"); break;
+					case ScopeType_STATIC: throw_gmlc_error($"Script: {env.currentScriptName} at line {currentToken.line} : static can only be declared inside a function"); break;
 					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
 					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
 				}
@@ -1523,7 +1523,7 @@
 					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), key.line, key.lineString);
 				}
 				else {
-					throw_gmlc_error($"Object: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id")
+					throw_gmlc_error($"Object: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id", key.line, key.lineString)
 				}
 		        
 				//correct constants to be the string they are expected to be
@@ -1601,7 +1601,7 @@
 			}
 			
 			if (currentToken == undefined) {
-				throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>")
+				throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>", line, lineString)
 			}
 			
 			expectToken(__GMLC_TokenType_Punctuation, ")"); // Ensure ) and consume it

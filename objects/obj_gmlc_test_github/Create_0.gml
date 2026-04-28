@@ -1,6 +1,6 @@
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
 
-var _root_dir = "C:/Users/Red/Documents/GameMaker Studio 2/__compile_tests_from_github/__to_fix";
+var _root_dir = "C:/Users/Red/Documents/GameMaker Studio 2/__compile_tests_from_github/__gms23";
 
 // Enumerate top-level repo folders
 _repo_dirs = [];

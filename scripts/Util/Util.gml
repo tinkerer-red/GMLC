@@ -163,15 +163,34 @@ function static_exists(_struct, _name) {
 	return false;
 }
 
-function throw_gmlc_error(_err, _line=struct_get(self, "line") ?? 0, _line_string=struct_get(self, "lineString") ?? "<missing string>", _file=struct_get(self, "file") ?? 0) {
-	//show_debug_message(_err);
-	var _error = {
-		"message": "\r\n===GMLC===\r\n" + string(_err) + "\n=========\n\n",
-		"script": _file,
-		"line": _line,
-		"longMessage": _err + "\r\n" + _line_string,
-		"stacktrace": debug_get_callstack(),
+function throw_gmlc_error(_err, _line=undefined, _lineString=undefined, _column=undefined, _script=undefined) {
+	var _token = struct_get(self, "currentToken");
+	var _env   = struct_get(self, "env");
+
+	if (_line == undefined) {
+		_line = (_token != undefined) ? struct_get(_token, "line") : undefined;
+		if (_line == undefined) _line = struct_get(self, "line") ?? 0;
 	}
+	if (_lineString == undefined) {
+		_lineString = (_token != undefined) ? struct_get(_token, "lineString") : undefined;
+		if (_lineString == undefined) _lineString = struct_get(self, "lineString") ?? "";
+	}
+	if (_column == undefined) {
+		_column = (_token != undefined) ? struct_get(_token, "column") : undefined;
+		if (_column == undefined) _column = struct_get(self, "column") ?? 0;
+	}
+	if (_script == undefined) {
+		_script = (_env != undefined) ? (struct_get(_env, "currentScriptName") ?? "") : "";
+	}
+
+	var _error = {
+		message:    string(_err),
+		script:     _script,
+		line:       _line,
+		column:     _column,
+		lineString: _lineString,
+		stacktrace: debug_get_callstack(),
+	};
 	throw _error;
 }
 

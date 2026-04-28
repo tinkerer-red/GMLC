@@ -575,7 +575,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @param   {String} sourceCode : Source text to compile
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_5_Compiler
 	#endregion
-	static compile = function(_sourceCode) {
+	static compile = function(_sourceCode, _name = "") {
+		currentScriptName = _name;
 		//append the macros to the end of the source code.
 		_sourceCode = __appendMacros(_sourceCode);
 		
@@ -907,6 +908,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	#region Private
 	//used to print the outputs for debugging
+	currentScriptName = "";
+
 	__log_path = "log.json"
 	__log_tokenizer_results      = true;
 	__log_pre_processer_results  = true;
@@ -1072,14 +1075,19 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @desc    Runs parser → post-processor → (optimizer) → compiler on an already-preprocessed program.
 	/// @ignore
 	#endregion
-	static __finish_compile = function(_program) {
+	static __finish_compile = function(_program, _log_name = undefined) {
+		currentScriptName = _log_name ?? "";
+		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
 		parser.initialize(_program);
 		var _ast = parser.parseAll();
+		if (_prefix != undefined && __log_parser_results) json_save(_prefix + "parser.json", _ast);
 		post_processor.initialize(_ast);
 		_ast = post_processor.parseAll();
+		if (_prefix != undefined && __log_post_processer_results) json_save(_prefix + "post_processor.json", _ast);
 		if (should_optimize) {
 			optimizer.initialize(_ast);
 			_ast = optimizer.parseAll();
+			if (_prefix != undefined && __log_optimizer_results) json_save(_prefix + "optimizer.json", _ast);
 		}
 		var _global  = getConstant("global");
 		var _globals = is_struct(_global) ? _global.value : {};
@@ -1111,11 +1119,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			var _entry  = _sources[_i];
 			var _source = is_string(_entry) ? _entry : _entry.source;
 			_names[_i]  = is_string(_entry) ? $"source_{_i}" : _entry.name;
+			currentScriptName = _names[_i];
 			_source = __appendMacros(_source);
 			tokenizer.initialize(_source);
 			var _program = tokenizer.parseAll();
+			if (__log_tokenizer_results) json_save(filename_name(_names[_i]) + "_tokenizer.json", _program);
 			pre_processor.initialize(_program);
 			pre_processor.parseAll();
+			if (__log_pre_processer_results) json_save(filename_name(_names[_i]) + "_pre_processor.json", _program);
 			_programs[_i] = _program;
 			var _j = 0; repeat(array_length(_program.MacroVarNames)) {
 				var _mname = _program.MacroVarNames[_j];
@@ -1144,7 +1155,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			var _error   = undefined;
 			//try {
 				__inject_batch_context(_programs[_i], _globalMacros, _globalMacroNames, _globalEnums, _globalEnumNames);
-				__finish_compile(_programs[_i]);
+				__finish_compile(_programs[_i], _names[_i]);
 				_success = true;
 			//}
 			//catch (_err) { _error = _err; }
