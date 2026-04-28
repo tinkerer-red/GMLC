@@ -24,15 +24,16 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	/// @returns {undefined}
 	#endregion
 	static __initialize = function(_programTokens) {
-		
+
 		program = _programTokens;
 		tokens = _programTokens.tokens;
 		processedTokens = [];
 		program.tokens = processedTokens;
 		currentTokenIndex = -1;
-		currentToken = undefined; // tokens[currentTokenIndex];
+		currentToken = undefined;
 		finished = false;
-		
+
+
 		__nextToken();
 	};
 	
@@ -239,11 +240,15 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			while (currentTokenIndex < _length && !(currentToken.type == __GMLC_TokenType_Punctuation && currentToken.value == "}")) {
 				skipWhitespaces();
 				
-				if (currentToken.type != __GMLC_TokenType_Identifier) {
+				
+				//apparently it can be any stream of text! how fun! so keywords, unique identifiers, doesnt matter! ffs...
+				if (currentToken.type != __GMLC_TokenType_Identifier)
+				&& (currentToken.name != currentToken.value)
+				&& (!__char_is_alphabetic(ord(string_char_at(currentToken.name, 1)))) {
 					throw_gmlc_error($"Enum.Key Declaration expecting Identifier, got :: {currentToken}");
 				}
 				
-				memberName = currentToken.value;
+				memberName = currentToken.name;
 				array_push(enumMembers, memberName)
 				__nextToken(); // Move past the member name
 				
@@ -263,7 +268,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				}
 				else {
 					// No explicit value, use the default incremental value
-					_expr = [new __GMLC_create_token(__GMLC_TokenType_Number, currentToken.name, int64(defaultValue), currentToken.line, currentToken.column, currentToken.byteStart, currentToken.byteEnd, currentToken.lineString)];
+					_expr = [new __GMLC_create_token(__GMLC_TokenType_Number, string(defaultValue), int64(defaultValue), currentToken.line, currentToken.column, currentToken.byteStart, currentToken.byteEnd, currentToken.lineString)];
 				}
 				
 				// Add member to the list

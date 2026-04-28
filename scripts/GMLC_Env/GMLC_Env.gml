@@ -991,30 +991,50 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#region Batch & Project Compilation
 
 	#region jsDoc
-	/// @func    __run_discovery_pass()
-	/// @desc    Runs only the tokenizer and pre-processor on a source string and returns the
-	///          resulting program object, with MacroVar and EnumVar populated from any
-	///          #macro and enum declarations found in the source.
-	/// @self    GMLC_Env
-	/// @param   {String} sourceCode
-	/// @returns {Struct.__GMLC_ProgramTokens}
-	/// @ignore
-	#endregion
-	static __run_discovery_pass = function(_sourceCode) {
-		_sourceCode = __appendMacros(_sourceCode);
-		tokenizer.initialize(_sourceCode);
-		var _program = tokenizer.parseAll();
-		pre_processor.initialize(_program);
-		pre_processor.parseAll();
-		return _program;
-	}
-
-	#region jsDoc
 	/// @func    __inject_batch_context()
 	/// @desc    Merges batch-level macros and enums into a program without overwriting
 	///          locally-defined symbols.
 	/// @ignore
 	#endregion
+	/// @func    __cross_expand_macro_bodies()
+	/// @desc    Expands macro-referencing tokens within each macro body in the global pool so
+	///          that macro A = macro_B and macro_B = 5 results in A's body being [5] before
+	///          any file compilation begins. Mutates the body arrays in place.
+	/// @ignore
+	static __cross_expand_macro_bodies = function(_globalMacros, _globalMacroNames) {
+		var _hasChanged = true;
+		var _loop_count = 0;
+		while (_hasChanged) {
+			_hasChanged = false;
+			var _i = 0; repeat(array_length(_globalMacroNames)) {
+				var _name = _globalMacroNames[_i];
+				var _body = _globalMacros[$ _name];
+				var _j = 0;
+				while (_j < array_length(_body)) {
+					var _token = _body[_j];
+					if ((_token.type == __GMLC_TokenType_Identifier)
+					&&  (_token.name != _name)
+					&&  (variable_struct_exists(_globalMacros, _token.name))) {
+						var _expansion = _globalMacros[$ _token.name];
+						array_delete(_body, _j, 1);
+						var _elen = array_length(_expansion);
+						var _k = _elen - 1;
+						repeat(_elen) {
+							array_insert(_body, _j, _expansion[_k]);
+						_k--;}
+						_hasChanged = true;
+					}
+					else {
+						_j++;
+					}
+				}
+			_i++;}
+			if (++_loop_count > 10000) {
+				throw_gmlc_error("Circular macro reference detected during batch cross-expansion");
+			}
+		}
+	}
+
 	static __inject_batch_context = function(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
 		var _i = 0; repeat(array_length(_batchMacroNames)) {
 			var _name = _batchMacroNames[_i];
@@ -1079,52 +1099,56 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static compile_batch = function(_sources) {
 		var _count = array_length(_sources);
-		var _batchMacros     = {};
-		var _batchMacroNames = [];
-		var _batchEnums      = {};
-		var _batchEnumNames  = {};
+		var _globalMacros     = {};
+		var _globalMacroNames = [];
+		var _globalEnums      = {};
+		var _globalEnumNames  = {};
+		var _programs = array_create(_count, undefined);
+		var _names    = array_create(_count, "");
 
-		// Phase 1 — symbol discovery
+		// Phase 1 — Tokenize + preprocess each file ONCE; collect global symbol table
 		var _i = 0; repeat(_count) {
 			var _entry  = _sources[_i];
 			var _source = is_string(_entry) ? _entry : _entry.source;
-			//try {
-				var _program = __run_discovery_pass(_source);
-				var _j = 0; repeat(array_length(_program.MacroVarNames)) {
-					var _mname = _program.MacroVarNames[_j];
-					if (!variable_struct_exists(_batchMacros, _mname)) {
-						_batchMacros[$ _mname] = _program.MacroVar[$ _mname];
-						array_push(_batchMacroNames, _mname);
-					}
-				_j++;}
-				var _headers = struct_get_names(_program.EnumVar);
-				var _k = 0; repeat(array_length(_headers)) {
-					var _header = _headers[_k];
-					if (!variable_struct_exists(_batchEnums, _header)) {
-						_batchEnums[$ _header]      = _program.EnumVar[$ _header];
-						_batchEnumNames[$ _header]  = _program.EnumVarNames[$ _header];
-					}
-				_k++;}
-			//}
-			//catch (_err) { /* discovery failures are non-fatal */ }
+			_names[_i]  = is_string(_entry) ? $"source_{_i}" : _entry.name;
+			_source = __appendMacros(_source);
+			tokenizer.initialize(_source);
+			var _program = tokenizer.parseAll();
+			pre_processor.initialize(_program);
+			pre_processor.parseAll();
+			_programs[_i] = _program;
+			var _j = 0; repeat(array_length(_program.MacroVarNames)) {
+				var _mname = _program.MacroVarNames[_j];
+				if (!variable_struct_exists(_globalMacros, _mname)) {
+					_globalMacros[$ _mname] = _program.MacroVar[$ _mname];
+					array_push(_globalMacroNames, _mname);
+				}
+			_j++;}
+			var _headers = struct_get_names(_program.EnumVar);
+			var _k = 0; repeat(array_length(_headers)) {
+				var _header = _headers[_k];
+				if (!variable_struct_exists(_globalEnums, _header)) {
+					_globalEnums[$ _header]     = _program.EnumVar[$ _header];
+					_globalEnumNames[$ _header] = _program.EnumVarNames[$ _header];
+				}
+			_k++;}
 		_i++;}
 
-		// Phase 2 — full compile with shared symbol context
+		// Phase 2 — Cross-expand macro bodies in global pool
+		__cross_expand_macro_bodies(_globalMacros, _globalMacroNames);
+
+		// Phase 3 — Compile each saved (already preprocessed) program with global context
 		var _result = new GMLC_BatchResult();
 		_i = 0; repeat(_count) {
-			var _entry   = _sources[_i];
-			var _source  = is_string(_entry) ? _entry : _entry.source;
-			var _name    = is_string(_entry) ? $"source_{_i}" : _entry.name;
 			var _success = false;
 			var _error   = undefined;
 			//try {
-				var _program = __compile_pipeline(_source);
-				__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-				__finish_compile(_program);
+				__inject_batch_context(_programs[_i], _globalMacros, _globalMacroNames, _globalEnums, _globalEnumNames);
+				__finish_compile(_programs[_i]);
 				_success = true;
 			//}
 			//catch (_err) { _error = _err; }
-			_result.add(_name, _success, _error);
+			_result.add(_names[_i], _success, _error);
 		_i++;}
 		return _result;
 	}
@@ -1220,9 +1244,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _yyp       = snap_from_json(_yyp_string);
 		var _resources = _yyp.resources;
 		var _count     = array_length(_resources);
-		var _code_assets = [];
-		var _all_sources = [];
+		var _entries   = []; // {source, name} for every code file in the project
 
+		// Enumerate resources; collect code files and register non-code assets as constants
 		var _i = 0; repeat(_count) {
 			var _resource = _resources[_i];
 			var _rel_path = _resource.id.path;
@@ -1239,16 +1263,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 
 			if (_type == "GMScript") {
 				var _source = file_read_all_text(_asset_dir + _yy.name + ".gml");
-				if (_source != undefined) array_push(_all_sources, { source: _source, name: _yy.name });
-				array_push(_code_assets, { yy: _yy, asset_dir: _asset_dir, type: "GMScript" });
+				if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name });
 			}
 			else if (_type == "GMObject") {
 				var _files = gumshoe(_asset_dir, "gml", false);
 				var _j = 0; repeat(array_length(_files)) {
 					var _source = file_read_all_text(_files[_j]);
-					if (_source != undefined) array_push(_all_sources, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]) });
+					if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]) });
 				_j++;}
-				array_push(_code_assets, { yy: _yy, asset_dir: _asset_dir, type: "GMObject" });
 			}
 			else if (variable_struct_exists(_yy, "name") && is_string(_yy.name)) {
 				var _sym = {};
@@ -1257,45 +1279,54 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			}
 		_i++;}
 
-		// Phase 1 — discovery
-		var _batchMacros     = {};
-		var _batchMacroNames = [];
-		var _batchEnums      = {};
-		var _batchEnumNames  = {};
-		_i = 0; repeat(array_length(_all_sources)) {
-			//try {
-				var _program = __run_discovery_pass(_all_sources[_i].source);
-				var _j = 0; repeat(array_length(_program.MacroVarNames)) {
-					var _mname = _program.MacroVarNames[_j];
-					if (!variable_struct_exists(_batchMacros, _mname)) {
-						_batchMacros[$ _mname] = _program.MacroVar[$ _mname];
-						array_push(_batchMacroNames, _mname);
-					}
-				_j++;}
-				var _headers = struct_get_names(_program.EnumVar);
-				var _k = 0; repeat(array_length(_headers)) {
-					var _header = _headers[_k];
-					if (!variable_struct_exists(_batchEnums, _header)) {
-						_batchEnums[$ _header]      = _program.EnumVar[$ _header];
-						_batchEnumNames[$ _header]  = _program.EnumVarNames[$ _header];
-					}
-				_k++;}
-			//}
-			//catch (_err) { /* non-fatal */ }
+		var _file_count      = array_length(_entries);
+		var _programs        = array_create(_file_count, undefined);
+		var _globalMacros     = {};
+		var _globalMacroNames = [];
+		var _globalEnums      = {};
+		var _globalEnumNames  = {};
+
+		// Phase 1 — Tokenize + preprocess each file ONCE; collect global symbol table
+		_i = 0; repeat(_file_count) {
+			var _source = __appendMacros(_entries[_i].source);
+			tokenizer.initialize(_source);
+			var _program = tokenizer.parseAll();
+			pre_processor.initialize(_program);
+			pre_processor.parseAll();
+			_programs[_i] = _program;
+			var _j = 0; repeat(array_length(_program.MacroVarNames)) {
+				var _mname = _program.MacroVarNames[_j];
+				if (!variable_struct_exists(_globalMacros, _mname)) {
+					_globalMacros[$ _mname] = _program.MacroVar[$ _mname];
+					array_push(_globalMacroNames, _mname);
+				}
+			_j++;}
+			var _headers = struct_get_names(_program.EnumVar);
+			var _k = 0; repeat(array_length(_headers)) {
+				var _header = _headers[_k];
+				if (!variable_struct_exists(_globalEnums, _header)) {
+					_globalEnums[$ _header]     = _program.EnumVar[$ _header];
+					_globalEnumNames[$ _header] = _program.EnumVarNames[$ _header];
+				}
+			_k++;}
 		_i++;}
 
-		// Phase 2 — full compile
+		// Phase 2 — Cross-expand macro bodies across the unified global pool
+		__cross_expand_macro_bodies(_globalMacros, _globalMacroNames);
+
+		// Phase 3 — Compile each saved program with global context
 		var _result = new GMLC_BatchResult();
-		_i = 0; repeat(array_length(_code_assets)) {
-			var _asset = _code_assets[_i];
-			if (_asset.type == "GMScript") {
-				__compile_script_asset(_asset.yy, _asset.asset_dir, _result,
-					_batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-			}
-			else {
-				__compile_object_asset(_asset.yy, _asset.asset_dir, _result,
-					_batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-			}
+		_i = 0; repeat(_file_count) {
+			var _name    = _entries[_i].name;
+			var _success = false;
+			var _error   = undefined;
+			//try {
+				__inject_batch_context(_programs[_i], _globalMacros, _globalMacroNames, _globalEnums, _globalEnumNames);
+				__finish_compile(_programs[_i]);
+				_success = true;
+			//}
+			//catch (_err) { _error = _err; }
+			_result.add(_name, _success, _error);
 		_i++;}
 		return _result;
 	}

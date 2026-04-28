@@ -45,8 +45,9 @@
 			
 			// Note this function isnt actually async, so if there is a module with tons of lines of code its possible for this to cause lag.
 			// For development i just said fuck it though.
+
 			replaceAllMacrosAndEnums(tokens);
-			
+
 			currentTokenIndex = 0;
 			currentToken = (array_length(tokens) > 0) ? tokens[currentTokenIndex] : undefined;
 			currentFunction = undefined;
@@ -123,53 +124,46 @@
 				for (var _i = 0; _i < array_length(_tokens); _i++) {
 					var _token = _tokens[_i];
 				
-					if (_token.type == __GMLC_TokenType_Identifier) {
-					
-						var _scopeType = __find_ScopeType_from_string(_token.value);
-					
+					if (_token.type == __GMLC_TokenType_Identifier)
+					|| (_token.type == __GMLC_TokenType_Function) {
+
+						var _lookup = _token.name;
+						var _scopeType = __find_ScopeType_from_string(_lookup);
+
 						if (_scopeType == ScopeType_MACRO) {
-							
-							var _macroTokens = currentScript.MacroVar[$ _token.value];
-							
-							//replace the new token data with the existing information data.
-							//additionally mark the information as macro body token
-							
-							//_token.name
-							//_token.line
-							//_token.lineString
-							//_token.byteStart
-							//_token.byteEnd
-							//_token.column
-							
-							//"type":"__GMLC_TokenType_Punctuation",
-							//"line":4.0,
-							//"lineString":"\tfoo = 123;",
-							//"name":";",
-							//"value":";",
-							//"byteStart":37.0,
-							//"byteEnd":38.0,
-							//"column":11.0
-							
+
+							var _macroTokens = currentScript.MacroVar[$ _lookup];
+
 							array_delete(_tokens, _i, 1); //remove the macro from the token array
 							array_insert_ext(_tokens, _i, _macroTokens); //insert the macro definition into the token array
-							
+
 							_hasChanged = true;
 						}
-					
-						if (_scopeType == ScopeType_ENUM) {
+
+						if (_token.type == __GMLC_TokenType_Identifier)
+						&& (_scopeType == ScopeType_ENUM) {
 							var _header = _token.value;
 							
-							if (_i < array_length(_tokens)-2)
-							&& (_tokens[_i+1].type == __GMLC_TokenType_Punctuation)
-							&& (_tokens[_i+1].value == ".")
-							&& (_tokens[_i+2].type == __GMLC_TokenType_Identifier) {
-								
-								var _member = _tokens[_i+2].value;
-								var _enumTokens = currentScript.EnumVar[$ _header][$ _member];
-								
+							var _next1 = (_i+1 < array_length(_tokens)) ? _tokens[_i+1] : undefined;
+							var _next2 = (_i+2 < array_length(_tokens)) ? _tokens[_i+2] : undefined;
+							var _memberIsKey = (_next2 != undefined)
+							    && ((_next2.type == __GMLC_TokenType_Identifier)
+							    ||  (_next2.type == __GMLC_TokenType_UniqueVariable)
+							    ||  (_next2.type == __GMLC_TokenType_Function)
+							    ||  (_next2.type == __GMLC_TokenType_Number
+							        && __char_is_alphabetic(ord(string_char_at(_next2.name, 1)))));
+
+							if (_next1 != undefined)
+							&& (_next1.type == __GMLC_TokenType_Punctuation)
+							&& (_next1.value == ".")
+							&& _memberIsKey {
+
+								var _member = _next2.name;
+								var _enumTokens = variable_clone(currentScript.EnumVar[$ _header][$ _member]);
+
 								array_delete(_tokens, _i, 3); //remove the enum from the token array
 								array_insert_ext(_tokens, _i, _enumTokens); //insert the enum definition into the token array
-								
+
 								_hasChanged = true;
 							}
 						}
@@ -960,11 +954,41 @@
 		};
 		
 		static parseConditionalExpression = function() {
-			return parseConditionalEqualityExpression();
+			var expr = parseConditionalEqualityExpression();
+
+			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "?") {
+				var line = currentToken.line;
+				var lineString = currentToken.lineString;
+				nextToken(); // consume ?
+				var trueExpr = parseConditionalExpression();
+				expectToken(__GMLC_TokenType_Punctuation, ":");
+				var falseExpr = parseConditionalExpression();
+				return new ASTConditionalExpression(expr, trueExpr, falseExpr, line, lineString);
+			}
+
+			return expr;
 		};
-		
-		static parseAssignmentExpression = function() {
+
+		// Handles ternary without the equality-= of parseConditionalEqualityExpression,
+		// so parseAssignmentExpression can still treat = as assignment.
+		static parseTernaryExpression = function() {
 			var expr = parseLogicalOrExpression();
+
+			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "?") {
+				var line = currentToken.line;
+				var lineString = currentToken.lineString;
+				nextToken(); // consume ?
+				var trueExpr = parseConditionalExpression();
+				expectToken(__GMLC_TokenType_Punctuation, ":");
+				var falseExpr = parseConditionalExpression();
+				return new ASTConditionalExpression(expr, trueExpr, falseExpr, line, lineString);
+			}
+
+			return expr;
+		};
+
+		static parseAssignmentExpression = function() {
+			var expr = parseTernaryExpression();
 			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|=", "%=", "??="];
 			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && array_contains(__arr, currentToken.value)) {
 				var line = currentToken.line;
@@ -1320,14 +1344,14 @@
 							if (currentToken.type == __GMLC_TokenType_Identifier) {
 								var _member = currentToken.value;
 								var _enumTokens = variable_clone(currentScript.EnumVar[$ _header][$ _member]);
-								
+
 								array_delete(tokens, currentTokenIndex, 1); //remove the enum from the token array
 								array_insert_ext(tokens, currentTokenIndex, _enumTokens); //insert the enum definition into the token array
-								
+
 								return node;
 							}
 						}
-						
+
 						//this will eventually get defaulted to instance if no dot accessor is eventually found
 						var node = new ASTIdentifier(currentToken.value, undefined, line, lineString);
 						nextToken(); // Move past the identifier
@@ -1591,21 +1615,18 @@
 			var lineString = currentToken.lineString;
 			
 			nextToken(); // Consume .
-		    if (currentToken.type != __GMLC_TokenType_Identifier)
-		    && (currentToken.type != __GMLC_TokenType_UniqueVariable) {
-		        throw_gmlc_error($"Expected identifier after .\n{lineString}\n");
-		    }
-			
+			var _keyLine = currentToken.line;
+			var _keyLineString = currentToken.lineString;
+			var _key = parseKey(); // validates type, returns string name, advances
+
 			var _expr = new ASTAccessorExpression(
 				object,
-				new ASTLiteral(currentToken.value, currentToken.line, currentToken.lineString),
+				new ASTLiteral(_key, _keyLine, _keyLineString),
 				undefined,
 				__GMLC_AccessorType_Dot,
 				line,
 				lineString
 			)
-			
-			nextToken(); // Consume identifer key
 			
 			return _expr
 		};
@@ -1665,7 +1686,31 @@
 		#endregion
 		
 		#region Helper Functions
-		
+
+		// Validates the current token can be used as a property/member key, returns its string name, and advances.
+		// Valid: Identifier, UniqueVariable, Function, and constant-style Number tokens (name starts with letter or _).
+		// Rejects numeric literals (123, 0xff, #ff) even though they are Number tokens.
+		static parseKey = function() {
+			switch (currentToken.type) {
+				case __GMLC_TokenType_Identifier:
+				case __GMLC_TokenType_UniqueVariable:
+				case __GMLC_TokenType_Function:{
+					var _name = currentToken.name;
+					nextToken();
+					return _name;
+				break;}
+				case __GMLC_TokenType_Number:{
+					var _first = ord(string_char_at(currentToken.name, 1));
+					if (__char_is_alphabetic(_first) || (_first == ord("_"))) {
+						var _name = currentToken.name;
+						nextToken();
+						return _name;
+					}
+				break;}
+			}
+			throw_gmlc_error($"Expected identifier after .\n{currentToken.lineString}\n");
+		};
+
 		static expectToken = function(expectedType, expectedValue) {
 			if (currentToken == undefined) {
 				throw_gmlc_error($"Unexpected end of input. Expected {expectedValue} but found EOF.");

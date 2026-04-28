@@ -108,6 +108,7 @@
 			//attempt to repopulate all scopes which pass through
 			if (struct_exists(node, "scope")) {
 				var _scopeType = __determineScopeType(node)
+				_scopeType = (_scopeType != ScopeType_ENUM) ? _scopeType : ScopeType_SELF;
 				node.scope = _scopeType;
 			}
 			
@@ -276,7 +277,8 @@
 				    
 			    break;}
 				case __GMLC_NodeType_Identifier:{
-					var _scopeType = __determineScopeType(node)
+					var _scopeType = __determineScopeType(node);
+					_scopeType = (_scopeType != ScopeType_ENUM) ? _scopeType : ScopeType_SELF;
 					node.scope = _scopeType;
 				break;}
 				

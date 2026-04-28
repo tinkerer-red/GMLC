@@ -2000,6 +2000,11 @@ function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightEx
 	}
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _rightExpression);
 	
+	// any time a enum header is used but is not already captured as a `header.tail` then just assume its an identifier.
+	if (_scope == ScopeType_ENUM) {
+		_scope = ScopeType_SELF;
+	}
+	
 	return __vanilla_method(_output, __GMLCGetScopeSetter(_scope))
 }
 #endregion

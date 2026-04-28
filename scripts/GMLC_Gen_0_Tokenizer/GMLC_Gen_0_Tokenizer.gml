@@ -416,6 +416,14 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			
 			while (currentCharCode != undefined)
 			{
+				if (currentCharCode == ord("\n"))
+				|| (currentCharCode == ord("\r")) {
+					// Leave the newline for parseSkipWhitespace; don't advance.
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, _start_line, _start_column, _byte_start, bytePos);
+					array_push(tokens, _token);
+					return _token;
+				}
+
 				_raw_string += chr(currentCharCode);
 				
 				var _next_char = __peekUTF8();
