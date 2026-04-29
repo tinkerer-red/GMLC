@@ -224,7 +224,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			expectToken(__GMLC_TokenType_Keyword, "enum")
 			
 			if (currentToken.type != __GMLC_TokenType_Identifier) {
-				throw_gmlc_error($"Enum Declaration expecting Identifier, got :: {currentToken}");
+				throw_gmlc_error($"Enum Declaration expecting Identifier, got :: {currentToken}", currentToken.line, currentToken.lineString, currentToken.column);
 			}
 			
 			enumName = currentToken.value;  // Next token should be the enum name
@@ -245,7 +245,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				if (currentToken.type != __GMLC_TokenType_Identifier)
 				&& (currentToken.name != currentToken.value)
 				&& (!__char_is_alphabetic(ord(string_char_at(currentToken.name, 1)))) {
-					throw_gmlc_error($"Enum.Key Declaration expecting Identifier, got :: {currentToken}");
+					throw_gmlc_error($"Enum.Key Declaration expecting Identifier, got :: {currentToken}", currentToken.line, currentToken.lineString, currentToken.column);
 				}
 				
 				memberName = currentToken.name;
@@ -359,7 +359,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	static expectToken = function(expectedType, expectedValue=undefined) {
 		if (currentToken.type != expectedType)
 		|| (expectedValue != undefined && currentToken.value != expectedValue) {
-			throw_gmlc_error($"Expected {expectedValue}, got {currentToken}\n({currentToken.line}){currentToken.lineString}");
+			throw_gmlc_error($"Expected {expectedValue}, got {currentToken}", currentToken.line, currentToken.lineString, currentToken.column);
 		}
 		__nextToken();
 	};

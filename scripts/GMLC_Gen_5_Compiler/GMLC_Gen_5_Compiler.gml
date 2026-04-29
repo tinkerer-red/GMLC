@@ -263,10 +263,10 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 			return __GMLCcompileConstructor(_rootNode, undefined, _node);
 		break;}
 		case __GMLC_NodeType_ArgumentList:{
-			throw_gmlc_error("not done yet")
+			throw_gmlc_error("not done yet", _node.line, _node.lineString)
 		break;}
 		case __GMLC_NodeType_Argument:{
-			throw_gmlc_error("not done yet")
+			throw_gmlc_error("not done yet", _node.line, _node.lineString)
 		break;}
 		
 		case __GMLC_NodeType_BlockStatement:{
@@ -333,7 +333,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		
 		case __GMLC_NodeType_ExpressionStatement:{
 			//NOTE: Logging this incase we are generating unneeded AST nodes.
-			throw_gmlc_error("There shouldnt be any of these")
+			throw_gmlc_error("There shouldnt be any of these", _node.line, _node.lineString)
 			return __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
 		break;}
 		case __GMLC_NodeType_AssignmentExpression:{
@@ -397,7 +397,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		default:
 			
 			trace(json_stringify(_node, true))
-			throw_gmlc_error($"Current Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}")
+			throw_gmlc_error($"Current Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}", _node.line, _node.lineString)
 		break;
 				
 		// Add cases for other types of nodes
@@ -619,7 +619,7 @@ function __GMLCexecuteArgumentList() {
 	
 	var _i=0; repeat(size) {
 		var _arg = statements[_i]
-		if (_arg.index != _i) throw_gmlc_error("Why does our index not match our arguments index?"+$"\n(line {line}) -\t{lineString}")
+		if (_arg.index != _i) throw_gmlc_error("Why does our index not match our arguments index?", line, lineString)
 		
 		if (_i < _inputLength) {
 			if (_inputArguments[_i] == undefined) {
@@ -1343,7 +1343,7 @@ function __GMLCexecuteCallMethodExpression() {
 	}
 
 	if (_func == undefined) {
-		throw_gmlc_error($"Variable <{typeof(_scope_target)}>.{key} not set before reading it.\n(line {self.line}) -\t{self.lineString}\n{json_stringify(callstack, true)}")
+		throw_gmlc_error($"Variable <{typeof(_scope_target)}>.{key} not set before reading it.\n{json_stringify(callstack, true)}", self.line, self.lineString)
 	}
 
 	var _return = undefined;
@@ -1701,7 +1701,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		return __vanilla_method(_output, _setter);
 	}
 	
-	throw_gmlc_error($"Couldnt find a proper assignment op for the node type :: {_node.left.type}"+$"\n(line {_node.line}) -\t{_node.lineString}")
+	throw_gmlc_error($"Couldnt find a proper assignment op for the node type :: {_node.left.type}", _node.line, _node.lineString)
 }
 
 function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
@@ -1897,7 +1897,7 @@ function __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node) {
 		
 	}
 	
-	throw_gmlc_error("Malformed assignment"+$"\n(line {_node.line}) -\t{_node.lineString}")
+	throw_gmlc_error("Malformed assignment", _node.line, _node.lineString)
 }
 
 #endregion
@@ -2019,7 +2019,7 @@ function __GMLCcompileAccessor(_rootNode, _parentNode, _node) {
 		case __GMLC_AccessorType_Map:    return __GMLCcompileMapGet         (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
 		case __GMLC_AccessorType_Struct: return __GMLCcompileStructGet      (_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
 		case __GMLC_AccessorType_Dot:    return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _node.expr, _node.val1,             _node.line, _node.lineString)
-		default: throw_gmlc_error($"Unsupported accessor type: {_node.accessorType}\n{_node}");
+		default: throw_gmlc_error($"Unsupported accessor type: {_node.accessorType}\n{_node}", _node.line, _node.lineString);
 	}
 }
 

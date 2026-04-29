@@ -111,39 +111,39 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"managed":{
 			get: function(){ return managed; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable managed"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable managed", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"path_index":{
 			get: function(){ return path_index; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable path_index"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable path_index", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"async_load":{
 			get: function(){ return async_load; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable async_load"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable async_load", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"event_data":{
 			get: function(){ return event_data; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable event_data"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable event_data", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"iap_data":{
 			get: function(){ return iap_data; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable iap_data"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable iap_data", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"display_aa":{
 			get: function(){ return display_aa; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable display_aa"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable display_aa", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"delta_time":{
 			get: function(){ return delta_time; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable delta_time"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable delta_time", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"webgl_enabled":{
 			get: function(){ return webgl_enabled; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable webgl_enabled"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable webgl_enabled", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		//"argument_relative":{
 		//	get: function(){ return argument_relative; },
-		//	set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative"+$"\n(line {line}) -\t{lineString}") },
+		//	set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative", struct_get(self, "line"), struct_get(self, "lineString")) },
 		//},
 		"argument":{
 			get: method(undefined, function(){
@@ -219,11 +219,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			get: method(undefined, function(){
 				return array_length(parentNode.arguments);
 			}),
-			set: method(undefined, function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_count"+$"\n(line {line}) -\t{lineString}") }),
+			set: method(undefined, function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_count", struct_get(self, "line"), struct_get(self, "lineString")) }),
 		},
 		"debug_mode":{
 			get: function(){ return debug_mode; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable debug_mode"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable debug_mode", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"room":{
 			get: function(){ return room; },
@@ -231,11 +231,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"room_first":{
 			get: function(){ return room_first; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable room_first"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable room_first", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"room_last":{
 			get: function(){ return room_last; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable room_last"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable room_last", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"score":{
 			get: function(){ return score; },
@@ -251,43 +251,43 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"game_id":{
 			get: function(){ return game_id; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_id"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_id", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"game_display_name":{
 			get: function(){ return game_display_name; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_display_name"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_display_name", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"game_project_name":{
 			get: function(){ return game_project_name; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_project_name"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_project_name", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"game_save_id":{
 			get: function(){ return game_save_id; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_save_id"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable game_save_id", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"working_directory":{
 			get: function(){ return working_directory; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable working_directory"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable working_directory", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"temp_directory":{
 			get: function(){ return temp_directory; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable temp_directory"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable temp_directory", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"cache_directory":{
 			get: function(){ return cache_directory; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable cache_directory"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable cache_directory", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"program_directory":{
 			get: function(){ return program_directory; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable program_directory"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable program_directory", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"instance_count":{
 			get: function(){ return instance_count; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_count"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_count", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"instance_id":{
 			get: function(){ return instance_id; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_id"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_id", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"room_width":{
 			get: function(){ return room_width; },
@@ -315,7 +315,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"view_current":{
 			get: function(){ return view_current; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable view_current"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable view_current", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"view_visible":{
 			get: function(){ return view_visible; },
@@ -347,11 +347,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"mouse_x":{
 			get: function(){ return mouse_x; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable mouse_x"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable mouse_x", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"mouse_y":{
 			get: function(){ return mouse_y; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable mouse_y"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable mouse_y", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"mouse_button":{
 			get: function(){ return mouse_button; },
@@ -407,47 +407,47 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"fps":{
 			get: function(){ return fps; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable fps"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable fps", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"fps_real":{
 			get: function(){ return fps_real; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable fps_real"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable fps_real", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_time":{
 			get: function(){ return current_time; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_time"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_time", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_year":{
 			get: function(){ return current_year; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_year"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_year", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_month":{
 			get: function(){ return current_month; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_month"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_month", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_day":{
 			get: function(){ return current_day; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_day"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_day", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_weekday":{
 			get: function(){ return current_weekday; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_weekday"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_weekday", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_hour":{
 			get: function(){ return current_hour; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_time"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_time", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_minute":{
 			get: function(){ return current_minute; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_minute"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_minute", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"current_second":{
 			get: function(){ return current_second; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_second"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable current_second", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"event_action":{
 			get: function(){ return event_action; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable event_action"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable event_action", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"error_occurred":{
 			get: function(){ return error_occurred; },
@@ -459,15 +459,15 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"gamemaker_registered":{
 			get: function(){ return gamemaker_registered; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable gamemaker_registered"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable gamemaker_registered", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"gamemaker_pro":{
 			get: function(){ return gamemaker_pro; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable gamemaker_pro"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable gamemaker_pro", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"application_surface":{
 			get: function(){ return application_surface; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable application_surface"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable application_surface", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"font_texture_page_size":{
 			get: function(){ return font_texture_page_size; },
@@ -475,55 +475,55 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"os_type":{
 			get: function(){ return os_type; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_type"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_type", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"os_device":{
 			get: function(){ return os_device; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_device"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_device", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"os_version":{
 			get: function(){ return os_version; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_version"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_version", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"os_browser":{
 			get: function(){ return os_browser; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_browser"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable os_browser", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"browser_width":{
 			get: function(){ return browser_width; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable bwoser_width"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable bwoser_width", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"browser_height":{
 			get: function(){ return browser_height; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable browser_height"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable browser_height", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"rollback_current_frame":{
 			get: function(){ return rollback_current_frame; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_current_frame"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_current_frame", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"rollback_confirmed_frame":{
 			get: function(){ return rollback_confirmed_frame; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_confirmed_frame"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_confirmed_frame", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"rollback_event_id":{
 			get: function(){ return rollback_event_id; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_event_id"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_event_id", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"rollback_event_param":{
 			get: function(){ return rollback_event_param; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_event_param"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_event_param", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"rollback_game_running":{
 			get: function(){ return rollback_game_running; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_game_running"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_game_running", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"rollback_api_server":{
 			get: function(){ return rollback_api_server; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_api_server"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable rollback_api_server", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"wallpaper_config":{
 			get: function(){ return wallpaper_config; },
-			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable wallpaper_config"+$"\n(line {line}) -\t{lineString}") },
+			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable wallpaper_config", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"background_showcolor":{
 			get: function(){ return background_showcolor; },
@@ -545,11 +545,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	_var_map[$ "self"] = {
 		get: function(){ return global.gmlc_self_instance; },
-		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable self"+$"\n(line {line}) -\t{lineString}") },
+		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable self", struct_get(self, "line"), struct_get(self, "lineString")) },
 	};
 	_var_map[$ "other"] = {
 		get: function(){ return global.gmlc_other_instance; },
-		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable other"+$"\n(line {line}) -\t{lineString}") },
+		set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable other", struct_get(self, "line"), struct_get(self, "lineString")) },
 	};
 	
 	exposeVariables(_var_map);

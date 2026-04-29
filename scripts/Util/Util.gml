@@ -166,7 +166,7 @@ function static_exists(_struct, _name) {
 function throw_gmlc_error(_err, _line=undefined, _lineString=undefined, _column=undefined, _script=undefined) {
 	var _token = struct_get(self, "currentToken");
 	var _env   = struct_get(self, "env");
-
+	
 	if (_line == undefined) {
 		_line = (_token != undefined) ? struct_get(_token, "line") : undefined;
 		if (_line == undefined) _line = struct_get(self, "line") ?? 0;

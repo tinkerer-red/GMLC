@@ -172,7 +172,7 @@
 				}
 				_loop_count++
 				if (_loop_count > 10_000) {
-					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting")
+					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting", currentToken.line, currentToken.lineString, currentToken.column)
 				}
 			}
 		}
@@ -573,7 +573,7 @@
 				nextToken();
 			}
 			else if (currentToken.type == __GMLC_TokenType_Function) {
-				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}\nline({line}) {lineString}")
+				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}", line, lineString)
 			}
 			else {
 				static __anon_id = 0;
@@ -604,7 +604,7 @@
 				
 				//if its an internally defined function, like a function defined in the same program we're parsing
 				if (_parent.type != __GMLC_NodeType_CallExpression) {
-					throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent}", line, lineString)
+					throw_gmlc_error($"Trying to set a constructor parent to a non global defined value, got :: {_parent}", line, lineString)
 				}
 				
 				//if it's a global identifier
@@ -614,7 +614,7 @@
 				{
 					var _ref = program.GlobalVar[$ _parent.callee.value]
 					if (_ref.type != __GMLC_NodeType_ConstructorDeclaration) {
-						throw_gmlc_error($"line {line}:: {lineString}\nTrying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}", line, lineString)
+						throw_gmlc_error($"Trying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}", line, lineString)
 					}
 				}
 				
@@ -776,10 +776,10 @@
 				case "globalvar":{
 					_variable_scope = ScopeType_GLOBAL;
 				break;}
-				default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
+				default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentToken.column)
 			}
-			
-			
+
+
 			// Fetch the array containing variable names
 			var _tableArr = undefined
 			if (currentFunction == undefined) {
@@ -789,11 +789,11 @@
 					//	//dont to nuttin`!
 					//break;}
 					case ScopeType_LOCAL: _tableArr = scriptAST.LocalVarNames; break;
-					case ScopeType_STATIC: throw_gmlc_error($"Script: {env.currentScriptName} at line {currentToken.line} : static can only be declared inside a function"); break;
+					case ScopeType_STATIC: throw_gmlc_error($"Script: {env.currentScriptName} at line {currentToken.line} : static can only be declared inside a function", currentToken.line, currentToken.lineString, currentToken.column); break;
 					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
+					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentToken.column)
 				}
-					
+
 			}
 			else {
 				//function scope
@@ -804,7 +804,7 @@
 					case ScopeType_LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
 					case ScopeType_STATIC: _tableArr = currentFunction.StaticVarNames; break;
 					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
+					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentToken.column)
 				}
 			}
 			
@@ -839,7 +839,7 @@
 						break;
 					}
 					
-		            throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}");
+		            throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}", varLine, varLineString);
 		        }
 				
 				// we parse anything which starts with an identifier to ensure there is no postfix op attached to it like `++`, and accessor, or function call
@@ -850,7 +850,7 @@
 						break;
 					}
 					
-					throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved type: {identifier.type}, {currentToken}\nLast five tokens:\n{lastFiveTokens}");
+					throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved type: {identifier.type}, {currentToken}\nLast five tokens:\n{lastFiveTokens}", varLine, varLineString);
 				}
 				
 				//push to the table array
@@ -878,7 +878,7 @@
 						case ScopeType_STATIC:{
 							array_push(currentFunction.StaticVarArray, _declaration)
 						break;}
-						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?")
+						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentToken.column)
 					}
 					
 				}
@@ -943,7 +943,7 @@
 		static parseExpressionStatement = function() {
 			var expr = parseExpression();
 			if (expr == undefined) {
-				throw_gmlc_error($"Getting an error parsing expression, current token is:\n{currentToken}\nLast Five Tokens:\n{lastFiveTokens}")
+				throw_gmlc_error($"Getting an error parsing expression, current token is:\n{currentToken}\nLast Five Tokens:\n{lastFiveTokens}", currentToken.line, currentToken.lineString, currentToken.column)
 			}
 			return expr;
 		}
@@ -1313,7 +1313,7 @@
 			var lineString = currentToken.lineString;
 			
 			if (currentToken == undefined) {
-				throw_gmlc_error("Unexpected end of input");
+				throw_gmlc_error("Unexpected end of input", line, lineString);
 			}
 			
 			switch (currentToken.type) {
@@ -1467,7 +1467,7 @@
 				break;}
 			}
 			
-			throw_gmlc_error($"Unexpected token in expression: {currentToken}\nLast five tokens were:\n{json_stringify(lastFiveTokens, true)}");
+			throw_gmlc_error($"Unexpected token in expression: {currentToken}\nLast five tokens were:\n{json_stringify(lastFiveTokens, true)}", line, lineString);
 		};
 		
 		static parseArrayCreation = function() {
@@ -1503,7 +1503,7 @@
 				&& (currentToken.type != __GMLC_TokenType_UniqueVariable)
 				&& (currentToken.type != __GMLC_TokenType_Number)
 				{
-		            throw_gmlc_error($"Expected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}");
+		            throw_gmlc_error($"Expected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}", currentToken.line, currentToken.lineString, currentToken.column);
 		        }
 				
 		        var key = currentToken;
@@ -1710,7 +1710,7 @@
 					}
 				break;}
 			}
-			throw_gmlc_error($"Expected identifier after .\n{currentToken.lineString}\n");
+			throw_gmlc_error($"Expected identifier after .\n{currentToken.lineString}\n", currentToken.line, currentToken.lineString, currentToken.column);
 		};
 
 		static expectToken = function(expectedType, expectedValue) {
@@ -1719,7 +1719,7 @@
 			}
 			if (currentToken.type != expectedType || currentToken.value != expectedValue) {
 				//pprint("lastFiveTokens :: ",lastFiveTokens)
-				throw_gmlc_error($"Syntax Error: Expected {expectedValue} at line {currentToken.line}, column {currentToken.column}, but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.");
+				throw_gmlc_error($"Syntax Error: Expected {expectedValue} but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.", currentToken.line, currentToken.lineString, currentToken.column);
 			}
 			nextToken();
 		};

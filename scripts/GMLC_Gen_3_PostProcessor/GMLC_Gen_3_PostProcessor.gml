@@ -84,7 +84,7 @@
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw_gmlc_error($"We still have nodes in the nodeStack, we shouldnt be finished")
+						throw_gmlc_error($"We still have nodes in the nodeStack, we shouldnt be finished", currentNode.node.line, currentNode.node.lineString)
 					}
 					
 					finished = true;
@@ -306,7 +306,7 @@
 					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
 				break;}
 				//*/
-				default: throw_gmlc_error($"Current Node does not have a valid type for the post processor,\ntype: {node.type}\ncurrentNode: {node}")
+				default: throw_gmlc_error($"Current Node does not have a valid type for the post processor,\ntype: {node.type}\ncurrentNode: {node}", node.line, node.lineString)
 				
 				// Add cases for other types of nodes
 			}
