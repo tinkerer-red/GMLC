@@ -106,15 +106,15 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#region Expose Variables
 	var _var_map = {
 		"visible":{
-			get: function(){ return visible; },
-			set: function(value){ visible = value; },
+			get: function(){ with (global.gmlc_self_instance) return visible; },
+			set: function(value){ with (global.gmlc_self_instance) visible = value; },
 		},
 		"managed":{
-			get: function(){ return managed; },
+			get: function(){ with (global.gmlc_self_instance) return managed; },
 			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable managed", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"path_index":{
-			get: function(){ return path_index; },
+			get: function(){ with (global.gmlc_self_instance) return path_index; },
 			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable path_index", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"async_load":{
@@ -146,9 +146,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		//	set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_relative", struct_get(self, "line"), struct_get(self, "lineString")) },
 		//},
 		"argument":{
-			get: method(undefined, function(){
-				return parentNode.arguments;
-			}),
+			get: method(undefined, function(){ return parentNode.arguments; }),
 			set: method(undefined, function(value){ parentNode.arguments = value; }),
 		},
 		"argument0":{
@@ -216,9 +214,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			set: method(undefined, function(value){ parentNode.arguments[15] = value; }),
 		},
 		"argument_count":{
-			get: method(undefined, function(){
-				return array_length(parentNode.arguments);
-			}),
+			get: method(undefined, function(){ return array_length(parentNode.arguments); }),
 			set: method(undefined, function(value){ throw_gmlc_error($"Attempting to write to a read-only variable argument_count", struct_get(self, "line"), struct_get(self, "lineString")) }),
 		},
 		"debug_mode":{
@@ -282,11 +278,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable program_directory", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"instance_count":{
-			get: function(){ return instance_count; },
+			get: function(){ with (global.gmlc_self_instance) return instance_count; },
 			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_count", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"instance_id":{
-			get: function(){ return instance_id; },
+			get: function(){ with (global.gmlc_self_instance) return instance_id; },
 			set: function(value){ throw_gmlc_error($"Attempting to write to a read-only variable instance_id", struct_get(self, "line"), struct_get(self, "lineString")) },
 		},
 		"room_width":{

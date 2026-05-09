@@ -2,12 +2,12 @@
 /// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
 env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-bar = 123;
-function foo(){
-    return
-    bar = "test";
+function func(){
+	show_debug_message(argument_count)
 }
-show_debug_message(foo())
+func(undefined,)
+func(undefined,,)
+func(undefined,,,)
 ');
 
 show_debug_message(program())

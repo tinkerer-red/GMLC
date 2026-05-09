@@ -2052,15 +2052,11 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 // setter: the user-registered set closure (takes one GML argument)
 // expression: compiled expression that produces the value to write
 function __GMLCexecuteUniqueGet() {
-	with (global.gmlc_self_instance) {
-		getter();
-	}
+	return getter();
 }
 function __GMLCexecuteUniqueSet() {
 	var _val = expression()
-	with (global.gmlc_self_instance) {
-		setter(_val);
-	}
+	setter(_val);
 }
 function __GMLCcompileUniqueIdentifier(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUniqueIdentifier", "<Missing Error Message>", _node.line, _node.lineString);
