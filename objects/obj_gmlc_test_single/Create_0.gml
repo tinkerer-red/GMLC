@@ -2,8 +2,12 @@
 /// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
 env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-show_debug_message(show_debug_message)
-//42(real(show_debug_message))
+bar = 123;
+function foo(){
+    return
+    bar = "test";
+}
+show_debug_message(foo())
 ');
 
 show_debug_message(program())

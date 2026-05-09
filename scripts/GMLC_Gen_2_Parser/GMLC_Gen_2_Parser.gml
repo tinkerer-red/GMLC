@@ -537,8 +537,13 @@
 			&& (currentToken.value == "}") {
 				// dont attempt to parse if end of block statement
 			}
+			else if (currentToken.type == __GMLC_TokenType_Whitespace)
+			&& (currentToken.value == "\n") {
+				// dont attempt to parse if end of block statement
+				show_debug_message("WAIT!")
+			}
 			else {
-				expr = parseExpression(); // Parse the return expression if any
+				expr = parseConditionalExpression(); // Parse the return expression if any
 			}
 			
 			return new ASTReturnStatement(expr, line, lineString);
