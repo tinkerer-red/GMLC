@@ -39,6 +39,12 @@ function __EnvironmentClass() constructor {
 			
 			var sym = envSymbols[$ key];
 			
+			//for sandboxing purposes
+			if (entry.type == "envFunctions")
+			&& (!is_method(entry.value)) {
+				entry.value = method(undefined, entry.value);
+			}
+			
 			sym.value     = entry.value;
 			sym.type      = entry.type;
 			sym.getter    = entry[$ "getter"] ?? __defaultSymbolGetter(entry.type, key, entry.value);
@@ -205,8 +211,13 @@ function __EnvironmentClass() constructor {
 			if (!struct_exists(envSymbols, key)) {
 				envSymbols[$ key] = {};
 			}
-			
 			var sym = envSymbols[$ key];
+			
+			//for sandboxing purposes
+			if (_type == "envFunctions")
+			&& (!is_method(val)) {
+				val = method(undefined, val);
+			}
 			
 			sym.value = val;
 			sym.type = _type;
@@ -260,8 +271,8 @@ function __EnvironmentClass() constructor {
 					throw "Symbol `" + key + "` is not readable (keyword)";
 				};
 			case "envConstants":
-			case "envFunctions":
 			case "envEnums":
+			case "envFunctions":
 				return method({value: value}, function() {
 					return value;
 				});

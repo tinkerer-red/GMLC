@@ -116,7 +116,9 @@
 
 #region Constructors
 #macro __GMLC_CALL_PARENT_CONSTRUCTOR	if (self[$ "hasParentConstructor"]) {\
-											parentConstructorCall(arguments)\
+											if (is_handle(parentConstructorCall) && is_callable(parentConstructorCall)) {\
+												parentConstructorCall(arguments)\
+											}\
 										}
 
 #endregion
@@ -463,8 +465,6 @@ function __GMLCexecuteConstructor() constructor {
 	//check to see if this is a `new` expression, or some `script_execute` equivalent using `method_call`
 	var _self_is_gmlc  = self[$ "__@@is_gmlc_function@@__"];
 	var _is_new_expression = !_self_is_gmlc;
-	
-	var dcs = debug_get_callstack()
 	
 	var _program_data = (_is_new_expression) ? other : self;
 	with _program_data {
@@ -1141,6 +1141,10 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
 function __GMLCexecuteNewExpression() {
 	var _func = callee()
 	
+	if (!is_method(_func)) {
+		throw $"Attempting to call new method on a non-callable value :: `{_func}`"
+	}
+	
 	//mostly just used in recursion code
 	var _arg_count = max(argument_count, argumentCount)
 	
@@ -1423,6 +1427,10 @@ function __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node) {
 #endregion
 function __GMLCexecuteCallExpression() {
 	var _func = callee()
+	
+	if (!is_method(_func)) {
+		throw $"Attempting to call method on a non-callable value :: `{_func}`"
+	}
 	
 	//mostly just used in recursion code
 	var _arg_count = max(argument_count, argumentCount)

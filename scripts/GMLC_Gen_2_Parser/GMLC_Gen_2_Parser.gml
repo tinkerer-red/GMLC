@@ -491,7 +491,7 @@
 			expectToken(__GMLC_TokenType_Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 			
-			return new ASTCallExpression(new ASTLiteral(throw_gmlc_error, line, lineString, "throw_gmlc_error"), [_err_message], line, lineString);
+			return new ASTCallExpression(new ASTLiteral(method(undefined, throw_gmlc_error), line, lineString, "throw_gmlc_error"), [_err_message], line, lineString);
 		};
 		
 		#endregion
@@ -686,7 +686,7 @@
 				break;}
 				case ScopeType_STATIC: {
 					var _func = new ASTCallExpression(
-						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
+						new ASTLiteral(method(undefined, __gmlc_method), line, lineString, "__method"),
 						[
 							new ASTLiteral(undefined, line, lineString, "undefined"),
 							_func_ref
@@ -698,7 +698,7 @@
 				case ScopeType_SELF  : {
 					var _self = new ASTUniqueIdentifier(env.getVariable("self").value, line, lineString);
 					var _func = new ASTCallExpression(
-						new ASTLiteral(__gmlc_method, line, lineString, "__method"),
+						new ASTLiteral(method(undefined, __gmlc_method), line, lineString, "__method"),
 						[
 							_self,
 							_func_ref
@@ -921,21 +921,6 @@
 			expr = parseFunctionCall(expr);
 			
 			return new ASTNewExpression(expr, line, lineString);
-			
-			//var _args = expr.arguments;
-			//array_insert(_args, 0, expr.callee)
-			
-			//return new ASTCallExpression(
-			//	new ASTLiteral(
-			//		constructor_call_ext,
-			//		line,
-			//		lineString,
-			//		"new"
-			//	),
-			//	_args,
-			//	line,
-			//	lineString
-			//);
 		};
 		
 		#endregion

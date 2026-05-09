@@ -651,8 +651,8 @@
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"rmGMLCTestSingle","path":"rooms/rmGMLCTestSingle/rmGMLCTestSingle.yy",},},
+    {"roomId":{"name":"rmGMLCTestGithub","path":"rooms/rmGMLCTestGithub/rmGMLCTestGithub.yy",},},
     {"roomId":{"name":"rmGMLCWebDemo","path":"rooms/rmGMLCWebDemo/rmGMLCWebDemo.yy",},},
     {"roomId":{"name":"rmGMLCTestFramework","path":"rooms/rmGMLCTestFramework/rmGMLCTestFramework.yy",},},
     {"roomId":{"name":"room1","path":"rooms/room1/room1.yy",},},
