@@ -292,10 +292,10 @@ function __gmlc_script_execute(ind) {
 			__argArr[_i] = argument[_i];
 		_i++}
 		
-		return __gmlc_script_execute_ext(argument0, __argArr)
+		return __gmlc_script_execute_ext(argument[0], __argArr)
 	}
 	
-	return __gmlc_script_execute_ext(argument0)
+	return __gmlc_script_execute_ext(argument[0])
 	
 }
 
