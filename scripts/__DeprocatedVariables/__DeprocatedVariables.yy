@@ -6,7 +6,7 @@
   "name":"__DeprocatedVariables",
   "parent":{
     "name":"__Deprocated",
-    "path":"folders/GMLCompiler/Internal/LookupTables/__Deprocated.yy",
+    "path":"folders/GMLC/Internal/LookupTables/__Deprocated.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

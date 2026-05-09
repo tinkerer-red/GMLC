@@ -6,7 +6,7 @@
   "name":"GMLC_Gen_0_Tokenizer",
   "parent":{
     "name":"Parsers",
-    "path":"folders/GMLCompiler/Parsers.yy",
+    "path":"folders/GMLC/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

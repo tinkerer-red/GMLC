@@ -6,7 +6,7 @@
   "name":"__gmlc_trie_string_matching",
   "parent":{
     "name":"GMLC Util",
-    "path":"folders/GMLCompiler/Internal/GMLC Util.yy",
+    "path":"folders/GMLC/Internal/GMLC Util.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

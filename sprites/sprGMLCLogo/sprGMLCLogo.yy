@@ -25,8 +25,8 @@
   "nineSlice":null,
   "origin":0,
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"GMLC",
+    "path":"folders/GMLC.yy",
   },
   "preMultiplyAlpha":false,
   "resourceType":"GMSprite",

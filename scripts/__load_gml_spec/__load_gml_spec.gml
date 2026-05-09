@@ -159,8 +159,13 @@ function __GmlSpec() {
 		if (asset_get_index("SnapFromXML") == -1) {
 			show_error("\n\nGMLC relies on the use of SnapFromXML, from Juju Adam's Snap Library.\nPlease import the needed functions which can be found here:\nhttps://github.com/JujuAdams/SNAP\n\n", true);
 		}
-				
-		var _xml = file_read_all_text("GmlSpec.xml")
+		
+		var _xml = gmlc_file_read_all_text("GmlSpec.xml")
+		
+		if (_xml == undefined) {
+			show_error("\n\nGMLC relies on the use of GmlSpec.xml, from your games version of Gamemaker.\nPlease include the needed file which can be found here:\nC:\\ProgramData\\GameMakerStudio2\\Cache\\runtimes\\runtime-<runtime.version>\n\n", true);
+		}
+		
 		var _spec = SnapFromXML(_xml)
 		
 		var _config = {};

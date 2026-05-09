@@ -6,7 +6,7 @@
   "name":"__EnvironmentClass",
   "parent":{
     "name":"Internal",
-    "path":"folders/GMLCompiler/Internal.yy",
+    "path":"folders/GMLC/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

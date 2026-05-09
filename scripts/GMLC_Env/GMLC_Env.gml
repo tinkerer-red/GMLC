@@ -1168,7 +1168,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	static __compile_script_asset = function(_yy, _asset_dir, _result, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
 		var _name     = _yy.name;
 		var _gml_path = _asset_dir + _name + ".gml";
-		var _source   = file_read_all_text(_gml_path);
+		var _source   = gmlc_file_read_all_text(_gml_path);
 		if (_source == undefined) {
 			_result.add(_name, false, { message: $"Could not read file: {_gml_path}" });
 			return;
@@ -1192,7 +1192,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _i = 0; repeat(array_length(_files)) {
 			var _gml_path   = _files[_i];
 			var _entry_name = _obj_name + "::" + filename_name(_gml_path);
-			var _source     = file_read_all_text(_gml_path);
+			var _source     = gmlc_file_read_all_text(_gml_path);
 			var _success    = false;
 			var _error      = undefined;
 			//try {
@@ -1267,19 +1267,19 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				if (string_char_at(_rel_path, _c) == "/") { _slash = _c; break; }
 			_c--;}
 			var _asset_dir = _root_path + string_copy(_rel_path, 1, _slash);
-			var _yy_str    = file_read_all_text(_root_path + _rel_path);
+			var _yy_str    = gmlc_file_read_all_text(_root_path + _rel_path);
 			if (_yy_str == undefined) { _i++; continue; }
 			var _yy   = snap_from_json(_yy_str);
 			var _type = _yy.resourceType;
 
 			if (_type == "GMScript") {
-				var _source = file_read_all_text(_asset_dir + _yy.name + ".gml");
+				var _source = gmlc_file_read_all_text(_asset_dir + _yy.name + ".gml");
 				if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name });
 			}
 			else if (_type == "GMObject") {
 				var _files = gumshoe(_asset_dir, "gml", false);
 				var _j = 0; repeat(array_length(_files)) {
-					var _source = file_read_all_text(_files[_j]);
+					var _source = gmlc_file_read_all_text(_files[_j]);
 					if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]) });
 				_j++;}
 			}

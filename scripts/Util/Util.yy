@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"Util",
   "parent":{
-    "name":"GMLCompiler",
-    "path":"folders/GMLCompiler.yy",
+    "name":"GMLC",
+    "path":"folders/GMLC.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

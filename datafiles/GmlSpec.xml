@@ -706,9 +706,10 @@
 		<Function Name="flexpanel_calculate_layout" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>Calculates the layout for the selected node and its children.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to start the layout calculations from.</Parameter>
-			<Parameter Name="width" Type="[Real,undefined]" Optional="false">The width of the area to calculate the layout over.</Parameter>
-			<Parameter Name="height" Type="[Real,undefined]" Optional="false">The height of the area to calculate the layout over.</Parameter>
-			<Parameter Name="direction" Type="Enum.flexpanel_direction" Optional="false">The direction the layout calculation should follow.</Parameter>
+			<Parameter Name="width" Type="[Real,undefined]" Optional="true">The width of the area to calculate the layout over.</Parameter>
+			<Parameter Name="height" Type="[Real,undefined]" Optional="true">The height of the area to calculate the layout over.</Parameter>
+			<Parameter Name="direction" Type="Enum.flexpanel_direction" Optional="true">The direction the layout calculation should follow.</Parameter>
+			<Parameter Name="dirty" Type="Bool" Optional="true">Whether to force the calling of any measure functions (defaults to true).</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_layout_get_position" Deprecated="false" ReturnType="Struct" Pure="true">
 			<Description>Returns the calculated node layout position as a struct: {left, top, width, height, bottom, right, hadOverflow, direction, paddingLeft, paddingRight, paddingTop, paddingBottom, marginLeft, marginRight, marginToip, marginBottom}.</Description>
@@ -723,250 +724,406 @@
 			<Description>Gets the current scale factor used when rounding layout values.</Description>
 		</Function>
 		<Function Name="flexpanel_node_style_set_align_content" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the alignment of the content of the node.</Description>
+			<Description>This function sets the alignment of the content of the node.
+			
+			If wrapping is set to `flexpanel_wrap.wrap` or `flexpanel_wrap.reverse`, any items overflowing along the main axis will be laid out across new lines on the cross axis. The "align content" property controls how those wrapped lines are distributed along the cross axis.
+
+			You can choose from the following values:
+
+			* `flexpanel_align.flex_start` (default): Align wrapped lines to the start of the container's cross axis.
+			* `flexpanel_align.flex_end`: Align wrapped lines to the end of the container's cross axis.
+			* `flexpanel_align.stretch`: Stretch wrapped lines to match the height of the container's cross axis.
+			* `flexpanel_align.center`: Align wrapped lines in the center of the container's cross axis.
+			* `flexpanel_align.space_between`: Evenly space wrapped lines across the container's cross axis, distributing remaining space between the lines.
+			* `flexpanel_align.space_around`: Similar to `flexpanel_align.space_between` but distributes the space before the first child and after the last child as well.
+			* `flexpanel_align.space_evenly`: Similar to `flexpanel_align.space_around` but the spacing between the edges and the children, and between each child node, is exactly the same.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
-			<Parameter Name="align" Type="Enum.flexpanel_justify" Optional="false">The selected alignment.</Parameter>
+			<Parameter Name="align" Type="Enum.flexpanel_align" Optional="false">The selected alignment.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_align_items" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the alignment of the items of the node.</Description>
+			<Description>This function sets the alignment of the items of the node.
+			
+			This controls how the non-absolute children of a flex container are aligned along its cross axis (i.e. the direction perpendicular to the "flex direction").
+
+			You can choose from the following values:
+			
+			* `flexpanel_align.stretch` (default): Stretch children to fit the size of the cross axis.
+			* `flexpanel_align.flex_start`: Align children to the start of the cross axis.
+			* `flexpanel_align.flex_end`: Align children to the end of the cross axis.
+			* `flexpanel_align.center`: Align children to the centre of the cross axis.
+			* `flexpanel_align.baseline`: Align children along a common baseline. Individual children can be set to be the reference baseline for their parents.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="align" Type="Enum.flexpanel_align" Optional="false">The selected alignment.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_align_self" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the alignment of the selected node.</Description>
+			<Description>This function sets the alignment of the selected node.
+			
+			This is the same as "align items". However, instead of being applied to a container, this is applied directly to a child node, and affects its cross-axis alignment within its container. This property overrides the "align items" value set for its parent container.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="align" Type="Enum.flexpanel_align" Optional="false">The selected alignment.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_aspect_ratio" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's aspect ratio</Description>
+			<Description>This function sets the node's aspect ratio.
+			
+			This is the aspect ratio that the node must maintain and corresponds to the horizontal axis.
+
+			For example, an aspect ratio of `1` will result in a square node, `2` will be a 2:1 rectangle where its width is twice as much as its height, `0.5` will make the width half the size of the height.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to set.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_display" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the display setting of the selected node.</Description>
+			<Description>This function sets the display setting of the selected node.
+			
+			The display setting controls which layout mode the node follows. You can choose from the following values:
+			
+			* `flexpanel_display.flex` (default): The default layout behaviour.
+			* `flexpanel_display.none`: Disables the node. This effectively functions as the node being removed from the tree, as it's not included in any calculations.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="display" Type="Enum.flexpanel_display" Optional="false">The selected display.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_flex" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the flex value of the selected node.</Description>
+			<Description>This function sets the flex value of the selected node.
+			
+			Flex is shorthand for the "flex grow" and "flex shrink" properties. It will act as "flex grow" when the value is positive, and "flex shrink" when it's negative.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set</Parameter>
 			<Parameter Name="flex" Type="Real" Optional="false">The flex value for this</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_flex_wrap" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the flex wrap of the selected node.</Description>
+			<Description>This function sets the flex wrap of the selected node.
+			
+			Flex wrap controls what happens when children in the container have overflown on the main axis. By default, they will overflow or shrink depending on their properties.
+			
+			You can choose from the following values:
+
+			* `flexpanel_wrap.no_wrap` (default): Default behaviour, no wrapping
+			* `flexpanel_wrap.wrap`: Child nodes are wrapped on overflow, with each new line being placed on the cross axis
+			* `flexpanel_wrap.wrap_reverse`: Child nodes are wrapped but the order of the lines is reversed</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="align" Type="Enum.flexpanel_wrap" Optional="false">The selected wrap.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_flex_grow" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the flex grow of the selected node.</Description>
+			<Description>This function sets the flex grow of the selected node.
+			
+			Flex grow controls how the node grows within its flex container depending on the remaining space in the container. It's a positive weight value with a default of 1.
+			
+			For example, having a 400px container with a 40px node and then a node with a "flex grow" value of `1` will give the second node any remaining space within the container.
+			
+			Any values other than 1 determine how a node is sized against other growing nodes in the same container, e.g. the node with a larger value will be given more size.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="grow" Type="Real" Optional="false">The selected grow factor</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_flex_shrink" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the flex shrink of the selected node.</Description>
+			<Description>This function sets the flex shrink of the selected node.
+			
+			Flex shrink controls how the node shrinks within its flex container when there is overflow. It's a positive weight value with a default of 1.
+			
+			Any values other than 1 determine how a node is shrinked against other growing nodes in the same container.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="shrink" Type="Real" Optional="false">The selected shrink factor</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_flex_basis" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the flex basis of the selected node.</Description>
+			<Description>This function sets the flex basis of the selected node.
+			
+			Flex basis is the default size of an item within its flex container before any flex grow or shrink is applied. For a row container this affects the width, and for a column container this affects the height.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The selected flex basis value</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to be used</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_flex_direction" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the flex direction of the selected node.</Description>
+			<Description>This function sets the flex direction of the selected node.
+			
+			Flex direction is the direction in which non-absolute children of the node are laid out. This direction is known as the main axis, and the direction perpendicular to this is known as the cross axis.
+			
+			You can choose from the following values:
+			
+			* `flexpanel_flex_direction.column` (default): Align children from top to bottom.
+			* `flexpanel_flex_direction.row`: Align children from left to right.
+			* `flexpanel_flex_direction.column_reverse`: Align children from bottom to top.
+			* `flexpanel_flex_direction.row_reverse`: Align children from right to left.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="direction" Type="Enum.flexpanel_flex_direction" Optional="false">The selected direction.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_gap" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the gap of the selected node for the selected gutters.</Description>
+			<Description>This function sets the gap of the selected node for the selected gutters.
+			
+			Gap is the added distance between each row and column of the flex container and affects distances between child nodes. You can apply to both axes or apply only to rows or columns.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="gutter" Type="Enum.flexpanel_gutter" Optional="false">The selected gutter (column/row/all).</Parameter>
 			<Parameter Name="size" Type="Real" Optional="false">The selected gap size</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_position" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets an inset position on the node.</Description>
+			<Description>This function sets an inset position on the node.
+			
+			Inset position defines the distance between an edge of the node and the same edge of its parent's node, with positive values moving the node toward the centre, and negative values moving it away from the centre.
+			
+			For example, a `left` value of `20` will place the node's left edge 20 pixels to the right of the parent's left edge. A `right` value of `40` will move the node so its right edge is 40 pixels to the left of its parent's, without resizing the node.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to be used</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_justify_content" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's contents justification</Description>
+			<Description>This function sets the node's contents justification.
+			
+			Justification controls how the non-absolute children of a flex container are aligned along its main axis (i.e. the direction of the flex direction).
+			
+			You can choose from the following values:
+			
+			* `flexpanel_justify.start` (default): Align children to the start of the main axis, as set in "flex direction".
+			* `flexpanel_justify.flex_end`: Align children to the end of the main axis, acting as the opposite of "flex direction".
+			* `flexpanel_justify.center`: Align children to the centre of the main axis.
+			* `flexpanel_justify.space_between`: Align children from the start of the container to the end, inserting space between each child to fill the container.
+			* `flexpanel_justify.space_around`: Similar to `flexpanel_justify.space_between` but distributes the space before the first child and after the last child as well.
+			* `flexpanel_justify.space_evenly`: Similar to `flexpanel_justify.space_around` but the spacing between the edges and the children, and between each child node, is exactly the same.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="justify" Type="Enum.flexpanel_justify" Optional="false">The justification to use</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_direction" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the layout direction of the selected node.</Description>
+			<Description>This function sets the layout direction of the selected node.
+			
+			This is the layout direction of the node and its children.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="direction" Type="Enum.flexpanel_direction" Optional="false">The selected direction.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_margin" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the margin of the selected node.</Description>
+			<Description>This function sets the margin of the selected node.
+			
+			Margin is the space around the outside of the node. You can define it for all edges or for a specific edge.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 			<Parameter Name="size" Type="Real" Optional="false">The selected padding size</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="true">The units to be used</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_padding" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the padding of the selected node.</Description>
+			<Description>This function sets the padding of the selected node.
+			
+			Padding is the spacing between the inner edges of the node and its children. You can define it for all edges or for a specific edge.
+			
+			For nodes that don't have a defined width/height, this will increase the width/height.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 			<Parameter Name="size" Type="Real" Optional="false">The selected padding size</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="true">The units to be used</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_border" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the border of the selected node.</Description>
+			<Description>This function sets the border of the selected node.
+			
+			Border acts the same as padding.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 			<Parameter Name="size" Type="Real" Optional="false">The selected border size</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_position_type" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's position type.</Description>
+			<Description>This function sets the node's position type.
+			
+			Position type of a node can be any one of the following strings:
+			
+			* `flexpanel_position_type.relative` (default): This node will participate in the flow of its parent container and will take up space in it. Inset positions (`flexpanel_edge.left`, `flexpanel_edge.top`, etc.) will be relative to the node's position within the flow.
+			* `flexpanel_position_type.absolute`: This node is removed from the flow of its parent and will not take up space. Inset positions will be relative to the Containing Block which may not be its direct parent.
+			* `flexpanel_position_type.static`: The node will behave like `flexpanel_position_type.relative` except it will ignore insets and will not form a Containing Block for its children.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="value" Type="Enum.flexpanel_position_type" Optional="false">The position type to use</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_min_width" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's minimum width</Description>
+			<Description>This function sets the minimum width the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node whose behaviour should be set.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value to use</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to use for the value</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_max_width" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's maximum width</Description>
+			<Description>This function sets the maximum width the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node whose behaviour should be set.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value to use</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to use for the value</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_min_height" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's minimum height</Description>
+			<Description>This function sets the minimum height the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node whose behaviour should be set.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value to use</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to use for the value</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_max_height" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the node's maximum height</Description>
+			<Description>This function sets the maximum height the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node whose behaviour should be set.</Parameter>
 			<Parameter Name="value" Type="Real" Optional="false">The value to use</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to use for the value</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_width" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the width of the selected node.</Description>
+			<Description>This function sets the width of the selected node.
+			
+			Width refers to the width of the "border box" of the node, which is the collective size of the node's content, padding and border.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node whose width should be set.</Parameter>
 			<Parameter Name="width" Type="Real" Optional="false">The selected width.</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to use for the value</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_set_height" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>Sets the height of the selected node.</Description>
+			<Description>This function sets the height of the selected node.
+			
+			Height refers to the height of the "border box" of the node, which is the collective size of the node's content, padding and border.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node whose height should be set.</Parameter>
 			<Parameter Name="height" Type="Real" Optional="false">The selected height.</Parameter>
 			<Parameter Name="unit" Type="Enum.flexpanel_unit" Optional="false">The units to use for the value</Parameter>
 		</Function>		
-		<Function Name="flexpanel_node_style_get_align_content" Deprecated="false" ReturnType="Enum.flexpanel_justify" Pure="true">
-			<Description>Gets the alignment of the content of the node.</Description>
+		<Function Name="flexpanel_node_style_get_align_content" Deprecated="false" ReturnType="Enum.flexpanel_align" Pure="true">
+			<Description>This function gets the alignment of the content of the node.
+			
+			If "flex wrap" is set to `flexpanel_wrap.wrap` or `flexpanel_wrap.reverse`, any items overflowing along the main axis will be laid out across new lines on the cross axis. The "align content" property controls how those wrapped lines are distributed along the cross axis.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_align_items" Deprecated="false" ReturnType="Enum.flexpanel_align" Pure="true">
-			<Description>Gets the alignment of the items of the node.</Description>
+			<Description>This function gets the alignment of the items of the node.
+			
+			This controls how the non-absolute children of a flex container are aligned along its cross axis (i.e. the direction perpendicular to the flex direction)</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_align_self" Deprecated="false" ReturnType="Enum.flexpanel_align" Pure="true">
-			<Description>Gets the alignment of the selected node.</Description>
+			<Description>This function gets the alignment of the selected node.
+			
+			This is the same as "align items". However, instead of being applied to a container, this is applied directly to a child node, and affects its cross-axis alignment within its container. This property overrides the "align items" value set for its parent container.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_aspect_ratio" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>Gets the node's aspect ratio</Description>
+			<Description>This function gets the node's aspect ratio.
+			
+			This is the aspect ratio that the node must maintain and corresponds to the horizontal axis.
+
+			For example, an aspect ratio of `1` will result in a square node, `2` will be a 2:1 rectangle where its width is twice as much as its height, `0.5` will make the width half the size of the height.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_display" Deprecated="false" ReturnType="Enum.flexpanel_display" Pure="true">
-			<Description>Gets the display setting of the selected node.</Description>
+			<Description>This function gets the display setting of the selected node.
+			
+			The display setting controls which layout mode the node follows. It can be one of the following values:
+			
+			* `flexpanel_display.flex` (default): The default layout behaviour.
+			* `flexpanel_display.none`: Disables the node. This effectively functions as the node being removed from the tree, as it's not included in any calculations.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_flex" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>Gets the flex value of the selected node.</Description>
+			<Description>This function gets the flex value of the selected node.
+			
+			Flex is shorthand for the "flex grow" and "flex shrink" properties. It will act as "flex grow" when the value is positive, and "flex shrink" when it's negative.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_flex_wrap" Deprecated="false" ReturnType="Enum.flexpanel_wrap" Pure="true">
-			<Description>Gets the flex wrap of the selected node.</Description>
+			<Description>This function gets the flex wrap of the selected node.
+			
+			Flex wrap controls what happens when children in the container have overflown on the main axis. By default, they will overflow or shrink depending on their properties.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_flex_grow" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>Gets the flex grow of the selected node.</Description>
+			<Description>This function gets the flex grow of the selected node.
+			
+			Flex grow controls how the node grows within its flex container depending on the remaining space in the container. It's a positive weight value with a default of 1.
+			
+			For example, having a 400px container with a 40px node and then a node with a "flex grow" value of `1` will give the second node any remaining space within the container.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_flex_shrink" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>Gets the flex shrink of the selected node.</Description>
+			<Description>This function gets the flex shrink of the selected node.
+			
+			Flex shrink controls how the node shrinks within its flex container when there is overflow. It's a positive weight value with a default of 1.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_flex_basis" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the flex basis of the selected node.</Description>
+			<Description>This function gets the flex basis of the selected node.
+			
+			Flex basis is the default size of an item within its flex container before any flex grow or shrink is applied. For a row container this affects the width, and for a column container this affects the height.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_flex_direction" Deprecated="false" ReturnType="Enum.flexpanel_flex_direction" Pure="true">
-			<Description>Gets the flex direction of the selected node.</Description>
+			<Description>This function gets the flex direction of the selected node.
+			
+			Flex direction is the direction in which non-absolute children of the node are laid out. This direction is known as the main axis, and the direction perpendicular to this is known as the cross axis.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_gap" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>Gets the gap of the selected node on the selected side.</Description>
+			<Description>This function gets the gap of the selected node on the selected side.
+			
+			Gap is the added distance between each row and column of the flex container and affects distances between child nodes. You can apply to both axes or apply only to rows or columns.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node to be set.</Parameter>
 			<Parameter Name="gutter" Type="Enum.flexpanel_gutter" Optional="false">The selected gutter (column/row/all).</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_position" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the node's style position.</Description>
+			<Description>This function gets the node's style position.
+			
+			Inset position define the distance between an edge of the node and the same edge of its parent's node, with positive values moving the node toward the centre, and negative values moving it away from the centre.
+			
+			For example, a `left` value of `20` will place the node's left edge 20 pixels to the right of the parent's left edge. A `right` value of `40` will move the node so its right edge is 40 pixels to the left of its parent's, without resizing the node.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_justify_content" Deprecated="false" ReturnType="Enum.flexpanel_justify" Pure="true">
-			<Description>Gets the node's contents justification</Description>
+			<Description>This function gets the node's contents justification.
+			
+			Justification controls how the non-absolute children of a flex container are aligned along its main axis (i.e. the direction of the "flex direction").</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_direction" Deprecated="false" ReturnType="Enum.flexpanel_direction" Pure="true">
-			<Description>Gets the direction of the selected node.</Description>
+			<Description>This function gets the direction of the selected node.
+			
+			This is the layout direction of the node and its children.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_margin" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the margin of the selected node.</Description>
+			<Description>This function gets the margin of the selected node.
+			
+			Margin is the space around the outside of the node. You can define it for all edges or for a specific edge.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_padding" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the padding of the selected node.</Description>
+			<Description>This function gets the padding of the selected node.
+			
+			Padding is the spacing between the inner edges of the node and its children. You can define it for all edges or for a specific edge.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_border" Deprecated="false" ReturnType="Real" Pure="true">
-			<Description>Gets the border of the selected node.</Description>
+			<Description>This function gets the border of the selected node.
+			
+			Border acts the same as padding.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 			<Parameter Name="edge" Type="Enum.flexpanel_edge" Optional="false">The selected edge.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_position_type" Deprecated="false" ReturnType="Enum.flexpanel_position_type" Pure="true">
-			<Description>Gets the nodes position type</Description>
+			<Description>This function gets the node's position type.
+			
+			Position type of a node can be any one of the following strings:
+			
+			* `flexpanel_position_type.relative` (default): This node will participate in the flow of its parent container and will take up space in it. Inset positions (`flexpanel_edge.left`, `flexpanel_edge.top`, etc.) will be relative to the node's position within the flow.
+			* `flexpanel_position_type.absolute`: This node is removed from the flow of its parent and will not take up space. Inset positions will be relative to the Containing Block which may not be its direct parent.
+			* `flexpanel_position_type.static`: The node will behave like `flexpanel_position_type.relative` except it will ignore insets and will not form a Containing Block for its children.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_min_width" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the node's minimum width</Description>
+			<Description>This function gets the minimum width the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_max_width" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the node's maximum width</Description>
+			<Description>This function gets the maximum width the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_min_height" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the node's minimum height</Description>
+			<Description>This function gets the minimum height the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_max_height" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the node's maximum height</Description>
+			<Description>This function gets the maximum height the node must maintain.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_width" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the width of the selected node.</Description>
+			<Description>This function gets the width of the selected node.
+			
+			Width refers to the width of the "border box" of the node, which is the collective size of the node's content, padding and border.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
 		</Function>
 		<Function Name="flexpanel_node_style_get_height" Deprecated="false" ReturnType="Struct" Pure="true">
-			<Description>Gets the height of the selected node.</Description>
+			<Description>This function gets the height of the selected node.
+			
+			Height refers to the height of the "border box" of the node, which is the collective size of the node's content, padding and border.</Description>
 			<Parameter Name="node" Type="Pointer.FlexpanelNode" Optional="false">The node.</Parameter>
-		</Function>		
+		</Function>
 		<Function Name="font_add" Deprecated="false" ReturnType="Asset.GMFont" Pure="false">
 			<Description>This function can be used to add a font to your game from a font file present in the Included Files. -1 is returned if the function fails for any reason.</Description>
 			<Parameter Name="name" Type="String" Optional="false">The path of the font file in the Included Files (*.ttf or *.otf).</Parameter>
@@ -2087,6 +2244,16 @@
 			<Parameter Name="sequence_element_id" Type="Id.SequenceElement" Optional="false">The unique ID value of the sequence element to target</Parameter>
 			<Parameter Name="yscale" Type="Real" Optional="false">The new Y axis scale value to apply to the sequence element</Parameter>
 		</Function>
+		<Function Name="layer_sequence_alpha" Deprecated="false" ReturnType="Undefined" Pure="false">
+			<Description>With this function you can set the image alpha for the given sequence element.</Description>
+			<Parameter Name="sequence_element_id" Type="Id.SequenceElement" Optional="false">The unique ID value of the sequence element to target</Parameter>
+			<Parameter Name="alpha" Type="Real" Optional="false">The image alpha value to set the sequence element to</Parameter>
+		</Function>
+		<Function Name="layer_sequence_blend" Deprecated="false" ReturnType="Undefined" Pure="false">
+			<Description>With this function you can set the image blend for the given sequence element.</Description>
+			<Parameter Name="sequence_element_id" Type="Id.SequenceElement" Optional="false">The unique ID value of the sequence element to target</Parameter>
+			<Parameter Name="blend" Type="Constant.Color" Optional="false">The colour to blend the sequence element with</Parameter>
+		</Function>
 		<Function Name="layer_sprite_alpha" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function controls the alpha (transparency) of the sprite on the asset layer.</Description>
 			<Parameter Name="sprite_element_id" Type="Id.SpriteElement" Optional="false">The unique ID value of the sprite element to change</Parameter>
@@ -2845,7 +3012,7 @@
 			<Description>This function replaces an existing custom attachment on the current instance's skeletal animation sprite with another one and also sets the blend colour to use when drawing this attachment.</Description>
 			<Parameter Name="name" Type="String" Optional="false">The name (as a string) of the attachment to create.</Parameter>
 			<Parameter Name="sprite" Type="Asset.GMSprite" Optional="false">The sprite_index to get the attachment image from.</Parameter>
-			<Parameter Name="ind" Type="Real" Optional="false">The image_index to get the attachment image from.</Parameter>
+			<Parameter Name="ind" Type="Real" Optional="false">The image index to get the attachment image from.</Parameter>
 			<Parameter Name="xorigin" Type="Real" Optional="false">The x origin for the image being used.</Parameter>
 			<Parameter Name="yorigin" Type="Real" Optional="false">The y origin for the image being used.</Parameter>
 			<Parameter Name="xscale" Type="Real" Optional="false">The horizontal scaling of the image, as a multiplier: 1 = normal scaling, 0.5 is half, etc.</Parameter>
@@ -2854,7 +3021,20 @@
 			<Parameter Name="colour" Type="Constant.Color" Optional="false">The colour value to use (A constant, integer or hex value).</Parameter>
 			<Parameter Name="alpha" Type="Real" Optional="false">The alpha value to use (from 0 to 1).</Parameter>
 		</Function>
-		<Function Name="skeleton_attachment_destroy" Deprecated="false" ReturnType="Any" Locale="GB" Pure="false">
+		<Function Name="skeleton_attachment_replace_color" Deprecated="false" ReturnType="Any" Locale="US" Pure="true">
+			<Description>This function replaces an existing custom attachment on the current instance's skeletal animation sprite with another one and also sets the blend color to use when drawing this attachment.</Description>
+			<Parameter Name="name" Type="String" Optional="false">The name (as a string) of the attachment to create.</Parameter>
+			<Parameter Name="sprite" Type="Asset.GMSprite" Optional="false">The sprite_index to get the attachment image from.</Parameter>
+			<Parameter Name="ind" Type="Real" Optional="false">The image index to get the attachment image from.</Parameter>
+			<Parameter Name="xorigin" Type="Real" Optional="false">The x origin for the image being used.</Parameter>
+			<Parameter Name="yorigin" Type="Real" Optional="false">The y origin for the image being used.</Parameter>
+			<Parameter Name="xscale" Type="Real" Optional="false">The horizontal scaling of the image, as a multiplier: 1 = normal scaling, 0.5 is half, etc.</Parameter>
+			<Parameter Name="yscale" Type="Real" Optional="false">The vertical scaling of the image, as a multiplier: 1 = normal scaling, 0.5 is half, etc.</Parameter>
+			<Parameter Name="rot" Type="Real" Optional="false">The rotation of the image: 0 = normal, 90 = turned 90° counter-clockwise, etc.</Parameter>
+			<Parameter Name="color" Type="Constant.Color" Optional="false">The color value to use (A constant, integer or hex value).</Parameter>
+			<Parameter Name="alpha" Type="Real" Optional="false">The alpha value to use (from 0 to 1).</Parameter>
+		</Function>
+		<Function Name="skeleton_attachment_destroy" Deprecated="false" ReturnType="Any" Pure="false">
 			<Description>This function destroys a custom attachment previously created using the skeleton_attachment_create() or skeleton_attachment_replace() functions. Any slots using the attachment will be cleared.</Description>
 			<Parameter Name="name" Type="String" Optional="false">The name (as a string) of the attachment to destroy.</Parameter>
 		</Function>
@@ -3726,6 +3906,13 @@
 			<Parameter Name="offset" Type="Real" Optional="false">The offset within the buffer to save from (in bytes).</Parameter>
 			<Parameter Name="size" Type="Real" Optional="false">The size of the buffer area to save (in bytes).</Parameter>
 		</Function>
+		<Function Name="gx_share" Deprecated="false" ReturnType="Real" Pure="false">
+			<Description>This function shares a buffer or a url using the Web Share API (Emscripten only). The buffer contents will be shared as an image file. Returns 0 on success, -1 on error. A share_complete social async event will be triggered when the share completes or fails.</Description>
+			<Parameter Name="content" Type="Id.Buffer|String" Optional="false">The URL to share or the index of the buffer to share (must contain PNG image data).</Parameter>
+			<Parameter Name="title" Type="String" Optional="true">The title for the share dialog (optional).</Parameter>
+			<Parameter Name="text" Type="String" Optional="true">The text for the share dialog (optional).</Parameter>
+			<Parameter Name="filename" Type="String" Optional="true">The filename to be presented in the share dialog (optional).</Parameter>
+		</Function>
 		<Function Name="buffer_seek" Deprecated="false" ReturnType="Real" Pure="false">
 			<Description>This function moves the seek position of a buffer, setting it relative to the start, end or current seek position (that which was last used when reading or writing data).
 
@@ -3798,7 +3985,7 @@
 		<Function Name="display_get_sleep_margin" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function can be used to get the current sleep margin value used for the render timing of your game, and will return a millisecond value. For more information on display timing, please see display_set_timing_method().</Description>
 		</Function>
-		<Function Name="display_get_timing_method" Deprecated="false" ReturnType="Real" Pure="true">
+		<Function Name="display_get_timing_method" Deprecated="false" ReturnType="Constant.TimingMethod" Pure="true">
 			<Description>This function can be used to retrieve the timing method to be used for rendering your game.</Description>
 		</Function>
 		<Function Name="display_get_width" Deprecated="false" ReturnType="Real" Pure="true">
@@ -3833,7 +4020,7 @@
 		</Function>
 		<Function Name="display_set_timing_method" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to set the timing method to be used for rendering your game.</Description>
-			<Parameter Name="method" Type="String" Optional="false">The timing method to use</Parameter>
+			<Parameter Name="method" Type="Constant.TimingMethod" Optional="false">The timing method to use</Parameter>
 		</Function>
 		<Function Name="display_set_ui_visibility" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to show or hide the system UI on Android and iOS only.</Description>
@@ -5705,10 +5892,10 @@
 		</Function>
 		<Function Name="gpu_set_fog" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to enable or disable fog drawing.</Description>
-			<Parameter Name="enable" Type="Bool" Optional="false">Enable or disable fog</Parameter>
-			<Parameter Name="colour" Type="Constant.Color" Optional="false">The fog colour</Parameter>
-			<Parameter Name="start" Type="Real" Optional="false">The distance to start applying fog from</Parameter>
-			<Parameter Name="end" Type="Real" Optional="false">The distance to end the fog</Parameter>
+			<Parameter Name="enableOrArray" Type="Bool, Array" Optional="false">Enable or disable fog OR pass an array of 4 values that contains {enable,colour,start,end} (as returned by gpu_get_fog)</Parameter>
+			<Parameter Name="colour" Type="Constant.Color" Optional="true">The fog colour</Parameter>
+			<Parameter Name="start" Type="Real" Optional="true">The distance to start applying fog from</Parameter>
+			<Parameter Name="end" Type="Real" Optional="true">The distance to end the fog</Parameter>
 		</Function>
 		<Function Name="gpu_set_scissor" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function can be used to set a scissor region that will clip all rendering to the current render target, all coordinates are in render target coordinate system. NOTE: All values are used as integers. NOTE: Each surface and viewport will reset the current scissor region (they are not stacked).</Description>
@@ -7044,14 +7231,14 @@
 			<Parameter Name="h" Type="Real" Optional="false">The height of the new surface.</Parameter>
 		</Function>
 		<Function Name="surface_save" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>This function will save a surface to disc using the given filename. The surface must be saved as a *.png format file.</Description>
+			<Description>This function will save a surface to disc using the given filename, or to a buffer. The surface must be saved as a *.png format file.</Description>
 			<Parameter Name="surface_id" Type="Id.Surface" Optional="false">The ID of the surface to set as the drawing target.</Parameter>
-			<Parameter Name="fname" Type="String" Optional="false">The name of the saved image file.</Parameter>
+			<Parameter Name="fname" Type="String|Id.Buffer" Optional="false">The name of the saved image file, or a buffer to write the PNG data to.</Parameter>
 		</Function>
 		<Function Name="surface_save_part" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>This function will save a part of a surface to disc using the given filename. The surface must be saved as a *.png format file, and the (x, y) position must be given as local coordinates to the surface, bearing in mind that the top-left corner of the surface is always (0, 0).</Description>
+			<Description>This function will save a part of a surface to disc using the given filename, or to a buffer. The surface must be saved as a *.png format file, and the (x, y) position must be given as local coordinates to the surface, bearing in mind that the top-left corner of the surface is always (0, 0).</Description>
 			<Parameter Name="surface_id" Type="Id.Surface" Optional="false">The ID of the surface to set as the drawing target.</Parameter>
-			<Parameter Name="fname" Type="String" Optional="false">The name of the saved image file.</Parameter>
+			<Parameter Name="fname" Type="String|Id.Buffer" Optional="false">The name of the saved image file, or a buffer to write the PNG data to.</Parameter>
 			<Parameter Name="x" Type="Real" Optional="false">The starting x position within the surface.</Parameter>
 			<Parameter Name="y" Type="Real" Optional="false">The starting y position within the surface.</Parameter>
 			<Parameter Name="width" Type="Real" Optional="false">The width of the part to save.</Parameter>
@@ -7399,7 +7586,7 @@
 			<Parameter Name="zip_object" Type="Struct.Zip" Optional="true">The zip object to be saved.</Parameter>
 			<Parameter Name="path" Type="String" Optional="true">The path the zip should be saved to.</Parameter>
 		</Function>
-		<Function Name="directory_create" Deprecated="false" ReturnType="Undefined" Pure="false">
+		<Function Name="directory_create" Deprecated="false" ReturnType="Bool" Pure="false">
 			<Description>This function will create a directory with the given name in the save area.</Description>
 			<Parameter Name="dname" Type="String" Optional="false">The name of the directory to create.</Parameter>
 		</Function>
@@ -7441,7 +7628,7 @@
 			<Parameter Name="fname" Type="String" Optional="false">The name of the file to check.</Parameter>
 			<Parameter Name="attr" Type="Constant.FileAttribute" Optional="false">The attributes to check for.</Parameter>
 		</Function>
-		<Function Name="file_copy" Deprecated="false" ReturnType="Undefined" Pure="false">
+		<Function Name="file_copy" Deprecated="false" ReturnType="Real" Pure="false">
 			<Description>This function will copy the specified file, giving it the new name that you choose.</Description>
 			<Parameter Name="fname" Type="String" Optional="false">The name of the file to copy.</Parameter>
 			<Parameter Name="newname" Type="String" Optional="false">The name of the new, copied, file.</Parameter>
@@ -8667,6 +8854,7 @@
 		<Function Name="random_set_seed" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the seed used by GameMaker to generate random numbers.</Description>
 			<Parameter Name="val" Type="Real" Optional="false">The seed to set.</Parameter>
+			<Parameter Name="fixRangeBug" Type="Bool" Optional="true">if parameter is given (does not matter on the value) it will use a different algorithm to initialise the random state, avoiding a bug that limited the effective range of the random state.</Parameter>
 		</Function>
 		<Function Name="round" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function takes a real number and rounds it up or down to the nearest integer.</Description>
@@ -9130,7 +9318,7 @@
 		<Function Name="network_connect_async" Deprecated="false" ReturnType="Real" Pure="false">
 			<Description>With this function you can send a request to connect to a server. The function takes the socket id to connect through and requires you to give the IP address to connect to as well as the port to connect through, and if the connection fails a value of less than 0 will be returned.
 			
-			The connection uses a special protocol that ensures only GameMaker games connect to each other, however if you need to connect to a server that is not a GameMaker game, you can use network_connect_async_raw().</Description>
+			The connection uses a special protocol that ensures only GameMaker games connect to each other, however if you need to connect to a server that is not a GameMaker game, you can use network_connect_raw_async().</Description>
 			<Parameter Name="socket" Type="Id.Socket" Optional="false">The id of the socket to use.</Parameter>
 			<Parameter Name="url" Type="String" Optional="false">The URL or IP to connect to.</Parameter>
 			<Parameter Name="port" Type="Real" Optional="false">The port to connect to.</Parameter>
@@ -9351,72 +9539,72 @@
 			<Parameter Name="xpos" Type="Real" Optional="false">The x position in the room to check</Parameter>
 			<Parameter Name="ypos" Type="Real" Optional="false">The y position in the room to check</Parameter>
 			<Parameter Name="angle" Type="Real" Optional="false">The angle to check (of the calling instance)</Parameter>
-			<Parameter Name="obj" Type="Id.Instance,Asset.GMObject,Constant.All" Optional="false">The object index or instance ID to check for, or one of the keywords all or other</Parameter>
+			<Parameter Name="obj" Type="Id.Instance,Asset.GMObject,Constant.Other,Constant.All" Optional="false">The object index or instance ID to check for, or one of the keywords all or other</Parameter>
 		</Function>
 		<Function Name="physics_fixture_add_point" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function defines the points of a polygon which has previously been set to the fixture using either physics_fixture_set_polygon_shape() or it can be used to add points to a chain of edge fixtures using the function physics_fixture_set_chain_shape(). Note that for a polygon shape, the points are relative to the origin of the fixture, with the (0, 0) position of the x/y axis being the centre, and the subsequent coordinates being calculated as usual in GameMaker with down/right being +x,+y and up/left being -x,-y.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="xpos" Type="Real" Optional="false">the x position of the point (relative to the fixture origin for polygon shapes)</Parameter>
 			<Parameter Name="ypos" Type="Real" Optional="false">the y position of the point (relative to the fixture origin for polygon shapes)</Parameter>
 		</Function>
-		<Function Name="physics_fixture_bind" Deprecated="false" ReturnType="Real" Pure="false">
+		<Function Name="physics_fixture_bind" Deprecated="false" ReturnType="Id.PhysicsFixtureBound" Pure="false">
 			<Description>This function binds the given fixture to the given target object or instance and returns the ID of the bound fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the fixture that is to be bound</Parameter>
-			<Parameter Name="target" Type="Id.Instance,Asset.GMObject,Constant.All" Optional="false">the target instance that is to receive the fixture (can be an instance id, an object id, other, or all)</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the fixture that is to be bound</Parameter>
+			<Parameter Name="target" Type="Id.Instance,Asset.GMObject,Constant.Other,Constant.All" Optional="false">the target instance that is to receive the fixture (can be an instance id, an object id, other, or all)</Parameter>
 		</Function>
-		<Function Name="physics_fixture_bind_ext" Deprecated="false" ReturnType="Real" Pure="false">
+		<Function Name="physics_fixture_bind_ext" Deprecated="false" ReturnType="Id.PhysicsFixtureBound" Pure="false">
 			<Description>This function binds the given fixture to the given target object or instance at an offset and returns the ID of the bound fixture. Note that a fixture can only support a single offset, as adding multiple offsets to a single fixture is not supported by Box2D.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the fixture that is to be bound</Parameter>
-			<Parameter Name="target" Type="Id.Instance,Asset.GMObject,Constant.All" Optional="false">the target instance that is to receive the fixture (can be an instance id, an object id, other, or all)</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the fixture that is to be bound</Parameter>
+			<Parameter Name="target" Type="Id.Instance,Asset.GMObject,Constant.Other,Constant.All" Optional="false">the target instance that is to receive the fixture (can be an instance id, an object id, other, or all)</Parameter>
 			<Parameter Name="xoffset" Type="Real" Optional="false">the offset along the x-axis</Parameter>
 			<Parameter Name="yoffset" Type="Real" Optional="false">the offset along the y-axis</Parameter>
 		</Function>
-		<Function Name="physics_fixture_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_fixture_create" Deprecated="false" ReturnType="Id.PhysicsFixture" Pure="false">
 			<Description>This function creates a new physics fixture.</Description>
 		</Function>
 		<Function Name="physics_fixture_delete" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function deletes the given fixture, freeing the memory it is using.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the fixture that is to be deleted from memory</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the fixture that is to be deleted from memory</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_angular_damping" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the angular damping of the given fixture. Normally you will use a damping value between 0 and 1, but you can use any non-negative value if required.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="damping" Type="Real" Optional="false">the angular damping of the fixture, usually between 0 and 1</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_awake" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets whether the given physics fixture should be "awake" (whether it is processing events and interacting with the surrounding instances).</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the id of the bound fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the id of the bound fixture</Parameter>
 			<Parameter Name="flag" Type="Bool" Optional="false">whether the fixture is awake (true) or not (false)</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_box_shape" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function defines a box shape for the given fixture. It takes the half width and height as the physics world uses this value far more than whole width/height values to determine things like collisions.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="half_width" Type="Real" Optional="false">the half width of the box</Parameter>
 			<Parameter Name="half_height" Type="Real" Optional="false">the half height of the box</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_chain_shape" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function tells the given fixture to use a "chain" shape, which consists of a number of points that are connected using edge shapes. The points are specified after calling this function using physics_fixture_add_point().</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">The index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">The index of the fixture</Parameter>
 			<Parameter Name="loop" Type="Bool" Optional="false">Whether to close the chain (true) or not (false).</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_circle_shape" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function defines a circle shape for your fixture with a radius defined by the argument "rad".</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="rad" Type="Real" Optional="false">radius of the circle</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_collision_group" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function assigns a collision group to the given fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the fixture that is to be bound</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the fixture that is to be bound</Parameter>
 			<Parameter Name="group" Type="Real" Optional="false">the group that this fixture is assigned to (either a positive value, 0, or a negative value)</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_density" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the density of the given physics fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="density" Type="Real" Optional="false">the density of the fixture calculated as kg/m²</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_edge_shape" Deprecated="false" ReturnType="Undefined" Pure="false">
-			<Description>This function defines an "edge" shape for the give fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Description>This function defines an "edge" shape for the given fixture.</Description>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="local_x1" Type="Real" Optional="false">start x position for the edge</Parameter>
 			<Parameter Name="local_y1" Type="Real" Optional="false">start y position for the edge</Parameter>
 			<Parameter Name="local_x2" Type="Real" Optional="false">end x position for the edge</Parameter>
@@ -9424,58 +9612,58 @@
 		</Function>
 		<Function Name="physics_fixture_set_friction" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the friction of the given physics fixture. Note that the friction is usually set to a value between 0 and 1, but you can use any non-negative value if required.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="friction" Type="Real" Optional="false">the friction of the fixture</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_kinematic" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the given physics fixture to be kinematic (a kinematic fixture will not be affected by any forces).</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_linear_damping" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the linear damping of the given fixture. Damping parameters should be between 0 and infinity, with 0 meaning no damping, and infinity meaning full damping. Normally you will use a damping value between 0 and 1, but you can use any non-negative value if required.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="damping" Type="Real" Optional="false">the damping of the fixture, usually between 0 and 1</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_polygon_shape" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function tells the given fixture to use a polygon shape. The points must be specified after calling this function using physics_fixture_add_point().</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_restitution" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the restitution of the given physics fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">The index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">The index of the fixture</Parameter>
 			<Parameter Name="restitution" Type="Real" Optional="false">The restitution of the fixture (usually between 0 and 1)</Parameter>
 		</Function>
 		<Function Name="physics_fixture_set_sensor" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets whether the given fixture should be a sensor.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the index of the fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixture" Optional="false">the index of the fixture</Parameter>
 			<Parameter Name="state" Type="Bool" Optional="false">whether a fixture is a sensor (true) or not (false)</Parameter>
 		</Function>
 		<Function Name="physics_get_density" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function returns the density of the given bound fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the id of the bound fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false">the ID of the bound fixture</Parameter>
 		</Function>
 		<Function Name="physics_get_restitution" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function returns the restitution of the given bound fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the id of the bound fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false">the ID of the bound fixture</Parameter>
 		</Function>
 		<Function Name="physics_remove_fixture" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function removes (or "un-binds") a fixture from an instance or instances. This permits you to redefine a new fixture and bind that to the instance. In this way you can change the instance's physical properties without having to destroy and re-create it.</Description>
-			<Parameter Name="id" Type="Id.Instance" Optional="false">The ID of the instance to remove the fixture from</Parameter>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">The ID of the fixture that is to be removed from the instance</Parameter>
+			<Parameter Name="id" Type="Id.Instance,Asset.GMObject" Optional="false">The ID of the instance to remove the fixture from</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false">The ID of the bound fixture that is to be removed from the instance</Parameter>
 		</Function>
 		<Function Name="physics_set_density" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the density value of the given bound fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the id of the bound fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false">the ID of the bound fixture</Parameter>
 			<Parameter Name="density" Type="Real" Optional="false">the new density value to apply</Parameter>
 		</Function>
 		<Function Name="physics_set_friction" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the friction value of the given bound fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the id of the bound fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false">the ID of the bound fixture</Parameter>
 			<Parameter Name="friction" Type="Real" Optional="false">the new friction value to apply</Parameter>
 		</Function>
 		<Function Name="physics_set_restitution" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the restitution value of the given bound fixture.</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false">the id of the bound fixture</Parameter>
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false">the ID of the bound fixture</Parameter>
 			<Parameter Name="restitution" Type="Real" Optional="false">the new restitution value to apply</Parameter>
 		</Function>
 		<Function Name="physics_apply_angular_impulse" Deprecated="false" ReturnType="Undefined" Pure="false">
@@ -9516,9 +9704,9 @@
 		</Function>
 		<Function Name="physics_joint_delete" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function deletes the given physics joint.</Description>
-			<Parameter Name="joint" Type="Id.PhysicsIndex" Optional="false">The index of the joint that you wish to delete</Parameter>
+			<Parameter Name="joint" Type="Id.PhysicsJoint" Optional="false">The index of the joint that you wish to delete</Parameter>
 		</Function>
-		<Function Name="physics_joint_distance_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_distance_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a distance joint between two physics instances. A distance joint is one of the simplest joints and says that the distance between two points on two instances must be constant.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9530,10 +9718,10 @@
 		</Function>
 		<Function Name="physics_joint_enable_motor" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets whether to enable or disable the motor on a physics joint that has a motor.</Description>
-			<Parameter Name="joint" Type="Id.PhysicsIndex" Optional="false">The joint that you wish to enable or disable the motor on</Parameter>
+			<Parameter Name="joint" Type="Id.PhysicsJoint" Optional="false">The joint that you wish to enable or disable the motor on</Parameter>
 			<Parameter Name="motor" Type="Bool" Optional="false">Whether you wish to turn the motor on (true) or off (false)</Parameter>
 		</Function>
-		<Function Name="physics_joint_friction_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_friction_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a friction joint between two physics instances. A friction joint is a bit different to all other joints in the physics simulation in that the connection created will not constrain the instances' position or movement, but rather their speed and rotation.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9543,20 +9731,20 @@
 			<Parameter Name="max_torque" Type="Real" Optional="false">The maximum rotational force that will be applied</Parameter>
 			<Parameter Name="col" Type="Bool" Optional="false">Whether the two instances can collide (true) or not (false)</Parameter>
 		</Function>
-		<Function Name="physics_joint_gear_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_gear_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a gear joint between two physics instances.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
-			<Parameter Name="joint_1" Type="Id.PhysicsIndex" Optional="false">A previously defined revolute joint</Parameter>
-			<Parameter Name="joint_2" Type="Id.PhysicsIndex" Optional="false">A previously defined revolute or prismatic joint</Parameter>
+			<Parameter Name="joint_1" Type="Id.PhysicsJoint" Optional="false">A previously defined revolute joint</Parameter>
+			<Parameter Name="joint_2" Type="Id.PhysicsJoint" Optional="false">A previously defined revolute or prismatic joint</Parameter>
 			<Parameter Name="ratio" Type="Real" Optional="false">Set the velocity ratio between the two joints</Parameter>
 		</Function>
 		<Function Name="physics_joint_get_value" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function returns the value of the joint property corresponding to the given joint constant.</Description>
-			<Parameter Name="joint" Type="Id.PhysicsIndex" Optional="false">The index of the joint that you wish to test</Parameter>
+			<Parameter Name="joint" Type="Id.PhysicsJoint" Optional="false">The index of the joint that you wish to test</Parameter>
 			<Parameter Name="value" Type="Constant.PhysicsJointProperty" Optional="false">The constant for the joint property that you wish to test</Parameter>
 		</Function>
-		<Function Name="physics_joint_prismatic_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_prismatic_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a prismatic joint between two physics instances. Like a revolute joint, the prismatic joint only has one degree of freedom, but with this joint it is directional relative to an axis rather than rotational and actually prevents any form of rotation.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9572,7 +9760,7 @@
 			<Parameter Name="motor" Type="Bool" Optional="false">Whether the motor should be active (true) or not (false)</Parameter>
 			<Parameter Name="col" Type="Bool" Optional="false">Whether the two instances can collide (true) or not (false)</Parameter>
 		</Function>
-		<Function Name="physics_joint_pulley_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_pulley_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a pulley joint between two physics instances. A pulley joint is used to connect two instances within the physics world in such a way that moving one will directly influence the movement of the other.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9587,7 +9775,7 @@
 			<Parameter Name="ratio" Type="Id.Instance" Optional="false">Set the velocity ratio between two instances</Parameter>
 			<Parameter Name="col" Type="Bool" Optional="false">Whether the two instances can collide (true) or not (false)</Parameter>
 		</Function>
-		<Function Name="physics_joint_revolute_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_revolute_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a revolute joint between two physics instances. A revolute joint forces two bodies to share a common anchor point (often called a hinge point) and the joint has a single degree of freedom - the relative rotation of the two bodies around this point.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9601,7 +9789,7 @@
 			<Parameter Name="motor" Type="Bool" Optional="false">Whether the motor should be active (true) or not (false)</Parameter>
 			<Parameter Name="col" Type="Bool" Optional="false">Whether the two instances can collide (true) or not (false)</Parameter>
 		</Function>
-		<Function Name="physics_joint_rope_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_rope_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a rope joint between two physics instances. A rope joint is one which is used to join two instances that you want to keep a constant distance apart, no matter what other forces are acting on it.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9614,11 +9802,11 @@
 		</Function>
 		<Function Name="physics_joint_set_value" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>This function sets the value of the joint property corresponding to the given joint constant to the given value.</Description>
-			<Parameter Name="joint" Type="Id.PhysicsIndex" Optional="false">The index of the joint that you wish to change</Parameter>
+			<Parameter Name="joint" Type="Id.PhysicsJoint" Optional="false">The index of the joint that you wish to change</Parameter>
 			<Parameter Name="field" Type="Constant.PhysicsJointProperty" Optional="false">The constant for the joint property that you wish to change</Parameter>
 			<Parameter Name="value" Type="Any" Optional="false">The new value for the joint property</Parameter>
 		</Function>
-		<Function Name="physics_joint_weld_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_weld_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a weld joint between two physics instances. The weld joint is designed to attach two fixtures together in a strong, yet flexible bond and will permit flexing between the two joined fixtures but without the stretching associated with, for example, a distance joint, and will always try to "spring" back to the reference angle when put under any stress or load.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9629,7 +9817,7 @@
 			<Parameter Name="damping_ratio" Type="Real" Optional="false">This damping ratio for the joint</Parameter>
 			<Parameter Name="col" Type="Bool" Optional="false">Whether the two instances can collide (true) or not (false)</Parameter>
 		</Function>
-		<Function Name="physics_joint_wheel_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_joint_wheel_create" Deprecated="false" ReturnType="Id.PhysicsJoint" Pure="false">
 			<Description>This function creates a wheel joint between two physics instances. A wheel joint combines a piston and a revolute joint, like a wheel mounted on the shock absorber of a car.</Description>
 			<Parameter Name="inst1" Type="Id.Instance" Optional="false">The first instance to connect with the joint</Parameter>
 			<Parameter Name="inst2" Type="Id.Instance" Optional="false">The second instance to connect with the joint</Parameter>
@@ -9647,7 +9835,7 @@
 		<Function Name="physics_particle_count" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function will return the number of particles that are active in a physics-enabled room.</Description>
 		</Function>
-		<Function Name="physics_particle_create" Deprecated="false" ReturnType="Id.PhysicsIndex" Pure="false">
+		<Function Name="physics_particle_create" Deprecated="false" ReturnType="Id.PhysicsParticle" Pure="false">
 			<Description>With this function you can create a single particle anywhere within your game room, setting certain flags and properties.</Description>
 			<Parameter Name="flags" Type="Constant.PhysicsParticleFlag" Optional="false">The flags to set on the particle.</Parameter>
 			<Parameter Name="x" Type="Real" Optional="false">The x position to create the particle at.</Parameter>
@@ -9660,7 +9848,7 @@
 		</Function>
 		<Function Name="physics_particle_delete" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>With this function you can delete (remove) a particle from the physics simulation in the current room.</Description>
-			<Parameter Name="ind" Type="Id.PhysicsIndex" Optional="false">The index (ID) of the particle to delete.</Parameter>
+			<Parameter Name="ind" Type="Id.PhysicsParticle" Optional="false">The index (ID) of the particle to delete.</Parameter>
 		</Function>
 		<Function Name="physics_particle_delete_region_box" Deprecated="false" ReturnType="Undefined" Pure="false">
 			<Description>With this function you can delete (remove) all the particles that fall within the bounds of the defined rectangular area from the physics simulation in the current room.</Description>
@@ -11418,7 +11606,7 @@
 		</Function>
 		<Function Name="physics_get_friction" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>This function gets the friction value of the given bound fixture (not the "base" fixture).</Description>
-			<Parameter Name="fixture" Type="Id.PhysicsIndex" Optional="false" />
+			<Parameter Name="fixture" Type="Id.PhysicsFixtureBound" Optional="false" />
 		</Function>
 		<Function Name="physics_particle_group_get_mass" Deprecated="false" ReturnType="Real" Pure="true">
 			<Description>With this function you can retrieve the mass of an entire group of particles.</Description>
@@ -12288,7 +12476,7 @@
 		<Constant Name="seqtracktype_clipmask_mask" Class="SequenceTrackType" Type="Real" Deprecated="false">This is a clip mask sprite asset track used for generating the clip mask.</Constant>
 		<Constant Name="seqtracktype_clipmask_subject" Class="SequenceTrackType" Type="Real" Deprecated="false">This is a clip mask sprite asset track that is being masked.</Constant>
 		<Constant Name="seqtracktype_group" Class="SequenceTrackType" Type="Real" Deprecated="false">This is a group folder asset track.</Constant>
-		<Constant Name="seqtracktype_colour" Class="SequenceTrackType" Type="Real" Deprecated="false">This is a colour data parameter track.</Constant>
+		<Constant Name="seqtracktype_colour" Class="SequenceTrackType" Type="Real" Deprecated="false" Locale="GB">This is a colour data parameter track.</Constant>
 		<Constant Name="seqtracktype_real" Class="SequenceTrackType" Type="Real" Deprecated="false">This is a real number value parameter track.</Constant>
 		<Constant Name="seqtracktype_message" Class="SequenceTrackType" Type="Real" Deprecated="false">This is a broadcast message track.</Constant>
 		<Constant Name="seqtracktype_moment" Class="SequenceTrackType" Type="Real" Deprecated="false">This is an event/moment track.</Constant>
@@ -12372,10 +12560,10 @@
 		<Constant Name="display_landscape_flipped" Type="Real" Deprecated="false">As above, only now the menu button is on the left.</Constant>
 		<Constant Name="display_portrait" Type="Real" Deprecated="false">The device is being held vertically i.e.: The longest edge is from top to bottom, and the menu button is at the bottom.</Constant>
 		<Constant Name="display_portrait_flipped" Type="Real" Deprecated="false">As above, only now the menu button is at the top.</Constant>
-		<Constant Name="tm_sleep" Type="Real" Deprecated="false">The sleep margin value is the main timing method</Constant>
-		<Constant Name="tm_countvsyncs" Type="Real" Deprecated="false">Vsync timing is the main timing method (default for all supported platforms)</Constant>
-		<Constant Name="tm_systemtiming" Type="Real" Deprecated="false">Ignore gamespeed and allow the system to control framerate</Constant>
-		<Constant Name="tm_countvsyncs_winalt" Type="Real" Deprecated="false">This is a windows-specific timing method which may improve consistency</Constant>
+		<Constant Name="tm_sleep" Class="TimingMethod" Type="Real" Deprecated="false">The sleep margin value is the main timing method</Constant>
+		<Constant Name="tm_countvsyncs" Class="TimingMethod" Type="Real" Deprecated="false">Vsync timing is the main timing method (default for all supported platforms)</Constant>
+		<Constant Name="tm_systemtiming" Class="TimingMethod" Type="Real" Deprecated="false">Ignore gamespeed and allow the system to control framerate</Constant>
+		<Constant Name="tm_countvsyncs_winalt" Class="TimingMethod" Type="Real" Deprecated="false">This is a windows-specific timing method which may improve consistency</Constant>
 		<Constant Name="cr_none" Class="Cursor" Type="Real" Deprecated="false"> </Constant>
 		<Constant Name="cr_default" Class="Cursor" Type="Real" Deprecated="false"/>
 		<Constant Name="cr_arrow" Class="Cursor" Type="Real" Deprecated="false"/>
@@ -12979,7 +13167,7 @@
 		<Constant Name="debug_input_filter_keyboard" Type="Real" Class="DebugInputFilter" Deprecated="false">Include keyboard input</Constant>
 		<Constant Name="debug_input_filter_mouse" Type="Real" Class="DebugInputFilter" Deprecated="false">Include mouse input</Constant>
 		<Constant Name="debug_input_filter_touch" Type="Real" Class="DebugInputFilter" Deprecated="false">Include touch input</Constant>
-		<Constant Name="rollback_connected_to_peer" Type="Real" Deprecated="false" FeatureFlag="rollback">Fired when the (in rollback_event_param) player_id is connected</Constant>
+    <Constant Name="rollback_connected_to_peer" Type="Real" Deprecated="false" FeatureFlag="rollback">Fired when the (in rollback_event_param) player_id is connected</Constant>
 		<Constant Name="rollback_synchronizing_with_peer" Type="Real" Deprecated="false" FeatureFlag="rollback">Fired when the (in rollback_event_param) player_id is synchonizing</Constant>
 		<Constant Name="rollback_synchronized_with_peer" Type="Real" Deprecated="false" FeatureFlag="rollback">Fired when the (in rollback_event_param) player_id is done synchonizing</Constant>
 		<Constant Name="rollback_disconnected_from_peer" Type="Real" Deprecated="false" FeatureFlag="rollback">Fired when the (in rollback_event_param) player_id is disconnected</Constant>

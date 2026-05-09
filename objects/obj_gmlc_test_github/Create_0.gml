@@ -1,6 +1,6 @@
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
 
-var _root_dir = "C:/Users/Red/Documents/GameMaker Studio 2/__compile_tests_from_github/__gms23";
+var _root_dir = "C:/Users/Red/Documents/GameMaker Studio 2/__compile_tests_from_github/__to_fix";
 
 // Enumerate top-level repo folders
 _repo_dirs = [];
@@ -32,7 +32,7 @@ var _i = 0; repeat(_length) {
 	var _sources = [];
 	var _j = 0; repeat(array_length(_gml_files)) {
 		var _path   = _gml_files[_j];
-		var _source = file_read_all_text(_path);
+		var _source = gmlc_file_read_all_text(_path);
 		if (_source != undefined) {
 			array_push(_sources, { source: _source, name: _path });
 		}

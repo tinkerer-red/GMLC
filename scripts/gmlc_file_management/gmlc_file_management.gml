@@ -16,11 +16,11 @@ function file_find_all(_file_mask) {
 }
 
 #region JSDocs
-/// @function file_read_all_text(filename)
+/// @function gmlc_file_read_all_text(filename)
 /// @description Reads entire content of a given file as a string, or returns undefined if the file doesn't exist.
 /// @param {string} filename        The path of the file to read the content of.
 #endregion
-function file_read_all_text(_filename) {
+function gmlc_file_read_all_text(_filename) {
     if (!file_exists(_filename)) {
         return undefined;
     }
@@ -50,7 +50,7 @@ function file_write_all_text(_filename, _content) {
 /// @param {string} filename        The path of the JSON file to load.
 #endregion
 function json_load(_filename) {
-    var _json_content = file_read_all_text(_filename);
+    var _json_content = gmlc_file_read_all_text(_filename);
     if (is_undefined(_json_content))
         return undefined;
     

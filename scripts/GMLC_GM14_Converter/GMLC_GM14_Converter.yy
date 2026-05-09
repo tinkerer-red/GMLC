@@ -6,7 +6,7 @@
   "name":"GMLC_GM14_Converter",
   "parent":{
     "name":"GM14",
-    "path":"folders/GMLCompiler/Internal/GM14.yy",
+    "path":"folders/GMLC/Internal/GM14.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

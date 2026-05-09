@@ -6,7 +6,7 @@
   "name":"__load_gml_spec",
   "parent":{
     "name":"_Init",
-    "path":"folders/GMLCompiler/Internal/_Init.yy",
+    "path":"folders/GMLC/Internal/_Init.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

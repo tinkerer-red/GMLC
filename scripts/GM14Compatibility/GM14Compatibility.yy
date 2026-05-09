@@ -6,7 +6,7 @@
   "name":"GM14Compatibility",
   "parent":{
     "name":"GM14",
-    "path":"folders/GMLCompiler/Internal/GM14.yy",
+    "path":"folders/GMLC/Internal/GM14.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

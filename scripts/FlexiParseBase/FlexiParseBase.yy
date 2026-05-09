@@ -6,7 +6,7 @@
   "name":"FlexiParseBase",
   "parent":{
     "name":"ParserLibrary",
-    "path":"folders/GMLCompiler/Internal/ParserLibrary.yy",
+    "path":"folders/GMLC/Internal/ParserLibrary.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

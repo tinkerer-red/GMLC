@@ -6,7 +6,7 @@
   "name":"gmlc_file_management",
   "parent":{
     "name":"GMLC Util",
-    "path":"folders/GMLCompiler/Internal/GMLC Util.yy",
+    "path":"folders/GMLC/Internal/GMLC Util.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
