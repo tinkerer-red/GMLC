@@ -1477,7 +1477,7 @@
 		    }
 		    expectToken(__GMLC_TokenType_Punctuation, "]");
 			
-			return new ASTCallExpression(new ASTLiteral(__NewGMLArray, line, lineString, "__NewGMLArray"), elements, line, lineString);
+			return new ASTCallExpression(new ASTLiteral(method(undefined, __NewGMLArray), line, lineString, "__NewGMLArray"), elements, line, lineString);
 		};
 		
 		static parseStructCreation = function() {
@@ -1539,7 +1539,7 @@
 		    expectToken(__GMLC_TokenType_Punctuation, "}");
 			
 			// Properties are not all constants, use a runtime function to create the struct
-			return new ASTCallExpression(new ASTLiteral(__NewGMLStruct, line, lineString, "__NewGMLStruct"), _args, line, lineString);
+			return new ASTCallExpression(new ASTLiteral(method(undefined, __NewGMLStruct), line, lineString, "__NewGMLStruct"), _args, line, lineString);
 		};
 		
 		static parseFunctionCall = function(callee) {
