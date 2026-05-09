@@ -1492,11 +1492,12 @@
 				&& (currentToken.type != __GMLC_TokenType_String)
 				&& (currentToken.type != __GMLC_TokenType_UniqueVariable)
 				&& (currentToken.type != __GMLC_TokenType_Number)
+				&& (currentToken.type != __GMLC_TokenType_Keyword)
 				{
 		            throw_gmlc_error($"Expected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}", currentToken.line, currentToken.lineString, currentToken.column);
 		        }
 				
-		        var key = currentToken;
+				var key = currentToken;
 		        nextToken();  // Move past the identifier
 				
 				if (optionalToken(__GMLC_TokenType_Punctuation, ":")) {
@@ -1686,6 +1687,7 @@
 			switch (currentToken.type) {
 				case __GMLC_TokenType_Identifier:
 				case __GMLC_TokenType_UniqueVariable:
+				case __GMLC_TokenType_Keyword:
 				case __GMLC_TokenType_Function:{
 					var _name = currentToken.name;
 					nextToken();
