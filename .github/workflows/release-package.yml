@@ -23,11 +23,11 @@ jobs:
 
       - uses: tinkerer-red/GML-Actions/actions/package@v2
         with:
-          project-file: "MyGame.yyp"
-          package-id: "MyLibrary"
-          include-folders: "MyLibrary"
-          package-name: ""
-          package-publisher: ""
+          project-file: "GML Compiler.yyp"
+          package-id: "GMLC"
+          include-folders: "GMLC"
+          package-name: "GMLC"
+          package-publisher: "Tinkerer_Red"
           append-version-to-filename: "true"
           project-tool-version: "2024.14.160"
           gmpm-registry: "https://gmpm.gamemaker.io"
