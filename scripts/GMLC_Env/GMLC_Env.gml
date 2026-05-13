@@ -96,6 +96,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	_op_map[$ "|"] = true;
 	_op_map[$ "||"] = true;
 	_op_map[$ "|="] = true;
+	_op_map[$ ":="] = true;
 	exposeOperators(_op_map)
 	#endregion
 	#region Expose Functions
