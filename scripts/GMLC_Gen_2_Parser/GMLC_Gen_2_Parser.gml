@@ -540,7 +540,6 @@
 			else if (currentToken.type == __GMLC_TokenType_Whitespace)
 			&& (currentToken.value == "\n") {
 				// dont attempt to parse if end of block statement
-				show_debug_message("WAIT!")
 			}
 			else {
 				expr = parseConditionalExpression(); // Parse the return expression if any
@@ -1493,6 +1492,7 @@
 				&& (currentToken.type != __GMLC_TokenType_UniqueVariable)
 				&& (currentToken.type != __GMLC_TokenType_Number)
 				&& (currentToken.type != __GMLC_TokenType_Keyword)
+				&& (currentToken.type != __GMLC_TokenType_Function)
 				{
 		            throw_gmlc_error($"Expected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}", currentToken.line, currentToken.lineString, currentToken.column);
 		        }
