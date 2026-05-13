@@ -2,16 +2,18 @@
 /// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
 env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-var s = { for: 123 }
-show_debug_message(s.for)
-show_debug_message(s.for)
-show_debug_message(s.for)
-show_debug_message(s.for)
+var _hex_value_a = $123ABC;
+var _hex_value_b = #123ABC;
+show_debug_message(_hex_value_a)
+show_debug_message(_hex_value_b)
 ');
 
 show_debug_message(program())
 
-
+var _hex_value_a = $123ABC;
+var _hex_value_b = #123ABC;
+show_debug_message(_hex_value_a)
+show_debug_message(_hex_value_b)
 /*
 
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);

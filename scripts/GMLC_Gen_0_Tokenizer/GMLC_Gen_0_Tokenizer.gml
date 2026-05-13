@@ -154,13 +154,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _byte = __peekUTF8(_char_index);
 			if (_byte == undefined) break;
 			if (_byte >= 256) break; // non-ASCII can never match a keyword
-
+			
 			var _next = _node[_byte];
 			if (_next == undefined) break;
-
+			
 			_node = _next;
 			_char_index++;
-
+			
 			if (_node[0] != undefined)
 			&& (!__char_is_alphanumeric(__peekUTF8(_char_index))) {
 
@@ -723,11 +723,19 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			#endregion
 			
-			var _hex_value = real(_hex_str);
+			var _hex_value;
 			
-			static __maxSigned32 = 0x7FFFFFFF
-			if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32-1) _hex_value = __hexTo64Bit(_hex_str);
-			
+			if (_is_color) {
+				_hex_value = __cssHexToGmlColor(_hex_str);
+			}
+			else {
+				_hex_value = real(_hex_str);
+				
+				static __maxSigned32 = 0x7FFFFFFF;
+				if (_hex_value > __maxSigned32 || _hex_value < -__maxSigned32 - 1) {
+					_hex_value = __hexTo64Bit(_hex_str);
+				}
+			}
 			
 			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _raw_string, _hex_value, _start_line, _start_column, _byte_start, bytePos);
@@ -2041,6 +2049,24 @@ function __char_is_punctuation(char) {
 function __char_is_whitespace(char) {
     gml_pragma("forceinline");
     return char >= 0x09 && char <= 0x0D || char == 0x20 || char == 0x85;
+}
+
+/// @ignore
+function __cssHexToGmlColor(_hex_string) {
+	#region jsDoc
+	/// @function __cssHexToGmlColor(_hex_string)
+	/// @param {String} _hex_string
+	/// @returns {Real}
+	/// @description Converts a CSS RGB hex color into GameMaker's packed BGR color integer.
+	#endregion
+
+	_hex_string = string_replace_all(string_delete(_hex_string, 1, 2), "_", "");
+
+	var _red = real("0x" + string_copy(_hex_string, 1, 2));
+	var _green = real("0x" + string_copy(_hex_string, 3, 2));
+	var _blue = real("0x" + string_copy(_hex_string, 5, 2));
+
+	return (_blue << 16) | (_green << 8) | _red;
 }
 
 /// @ignore
