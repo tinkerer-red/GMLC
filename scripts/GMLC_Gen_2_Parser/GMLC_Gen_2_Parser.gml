@@ -838,6 +838,7 @@
 				var varLine = currentToken.line;
 				var varLineString = currentToken.lineString;
 				
+				//these must be a identifier one can not `var try = 123`
 				if (currentToken.type != __GMLC_TokenType_Identifier) {
 					if (_found_one) {
 						break;
@@ -1694,7 +1695,7 @@
 					return _name;
 				break;}
 				case __GMLC_TokenType_Number:{
-					var _first = ord(string_char_at(currentToken.name, 1));
+					var _first = string_ord_at(currentToken.name, 1);
 					if (__char_is_alphabetic(_first) || (_first == ord("_"))) {
 						var _name = currentToken.name;
 						nextToken();
@@ -1702,6 +1703,7 @@
 					}
 				break;}
 			}
+			
 			throw_gmlc_error($"Expected identifier after .\n{currentToken.lineString}\n", currentToken.line, currentToken.lineString, currentToken.column);
 		};
 
