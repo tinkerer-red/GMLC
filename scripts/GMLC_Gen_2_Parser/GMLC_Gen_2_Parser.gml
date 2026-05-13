@@ -316,7 +316,7 @@
 			else {
 				var _initialization = undefined;
 			}
-			expectToken(__GMLC_TokenType_Punctuation, ";");
+			optionalToken(__GMLC_TokenType_Punctuation, ";");
 			
 			//it's possible to make a for statement with no conditional statement
 			if (currentToken.name != ";") {
@@ -325,7 +325,7 @@
 			else {
 				var _condition = undefined;
 			}
-			expectToken(__GMLC_TokenType_Punctuation, ";");
+			optionalToken(__GMLC_TokenType_Punctuation, ";");
 			
 			if (currentToken.name != ")" && currentToken.name != ";") {
 				var _increment = parseBlock();
