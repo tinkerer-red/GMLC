@@ -2,14 +2,23 @@
 /// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
 env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-function foo() {
-	return function(){ return "bar" }
+function __assert_equals(a, b) {
+	if (a != b) {
+		show_debug_message("A != B")
+	}
+	else {
+		show_debug_message("A == B")
+	}
 }
 
-var _m = foo()
-show_debug_message(_m())
+score = 0;
 
-show_debug_message(foo()())
+__assert_equals(score++, 0);
+__assert_equals(++score, 2);
+__assert_equals(score--, 2);
+__assert_equals(--score, 0);
+
+show_debug_message(score)
 ');
 
 program()

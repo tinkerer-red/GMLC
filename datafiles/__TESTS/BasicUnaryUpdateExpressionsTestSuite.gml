@@ -193,7 +193,7 @@ function BasicUnaryUpdateExpressions() : TestSuite() constructor {
 		assert_equals(_target[$ _key]  , 0, "Struct bracket accessor :Dynamic: get failed.");
     });
 	
-	addFact("Array Unary Update", function() {
+	addFact("Unique Unary Update", function() {
 		score = 0
 		assert_equals(score  , 0, "Static variable get failed.");
         assert_equals(score++, 0, "Static variable PlusPlus Suffix failed.");
