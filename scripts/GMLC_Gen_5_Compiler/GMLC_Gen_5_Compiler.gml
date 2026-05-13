@@ -426,12 +426,6 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	_output.parentNode = _output;
 	
-	//statics
-	_output.staticsExecuted = false;
-	_output.statics = new __GMLC_Statics(_node[$ "name"]);
-	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
-	static_set(_output, _output.statics)
-	
 	_output.recursionCount = 0; 
 	
 	//this assists with converting locals from struct accessors to an array write
@@ -445,6 +439,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
 	_output.backupLocalsWrittenTo = [];//if the function is recursive stash the locals back into this array, to<->from
 	
+	//arguments
 	_output.argumentsDefault = __GMLCcompileArgumentList(_rootNode, _output, _node.arguments);
 	_output.argumentCount = array_length(_node.arguments.statements);
 	_output.prevArgCount = 0;
@@ -452,6 +447,13 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
+	//statics
+	_output.staticsExecuted = false;
+	_output.statics = new __GMLC_Statics(_node[$ "name"]);
+	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
+	static_set(_output, _output.statics)
+	
+	//block statement
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
 		
 	_output.returnValue = undefined;
@@ -533,12 +535,6 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output.parentConstructorName = undefined;
 	_output.parentConstructorCall = undefined;
 	
-	//statics
-	_output.staticsExecuted = false;
-	_output.statics = new __GMLC_Constructor_Statics(_node.name);
-	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
-	static_set(_output, _output.statics)
-	
 	_output.recursionCount = 0; 
 	
 	//locals
@@ -560,6 +556,13 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
+	//statics
+	_output.staticsExecuted = false;
+	_output.statics = new __GMLC_Constructor_Statics(_node.name);
+	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
+	static_set(_output, _output.statics)
+	
+	//block statement
 	_output.program = __GMLCcompileBlockStatement(_rootNode, _output, _node.statements);
 	
 	_output.returnValue = undefined;
@@ -2043,7 +2046,7 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 		_output.globals = _rootNode.globals;
 	}
 	else if (_node.scope == ScopeType_CONST) {
-		show_debug_message("wait")
+		show_error("SOMEHOW A CONSTANT WAS STILL APPEARING AT COMPILATION", true)
 	}
 	return __vanilla_method(_output, __GMLCGetScopeGetter(_node.scope))
 }
