@@ -44,9 +44,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"new": true,
 		"constructor": true,
 		"static": true,
-		//"#region": true,
-		//"#endregion": true,
-		"macro": true,
+		"#region": true,
+		"#endregion": true,
+		"#macro": true,
 		"try": true,
 		"catch": true,
 		"finally": true,
@@ -55,8 +55,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"_GMLINE_": true,
 		"_GMFUNCTION_": true,
 	};
-	_keyword_map[$ "#region"] = true;
-	_keyword_map[$ "#endregion"] = true;
 	
 	exposeKeywords(_keyword_map);
 	#endregion

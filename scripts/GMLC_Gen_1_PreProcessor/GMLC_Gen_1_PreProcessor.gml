@@ -187,33 +187,26 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			return body;
 		};
 		
-		if (currentToken.type == __GMLC_TokenType_Operator)
-		&& (currentToken.value == "#")
-		{
-			var _next_token = __peekToken();
-			if (_next_token.type == __GMLC_TokenType_Keyword)
-			&& (_next_token.value == "macro")
-			{
-				expectToken(__GMLC_TokenType_Operator, "#")
-				expectToken(__GMLC_TokenType_Keyword, "macro")
-				
-				var name = currentToken.value; // Assuming next token is the macro name
-				array_push(program.MacroVarNames, name);
-				
-				__nextToken();
-				
-				var macroBody = parseMacroBody(); // Collect the macro body starting after the name
-				program.MacroVar[$ name] = macroBody;
-				
-				return true;
-			}
+		if (env.isKeyword("#macro"))
+		&& (optionalToken(__GMLC_TokenType_Keyword, "#macro")) {
+			
+			var name = currentToken.name; // Assuming next token is the macro name
+			array_push(program.MacroVarNames, name);
+			
+			__nextToken();
+			
+			var macroBody = parseMacroBody(); // Collect the macro body starting after the name
+			program.MacroVar[$ name] = macroBody;
+			
+			return true;
 		}
 		
 		return false;
 	}
 	
 	static parseEnum = function() {
-		if (currentToken.type == __GMLC_TokenType_Keyword)
+		if (env.isKeyword("enum"))
+		&& (currentToken.type == __GMLC_TokenType_Keyword)
 		&& (currentToken.value == "enum")
 		{
 			var enumName, memberName, _expr;
@@ -365,11 +358,14 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	};
 	
 	static optionalToken = function(optionalType, optionalValue) {
-		if (currentToken == undefined) return;
+		if (currentToken == undefined) return false;
 		
 		if (currentToken.type == optionalType && currentToken.value == optionalValue) {
 			__nextToken();
+			return true;
 		}
+		
+		return false;
 	};
 	
 	static skipWhitespaces = function(){
