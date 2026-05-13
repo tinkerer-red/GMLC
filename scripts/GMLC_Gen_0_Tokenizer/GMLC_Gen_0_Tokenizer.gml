@@ -1459,6 +1459,19 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					array_push(tokens, _token);
 					return _token;
 				break;};
+				case ord(":"): { // nothing exists for just :
+					var _nextToken = __peekUTF8() ?? 0;
+					switch (_nextToken) {
+						case ord("="): { // :=
+							__nextUTF8();
+							_op_string = "=";
+							nextToken();
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, _start_line, _start_column, _byte_start, bytePos);
+							array_push(tokens, _token);
+							return _token;
+						break;}
+					}
+				break;};
 				default: {
 					throw_gmlc_error($"Entered tokenizeOperator with a non-valid entry string : {chr(currentCharCode)}")
 				break;}
