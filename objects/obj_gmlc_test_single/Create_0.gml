@@ -2,10 +2,17 @@
 /// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
 env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-for(var i=0; i<array_length(ship_ide) i++){
+function foo() {
+	return function(){ return "bar" }
+}
+
+var _m = foo()
+show_debug_message(_m())
+
+show_debug_message(foo()())
 ');
 
-//show_debug_message(program())
+program()
 
 
 /*

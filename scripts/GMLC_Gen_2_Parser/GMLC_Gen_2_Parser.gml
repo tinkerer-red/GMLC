@@ -530,8 +530,9 @@
 				// dont attempt to parse if its expected to return undefined
 			}
 			else if (currentToken.type == __GMLC_TokenType_Keyword)
-			&& (currentToken.value != "new") {
-				// dont attempt to parse keywords if new block is starting
+			&& (currentToken.value != "new")
+			&& (currentToken.value != "function") {
+				// dont attempt to parse keywords if new block is starting, or if a function is being defined.
 			}
 			else if (currentToken.type == __GMLC_TokenType_Punctuation)
 			&& (currentToken.value == "}") {
