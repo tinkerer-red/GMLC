@@ -261,7 +261,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				}
 				else {
 					// No explicit value, use the default incremental value
-					_expr = [new __GMLC_create_token(__GMLC_TokenType_Number, string(defaultValue), int64(defaultValue), currentToken.line, currentToken.column, currentToken.byteStart, currentToken.byteEnd, currentToken.lineString)];
+					_expr = [new __GMLC_create_token(__GMLC_TokenType_Number, string(defaultValue), int64(defaultValue), currentToken.fileName, currentToken.lineString, currentToken.line, currentToken.column, currentToken.byteStart, currentToken.byteEnd)];
 				}
 				
 				// Add member to the list
