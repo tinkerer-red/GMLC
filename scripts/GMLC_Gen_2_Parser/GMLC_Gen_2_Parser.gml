@@ -63,7 +63,7 @@
 		static cleanup = function() {
 			// i mean idk, what do you wanna do?
 		}
-		
+
 		static currentSourceInfo = function(_sourceInfo, _functionName=undefined) {
 			var _resolvedFunctionName = _functionName ?? ((currentFunction != undefined) ? currentFunction.name : (currentMetadataFunctionName ?? _sourceInfo.functionName));
 			return new GMLC_SourceInfo(_sourceInfo.fileName, _resolvedFunctionName, _sourceInfo.lineString, _sourceInfo.line, _sourceInfo.column, _sourceInfo.byteStart, _sourceInfo.byteEnd);
@@ -1475,9 +1475,6 @@
 					switch (currentToken.value) {
 						case "function": return parseFunctionDeclaration();
 						case "new": return parseNewExpression()
-						case "_GMFUNCTION_":{
-
-						break;}
 					}
 				break;}
 				case __GMLC_TokenType_Punctuation:{
@@ -1501,8 +1498,7 @@
 				break;}
 				case __GMLC_TokenType_UniqueVariable:{
 
-					// Handle literals
-					var node = new ASTUniqueIdentifier(currentToken.value, sourceInfo);
+					var node = new ASTUniqueIdentifier(currentToken.value, sourceInfo, currentToken.name);
 					nextToken();
 					return node;
 

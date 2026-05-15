@@ -202,13 +202,6 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					case "xor":{
 						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "^^", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
-					case "_GMLINE_":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Number, "_GMLINE_", _start_line, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-					break;}
-					case "_GMFUNCTION_":{
-						//this is actually handled later when we parse, for now just return the keyword
-						throw_gmlc_error("_GMFUNCTION_ is currently not supported")
-					break;}
 					default:{
 						var _token = new __GMLC_create_token(__GMLC_TokenType_Keyword, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
@@ -1053,22 +1046,6 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
-			//		case "_GMLINE_":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, "_GMLINE_", _start_line, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "_GMFUNCTION_":{
-			//			//this is actually handled later when we parse, for now just return the keyword
-			//			throw_gmlc_error("_GMFUNCTION_ is currently not supported")
-			//		break;}
-			//	}
-				
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Keyword, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//	array_push(tokens, _token);
-			//	return _token;
-			//}
-				
 			#endregion
 			// else...
 			nextToken();

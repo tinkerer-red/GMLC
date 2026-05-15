@@ -52,8 +52,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		"finally": true,
 		"throw": true,
 		"delete": true,
-		"_GMLINE_": true,
-		"_GMFUNCTION_": true,
 	};
 	
 	exposeKeywords(_keyword_map);
@@ -538,21 +536,21 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		},
 		"_GMFILE_":{
 			get: function(){ throw_gmlc_error($"_GMFILE_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
-			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
+			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFILE_", struct_get(self, "line"), struct_get(self, "lineString")) },
 			compileTimeConstant: true,
-			compileTimeGet: function(_context){ return _context.currentFunction.name; },
+			compileTimeGet: function(_context){ return _context.fileName; },
 		},
 		"_GMFUNCTION_":{
 			get: function(){ throw_gmlc_error($"_GMFUNCTION_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
 			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
 			compileTimeConstant: true,
-			compileTimeGet: function(_context){ return _context.currentFunction.name; },
+			compileTimeGet: function(_context){ return _context.functionName; },
 		},
 		"_GMLINE_":{
 			get: function(){ throw_gmlc_error($"_GMLINE_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
-			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
+			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMLINE_", struct_get(self, "line"), struct_get(self, "lineString")) },
 			compileTimeConstant: true,
-			compileTimeGet: function(_context){ return _context.currentFunction.name; },
+			compileTimeGet: function(_context){ return _context.line; },
 		},
 	}
 	_var_map[$ "self"] = {
@@ -577,9 +575,20 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	set_exposure(GMLC_EXPOSURE.SAFE);
 	
 	#endregion
-	
+
 	#region Public
-	
+
+	static __new_anonymous_script_name = function() {
+		static __anonymous_script_id = 0;
+		return $"gml_Script_anon@{__anonymous_script_id++}";
+	}
+
+	static __resolve_compile_source_name = function(_name, _fallback = undefined) {
+		if (is_string(_name) && _name != "") return _name;
+		if (is_string(_fallback) && _fallback != "") return _fallback;
+		return __new_anonymous_script_name();
+	}
+
 	#region jsDoc
 	/// @func    compile()
 	/// @desc    Runs the complete compilation pipeline on the given source text.
@@ -587,8 +596,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @param   {String} sourceCode : Source text to compile
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_5_Compiler
 	#endregion
-	static compile = function(_sourceCode, _name = "") {
-		currentScriptName = _name;
+	static compile = function(_sourceCode = "", _name = "") {
+		currentScriptName = __resolve_compile_source_name(_name);
 		//append the macros to the end of the source code.
 		_sourceCode = __appendMacros(_sourceCode);
 		
@@ -1073,7 +1082,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @desc    Runs the full pipeline from pre-processed program through to compiled output.
 	/// @ignore
 	#endregion
-	static __compile_pipeline = function(_source) {
+	static __compile_pipeline = function(_source, _name = undefined) {
+		currentScriptName = __resolve_compile_source_name(_name);
 		_source = __appendMacros(_source);
 		tokenizer.initialize(_source);
 		var _program = tokenizer.parseAll();
@@ -1088,7 +1098,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @ignore
 	#endregion
 	static __finish_compile = function(_program, _log_name = undefined) {
-		currentScriptName = _log_name ?? "";
+		currentScriptName = __resolve_compile_source_name(_log_name, _program.sourceInfo.fileName);
 		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
 		parser.initialize(_program);
 		var _ast = parser.parseAll();
@@ -1130,7 +1140,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _i = 0; repeat(_count) {
 			var _entry  = _sources[_i];
 			var _source = is_string(_entry) ? _entry : _entry.source;
-			_names[_i]  = is_string(_entry) ? $"source_{_i}" : _entry.name;
+			_names[_i]  = __resolve_compile_source_name(is_string(_entry) ? undefined : ((struct_exists(_entry, "name")) ? _entry.name : undefined));
 			currentScriptName = _names[_i];
 			_source = __appendMacros(_source);
 			tokenizer.initialize(_source);
@@ -1188,9 +1198,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _success = false;
 		var _error   = undefined;
 		//try {
-			var _program = __compile_pipeline(_source);
+			var _program = __compile_pipeline(_source, _name);
 			__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-			__finish_compile(_program);
+			__finish_compile(_program, _name);
 			_success = true;
 		//}
 		//catch (_err) { _error = _err; }
@@ -1208,9 +1218,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			var _success    = false;
 			var _error      = undefined;
 			//try {
-				var _program = __compile_pipeline(_source);
+				var _program = __compile_pipeline(_source, _entry_name);
 				__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-				__finish_compile(_program);
+				__finish_compile(_program, _entry_name);
 				_success = true;
 			//}
 			//catch (_err) { _error = _err; }
@@ -1312,6 +1322,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		// Phase 1 — Tokenize + preprocess each file ONCE; collect global symbol table
 		_i = 0; repeat(_file_count) {
 			var _source = __appendMacros(_entries[_i].source);
+			currentScriptName = __resolve_compile_source_name(_entries[_i].name);
 			tokenizer.initialize(_source);
 			var _program = tokenizer.parseAll();
 			pre_processor.initialize(_program);
@@ -1345,7 +1356,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			var _error   = undefined;
 			//try {
 				__inject_batch_context(_programs[_i], _globalMacros, _globalMacroNames, _globalEnums, _globalEnumNames);
-				__finish_compile(_programs[_i]);
+				__finish_compile(_programs[_i], _name);
 				_success = true;
 			//}
 			//catch (_err) { _error = _err; }

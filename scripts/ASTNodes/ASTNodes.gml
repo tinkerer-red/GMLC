@@ -828,9 +828,10 @@ function ASTLiteral(_value, _sourceInfo, _name=undefined) : ASTNode(_sourceInfo)
 	
 	static get_children = function(_top_down) {}
 }
-function ASTUniqueIdentifier(_value, _sourceInfo) : ASTNode(_sourceInfo) constructor {
+function ASTUniqueIdentifier(_value, _sourceInfo, _name=undefined) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_UniqueIdentifier;
 	value = _value;
+	name = _name;
 	scope = ScopeType_UNIQUE;
 	
 	static get_children = function(_top_down) {}

@@ -17,6 +17,7 @@
 		
 		ast = undefined;
 		currentScript = undefined;
+		currentFunction = undefined;
 		nodeStack = [];
 		finished = false;
 		
@@ -78,7 +79,7 @@
 				}
 				
 				// Process the current node as all children have been processed
-				var _node = Process(currentNode.node);
+				var _node = Process(currentNode);
 				_node.visited = false;
 				
 				if (currentNode.parent == undefined) {
@@ -103,7 +104,8 @@
 			}
 		};
 		
-		static Process = function(node) {
+		static Process = function(_nodeEntry) {
+			var node = _nodeEntry.node;
 			
 			//attempt to repopulate all scopes which pass through
 			if (struct_exists(node, "scope")) {
@@ -283,7 +285,14 @@
 				break;}
 				
 				case __GMLC_NodeType_UniqueIdentifier:{
-					
+					if (isCompileTimeConstantVariable(node.value)) {
+						if (isCompileTimeAssignmentTarget(_nodeEntry)) {
+							throw_gmlc_error($"Attempting to write to a read-only variable {node.name ?? "<compile-time constant>"}", node.line, node.lineString, node.column);
+						}
+
+						var _literalValue = node.value.compileTimeGet(compileTimeContext(_nodeEntry));
+						return new ASTLiteral(_literalValue, node.sourceInfo, node.name);
+					}
 				break;}
 				
 				case __GMLC_NodeType_ConstructorDeclaration:{
@@ -319,6 +328,62 @@
 		#endregion
 		
 		#region Helper Functions
+		static compileTimeContext = function(_nodeEntry) {
+			var _node = _nodeEntry.node;
+			var _sourceInfo = _node.sourceInfo;
+			return {
+				env: env,
+				program: ast,
+				ast: ast,
+				scriptAST: ast,
+				currentScript: currentScript,
+				currentFunction: currentFunction,
+				currentNode: _node,
+				parentNode: _nodeEntry.parent,
+				parentKey: _nodeEntry.key,
+				parentIndex: _nodeEntry.index,
+				sourceInfo: _sourceInfo,
+				currentSourceName: _sourceInfo.fileName,
+				currentLine: _sourceInfo.line,
+				currentColumn: _sourceInfo.column,
+				currentByteStart: _sourceInfo.byteStart,
+				currentByteEnd: _sourceInfo.byteEnd,
+				currentLineString: _sourceInfo.lineString,
+				fileName: _sourceInfo.fileName,
+				functionName: _sourceInfo.functionName,
+				line: _sourceInfo.line,
+				column: _sourceInfo.column,
+				byteStart: _sourceInfo.byteStart,
+				byteEnd: _sourceInfo.byteEnd,
+				lineString: _sourceInfo.lineString,
+				scope: _node.scope,
+			};
+		}
+
+		static isCompileTimeConstantVariable = function(_value) {
+			return is_struct(_value)
+			&& struct_exists(_value, "compileTimeConstant")
+			&& _value.compileTimeConstant
+			&& struct_exists(_value, "compileTimeGet");
+		}
+
+		static isCompileTimeAssignmentTarget = function(_nodeEntry) {
+			var _parent = _nodeEntry.parent;
+			if (!is_instanceof(_parent, ASTNode)) return false;
+
+			if (_parent.type == __GMLC_NodeType_AssignmentExpression)
+			&& (_nodeEntry.key == "left") {
+				return true;
+			}
+
+			if (_parent.type == __GMLC_NodeType_UpdateExpression)
+			&& (_nodeEntry.key == "expr") {
+				return true;
+			}
+
+			return false;
+		}
+
 		static __argumentsAreLiteral = function(_arguments) {
 			var _i=0; repeat(array_length(_arguments)) {
 				if (_arguments[_i].type != __GMLC_NodeType_Literal) {

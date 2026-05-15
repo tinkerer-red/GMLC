@@ -11,11 +11,16 @@ function foo() {
 foo();
 ');
 
+
 program()
 
-var _value = "Hello World!";
-var _result = string_delete(_value, 100, 1);
-show_debug_message(_result)
+function foo() {
+	show_debug_message(_GMFILE_)
+	show_debug_message(_GMFUNCTION_)
+	show_debug_message(_GMLINE_)
+}
+
+foo();
 /*
 
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
