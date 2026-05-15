@@ -49,9 +49,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		sourceCodeCharLength = string_length(sourceCodeString);
 		tokens = [];
 		currentFileName = env.currentScriptName;
-		program = new __GMLC_ProgramTokens(tokens);
-		
 		sourceCodeLineArray = string_split(sourceCodeString, "\n");
+		program = new __GMLC_ProgramTokens(tokens, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[0] ?? "", 1, 0, 0, 0));
 		
 		sourceCodeByteLength = string_byte_length(sourceCodeString);
 		charPos = 0;
@@ -124,7 +123,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			while (currentCharCode != undefined) {
 				if (currentCharCode == ord("\n")) {
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Whitespace, "\n", "\n", currentFileName, sourceCodeLineArray[line-1], line, column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Whitespace, "\n", "\n", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[line-1], line, column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				}
@@ -180,38 +179,38 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 
 				switch (_identifier) {
 					case "begin":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "{", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "{", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "end":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "}", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "}", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "mod":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "mod", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "mod", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "div":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "div", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "div", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "not":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "!", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "!", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "and":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "&&", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "&&", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "or":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "||", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "||", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "xor":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "^^", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "^^", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "_GMLINE_":{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Number, "_GMLINE_", _start_line, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Number, "_GMLINE_", _start_line, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 					case "_GMFUNCTION_":{
 						//this is actually handled later when we parse, for now just return the keyword
 						throw_gmlc_error("_GMFUNCTION_ is currently not supported")
 					break;}
 					default:{
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Keyword, _identifier, _identifier, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Keyword, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					break;}
 				}
 				
@@ -281,13 +280,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					_raw_string += _string+")";
 			
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 					
 				}
 				else {
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _return.value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _return.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				}
@@ -342,7 +341,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				}
 				
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _identifier, _return.value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+				var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _identifier, _return.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 				array_push(tokens, _token);
 				return _token;
 			}
@@ -393,7 +392,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				}
 				
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType_UniqueVariable, _identifier, _return.value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+				var _token = new __GMLC_create_token(__GMLC_TokenType_UniqueVariable, _identifier, _return.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 				array_push(tokens, _token);
 				return _token;
 			}
@@ -421,7 +420,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				if (currentCharCode == ord("\n"))
 				|| (currentCharCode == ord("\r")) {
 					// Leave the newline for parseSkipWhitespace; don't advance.
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				}
@@ -438,7 +437,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -476,7 +475,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Comment, _raw_string, _raw_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -628,13 +627,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			if (!_string_closed) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+				var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 				array_push(tokens, _token);
 				return _token;
 			}
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -719,7 +718,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			if (_len > 16) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Hex number {_raw_string} is too large or too small :: input length == {_len}";
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+				var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 				array_push(tokens, _token);
 				return _token;
 			}
@@ -740,7 +739,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _raw_string, _hex_value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _raw_string, _hex_value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -809,7 +808,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			if (_len > 64) {
 				var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {line} : Binary number {_raw_string} is too large or too small";
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+				var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 				array_push(tokens, _token);
 				return _token;
 			}
@@ -822,7 +821,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			if (_binary_value > __maxSigned32 || _binary_value < -__maxSigned32-1) _binary_value = __binaryTo64Bit(_str);
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _raw_string, _binary_value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _raw_string, _binary_value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -867,7 +866,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			if (_number > __maxSigned32 || _number < -__maxSigned32-1) _number = int64(_str);
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _num_string, _number, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _num_string, _number, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -912,7 +911,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				_raw_string += _string+")"
 				
 				nextToken();
-				var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+				var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 				array_push(tokens, _token);
 				return _token;
 			}
@@ -922,7 +921,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//var _index = env.getFunction(_identifier);
 			//if (_index != undefined) {
 			//	nextToken();
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _index.value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _index.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//	array_push(tokens, _token);
 			//	return _token;
 			//}
@@ -933,7 +932,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//var _index = env.getConstant(_identifier);
 			//if (_index != undefined) {
 			//	nextToken();
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _identifier, _index.value, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _identifier, _index.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//	array_push(tokens, _token);
 			//	return _token;
 			//}
@@ -944,7 +943,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//var _index = env.getVariable(_identifier);
 			//if (_index != undefined) {
 			//	nextToken();
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_UniqueVariable, _identifier, _identifier, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType_UniqueVariable, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//	array_push(tokens, _token);
 			//	return _token;
 			//}
@@ -990,7 +989,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					
 					if (array_contains(_enum_tail_arr, _temp_identifier)) {
 						var _val = _index.value[$ _temp_identifier];
-						var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _temp_identifier, _val, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+						var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _temp_identifier, _val, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 						_found = true;
 						break;
 					}
@@ -1015,47 +1014,47 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//if (_index != undefined) {
 			//	switch (_identifier) {
 			//		case "begin":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "{", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "{", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "end":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "}", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "}", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "mod":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "mod", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "mod", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "div":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "div", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "div", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "not":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "!", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "!", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "and":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "&&", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "&&", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "or":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "||", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "||", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "xor":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "^^", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "^^", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
 			//		case "_GMLINE_":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, "_GMLINE_", _start_line, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Number, "_GMLINE_", _start_line, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//			array_push(tokens, _token);
 			//			return _token;
 			//		break;}
@@ -1065,7 +1064,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			//		break;}
 			//	}
 				
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Keyword, _identifier, _identifier, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Keyword, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			//	array_push(tokens, _token);
 			//	return _token;
 			//}
@@ -1073,7 +1072,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			#endregion
 			// else...
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Identifier, _identifier, _identifier, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Identifier, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -1102,7 +1101,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			_raw_string += _string+chr(currentCharCode) // add the closing quote
 			
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -1131,27 +1130,27 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("#"): { // #
 					_op_string += chr(currentCharCode);
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("$"): { // $
 					_op_string += chr(currentCharCode);
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1163,14 +1162,14 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					_op_string += chr(currentCharCode);
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, "mod", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, "mod", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1182,7 +1181,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1190,13 +1189,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1208,13 +1207,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1226,7 +1225,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1234,13 +1233,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1252,7 +1251,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1260,13 +1259,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1278,13 +1277,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1296,7 +1295,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, "!=", currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, "!=", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1304,7 +1303,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1312,13 +1311,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1330,13 +1329,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1348,7 +1347,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1356,13 +1355,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1379,26 +1378,26 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 									__nextUTF8();
 									_op_string += chr(currentCharCode);
 									nextToken();
-									var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+									var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 									array_push(tokens, _token);
 									return _token;
 								break;}
 							}
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("@"): { // @
 					_op_string += chr(currentCharCode);
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1410,7 +1409,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1418,20 +1417,20 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
 				case ord("~"): { // ~
 					_op_string += chr(currentCharCode);
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1443,7 +1442,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1451,13 +1450,13 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string += chr(currentCharCode);
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
 					}
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;};
@@ -1468,7 +1467,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 							__nextUTF8();
 							_op_string = "=";
 							nextToken();
-							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+							var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _op_string, _op_string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 							array_push(tokens, _token);
 							return _token;
 						break;}
@@ -1493,7 +1492,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		
 			var _punctuation = chr(currentCharCode);
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _punctuation, _punctuation, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _punctuation, _punctuation, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -1506,7 +1505,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _byte_start = bytePos;
 		if (currentCharCode == ord(@'\')) {
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_EscapeOperator, "\\", "\\", currentFileName, sourceCodeLineArray[line-1], line, column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_EscapeOperator, "\\", "\\", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[line-1], line, column, _byte_start, bytePos));
 			array_push(tokens, _token);
 			return _token;
 		}
@@ -1522,7 +1521,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var illegalChar = chr(currentCharCode);
 		var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : invalid token \"{illegalChar}\"";
 		nextToken();
-		var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, illegalChar, _error, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+		var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, illegalChar, _error, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 		
 		array_push(tokens, _token);
 		
@@ -1695,7 +1694,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				case ord("\n"): { // \n
 					var _error = $"Object: \{<OBJ>\} Event: \{<EVENT>\} at line {_start_line} : Error parsing string literal - found newline within string";
 					nextToken();
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Illegal, _raw_string, _error, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				break;}
@@ -1728,22 +1727,22 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		// $" full "
 		if (string_starts_with(_raw_string, @'$"') && string_ends_with(_raw_string, @'"')) {
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_String, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 		}
 		// $" begin {
 		else if (string_starts_with(_raw_string, @'$"') && string_ends_with(_raw_string, "{")) {
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_TemplateStringBegin, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_TemplateStringBegin, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 		}
 		// } middle {
 		if (string_starts_with(_raw_string, "}") && string_ends_with(_raw_string, "{")) {
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_TemplateStringMiddle, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_TemplateStringMiddle, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 		}
 		// } end "
 		if (string_starts_with(_raw_string, "}") && string_ends_with(_raw_string, @'"')) {
 			nextToken();
-			var _token = new __GMLC_create_token(__GMLC_TokenType_TemplateStringEnd, _raw_string, _string, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos);
+			var _token = new __GMLC_create_token(__GMLC_TokenType_TemplateStringEnd, _raw_string, _string, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 		}
 		
 		return _token;
@@ -2167,7 +2166,7 @@ function __binaryTo64Bit(_binaryString) {
 #endregion
 #region Constructors
 /// @ignore
-function __GMLC_ProgramTokens(_tokens) constructor {
+function __GMLC_ProgramTokens(_tokens, _sourceInfo) constructor {
 	GlobalVar = {};
 	MacroVar  = {};
 	EnumVar   = {};
@@ -2177,24 +2176,27 @@ function __GMLC_ProgramTokens(_tokens) constructor {
 	LocalVarNames  = [];
 	
 	tokens = _tokens;
+	sourceInfo = _sourceInfo;
+	fileName = _sourceInfo.fileName;
+	functionName = _sourceInfo.functionName;
 }
 /// @ignore
-function __GMLC_create_token(_type, _name, _value, _file_name, _lineString, _line, _column, _byte_start, _byte_end) constructor {
+function __GMLC_create_token(_type, _name, _value, _sourceInfo) constructor {
 	type   = _type;
 	name   = _name;
 	value  = _value;
-	fileName = _file_name;
-	lineString = _lineString;
-	line   = _line;
-	column = _column;
-	byteStart  = _byte_start;
-	byteEnd    = _byte_end;
-		
+	sourceInfo = _sourceInfo;
+	fileName = _sourceInfo.fileName;
+	functionName = _sourceInfo.functionName;
+	lineString = _sourceInfo.lineString;
+	line   = _sourceInfo.line;
+	column = _sourceInfo.column;
+	byteStart  = _sourceInfo.byteStart;
+	byteEnd    = _sourceInfo.byteEnd;
+
 	static toString = function() {
 		return $"\{type: \"{type}\", name: \"{name}\", value: \"{value}\", line: {line}, column: {column}, lineString: {lineString}\}"
 	}
 };
 #endregion
 #endregion
-
-

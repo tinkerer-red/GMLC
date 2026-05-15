@@ -132,122 +132,137 @@
 						switch (ind_node.value) {
 							case "background_visible": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Visible, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Visible, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_foreground": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Foreground, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Foreground, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_index": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Index, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Index, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_x": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.X, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.X, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_y": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Y, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Y, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_width": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Width, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Width, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_height": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Height, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Height, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_htiled": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.HTiled, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.HTiled, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_vtiled": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.VTiled, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.VTiled, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_xscale": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.XScale, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.XScale, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_yscale": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.YScale, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.YScale, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_hspeed": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.HSpeed, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.HSpeed, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_vspeed": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.VSpeed, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.VSpeed, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_blend": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Blend, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Blend, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_alpha": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.line, ind_node.lineString, "__background_get"),
+									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
 									[
-										new ASTLiteral(e__BG.Alpha, ind_node.line, ind_node.lineString),
-									]
+										new ASTLiteral(e__BG.Alpha, ind_node.sourceInfo),
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 						}
@@ -261,137 +276,152 @@
 						switch (ind_node.value) {
 							case "background_visible": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Visible, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Visible, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_foreground": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Foreground, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Foreground, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_index": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Index, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Index, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_x": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.X, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.X, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_y": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Y, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Y, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_width": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Width, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Width, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_height": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Height, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Height, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_htiled": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.HTiled, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.HTiled, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_vtiled": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.VTiled, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.VTiled, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_xscale": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.XScale, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.XScale, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_yscale": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.YScale, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.YScale, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_hspeed": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.HSpeed, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.HSpeed, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_vspeed": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.VSpeed, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.VSpeed, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_blend": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Blend, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Blend, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 							case "background_alpha": {
 								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.line, ind_node.lineString, "__background_set"),
+									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
 									[
-										new ASTLiteral(e__BG.Alpha, ind_node.line, ind_node.lineString),
+										new ASTLiteral(e__BG.Alpha, ind_node.sourceInfo),
 										arguments[1]
-									]
+									],
+									ind_node.sourceInfo
 								);
 							break;}
 						}
@@ -404,8 +434,9 @@
 				if (node.left.type == "Identifier") {
 					if (node.left.value == "background_color") || (node.left.value == "background_colour") {
 						return new ASTCallExpression(
-							new ASTLiteral(__background_set_colour, _node.line, _node.lineString, "__background_set_colour"),
-							[node.right ]
+							new ASTLiteral(__background_set_colour, _node.sourceInfo, "__background_set_colour"),
+							[node.right ],
+							_node.sourceInfo
 						);
 					}
 				}
@@ -416,16 +447,18 @@
 					case "background_color":
 					case "background_colour":{
 						return new ASTCallExpression(
-								new ASTLiteral(__background_get_colour, _node.line, _node.lineString, "__background_get_colour"),
-								[]
+								new ASTLiteral(__background_get_colour, _node.sourceInfo, "__background_get_colour"),
+								[],
+								_node.sourceInfo
 							);
 					break;}
 					
 					case "background_showcolor":
 					case "background_showcolour":{
 						return new ASTCallExpression(
-								new ASTLiteral(__background_get_showcolour, _node.line, _node.lineString, "__background_get_showcolour"),
-								[]
+								new ASTLiteral(__background_get_showcolour, _node.sourceInfo, "__background_get_showcolour"),
+								[],
+								_node.sourceInfo
 							);
 					break;}
 					
@@ -434,13 +467,15 @@
 			
 			//background_visible
 			return new ASTCallExpression(
-								new ASTLiteral(background_visible, _node.line, _node.lineString, "background_visible"),
-								[]
+								new ASTLiteral(background_visible, _node.sourceInfo, "background_visible"),
+								[],
+								_node.sourceInfo
 							);
 			//background_showcolor
 			return new ASTCallExpression(
-								new ASTLiteral(background_showcolor, _node.line, _node.lineString, "background_showcolor"),
-								[]
+								new ASTLiteral(background_showcolor, _node.sourceInfo, "background_showcolor"),
+								[],
+								_node.sourceInfo
 							);
 							
 			
@@ -454,8 +489,9 @@
 				if (node.left.type == "Identifier") {
 					if (node.left.value == "background_color") || (node.left.value == "background_colour") {
 						return new ASTCallExpression(
-							new ASTLiteral(__background_set_colour, _node.line, _node.lineString, "__background_set_colour"),
-							[node.right ]
+							new ASTLiteral(__background_set_colour, _node.sourceInfo, "__background_set_colour"),
+							[node.right ],
+							_node.sourceInfo
 						);
 					}
 				}
@@ -467,151 +503,166 @@
 					if (ind_node.type == "Identifier") {
 						if (ind_node.value == "background_visible") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Visible, _node.line, _node.lineString, "e__BG.Visible"),
+									new ASTLiteral(e__BG.Visible, _node.sourceInfo, "e__BG.Visible"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_foreground") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Foreground, _node.line, _node.lineString, "e__BG.Foreground"),
+									new ASTLiteral(e__BG.Foreground, _node.sourceInfo, "e__BG.Foreground"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_index") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Index, _node.line, _node.lineString, "e__BG.Index"),
+									new ASTLiteral(e__BG.Index, _node.sourceInfo, "e__BG.Index"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_x") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.X, _node.line, _node.lineString, "e__BG.X"),
+									new ASTLiteral(e__BG.X, _node.sourceInfo, "e__BG.X"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_y") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Y, _node.line, _node.lineString, "e__BG.Y"),
+									new ASTLiteral(e__BG.Y, _node.sourceInfo, "e__BG.Y"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_width") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Width, _node.line, _node.lineString, "e__BG.Width"),
+									new ASTLiteral(e__BG.Width, _node.sourceInfo, "e__BG.Width"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_height") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Height, _node.line, _node.lineString, "e__BG.Height"),
+									new ASTLiteral(e__BG.Height, _node.sourceInfo, "e__BG.Height"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_htiled") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.HTiled, _node.line, _node.lineString, "e__BG.HTiled"),
+									new ASTLiteral(e__BG.HTiled, _node.sourceInfo, "e__BG.HTiled"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_vtiled") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.VTiled, _node.line, _node.lineString, "e__BG.VTiled"),
+									new ASTLiteral(e__BG.VTiled, _node.sourceInfo, "e__BG.VTiled"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_xscale") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.XScale, _node.line, _node.lineString, "e__BG.XScale"),
+									new ASTLiteral(e__BG.XScale, _node.sourceInfo, "e__BG.XScale"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_yscale") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.YScale, _node.line, _node.lineString, "e__BG.YScale"),
+									new ASTLiteral(e__BG.YScale, _node.sourceInfo, "e__BG.YScale"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_hspeed") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.HSpeed, _node.line, _node.lineString, "e__BG.HSpeed"),
+									new ASTLiteral(e__BG.HSpeed, _node.sourceInfo, "e__BG.HSpeed"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_vspeed") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.VSpeed, _node.line, _node.lineString, "e__BG.VSpeed"),
+									new ASTLiteral(e__BG.VSpeed, _node.sourceInfo, "e__BG.VSpeed"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_blend") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Blend, _node.line, _node.lineString, "e__BG.Blend"),
+									new ASTLiteral(e__BG.Blend, _node.sourceInfo, "e__BG.Blend"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_alpha") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.line, _node.lineString, "__background_get"),
+								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
 								[
-									new ASTLiteral(e__BG.Alpha, _node.line, _node.lineString, "e__BG.Alpha"),
+									new ASTLiteral(e__BG.Alpha, _node.sourceInfo, "e__BG.Alpha"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
@@ -661,151 +712,166 @@
 					if (ind_node.type == "Identifier") {
 						if (ind_node.value == "background_visible") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Visible, _node.line, _node.lineString, "e__BG.Visible"),
+									new ASTLiteral(e__BG.Visible, _node.sourceInfo, "e__BG.Visible"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_foreground") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Foreground, _node.line, _node.lineString, "e__BG.Foreground"),
+									new ASTLiteral(e__BG.Foreground, _node.sourceInfo, "e__BG.Foreground"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_index") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Index, _node.line, _node.lineString, "e__BG.Index"),
+									new ASTLiteral(e__BG.Index, _node.sourceInfo, "e__BG.Index"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_x") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.X, _node.line, _node.lineString, "e__BG.X"),
+									new ASTLiteral(e__BG.X, _node.sourceInfo, "e__BG.X"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_y") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Y, _node.line, _node.lineString, "e__BG.Y"),
+									new ASTLiteral(e__BG.Y, _node.sourceInfo, "e__BG.Y"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_width") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Width, _node.line, _node.lineString, "e__BG.Width"),
+									new ASTLiteral(e__BG.Width, _node.sourceInfo, "e__BG.Width"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_height") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Height, _node.line, _node.lineString, "e__BG.Height"),
+									new ASTLiteral(e__BG.Height, _node.sourceInfo, "e__BG.Height"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_htiled") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.HTiled, _node.line, _node.lineString, "e__BG.HTiled"),
+									new ASTLiteral(e__BG.HTiled, _node.sourceInfo, "e__BG.HTiled"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_vtiled") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.VTiled, _node.line, _node.lineString, "e__BG.VTiled"),
+									new ASTLiteral(e__BG.VTiled, _node.sourceInfo, "e__BG.VTiled"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_xscale") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.XScale, _node.line, _node.lineString, "e__BG.XScale"),
+									new ASTLiteral(e__BG.XScale, _node.sourceInfo, "e__BG.XScale"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_yscale") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.YScale, _node.line, _node.lineString, "e__BG.YScale"),
+									new ASTLiteral(e__BG.YScale, _node.sourceInfo, "e__BG.YScale"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_hspeed") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.HSpeed, _node.line, _node.lineString, "e__BG.HSpeed"),
+									new ASTLiteral(e__BG.HSpeed, _node.sourceInfo, "e__BG.HSpeed"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_vspeed") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.VSpeed, _node.line, _node.lineString, "e__BG.VSpeed"),
+									new ASTLiteral(e__BG.VSpeed, _node.sourceInfo, "e__BG.VSpeed"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_blend") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Blend, _node.line, _node.lineString, "e__BG.Blend"),
+									new ASTLiteral(e__BG.Blend, _node.sourceInfo, "e__BG.Blend"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
 						if (ind_node.value == "background_alpha") {
 							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.line, _node.lineString, "__background_set"),
+								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
 								[
-									new ASTLiteral(e__BG.Alpha, _node.line, _node.lineString, "e__BG.Alpha"),
+									new ASTLiteral(e__BG.Alpha, _node.sourceInfo, "e__BG.Alpha"),
 									node.right
-								]
+								],
+								_node.sourceInfo
 							);
 							
 						}
@@ -818,13 +884,15 @@
 			
 			//background_visible
 			return new ASTCallExpression(
-								new ASTLiteral(background_visible, _node.line, _node.lineString, "background_visible"),
-								[]
+								new ASTLiteral(background_visible, _node.sourceInfo, "background_visible"),
+								[],
+								_node.sourceInfo
 							);
 			//background_showcolor
 			return new ASTCallExpression(
-								new ASTLiteral(background_showcolor, _node.line, _node.lineString, "background_showcolor"),
-								[]
+								new ASTLiteral(background_showcolor, _node.sourceInfo, "background_showcolor"),
+								[],
+								_node.sourceInfo
 							);
 							
 			
@@ -841,7 +909,6 @@
 		#endregion
 	}
 #endregion
-
 
 
 

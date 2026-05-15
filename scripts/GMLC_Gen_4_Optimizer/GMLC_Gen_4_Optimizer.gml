@@ -283,7 +283,7 @@
 								show_debug_message($"Optimizer :: constantPropagation :: Could us literal assignment of `{_constant_value}` in line ({_node.line}) `{_node.lineString}`")
 								
 								_constant_data.value = _constant_value
-								var _new_ast = new ASTAssignmentExpression("=", _left, new ASTLiteral(_constant_value, _node.right.line, _node.right.lineString), _node.line, _node.lineString)
+								var _new_ast = new ASTAssignmentExpression("=", _left, new ASTLiteral(_constant_value, _node.right.sourceInfo), _node.sourceInfo)
 								_new_ast.skipOptimization = _node.skipOptimization;
 								return _new_ast;
 							}
@@ -322,7 +322,7 @@
 		            
 					if (_node.value == _constant_identifier) {
 						show_debug_message($"Optimizer :: constantPropagation :: Could replace `{_constant_identifier}` with `{_constant_data.value}` in line ({_node.line}) `{_node.lineString}`")
-						return new ASTLiteral(_constant_data.value, _node.line, _node.lineString, _node.name);
+						return new ASTLiteral(_constant_data.value, _node.sourceInfo, _node.name);
 					}
 					
 					//safe to continue
@@ -508,77 +508,77 @@
 							case "|":{
 								var _value = _node.left.value | _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "^":{
 								var _value = _node.left.value ^ _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "&":{
 								var _value = _node.left.value & _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "==":{
 								var _value = _node.left.value == _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "!=":{
 								var _value = _node.left.value != _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "<":{
 								var _value = _node.left.value < _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "<=":{
 								var _value = _node.left.value <= _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case ">":{
 								var _value = _node.left.value > _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case ">=":{
 								var _value = _node.left.value >= _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "<<":{
 								var _value = _node.left.value << _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case ">>":{
 								var _value = _node.left.value >> _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "+":{
 								var _value = _node.left.value + _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "-":{
 								var _value = _node.left.value - _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "*":{
 								var _value = _node.left.value * _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "/":{
 								var _value = _node.left.value / _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "mod":{
 								if (_node.right.value == 0) {
@@ -586,7 +586,7 @@
 								}
 								var _value = _node.left.value mod _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "div":{
 								if (_node.right.value == 0) {
@@ -594,7 +594,7 @@
 								}
 								var _value = _node.left.value div _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 						}
 					}
@@ -619,13 +619,13 @@
 								&& (is_infinity(_node.left.value)) {
 									var _value = _node.left.value
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.right.value)) {
 									var _value = _node.right.value
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								
 							break;}
@@ -646,13 +646,13 @@
 								&& (is_infinity(_node.left.value)) {
 									var _value = -_node.left.value
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.right.value)) {
 									var _value = -_node.right.value
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								
 							break;}
@@ -662,13 +662,13 @@
 								&& (_node.left.value == 0) {
 									var _value = 0;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 0) {
 									var _value = 0;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								//multiply by 1
 								if (_node.left.type  == __GMLC_NodeType_Literal)
@@ -689,26 +689,26 @@
 								&& (is_infinity(_node.left.value)) {
 									var _value = 0;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (is_infinity(_node.right.value)) {
 									var _value = 0;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								//divide by zero
 								if (_node.left.type  == __GMLC_NodeType_Literal)
 								&& (_node.left.value == 0) {
 									var _value = 0;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type  == __GMLC_NodeType_Literal)
 								&& (_node.right.value == 0) {
 									var _value = 0;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								//divide by 1
 								if (_node.right.type  == __GMLC_NodeType_Literal)
@@ -729,17 +729,17 @@
 							case "||":{
 								var _value = _node.left.value || _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "&&":{
 								var _value = _node.left.value && _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "^^":{
 								var _value = _node.left.value ^^ _node.right.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 					    }
 					}
@@ -749,24 +749,24 @@
 								if (_node.left.type  == __GMLC_NodeType_Literal && _node.left.value ) {
 									var _value = true
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type == __GMLC_NodeType_Literal && _node.right.value) {
 									var _value = true
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 							break;}
 							case "&&":{
 								if (_node.left.type  == __GMLC_NodeType_Literal && !_node.left.value ) {
 									var _value = false;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 								if (_node.right.type == __GMLC_NodeType_Literal && !_node.right.value) {
 									var _value = false;
 									show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-									return new ASTLiteral(_value, _node.line, _node.lineString);
+									return new ASTLiteral(_value, _node.sourceInfo);
 								}
 							break;}
 					    }
@@ -790,32 +790,32 @@
 							case "!":{
 								var _value = !_node.expr.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "+":{
 								var _value = +_node.expr.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "-":{
 								var _value = -_node.expr.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "~":{
 								var _value = ~_node.expr.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "++":{
 								var _value = ++_node.expr.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 							case "--":{
 								var _value = --_node.expr.value
 								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-								return new ASTLiteral(_value, _node.line, _node.lineString);
+								return new ASTLiteral(_value, _node.sourceInfo);
 							break;}
 					    }
 					}
@@ -837,7 +837,7 @@
 					if (_node.expr.type == __GMLC_NodeType_Literal) {
 					    // If the condition is a literal, determine which branch to take
 						throw "\n\nWhy is this running, we shouldnt have any expression statements anymore\n\n"
-						return new ASTLiteral(_node.expr.value, _node.line, _node.lineString);
+						return new ASTLiteral(_node.expr.value, _node.sourceInfo);
 					}
 				break;}
 				case __GMLC_NodeType_CallExpression:{
@@ -911,7 +911,7 @@
 								// This exists because of an oddity in the language
 								/// https://github.com/YoYoGames/GameMaker-Bugs/issues/8088
 								if (array_length(_node.arguments) == 1) {
-									return new ASTLiteral(0, _node.line, _node.lineString, "choose()");
+									return new ASTLiteral(0, _node.sourceInfo, "choose()");
 								}
 								
 							break;}
@@ -1454,7 +1454,7 @@
 								// This exists because of an oddity in the language
 								/// https://github.com/YoYoGames/GameMaker-Bugs/issues/8088
 								if (array_length(_node.arguments) < 2) {
-									return new ASTLiteral("", _node.line, _node.lineString, "string_join_ext()")
+									return new ASTLiteral("", _node.sourceInfo, "string_join_ext()")
 								}
 								
 								if (array_length(_node.arguments) < 2)
@@ -1647,7 +1647,7 @@
 									
 									//this is also an odd variable as its different depending on the situation
 									/// https://github.com/YoYoGames/GameMaker-Bugs/issues/8090
-									return new ASTLiteral("", _node.line, _node.lineString, "string()");
+									return new ASTLiteral("", _node.sourceInfo, "string()");
 								}
 								if (__argumentsAreLiteral(_node.arguments)) {
 									return __build_literal_from_function_call_constant_folding(string, _node);
@@ -1673,9 +1673,9 @@
 									_i+=1;}//end repeat loop
 								
 									if (_changed) {
-										array_insert(_new_arr, 0, new ASTLiteral(script_execute_ext(string, _exec_arr), _node.line, _node.lineString))
+										array_insert(_new_arr, 0, new ASTLiteral(script_execute_ext(string, _exec_arr), _node.sourceInfo))
 										show_debug_message($"Optimizer :: constantFolding :: Could use optimize `string` first argument to `{_new_arr[0].value}` in line ({_node.line}) `{_node.lineString}`")
-										return new ASTCallExpression(_node.callee, _new_arr);
+										return new ASTCallExpression(_node.callee, _new_arr, _node.sourceInfo);
 									}
 								}
 							break;}
@@ -1698,7 +1698,7 @@
 											
 											var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
 											show_debug_message($"Optimizer :: constantFolding :: Could use optimize a `string_concat` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
-											var _struct = new ASTLiteral(_value, _arr[_i].line, _arr[_i].lineString)
+											var _struct = new ASTLiteral(_value, _arr[_i].sourceInfo)
 											
 											array_delete(_arr, _i, 2)
 											array_insert(_arr, _i, _struct);
@@ -1707,7 +1707,7 @@
 									_i+=1;}//end repeat loop
 								
 									if (_changed) {
-										return new ASTCallExpression(_node.callee, _arr, _node.line, _node.lineString);
+										return new ASTCallExpression(_node.callee, _arr, _node.sourceInfo);
 									}
 								}
 							
@@ -1732,7 +1732,7 @@
 											
 											var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
 											show_debug_message($"Optimizer :: constantFolding :: Could use optimize a `string_join` argument to `{_value}` in line ({_node.line}) `{_node.lineString}`")
-											var _struct = new ASTLiteral(_value, _arr[_i].line, _arr[_i].lineString);
+											var _struct = new ASTLiteral(_value, _arr[_i].sourceInfo);
 											
 											array_delete(_arr, _i, 2)
 											array_insert(_arr, _i, _struct);
@@ -1742,7 +1742,7 @@
 									_i+=1;}//end repeat loop
 								
 									if (_changed) {
-										return new ASTCallExpression(_node.callee, _arr);
+										return new ASTCallExpression(_node.callee, _arr, _node.sourceInfo);
 									}
 								}
 							
@@ -1785,7 +1785,7 @@
 							}
 							else {
 								show_debug_message($"Optimizer :: eliminateDeadCode :: Could remove `if` statement in line ({_node.line}) `{_node.lineString}`")
-								return new ASTEmpty(_node.line, _node.lineString);
+								return new ASTEmpty(_node.sourceInfo);
 							}
 						}
 					}
@@ -1794,7 +1794,7 @@
 					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (!_node.condition.value) {
 							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `for` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
-							return new ASTEmpty(_node.line, _node.lineString);
+							return new ASTEmpty(_node.sourceInfo);
 						}
 					}
 				break;}
@@ -1802,7 +1802,7 @@
 					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (!_node.condition.value) {
 							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `while` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
-							return new ASTEmpty(_node.line, _node.lineString);
+							return new ASTEmpty(_node.sourceInfo);
 						}
 					}
 				break;}
@@ -1810,7 +1810,7 @@
 					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (!_node.condition.value) {
 							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `repeat` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
-							return new ASTEmpty(_node.line, _node.lineString);
+							return new ASTEmpty(_node.sourceInfo);
 						}
 					}
 				break;}
@@ -1821,7 +1821,7 @@
 						
 						//if (_node.condition.value) {
 						//	show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `do` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
-						//	return new ASTEmpty(_node.line, _node.lineString);
+						//	return new ASTEmpty(_node.sourceInfo);
 						//}
 					}
 				break;}
@@ -1829,7 +1829,7 @@
 					if (_node.condition.type == __GMLC_NodeType_Literal) {
 						if (_node.condition.value == noone) {
 							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `with` by removing it entirely in line ({_node.line}) `{_node.lineString}`")
-							return new ASTEmpty(_node.line, _node.lineString);
+							return new ASTEmpty(_node.sourceInfo);
 						}
 					}
 				break;}
@@ -1850,7 +1850,7 @@
 						//	|| (_case.type == "CaseDefault")
 						//	{
 						//		_found_case = true;
-						//		_return = new ASTBlockStatement([], _node.line, _node.lineString);
+						//		_return = new ASTBlockStatement([], _node.sourceInfo);
 						//		break;
 						//	}
 							
@@ -1912,13 +1912,14 @@
 						var _arg = _node.arguments[1];
 						if (_arg.type == __GMLC_NodeType_Literal) 
 						&& (typeof(_arg.value) == "string") {
-							return new ASTNode(__GMLC_NodeType_CallExpression, {
-								callee: new ASTLiteral(struct_get_from_hash, _node.line, _node.lineString, "struct_get_from_hash"),
-								arguments: [
+							return new ASTCallExpression(
+								new ASTLiteral(struct_get_from_hash, _node.sourceInfo, "struct_get_from_hash"),
+								[
 									_node.arguments[0],
-									new ASTNode(__GMLC_NodeType_Literal, {value: variable_get_hash(_arg.value), scope: ScopeType_CONST})
-								]
-							});
+									new ASTLiteral(variable_get_hash(_arg.value), _arg.sourceInfo)
+								],
+								_node.sourceInfo
+							);
 						}
 					break;}
 						
@@ -1928,14 +1929,15 @@
 						var _arg = _node.arguments[1];
 						if (_arg.type == __GMLC_NodeType_Literal) 
 						&& (typeof(_arg.value) == "string") {
-							return new ASTNode(__GMLC_NodeType_CallExpression, {
-								callee: new ASTLiteral(struct_set_from_hash, _node.line, _node.lineString, "struct_set_from_hash"),
-								arguments: [
+							return new ASTCallExpression(
+								new ASTLiteral(struct_set_from_hash, _node.sourceInfo, "struct_set_from_hash"),
+								[
 									_node.arguments[0],
-									new ASTNode(__GMLC_NodeType_Literal, {value: variable_get_hash(_arg.value), scope: ScopeType_CONST}),
+									new ASTLiteral(variable_get_hash(_arg.value), _arg.sourceInfo),
 									_node.arguments[2]
-								]
-							});
+								],
+								_node.sourceInfo
+							);
 						}
 					break;}
 					
@@ -1944,10 +1946,11 @@
 						if (array_length(_node.arguments) == 1) {
 							var _arg = _node.arguments[0]
 							if (_arg.type != __GMLC_NodeType_Literal) {
-								return new ASTNode(__GMLC_NodeType_CallExpression, {
-									callee: new ASTLiteral(string_concat, _node.line, _node.lineString, "string_concat"),
-									arguments: _node.arguments
-								});
+								return new ASTCallExpression(
+									new ASTLiteral(string_concat, _node.sourceInfo, "string_concat"),
+									_node.arguments,
+									_node.sourceInfo
+								);
 							}
 						}
 					break;}
@@ -2246,11 +2249,9 @@
 			}
 			
 			show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({_node.line}) `{_node.lineString}`")
-			return new ASTLiteral(_value, _node.line, _node.lineString);
+			return new ASTLiteral(_value, _node.sourceInfo);
 		}
 		
 		#endregion
 	}
 #endregion
-
-

@@ -450,7 +450,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	//statics
 	_output.staticsExecuted = false;
 	_output.statics = new __GMLC_Statics(_node[$ "name"]);
-	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
+	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, _node.sourceInfo)) : function(){};
 	static_set(_output, _output.statics)
 	
 	//block statement
@@ -559,7 +559,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	//statics
 	_output.staticsExecuted = false;
 	_output.statics = new __GMLC_Constructor_Statics(_node.name);
-	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, undefined, undefined)) : function(){};
+	_output.staticsBlock = (struct_exists(_node, "StaticVarArray")) ? __GMLCcompileBlockStatement(_rootNode, _output, new ASTBlockStatement(_node.StaticVarArray, _node.sourceInfo)) : function(){};
 	static_set(_output, _output.statics)
 	
 	//block statement
@@ -2098,4 +2098,3 @@ function __GMLC_Constructor_Statics(_construct_name) : __GMLC_Statics(_construct
 
 
 #endregion
-

@@ -536,7 +536,24 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			get: function(){ return background_showcolour; },
 			set: function(value){ background_showcolour = value; },
 		},
-		
+		"_GMFILE_":{
+			get: function(){ throw_gmlc_error($"_GMFILE_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
+			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
+			compileTimeConstant: true,
+			compileTimeGet: function(_context){ return _context.currentFunction.name; },
+		},
+		"_GMFUNCTION_":{
+			get: function(){ throw_gmlc_error($"_GMFUNCTION_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
+			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
+			compileTimeConstant: true,
+			compileTimeGet: function(_context){ return _context.currentFunction.name; },
+		},
+		"_GMLINE_":{
+			get: function(){ throw_gmlc_error($"_GMLINE_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
+			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
+			compileTimeConstant: true,
+			compileTimeGet: function(_context){ return _context.currentFunction.name; },
+		},
 	}
 	_var_map[$ "self"] = {
 		get: function(){ return global.gmlc_self_instance; },

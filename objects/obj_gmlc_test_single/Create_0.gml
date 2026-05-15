@@ -2,28 +2,20 @@
 /// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
 env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 program = env.compile(@'
-function __assert_equals(a, b) {
-	if (a != b) {
-		show_debug_message("A != B")
-	}
-	else {
-		show_debug_message("A == B")
-	}
+function foo() {
+	show_debug_message(_GMFILE_)
+	show_debug_message(_GMFUNCTION_)
+	show_debug_message(_GMLINE_)
 }
 
-score = 0;
-
-__assert_equals(score++, 0);
-__assert_equals(++score, 2);
-__assert_equals(score--, 2);
-__assert_equals(--score, 0);
-
-show_debug_message(score)
+foo();
 ');
 
 program()
 
-
+var _value = "Hello World!";
+var _result = string_delete(_value, 100, 1);
+show_debug_message(_result)
 /*
 
 gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);

@@ -9,13 +9,43 @@ General nodes like Expression, Statement, and FunctionDeclaration.
 Each node type will have specific properties relevant to their type, like body, parameters, operator, etc.
 */
 #endregion
-function ASTNode(_line, _lineString) constructor {
+
+#region Source Info
+#region jsDoc
+/// @function GMLC_SourceInfo(_file_name, _function_name, _line_string, _line, _column, _byte_start, _byte_end)
+/// @param {String} _file_name
+/// @param {String} _function_name
+/// @param {String} _line_string
+/// @param {Real} _line
+/// @param {Real} _column
+/// @param {Real} _byte_start
+/// @param {Real} _byte_end
+/// @description Stores source information for tokens, AST nodes, diagnostics, highlighting, and compile-time context.
+#endregion
+function GMLC_SourceInfo(_file_name, _function_name, _line_string, _line, _column, _byte_start, _byte_end) constructor {
+	fileName = _file_name;
+	functionName = _function_name;
+	lineString = _line_string;
+	line = _line;
+	column = _column;
+	byteStart = _byte_start;
+	byteEnd = _byte_end;
+}
+#endregion
+
+function ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_Base;
 	visited = false; //used by the post processor
-	line = _line; //used for debugging
-	lineString = _lineString; //used for debugging
+	sourceInfo = _sourceInfo;
+	line = _sourceInfo.line; //used for debugging
+	lineString = _sourceInfo.lineString; //used for debugging
+	fileName = _sourceInfo.fileName;
+	functionName = _sourceInfo.functionName;
+	column = _sourceInfo.column;
+	byteStart = _sourceInfo.byteStart;
+	byteEnd = _sourceInfo.byteEnd;
 	//creationCallstack = debug_get_callstack()
-	
+
 	skipOptimization = false; // for use with `/// @NoOp` programs, typically used for internal testing.
 	
 	static push_children_to_node_stack = function(_nodestack) {
@@ -45,12 +75,12 @@ function ASTNode(_line, _lineString) constructor {
 
 #region Structural Nodes
 
-function ASTEmpty(_line="<EmptyNode>", _lineString="<EmptyNode>") : ASTNode(_line, _lineString) constructor {
+function ASTEmpty(_sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_EmptyNode;
 	static get_children = function(){ return []; };
 }
 
-function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTBlockStatement(_statements, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_BlockStatement;
 	statements = _statements
 	
@@ -74,7 +104,7 @@ function ASTBlockStatement(_statements, _line, _lineString) : ASTNode(_line, _li
 }
 
 
-function ASTScript() : ASTNode(0, "") constructor {
+function ASTScript(_sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_Script;
 	GlobalVar = {};
 	
@@ -88,9 +118,9 @@ function ASTScript() : ASTNode(0, "") constructor {
 	//////////////////////////////////
 	
 	//use a blank argument array for consistancy sake
-	arguments = new ASTArgumentList([], 0, "")
+	arguments = new ASTArgumentList([], _sourceInfo)
 	
-	statements = new ASTBlockStatement([], 0, "");
+	statements = new ASTBlockStatement([], _sourceInfo);
 	
 	static get_children = function(_top_down) {
 		var _arr = [];
@@ -109,7 +139,7 @@ function ASTScript() : ASTNode(0, "") constructor {
 	}
 }
 
-function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	GlobalVar = {};
 	
 	// temporarily used during parser
@@ -128,7 +158,7 @@ function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements
 	arguments = _arguments
 	
 	if (_statements != undefined) { //extremely common to create the function prior to parsing the body
-		statements = is_instanceof(_statements, ASTBlockStatement) ? _statements : new ASTBlockStatement(_statements, _line, _lineString);
+		statements = is_instanceof(_statements, ASTBlockStatement) ? _statements : new ASTBlockStatement(_statements, _sourceInfo);
 	}
 	
 	static get_children = function(_top_down) {
@@ -147,7 +177,7 @@ function ASTFunctionDeclaration(_name, _arguments, _local_var_names, _statements
 		return _arr;
 	}
 }
-function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, _local_var_names, _statements, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, _local_var_names, _statements, _sourceInfo) : ASTNode(_sourceInfo) constructor {
     // temporarily used during parser
 	GlobalVar = {};
 	
@@ -187,14 +217,14 @@ function ASTConstructorDeclaration(_name, _parentName, _arguments, _parentCall, 
 		return _arr;
 	}
 }
-function ASTArgumentList(_statements, _line, _lineString) : ASTBlockStatement(_statements, _line, _lineString) constructor {
+function ASTArgumentList(_statements, _sourceInfo) : ASTBlockStatement(_statements, _sourceInfo) constructor {
 	type = __GMLC_NodeType_ArgumentList;
 	statements = _statements;
 	
 	
 	//static get_children :: inheritade from block statement parent constructor
 }
-function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTArgument(_identifier, _expr, _arg_index, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_Argument;
 	identifier = _identifier;
 	expr = _expr;
@@ -215,7 +245,7 @@ function ASTArgument(_identifier, _expr, _arg_index, _line, _lineString) : ASTNo
 #endregion
 
 #region Statements
-function ASTDoUntilStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTDoUntilStatement(_condition, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_DoUntilStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
@@ -237,7 +267,7 @@ function ASTDoUntilStatement(_condition, _codeBlock, _line, _lineString) : ASTNo
 	}
 }
 
-function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_ForStatement;
 	initialization = _initialization;
 	condition = _condition;
@@ -265,7 +295,7 @@ function ASTForStatement(_initialization, _condition, _increment, _codeBlock, _l
 	}
 }
 
-function ASTIfStatement(_condition, _consequent, _alternate, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTIfStatement(_condition, _consequent, _alternate, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_IfStatement;
 	condition = _condition;
 	consequent = _consequent;
@@ -290,7 +320,7 @@ function ASTIfStatement(_condition, _consequent, _alternate, _line, _lineString)
 	}
 }
 
-function ASTRepeatStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTRepeatStatement(_condition, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_RepeatStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
@@ -312,7 +342,7 @@ function ASTRepeatStatement(_condition, _codeBlock, _line, _lineString) : ASTNod
 	}
 }
 
-function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTSwitchStatement(_switchExpression, _cases, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_SwitchStatement;
 	switchExpression = _switchExpression;
 	cases = _cases;
@@ -338,10 +368,10 @@ function ASTSwitchStatement(_switchExpression, _cases, _line, _lineString) : AST
 		return _arr;
 	}
 }
-function ASTCaseDefault(_codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTCaseDefault(_codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_CaseDefault;
 	label = undefined;
-	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
+	codeBlock = new ASTBlockStatement(_codeBlock, _sourceInfo);
 	
 	static get_children = function(_top_down) {
 		var _arr = [];
@@ -352,10 +382,10 @@ function ASTCaseDefault(_codeBlock, _line, _lineString) : ASTNode(_line, _lineSt
 		return _arr;
 	}
 }
-function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTCaseExpression(_label, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_CaseExpression;
 	label = _label;
-	codeBlock = new ASTBlockStatement(_codeBlock, _line, _lineString);
+	codeBlock = new ASTBlockStatement(_codeBlock, _sourceInfo);
 	
 	static get_children = function(_top_down) {
 		var _arr = [];
@@ -375,7 +405,7 @@ function ASTCaseExpression(_label, _codeBlock, _line, _lineString) : ASTNode(_li
 	}
 }
 
-function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_TryStatement;
 	tryBlock = _tryBlock;
 	exceptionVar = _exceptionVar;
@@ -401,7 +431,7 @@ function ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, _
 	}
 }
 
-function ASTWhileStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTWhileStatement(_condition, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_WhileStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
@@ -423,7 +453,7 @@ function ASTWhileStatement(_condition, _codeBlock, _line, _lineString) : ASTNode
 	}
 }
 
-function ASTWithStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTWithStatement(_condition, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_WithStatement;
 	condition = _condition;
 	codeBlock = _codeBlock;
@@ -447,22 +477,22 @@ function ASTWithStatement(_condition, _codeBlock, _line, _lineString) : ASTNode(
 #endregion
 
 #region Keyword Statements
-function ASTBreakStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTBreakStatement(_sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_BreakStatement;
 	static get_children = function(){}
 }
 
-function ASTContinueStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTContinueStatement(_sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_ContinueStatement;
 	static get_children = function(){}
 }
 
-function ASTExitStatement(_line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTExitStatement(_sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_ExitStatement;
 	static get_children = function(){}
 }
 
-function ASTNewExpression(_expression, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTNewExpression(_expression, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_NewExpression;
 	expression = _expression;
 	
@@ -476,7 +506,7 @@ function ASTNewExpression(_expression, _line, _lineString) : ASTNode(_line, _lin
 	}
 }
 
-function ASTReturnStatement(_expr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTReturnStatement(_expr, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_ReturnStatement;
 	expr = _expr;
 	
@@ -492,9 +522,9 @@ function ASTReturnStatement(_expr, _line, _lineString) : ASTNode(_line, _lineStr
 	}
 }
 
-function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTVariableDeclarationList(_statements, _scope, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_VariableDeclarationList;
-	statements = new ASTBlockStatement(_statements, _line, _lineString);
+	statements = new ASTBlockStatement(_statements, _sourceInfo);
 	scope = _scope;
 	
 	static get_children = function(_top_down) {
@@ -506,7 +536,7 @@ function ASTVariableDeclarationList(_statements, _scope, _line, _lineString) : A
 		return _arr;
 	}
 }
-function ASTVariableDeclaration(_identifier, _expr, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTVariableDeclaration(_identifier, _expr, _scope, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	expr = _expr;
@@ -522,25 +552,25 @@ function ASTVariableDeclaration(_identifier, _expr, _scope, _line, _lineString) 
 	}
 }
 
-function ASTMacroDeclaration(_identifier, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTMacroDeclaration(_identifier, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	codeBlock = _codeBlock;
 	scope = ScopeType_MACRO;
 }
-function ASTMacroIdentifier(_identifier, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTMacroIdentifier(_identifier, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	scope = ScopeType_MACRO;
 }
 
-function ASTEnumDeclaration(_identifier, _codeBlock, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTEnumDeclaration(_identifier, _codeBlock, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	codeBlock = _codeBlock;
 	scope = ScopeType_ENUM;
 }
-function ASTEnumIdentifier(_identifier, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTEnumIdentifier(_identifier, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_VariableDeclaration;
 	identifier = _identifier;
 	scope = ScopeType_ENUM;
@@ -549,7 +579,7 @@ function ASTEnumIdentifier(_identifier, _line, _lineString) : ASTNode(_line, _li
 
 #region Expressions
 
-function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTCallExpression(_callee, _arguments, _sourceInfo) : ASTNode(_sourceInfo) constructor {
     type = __GMLC_NodeType_CallExpression;
     callee = _callee;
     arguments = _arguments;
@@ -574,7 +604,7 @@ function ASTCallExpression(_callee, _arguments, _line, _lineString) : ASTNode(_l
 	}
 }
 
-function ASTCallMethodExpression(_object, _key, _arguments, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTCallMethodExpression(_object, _key, _arguments, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_CallMethodExpression;
 	object = _object;
 	key = _key;
@@ -601,7 +631,7 @@ function ASTCallMethodExpression(_object, _key, _arguments, _line, _lineString) 
 	}
 }
 
-function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_AccessorExpression;
 	expr = _expr;
 	val1 = _val1;
@@ -630,7 +660,7 @@ function ASTAccessorExpression(_expr, _val1, _val2, _accessorType, _line, _lineS
 #endregion
 
 #region Math Expressions
-function ASTAssignmentExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTAssignmentExpression(_operator, _left, _right, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_AssignmentExpression;
 	operator = _operator;
 	left = _left;
@@ -653,7 +683,7 @@ function ASTAssignmentExpression(_operator, _left, _right, _line, _lineString) :
 	}
 }
 
-function ASTBinaryExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTBinaryExpression(_operator, _left, _right, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_BinaryExpression;
 	operator = _operator;
 	left = _left;
@@ -676,7 +706,7 @@ function ASTBinaryExpression(_operator, _left, _right, _line, _lineString) : AST
 	}
 }
 
-function ASTLogicalExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTLogicalExpression(_operator, _left, _right, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_LogicalExpression;
 	operator = _operator;
 	left = _left;
@@ -699,7 +729,7 @@ function ASTLogicalExpression(_operator, _left, _right, _line, _lineString) : AS
 	}
 }
 
-function ASTNullishExpression(_operator, _left, _right, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTNullishExpression(_operator, _left, _right, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_NullishExpression;
 	operator = _operator;
 	left = _left;
@@ -722,7 +752,7 @@ function ASTNullishExpression(_operator, _left, _right, _line, _lineString) : AS
 	}
 }
 
-function ASTUnaryExpression(_operator, _expr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTUnaryExpression(_operator, _expr, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_UnaryExpression;
 	operator = _operator;
 	expr = _expr;
@@ -737,7 +767,7 @@ function ASTUnaryExpression(_operator, _expr, _line, _lineString) : ASTNode(_lin
 	}
 }
 
-function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_ConditionalExpression;
 	condition = _condition;
 	trueExpr = _trueExpr;
@@ -762,7 +792,7 @@ function ASTConditionalExpression(_condition, _trueExpr, _falseExpr, _line, _lin
 	}
 }
 
-function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTUpdateExpression(_operator, _expr, _prefix, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	//   thing++    thing--    ++thing    or    --thing
 	type = __GMLC_NodeType_UpdateExpression;
     operator = _operator;
@@ -781,7 +811,7 @@ function ASTUpdateExpression(_operator, _expr, _prefix, _line, _lineString) : AS
 #endregion
 
 #region Identifiers
-function ASTIdentifier(_value, _scope, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTIdentifier(_value, _scope, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_Identifier;
 	value = _value;
 	hash = variable_get_hash(_value);
@@ -790,7 +820,7 @@ function ASTIdentifier(_value, _scope, _line, _lineString) : ASTNode(_line, _lin
 	
 	static get_children = function(_top_down) {}
 }
-function ASTLiteral(_value, _line, _lineString, _name=undefined) : ASTNode(_line, _lineString) constructor {
+function ASTLiteral(_value, _sourceInfo, _name=undefined) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_Literal;
 	value = _value;
 	scope = ScopeType_CONST;
@@ -798,7 +828,7 @@ function ASTLiteral(_value, _line, _lineString, _name=undefined) : ASTNode(_line
 	
 	static get_children = function(_top_down) {}
 }
-function ASTUniqueIdentifier(_value, _line, _lineString) : ASTNode(_line, _lineString) constructor {
+function ASTUniqueIdentifier(_value, _sourceInfo) : ASTNode(_sourceInfo) constructor {
 	type = __GMLC_NodeType_UniqueIdentifier;
 	value = _value;
 	scope = ScopeType_UNIQUE;

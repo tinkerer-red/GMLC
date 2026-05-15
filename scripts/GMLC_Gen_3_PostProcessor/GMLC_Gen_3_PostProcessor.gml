@@ -338,7 +338,7 @@
 				_new_arr[_i] = _arr[_i].value;
 			_i+=1;}//end repeat loop
 			
-			return new ASTLiteral(script_execute_ext(_script, _new_arr), node.line, node.lineString);
+			return new ASTLiteral(script_execute_ext(_script, _new_arr), node.sourceInfo);
 		}
 		
 		#endregion
