@@ -877,8 +877,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			
 			var _raw_string = "";
 			while (currentCharCode != undefined)
-			&& (__char_is_alphanumeric(currentCharCode))
-			{
+			&& (__char_is_alphanumeric(currentCharCode)) {
 				_raw_string += chr(currentCharCode);
 				
 				if (!__char_is_alphanumeric(__peekUTF8() ?? 0)) {
@@ -909,39 +908,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				return _token;
 			}
 			#endregion
-			#region Functions
-				
-			//var _index = env.getFunction(_identifier);
-			//if (_index != undefined) {
-			//	nextToken();
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _index.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//	array_push(tokens, _token);
-			//	return _token;
-			//}
-				
-			#endregion
-			#region Constants
 			
-			//var _index = env.getConstant(_identifier);
-			//if (_index != undefined) {
-			//	nextToken();
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_Number, _identifier, _index.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//	array_push(tokens, _token);
-			//	return _token;
-			//}
-			
-			#endregion
-			#region Variables
-			
-			//var _index = env.getVariable(_identifier);
-			//if (_index != undefined) {
-			//	nextToken();
-			//	var _token = new __GMLC_create_token(__GMLC_TokenType_UniqueVariable, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//	array_push(tokens, _token);
-			//	return _token;
-			//}
-			
-			#endregion
 			#region Enum Constants
 			var _index = env.getEnum(_identifier);
 			if (_index != undefined) {
@@ -1001,52 +968,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			}
 			
 			#endregion
-			#region Keywords
-				
-			//var _index = env.getKeyword(_identifier);
-			//if (_index != undefined) {
-			//	switch (_identifier) {
-			//		case "begin":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "{", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "end":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _identifier, "}", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "mod":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "mod", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "div":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "div", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "not":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "!", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "and":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "&&", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "or":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "||", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			//		case "xor":{
-			//			var _token = new __GMLC_create_token(__GMLC_TokenType_Operator, _identifier, "^^", new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
-			//			array_push(tokens, _token);
-			//			return _token;
-			//		break;}
-			#endregion
+			
 			// else...
 			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType_Identifier, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));

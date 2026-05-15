@@ -386,15 +386,6 @@ function __GMLCexecuteStructDotAccGet(){
 		return _target[$ key];
 	}
 	
-	
-	// this is a safety check for a bug in GML
-	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	//var _inst_of = instanceof(_target);
-	//if (_inst_of == "Object")
-	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n{json_stringify(callstack, true)}", self.line, self.lineString)
-	//}
-	
 	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
@@ -409,23 +400,6 @@ function __GMLCexecuteStructDotAccGet(){
 	
 }
 function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-	
-	//incase it's a valid scope, lets hoist it to a better fitted function
-	//if (_target.type == __GMLC_NodeType_Identifier) {
-	//	var _getter = __GMLCGetScopeGetter(_target.scope)
-		
-	//	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
-	//	_output.key        = _key.value;
-		
-	//	if (_target.scope == ScopeType_GLOBAL) {
-	//		_output.globals = _rootNode.globals;
-	//	}
-		
-	//	method(_output, _getter)
-	//}
-	
-	//leave the following to allow for thing.thing.thing() to be a valid call
-	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccGet", "<Missing Error Message>", _line, _lineString);
 	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key    = _key.value;
@@ -825,14 +799,6 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 		return ++_target[$ key];
 	}
 	
-	// this is a safety check for a bug in GML
-	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	//var _inst_of = instanceof(_target);
-	//if (_inst_of == "Object")
-	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n{json_stringify(callstack, true)}", self.line, self.lineString)
-	//}
-	
 	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
@@ -856,14 +822,6 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	if (struct_exists(_target, key)) {
 		return _target[$ key]++;
 	}
-	
-	// this is a safety check for a bug in GML
-	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	//var _inst_of = instanceof(_target);
-	//if (_inst_of == "Object")
-	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n{json_stringify(callstack, true)}", self.line, self.lineString)
-	//}
 	
 	var _static = __gmlc_static_get(_target)
 	
@@ -891,14 +849,6 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 		return --_target[$ key];
 	}
 	
-	// this is a safety check for a bug in GML
-	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	//var _inst_of = instanceof(_target);
-	//if (_inst_of == "Object")
-	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n{json_stringify(callstack, true)}", self.line, self.lineString)
-	//}
-	
 	var _static = __gmlc_static_get(_target)
 	
 	//check each static parent
@@ -922,14 +872,6 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	if (struct_exists(_target, key)) {
 		return _target[$ key]--;
 	}
-	
-	// this is a safety check for a bug in GML
-	// https://github.com/YoYoGames/GameMaker-Bugs/issues/8048
-	//var _inst_of = instanceof(_target);
-	//if (_inst_of == "Object")
-	//|| (_inst_of == undefined) {
-	//	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it."+$"\n{json_stringify(callstack, true)}", self.line, self.lineString)
-	//}
 	
 	var _static = __gmlc_static_get(_target)
 	

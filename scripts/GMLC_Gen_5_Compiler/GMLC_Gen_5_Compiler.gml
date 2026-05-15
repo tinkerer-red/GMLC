@@ -382,20 +382,6 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 			return function(){};
 		}
 		
-		/*
-		case __GMLC_NodeType_PropertyAccessor:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		case __GMLC_NodeType_AccessorExpression:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		case __GMLC_NodeType_MethodVariableConstructor:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		case __GMLC_NodeType_MethodVariableFunction:{
-			throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-		break;}
-		//*/
 		default:
 			
 			trace(json_stringify(_node, true))

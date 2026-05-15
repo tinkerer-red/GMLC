@@ -301,20 +301,7 @@
 				case __GMLC_NodeType_EmptyNode:{
 					//do nothing, this is just a place holder
 				break;}
-				/*
-				case __GMLC_NodeType_PropertyAccessor:{
-					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-				break;}
-				case __GMLC_NodeType_AccessorExpression:{
-					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-				break;}
-				case __GMLC_NodeType_MethodVariableConstructor:{
-					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-				break;}
-				case __GMLC_NodeType_MethodVariableFunction:{
-					throw_gmlc_error($"{currentNode.type} :: Not implimented yet")
-				break;}
-				//*/
+				
 				default: throw_gmlc_error($"Current Node does not have a valid type for the post processor,\ntype: {node.type}\ncurrentNode: {node}", node.line, node.lineString)
 				
 				// Add cases for other types of nodes

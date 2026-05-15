@@ -879,7 +879,7 @@
 			var _found_one = false;
 			// Example:
 			// var c_black = #000000,
-			//     c_white = #000000,
+			//     c_white = #FFFFFF,
 			//
 			// with (thing) { ... }
 
@@ -1856,8 +1856,7 @@ function __determineScopeType(_node) {
 /// @ignore
 function __find_ScopeType_from_string(_string) {
 	gml_pragma("forceinline");
-	// Ordered in priority
-
+	// == Ordered in priority ==
 	//ScopeType_MACRO;
 	//ScopeType_GLOBAL;
 	//ScopeType_ENUM;
