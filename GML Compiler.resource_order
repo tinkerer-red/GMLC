@@ -72,6 +72,7 @@
     {"name":"ParserLibrary","order":7,"path":"folders/GMLC/Internal/ParserLibrary.yy",},
     {"name":"Parsers","order":1,"path":"folders/GMLC/Parsers.yy",},
     {"name":"_Internal","order":5,"path":"folders/GMLC/Parsers/_Internal.yy",},
+    {"name":"Optimizers","order":7,"path":"folders/GMLC/Parsers/Optimizers.yy",},
     {"name":"Misc.","order":3,"path":"folders/Misc..yy",},
     {"name":"Tests","order":4,"path":"folders/Tests.yy",},
     {"name":"objects","order":1,"path":"folders/Tests/objects.yy",},
