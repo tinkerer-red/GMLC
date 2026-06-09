@@ -28,6 +28,7 @@ function __EnvironmentClass() constructor {
 			
 			if (!is_struct(entry)) continue;
 			if (!is_string(entry.type)) continue;
+			if (entry.value == -1 || entry.value == undefined) continue; // gml_pragma = -1, and nameof = undefined, very likely many more too.
 			
 			if (!overwrite && struct_exists(envSymbols, key)) {
 				continue; // Skip if already exists and overwrite is false
