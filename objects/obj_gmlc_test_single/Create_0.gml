@@ -1,49 +1,21 @@
-/// @description Standalone GML test for identifier/keyword/enum/struct/macro edge cases
-/// Run this in a real GML project (NOT inside GMLC) to verify expected behavior
-env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
-program = env.compile(@'
-function foo() {
-	show_debug_message(_GMFILE_)
-	show_debug_message(_GMFUNCTION_)
-	show_debug_message(_GMLINE_)
+var env = new GMLC_Env()
+
+env.clearFunctions()
+env.clearConstants()
+env.clearEnums()
+env.clearMacros()
+env.clearVariables()
+
+env.set_exposure(GMLC_EXPOSURE.ALL)
+
+function secret_function() {
+	return "secret value"
 }
 
-foo();
-');
-
-
-program()
-
-function foo() {
-	show_debug_message(_GMFILE_)
-	show_debug_message(_GMFUNCTION_)
-	show_debug_message(_GMLINE_)
-}
-
-foo();
-/*
-
-gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
-
-gmlc.__log_tokenizer_results      = true;
-gmlc.__log_pre_processer_results  = true;
-gmlc.__log_parser_results         = true;
-gmlc.__log_post_processer_results = true;
-gmlc.__log_optimizer_results      = true;
-
-gmlc.compile(@'
-    #macro test "abc";
-	
-	foo = 123;
-	bar = test;
-	
-	var foo;
+var func = env.compile(@'
+var glb = -5
+var func = glb[$ "secret_function"]
+return func()
 ')
 
-
-// Save full JSON result
-log("!!!compiling complete!!!")
-
-gmlc = undefined;
-
-
+show_message(func())
