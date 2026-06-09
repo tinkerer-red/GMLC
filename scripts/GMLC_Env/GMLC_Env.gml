@@ -827,7 +827,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _spec = __GmlSpec();
 		var _map = struct_filter(_spec, function(_key, _val) {
 			return (_val[$ "type"] == "envFunctions")
-				&& (!_val[$ "feather"][$ "pure"])
+				&& (_val[$ "feather"][$ "pure"])
 				&& __is_safe_function(_key, _val);
 		});
 		
