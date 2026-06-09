@@ -355,7 +355,7 @@ function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key, _line, _l
 #endregion
 function __GMLCexecuteStructSet(){
 	var _target = target();
-	if (is_numeric(_target) && !is_handle(_target) && !(_target == -2 && _target == -1)) { // -5 is global, -4 is all, -3 is noone, throw error by default
+	if (is_numeric(_target) && !is_handle(_target) && !(_target == -2 || _target == -1)) { // -5 is global, -4 is all, -3 is noone, throw error by default
 		throw_gmlc_error($"struct_get argument 1 incorrect type ({typeof(_target)}>) expecting a Number.", self.line, self.lineString)
 	}
 	_target[$ key()] = expression();
