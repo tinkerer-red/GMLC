@@ -1015,6 +1015,7 @@ function __GMLCexecuteWith() {
     //early out
     var _inst = expression()
 	if (_inst == undefined) return undefined
+	if (_inst == -5) { _inst = rootNode.globals}// safety check for `-5` equalling `global`
     
     var _self = global.gmlc_self_instance;
     var _other = global.gmlc_other_instance;
