@@ -23,7 +23,7 @@ jobs:
 
       - uses: tinkerer-red/GML-Actions/actions/package@v2
         with:
-          project-file: "GML Compiler.yyp"
+          project-file: "GMLC.yyp"
           package-id: "GMLC"
           include-folders: "GMLC"
           package-name: "GMLC"

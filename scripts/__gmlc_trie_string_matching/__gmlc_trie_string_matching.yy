@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__gmlc_trie_string_matching",
   "parent":{
-    "name":"GMLC Util",
-    "path":"folders/GMLC/Internal/GMLC Util.yy",
+    "name":"Lexer",
+    "path":"folders/GMLC/Lexer.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

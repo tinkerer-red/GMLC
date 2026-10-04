@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_5_Compiler",
   "parent":{
-    "name":"Parsers",
-    "path":"folders/GMLC/Parsers.yy",
+    "name":"Runtime",
+    "path":"folders/GMLC/Backends/Runtime.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

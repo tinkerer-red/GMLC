@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"FlexiParseBase",
   "parent":{
-    "name":"ParserLibrary",
-    "path":"folders/GMLC/Internal/ParserLibrary.yy",
+    "name":"Parser",
+    "path":"folders/GMLC/Parser.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

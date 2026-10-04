@@ -107,7 +107,7 @@ function __gmlc_method(_struct, _func) {
 	
 	if (is_gmlc_program(_func)) {
 		//a gmlc function
-		var _exe = (is_constructor(_func)) ? __executeMethodConstructor : __executeMethodFunction;
+		var _exe = (is_gmlc_constructor(_func)) ? __executeMethodConstructor : __executeMethodFunction;
 		
 		return __vanilla_method({
 			"__@@is_gmlc_method@@__": true,
@@ -117,7 +117,7 @@ function __gmlc_method(_struct, _func) {
 	}
 	else if (is_gmlc_method(_func)) {
 		//a gmlc method
-		var _exe = (is_constructor(_func)) ? __executeMethodConstructor : __executeMethodFunction;
+		var _exe = (is_gmlc_constructor(_func)) ? __executeMethodConstructor : __executeMethodFunction;
 		
 		return __vanilla_method({
 			"__@@is_gmlc_method@@__": true,

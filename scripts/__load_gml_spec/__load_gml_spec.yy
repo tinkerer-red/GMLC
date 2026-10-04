@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__load_gml_spec",
   "parent":{
-    "name":"_Init",
-    "path":"folders/GMLC/Internal/_Init.yy",
+    "name":"Spec",
+    "path":"folders/GMLC/Spec.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

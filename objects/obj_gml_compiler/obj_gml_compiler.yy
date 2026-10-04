@@ -9,8 +9,8 @@
   "name":"obj_gml_compiler",
   "overriddenProperties":[],
   "parent":{
-    "name":"GML Compiler",
-    "path":"GML Compiler.yyp",
+    "name":"GMLC",
+    "path":"GMLC.yyp",
   },
   "parentObjectId":null,
   "persistent":false,

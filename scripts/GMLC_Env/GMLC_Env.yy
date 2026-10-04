@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Env",
   "parent":{
-    "name":"GMLC",
-    "path":"folders/GMLC.yy",
+    "name":"Driver",
+    "path":"folders/GMLC/Driver.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_0_Tokenizer",
   "parent":{
-    "name":"Parsers",
-    "path":"folders/GMLC/Parsers.yy",
+    "name":"Lexer",
+    "path":"folders/GMLC/Lexer.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

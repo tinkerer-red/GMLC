@@ -1,131 +1,51 @@
-# 🎮 **GMLC**
+# GMLC v2
 
-## 📘 **Overview**
+GMLC compiles and runs GML source at run time inside GameMaker. Branch `v2` is a full overhaul of the library in
+progress; `master` keeps v1. v2 starts from v1 commit `de25e48`. Only the `GMLC` IDE folder ships (the release
+workflow packages it); the rest of the project is tooling: the test framework (`_Libraries/xUnit`), the test
+suites (`Tests`), debug helpers (`print_progress`, `log`) and the web demo.
 
-The first full public release of **GMLC**, a runtime compiler and interpreter that lets GameMaker projects load, compile, and execute real GML code at runtime, enabling **mod support**, **live scripting**, and **scratchpad experimentation** directly inside GameMaker.
+## Setup
 
+1. Copy `GmlSpec.xml` from your installed runtime into this project's `datafiles/` folder, for example
+   `C:/ProgramData/GameMakerStudio2/Cache/runtimes/runtime-2024.14.4.268/GmlSpec.xml` to `datafiles/GmlSpec.xml`.
+   The file belongs to YoYo Games, is git-ignored and must never be committed. This step goes away when the JSON
+   spec loader replaces the XML loader.
+2. Open `GMLC.yyp` in GameMaker, or compile it headlessly:
+   `npx --yes @gamemaker/gm-cli@2.4.1 compile --toolchain GMS2@2024.14.4 --errors-only`.
+3. The first room in the room order runs: `rmGMLCTestFramework` runs the test framework (the GMLC suites plus the
+   suites in `datafiles/__TESTS`, compiled through GMLC); `rmGMLCTestSingle`, `rmGMLCTestGithub` and
+   `rmGMLCWebDemo` are the other harnesses.
 
-## ⚙️ **Core Features**
-
-* **Runtime Compilation:** Parse and evaluate GML source strings during gameplay.  
-* **Sandboxed Execution:** Tiered capability profiles (`pure`, `safe`, `moderate`, `unsafe`) for secure script isolation.  
-* **Hook System:** Functions defined in a compile can be referenced back in native runtime (`main()`, `create()`, `step()`, etc.).  
-* **Environment Support:** Correct handling of `self`, `other`, `global`, and static scopes.  
-* **Constructor & Function Parity:** Full support for `static`, `constructor`, and `method` semantics.  
-* **AST-Driven Architecture:** Real GML syntax parsing with tokenization and abstract syntax trees.  
-* **Error Diagnostics:** Structured compile/runtime error messages with caret and line reporting.  
-* **Namespace Management:** Mods and scratchpad sessions can run in isolated namespaces with safe reloads.  
-
-
-## 🧩 **Setup & Installation**
-
-GMLC depends on **SNAP** by Juju Adams, which must be installed first.
-
-### Requirements
-- **SNAP** (required): https://github.com/JujuAdams/SNAP
-
-### Installation Steps
-
-1. Download and import **SNAP** into your project (via its `.yymps` or preferred install method).
-2. Download the latest GMLC `.yymps` package from the repository or itch.io page.
-3. In the GameMaker IDE, select **Tools > Import Local Package**.
-4. Choose the GMLC `.yymps` file and confirm import.
-5. The GMLC scripts will appear under your project’s resource tree and are immediately ready to use.
-
-No special initialization is required after import.
-
-## 🚀 **Quickstart**
-
-GMLC allows you to compile and execute GML source code strings at runtime.
-Here’s the most minimal example possible:
+## Quickstart (current API)
 
 ```gml
 var env = new GMLC_Env();
 var program = env.compile("return 42;");
-var result = program();        // Executes the compiled code
-show_debug_message(result);    // Prints: 42
-```
+show_debug_message(program());   // 42
 
-A compiled **program** behaves similarly to a native gm script. It’s callable, but can also contain other callable functions.
-
-For example, fetching a specific function such as `main`, `step`, or `draw` from a compiled program:
-
-```gml
-var env = new GMLC_Env();
-var program = env.compile(@'
+env.compile(@'
 function foo() {
     return "bar";
 }
 ');
-
-var _foo = env.get("foo");
-show_debug_message(_foo());    // Prints: bar
+var foo = env.get("foo");
+show_debug_message(foo());       // bar
 ```
 
-If the user declares a constant named `global` or uses GameMaker’s built-in `global`, functions can also be accessed directly via `global.foo`.
+`execute_string(code)` compiles and runs a string without caching; use a `GMLC_Env` for anything that runs more
+than once. Exposure tiers (`GMLC_EXPOSURE`) decide which built-in functions compiled code may call; the `expose_*`
+methods of `GMLC_Env` add your own functions, constants and assets.
 
+## Known limitations of this branch
 
-> **Note:**
-> GMLC can be updated to recognize **newer GML functions** than those bundled with its release by supplying a newer `GmlSpec.xml` file from your local GameMaker runtime cache:
->
-> `C:\ProgramData\GameMakerStudio2\Cache\runtimes\runtime-<runtime.version>`
-
-## ⚠️ **Note on `execute_string()`**
-
-GMLC also includes a legacy style helper named `execute_string(_code)`.
-It compiles and runs a code string immediately **without caching or environment reuse**.
-This makes it **significantly slower** than using a `GMLC_Env`, but it can be convenient for quick, throwaway tests or debugging.
-
-Example:
-
-```gml
-execute_string(@'show_debug_message("quick test");');
-```
-
-Use this only for temporary experimentation; for any real runtime scripting, always prefer creating an environment and compiling once.
-
-## 🧠 **Additional Notes**
-
-That’s all you need for a first run, but you may want to:
-
-* Read about **sandbox profiles** `GMLC_EXPOSURE` enum if you plan to expose runtime functions safely.
-* Use **hooks** if you want your compiled code to integrate into native events (`create`, `step`, `draw`, etc.).
-* Special thanks to Juju Adams for use SNAP's XML parser until a stand alone design is finished.
-* Special thanks to TabularElf for the many talks about his GMLSpeak, and improvements and design changes. Much of our work is shared between the projects.
-
-## ❓ **FAQ**
-
-**Q: Can I use GMLC outside of GameMaker?**  
-No; GMLC runs entirely inside the GameMaker runtime and is intended for in engine use.
-
-**Q: Is this compatible with both LTS and Monthly builds?**  
-_Yes._\* GMLC targets standard GML syntax and should work in both, however I can not ensure that every feature will work as testing the entire runtime on multiple versions is an insermountable task, if you have issues please submit a bug report or feature request.
-
-**Q: Why is `execute_string()` so slow?**  
-It does not reuse or cache the compiler environment, it recompiles the string every call.  
-Use `GMLC_Env` for anything persistent.
-
-**Q: Can I give my modders access to built-in GameMaker functions?**  
-Yes. Use the sandbox capability system (`pure`, `safe`, `moderate`, `unsafe`) to control what functions are exposed.
-
-**Q: Can I expose my own functions?**  
-Yes. Yes please see the variety of `expose_*` in `GMLC_Env`.
-
-
-## 🔀 **Alternatives**
-
-[catspeak-lang](https://github.com/katsaii/catspeak-lang) - Catsaii: An extremely robust modding toolset with long term support.
-
-[gmlspeak](https://github.com/tabularelf/GMLspeak) - TabularElf: An extension to catspeak-lang, which allows for gml like code to be parsed for use inside catspeak
-
-[TXR](https://yellowafterlife.itch.io/gamemaker-txr) - YellowAfterLife: A lightweight and simple expression parser.
-
-[SNAP](https://github.com/JujuAdams/SNAP) - JujuAdams: SNAP contains a module for parsing and executing simple GML.
-
-[RunGML](https://github.com/sdelaughter/RunGML) - sdelaughter: A lisp structured GML executer, very unique!
-
-[gml.gml](https://github.com/kenan238/gml.gml/blob/master/gml.gml) - kenan238: A newer lightweight, single script GML interpreter.
-
----
-
-inspiration from neerikiffu: https://discord.com/channels/724320164371497020/724320751624257646/1178721426983882915
+- `compile_project` and `__compile_object_asset` find files with gumshoe and `parseAsync` uses the Promise library;
+  both are replaced by original code later in the overhaul.
+- Test framework run of 2026-10-04 (runtime 2024.14.4): 2,009 passed, 79 failed, 10 expired, 16 skipped, the same
+  as v1. 18 of the failures are in the GMLC suites (`DotChainPerformanceTestSuite` 8,
+  `BasicCompoundAssignmentAccessorsTestSuite` 8, `BasicConstructorTestSuit` 2): `new` on a constructor inside
+  compiled code stops with "static_set argument 1 cannot be an instance", and a bare `undefined` on the right of an
+  assignment is read as a variable.
+- The built-in table is still read from `GmlSpec.xml` at boot.
+- The overhaul replaces the single-pass design with separate lexer, preprocessor, parser, semantic analysis,
+  lowering, optimizer and backend stages; until then the code is v1's.

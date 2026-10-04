@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_3_PostProcessor",
   "parent":{
-    "name":"Parsers",
-    "path":"folders/GMLC/Parsers.yy",
+    "name":"Sema",
+    "path":"folders/GMLC/Sema.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

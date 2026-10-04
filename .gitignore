@@ -1,0 +1,5 @@
+# Runtime data copied from the installed GameMaker runtime; never committed
+datafiles/GmlSpec.xml
+# gm-cli build cache
+.gmcache/
+_python/data/GmlSpec.xml

@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__ExistingUniqueVariables",
   "parent":{
-    "name":"LookupTables",
-    "path":"folders/GMLC/Internal/LookupTables.yy",
+    "name":"Spec",
+    "path":"folders/GMLC/Spec.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

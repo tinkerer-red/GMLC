@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_4_Optimizer",
   "parent":{
-    "name":"Parsers",
-    "path":"folders/GMLC/Parsers.yy",
+    "name":"Optimizer",
+    "path":"folders/GMLC/Optimizer.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

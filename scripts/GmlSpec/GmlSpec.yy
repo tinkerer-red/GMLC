@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GmlSpec",
   "parent":{
-    "name":"GML Compiler",
-    "path":"GML Compiler.yyp",
+    "name":"GMLC",
+    "path":"GMLC.yyp",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

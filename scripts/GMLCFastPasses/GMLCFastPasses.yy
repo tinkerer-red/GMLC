@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLCFastPasses",
   "parent":{
-    "name":"_Internal",
-    "path":"folders/GMLC/Parsers/_Internal.yy",
+    "name":"Runtime",
+    "path":"folders/GMLC/Backends/Runtime.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

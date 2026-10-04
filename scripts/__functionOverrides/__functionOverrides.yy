@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__functionOverrides",
   "parent":{
-    "name":"Internal",
-    "path":"folders/GMLC/Internal.yy",
+    "name":"Runtime",
+    "path":"folders/GMLC/Backends/Runtime.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

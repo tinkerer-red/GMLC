@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"Util",
   "parent":{
-    "name":"GMLC",
-    "path":"folders/GMLC.yy",
+    "name":"Util",
+    "path":"folders/GMLC/Util.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

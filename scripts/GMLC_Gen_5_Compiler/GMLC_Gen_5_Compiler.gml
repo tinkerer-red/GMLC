@@ -384,7 +384,6 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		
 		default:
 			
-			trace(json_stringify(_node, true))
 			throw_gmlc_error($"Current Node does not have a valid type for the optimizer,\ntype: {_node.type}\ncurrentNode: {json_stringify(_node, true)}", _node.line, _node.lineString)
 		break;
 				

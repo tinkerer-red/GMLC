@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"TypeEnums",
   "parent":{
-    "name":"_Internal",
-    "path":"folders/GMLC/Parsers/_Internal.yy",
+    "name":"Parser",
+    "path":"folders/GMLC/Parser.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

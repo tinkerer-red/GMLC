@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__EnvironmentClass",
   "parent":{
-    "name":"Internal",
-    "path":"folders/GMLC/Internal.yy",
+    "name":"Driver",
+    "path":"folders/GMLC/Driver.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
