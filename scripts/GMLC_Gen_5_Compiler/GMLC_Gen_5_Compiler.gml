@@ -28,7 +28,7 @@
 		}
 		
 		static parseAll = function() {
-			return __GMLCcompileProgram(ast, globals);
+			return __GMLCcompileProgram(ast, globals, env);
 		}
 		
 		static nextNode = function() {
@@ -203,9 +203,10 @@ function __GMLCexecuteProgram() {
 	
 	return _return;
 }
-function __GMLCcompileProgram(_node, _globalsStruct) {
+function __GMLCcompileProgram(_node, _globalsStruct, _env=undefined) {
 	var _output = new __GMLC_Function(undefined, undefined, "__GMLCcompileProgram", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.rootNode = _output;
+	_output.env = _env; // calls through a plain function number are checked against what it exposes
 	_output.globals = _globalsStruct; // these are optional inputs for future use with compiling a full project folder.
 	_output.program = __GMLCcompileFunction(_output, _output, _node);
 	
@@ -1077,22 +1078,20 @@ function __GMLCcompileWith(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteTryCatchFinally() {
-	
+	// one GML try per compiled try: GameMaker's own finally runs after the try, after the catch, and before an error
+	// that is not caught (no catch block, or thrown by the catch block) leaves
 	try {
 		tryBlock()
     }
-    catch(_e) {
+	catch (_e) {
+		if (catchBlock == undefined) throw _e;
 		if (parentNode.flowMask & FLOW_MASK.RETURN) return;
-		if (catchBlock != undefined) {
-			//locals = variable_clone(parentNode.locals, 1)
-			parentNode.locals[catchVariableIndex] = _e;
-			parentNode.localsWrittenTo[catchVariableIndex] = true;
-			catchBlock()
-		}
-    }
-    
-	if (finallyBlock != undefined) {
-		finallyBlock();
+		parentNode.locals[catchVariableIndex] = _e;
+		parentNode.localsWrittenTo[catchVariableIndex] = true;
+		catchBlock()
+	}
+	finally {
+		if (finallyBlock != undefined) finallyBlock();
 	}
 }
 function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
@@ -1131,7 +1130,10 @@ function __GMLCexecuteNewExpression() {
 	var _func = callee()
 	
 	if (!is_method(_func)) {
-		throw $"Attempting to call new method on a non-callable value :: `{_func}`"
+		if (!is_callable(_func)) {
+			throw $"Attempting to call new method on a non-callable value :: `{_func}`"
+		}
+		_func = __GMLCcallableFromIndex(rootNode, _func);
 	}
 	
 	//mostly just used in recursion code
@@ -1150,12 +1152,14 @@ function __GMLCexecuteNewExpression() {
 	
 	//avoids garbage collection lag spikes
 	array_resize(arguments, argumentCount);
+	var _prevOther = global.gmlc_other_instance;
+	var _prevSelf  = global.gmlc_self_instance;
 	var _i=argumentCount-1; repeat(argumentCount) {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 	
-	var _struct = constructor_call_ext(_func, arguments);
-	var t = static_get(_struct);
+	// GMLC constructors need the program data as `other` (constructor_call_ext); native constructors get a real `new`
+	var _struct = (is_gmlc_constructor(_func)) ? constructor_call_ext(_func, arguments) : __gmlc_new_native(_func, arguments);
 	
 	if (--recursionCount) {
         // Un-stash the arguments
@@ -1177,17 +1181,32 @@ function __GMLCexecuteNewExpression() {
 function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileNewExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	
-	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.expression);
+	// `new` wraps the call that follows it: compile that call's callee and arguments, never the call itself (which
+	// would run the constructor as a plain function first)
+	var _call = _node.expression;
+	var _argArr = [];
+	switch (_call.type) {
+		case __GMLC_NodeType_CallExpression:
+			_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _call.callee);
+			_argArr = _call.arguments;
+		break;
+		case __GMLC_NodeType_CallMethodExpression:
+			_output.callee = __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _call.object, { value: _call.key }, _node.line, _node.lineString);
+			_argArr = _call.arguments;
+		break;
+		default: // `new Ctor` without parentheses
+			_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _call);
+		break;
+	}
 	
 	_output.recursionCount = 0; 
 	_output.prevArgCount = 0;
-	_output.argumentCount = array_length(_node.expression.arguments);
+	_output.argumentCount = array_length(_argArr);
 	_output.argumentExpressions = array_create(_output.argumentCount);
 	_output.arguments = array_create(_output.argumentCount);
 	_output.backupArguments = [];//if the function is recursive stash the arguments back into this array, to<->from
 	_output.argCountMemory = [];//this is used to remember how much to pop out of the stashed arguments incase we recurse with differing argument counts
 	
-	var _argArr = _node.expression.arguments
 	var _i=0; repeat(array_length(_argArr)) {
 		_output.argumentExpressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
 	_i++}
@@ -1282,6 +1301,10 @@ function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteCallMethodExpression() {
+	// GameMaker evaluates the target before the arguments (right to left); evaluate it once, used for both scoping
+	// and function lookup
+	var _raw_target = target();
+	
 	//mostly just used in recursion code
 	var _arg_count = max(argument_count, argumentCount)
 	
@@ -1299,20 +1322,20 @@ function __GMLCexecuteCallMethodExpression() {
 	
 	//avoids garbage collection lag spikes
 	array_resize(arguments, 0);
+	
+	var _prevOther = global.gmlc_other_instance;
+	var _prevSelf  = global.gmlc_self_instance;
+	var _return = undefined;
 	var _i=argumentCount-1; repeat(argumentCount) {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 	
-	// Evaluate target once — used for both scoping and function lookup
-	var _raw_target = target();
 	var _scope_target = _raw_target;
 	if (is_gmlc_function(_scope_target)) {
 		_scope_target = __gmlc_static_get(_scope_target);
 	}
 
 	// Update scope to the object before the dot
-	var _prevOther = global.gmlc_other_instance;
-	var _prevSelf  = global.gmlc_self_instance;
 	if (_scope_target != undefined)
 	&& (_scope_target != _prevSelf) {
 		global.gmlc_other_instance = _prevSelf;
@@ -1339,7 +1362,6 @@ function __GMLCexecuteCallMethodExpression() {
 		throw_gmlc_error($"Variable <{typeof(_scope_target)}>.{key} not set before reading it.\n{json_stringify(callstack, true)}", self.line, self.lineString)
 	}
 
-	var _return = undefined;
 	if (is_method(_func)) {
 		if (is_gmlc_constructor(_func)) {
 			var _program_data = method_get_self(_func);
@@ -1363,8 +1385,9 @@ function __GMLCexecuteCallMethodExpression() {
 	}
 	else {
 		var _args = arguments;
+		var _callable = __GMLCcallableFromIndex(rootNode, _func);
 		with (global.gmlc_other_instance) with (global.gmlc_self_instance) {
-			_return = script_execute_ext(_func, _args);
+			_return = method_call(_callable, _args);
 		}
 	}
 	
@@ -1414,13 +1437,21 @@ function __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node) {
 //    argArr: array<expression>,
 //}
 #endregion
+#region jsDoc
+/// @func    __GMLCcallableFromIndex(_rootNode, _index)
+/// @desc    Returns the function to call for a callable that is a plain number (a built-in or script function read as
+///          a value, as in GameMaker): only one the program's environment exposes. A program compiled without an
+///          environment calls any function, as GameMaker does.
+/// @param   {Struct} _rootNode : The program node
+/// @param   {Real}   _index    : The function number
+/// @returns {Function}
+#endregion
+function __GMLCcallableFromIndex(_rootNode, _index) {
+	var _env = _rootNode[$ "env"];
+	if (_env == undefined) return method(undefined, _index);
+	return _env.callableFromIndex(_index);
+}
 function __GMLCexecuteCallExpression() {
-	var _func = callee()
-	
-	if (!is_method(_func)) {
-		throw $"Attempting to call method on a non-callable value :: `{_func}`"
-	}
-	
 	//mostly just used in recursion code
 	var _arg_count = max(argument_count, argumentCount)
 	
@@ -1435,51 +1466,58 @@ function __GMLCexecuteCallExpression() {
 	//remember how many the function had
 	prevArgCount = _arg_count;
 	
-	
 	//avoids garbage collection lag spikes
 	array_resize(arguments, 0);
+	
+	var _return = undefined;
+	// GameMaker evaluates the arguments right to left, then the callee
 	var _i=argumentCount-1; repeat(argumentCount) {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
 
-	var _return = undefined;
-	if (is_method(_func)) {
-		if is_gmlc_constructor(_func) {
-			//this is just method_call, but it works on constructors
-			var _program_data = method_get_self(_func);
-			var _program_func = method_get_index(_func);
-			var _arguments = arguments
-			with (_program_data) {
-				_return = script_execute_ext(_program_func, _arguments);
-			}
+	var _func = callee()
+	
+	if (!is_method(_func)) {
+		if (!is_callable(_func)) {
+			throw $"Attempting to call method on a non-callable value :: `{_func}`"
 		}
-		else if (is_gmlc_program(_func))
-		|| (is_gmlc_method(_func)) {
-			_return = method_call(_func, arguments);
-		}
-		else {
-			var _self = method_get_self(_func);
-			var _args = arguments;
-			
-			var _prevOther = global.gmlc_other_instance;
-			var _prevSelf  = global.gmlc_self_instance;
-			global.gmlc_other_instance = _prevSelf;
-			global.gmlc_self_instance = _self;
-			
-			//why am i doing this?
-			with (_prevSelf) {
-				_return = method_call(_func, _args);
-			}
-		
-			global.gmlc_other_instance = _prevOther;
-			global.gmlc_self_instance  = _prevSelf;
+		// a function held as a plain number (a variable set to `get_timer`, as in GameMaker): only an exposed one
+		_func = __GMLCcallableFromIndex(rootNode, _func);
+	}
+	
+	if is_gmlc_constructor(_func) {
+		//this is just method_call, but it works on constructors
+		var _program_data = method_get_self(_func);
+		var _program_func = method_get_index(_func);
+		var _arguments = arguments
+		with (_program_data) {
+			_return = script_execute_ext(_program_func, _arguments);
 		}
 	}
+	else if (is_gmlc_program(_func))
+	|| (is_gmlc_method(_func)) {
+		_return = method_call(_func, arguments);
+	}
 	else {
+		var _self = method_get_self(_func);
 		var _args = arguments;
-		with (global.gmlc_other_instance) with (global.gmlc_self_instance) {
-			_return = script_execute_ext(_func, _args);
+		var _prevOther = global.gmlc_other_instance;
+		var _prevSelf  = global.gmlc_self_instance;
+		
+		// a bound method runs on its own self; an unbound built-in keeps the caller's self, so a callback into
+		// compiled code (script_execute inside `with`) still sees the right instance
+		if (_self != undefined) {
+			global.gmlc_other_instance = _prevSelf;
+			global.gmlc_self_instance = _self;
 		}
+			
+		//why am i doing this?
+		with (_prevSelf) {
+			_return = method_call(_func, _args);
+		}
+		
+		global.gmlc_other_instance = _prevOther;
+		global.gmlc_self_instance  = _prevSelf;
 	}
 	
 	if (--recursionCount) {
@@ -1498,11 +1536,29 @@ function __GMLCexecuteCallExpression() {
 	
 	return _return;
 }
+#region jsDoc
+/// @func    __GMLCcompileCallee(_rootNode, _parentNode, _callee)
+/// @desc    Compiles the callee of a call. A built-in or script function named directly is a plain number in the AST
+///          (as GameMaker has it when read as a value); a call needs a method, so it is wrapped once here instead of
+///          on every call.
+/// @param   {Struct} _rootNode   : The program node
+/// @param   {Struct} _parentNode : The enclosing function node
+/// @param   {Struct} _callee     : The callee's AST node
+/// @returns {Function}
+#endregion
+function __GMLCcompileCallee(_rootNode, _parentNode, _callee) {
+	if (_callee.type == __GMLC_NodeType_Literal)
+	&& (!is_method(_callee.value))
+	&& (is_callable(_callee.value)) {
+		return method({ value: method(undefined, _callee.value) }, __GMLCexecuteLiteralExpression);
+	}
+	return __GMLCcompileExpression(_rootNode, _parentNode, _callee);
+}
 function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCallExpression", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.callee = __GMLCcompileExpression(_rootNode, _parentNode, _node.callee);
+	_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _node.callee);
 	
-	_output.calleeName = (struct_exists(_node.callee, "name")) ? _node.callee.name : "<Call Expression>"
+	_output.calleeName =(struct_exists(_node.callee, "name")) ? _node.callee.name : "<Call Expression>"
 	
 	_output.recursionCount = 0; 
 	_output.prevArgCount = 0;
@@ -1559,6 +1615,31 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		}
 		else {
 			
+			// A dot target or a rooted array path is evaluated once (GameMaker evaluation order, see
+			// __GMLCarrayTargetIsRooted); every other accessor is read and then written, evaluating keys and
+			// target again for the write.
+			var _isDot = (_node.left.accessorType == __GMLC_AccessorType_Dot);
+			if (_isDot)
+			|| ((_node.left.accessorType == __GMLC_AccessorType_Array) && __GMLCarrayTargetIsRooted(_node.left.expr)) {
+				var _apply = undefined; // ??= is handled by the executor
+				switch (_node.operator) {
+					case "+=": _apply = __GMLCcompoundPlus;       break;
+					case "-=": _apply = __GMLCcompoundMinus;      break;
+					case "*=": _apply = __GMLCcompoundMultiply;   break;
+					case "/=": _apply = __GMLCcompoundDivide;     break;
+					case "^=": _apply = __GMLCcompoundBitwiseXOR; break;
+					case "&=": _apply = __GMLCcompoundBitwiseAND; break;
+					case "|=": _apply = __GMLCcompoundBitwiseOR;  break;
+					case "%=": _apply = __GMLCcompoundMod;        break;
+				}
+				var _once = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Compound", "<Missing Error Message>", _node.line, _node.lineString);
+				_once.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
+				_once.key    = (_isDot) ? _node.left.val1.value : __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
+				_once.right  = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
+				_once.apply  = _apply;
+				return __vanilla_method(_once, (_isDot) ? __GMLCexecuteCompoundDot : __GMLCexecuteCompoundArrayRooted);
+			}
+			
 			//get the accurate opperator function
 			var _func = undefined;
 			switch (_node.operator) {
@@ -1588,6 +1669,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			//compile the getter
 			var _output0 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.line, _node.lineString);
 			_output0.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
+			_output0.rooted     = false;
 			if (_node.left.accessorType = __GMLC_AccessorType_Grid) {
 				_output0.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 				_output0.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
@@ -1614,6 +1696,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			var _output2 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.line, _node.lineString);
 			_output2.target     = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.expr);
 			_output2.expression = _expression;
+			_output2.rooted     = false;
 			if (_node.left.accessorType == __GMLC_AccessorType_Grid) {
 				_output2.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val1);
 				_output2.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.left.val2);
@@ -1657,14 +1740,13 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			var _getter_expression = __vanilla_method(_output, __GMLCexecuteUniqueGet);
 		}
 		else {
+			_output.key = _node.left.name; // every scope's getter reads `key` (self, other and static included)
 			if (_node.left.scope == ScopeType_LOCAL) {
-				_output.key = _node.left.name;
 				_output.locals     = _parentNode.locals;
 				_output.localsWrittenTo = _parentNode.localsWrittenTo;
 				_output.localIndex = _parentNode.localLookUps[$ _output.key];
 			}
 			else if (_node.left.scope == ScopeType_GLOBAL) {
-				_output.key = _node.left.name;
 				_output.globals = _rootNode.globals;
 			}
 			var _getter_expression = __vanilla_method(_output, _getter);
@@ -1683,14 +1765,13 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 			_output.setter = _node.left.value.set;
 		}
 		else {
+			_output.key = _node.left.name; // every scope's setter reads `key` (self, other and static included)
 			if (_node.left.scope == ScopeType_LOCAL) {
-				_output.key        = _node.left.name;
 				_output.locals     = _parentNode.locals;
 				_output.localsWrittenTo = _parentNode.localsWrittenTo;
 				_output.localIndex = _parentNode.localLookUps[$ _output.key];
 			}
 			else if (_node.left.scope == ScopeType_GLOBAL) {
-				_output.key        = _node.left.name;
 				_output.globals = _rootNode.globals;
 			}
 		}
@@ -1702,6 +1783,9 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 }
 
 function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
+	var _folded = __GMLCcompileConstantFold(_node);
+	if (_folded != undefined) return _folded;
+	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBinaryExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
@@ -1792,7 +1876,129 @@ function __GMLCexecuteOpBitwiseShiftRight() {
 #endregion
 #endregion
 
+#region Constant folding
+// GameMaker computes operators whose operands are all constants at compile time, and the folded value can have a
+// different type from the same operation at run time (measured on 2024.14.4):
+//   - `!`, `&&`, `||`, `^^` fold to a number (`!false` is 1, `true && false` is 0); at run time they give a bool.
+//   - arithmetic and bitwise operators fold to an int64 when an operand is a hex or binary literal of 2^31 or more
+//     (an int64 to the compiler); otherwise to a number, except that a whole result outside the 32-bit range is an
+//     int64. At run time bitwise operators always give an int64 (`5 & 3` folds to the number 1, `a & b` is int64).
+//     A shift by 64 or more folds to 0 (`11 << 64` is 0; at run time the count wraps, `a << 64` is 11).
+//   - comparisons give a bool either way.
+// GMLC folds the same expressions to the same values and types.
+
+#region jsDoc
+/// @func    __GMLCconstantValue(_node)
+/// @desc    Evaluates an expression whose operands are all constants, as GameMaker's compiler does.
+/// @param   {Struct} _node : AST node
+/// @returns {Array} [true, value, int64Typed] when _node is a compile-time constant number or bool, else [false]
+#endregion
+function __GMLCconstantValue(_node) {
+	switch (_node.type) {
+		case __GMLC_NodeType_Literal: {
+			var _v = _node.value;
+			if (is_bool(_v)) return [true, _v, false];
+			if (is_int64(_v)) {
+				// a decimal literal of 2^31 or more is a double to the compiler; hex and binary ones are int64
+				var _raw = string_lower(string(_node[$ "name"] ?? ""));
+				var _typed = string_starts_with(_raw, "$") || string_starts_with(_raw, "0x") || string_starts_with(_raw, "0b");
+				return [true, _typed ? _v : real(_v), _typed];
+			}
+			if (is_real(_v) || is_int32(_v)) return [true, real(_v), false];
+			return [false];
+		}
+		case __GMLC_NodeType_UnaryExpression: {
+			var _e = __GMLCconstantValue(_node.expr);
+			if (!_e[0]) return [false];
+			try {
+				switch (_node.operator) {
+					case "!": return [true, real(!_e[1]), false];
+					case "-": return [true, -_e[1], _e[2]];
+					case "~": return [true, _e[2] ? ~_e[1] : real(~_e[1]), _e[2]];
+				}
+			}
+			catch (_err) {}
+			return [false];
+		}
+		case __GMLC_NodeType_LogicalExpression:
+		case __GMLC_NodeType_BinaryExpression: {
+			var _l = __GMLCconstantValue(_node.left);
+			if (!_l[0]) return [false];
+			var _r = __GMLCconstantValue(_node.right);
+			if (!_r[0]) return [false];
+			var _a = _l[1];
+			var _b = _r[1];
+			var _typed = _l[2] || _r[2];
+			if (_typed) {
+				_a = int64(_a);
+				_b = int64(_b);
+			}
+			try {
+				var _v;
+				switch (_node.operator) {
+					case "&&":  return [true, real(_a && _b), false];
+					case "||":  return [true, real(_a || _b), false];
+					case "^^":  return [true, real(_a ^^ _b), false];
+					case "==":  return [true, _a == _b, false];
+					case "!=":  return [true, _a != _b, false];
+					case "<":   return [true, _a < _b, false];
+					case "<=":  return [true, _a <= _b, false];
+					case ">":   return [true, _a > _b, false];
+					case ">=":  return [true, _a >= _b, false];
+					case "+":   _v = _a + _b; break;
+					case "-":   _v = _a - _b; break;
+					case "*":   _v = _a * _b; break;
+					case "/":   if (_b == 0) return [false]; _v = _a / _b; break;
+					case "div": if (_b == 0) return [false]; _v = _a div _b; break;
+					case "mod":
+					case "%":   if (_b == 0) return [false]; _v = _a mod _b; break;
+					case "&":   _v = _a & _b; break;
+					case "|":   _v = _a | _b; break;
+					case "^":   _v = _a ^ _b; break;
+					// the compiler gives 0 for a shift by 64 or more (at run time the count wraps modulo 64)
+					case "<<":  _v = (_b >= 64) ? 0 : _a << _b; break;
+					case ">>":  _v = (_b >= 64) ? 0 : _a >> _b; break;
+					default: return [false];
+				}
+				return _typed ? [true, int64(_v), true] : [true, real(_v), false];
+			}
+			catch (_err) {}
+			return [false];
+		}
+	}
+	return [false];
+}
+#region jsDoc
+/// @func    __GMLCconstantEmit(_c)
+/// @desc    Returns the value GameMaker emits for a folded constant: int64-typed values stay int64, a whole double
+///          outside the 32-bit range becomes an int64, bools stay bools, everything else is a real.
+/// @param   {Array} _c : A result of __GMLCconstantValue
+/// @returns {Any}
+#endregion
+function __GMLCconstantEmit(_c) {
+	var _v = _c[1];
+	if (is_bool(_v)) return _v;
+	if (_c[2]) return int64(_v);
+	if (!is_nan(_v)) && (!is_infinity(_v)) && (frac(_v) == 0) && ((_v > 2147483647) || (_v < -2147483648)) return int64(_v);
+	return real(_v);
+}
+#region jsDoc
+/// @func    __GMLCcompileConstantFold(_node)
+/// @desc    Compiles an operator whose operands are all constants into its folded value.
+/// @param   {Struct} _node : AST node of the operator
+/// @returns {Function|Undefined} the compiled literal, or undefined when _node does not fold
+#endregion
+function __GMLCcompileConstantFold(_node) {
+	var _c = __GMLCconstantValue(_node);
+	if (!_c[0]) return undefined;
+	return method({ value: __GMLCconstantEmit(_c) }, __GMLCexecuteLiteralExpression);
+}
+#endregion
+
 function __GMLCcompileLogicalExpression(_rootNode, _parentNode, _node) {
+	var _folded = __GMLCcompileConstantFold(_node);
+	if (_folded != undefined) return _folded;
+	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLogicalExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
@@ -1830,6 +2036,11 @@ function __GMLCexecuteOpNullish() {
 #endregion
 
 function __GMLCcompileUnaryExpression(_rootNode, _parentNode, _node) {
+	if (_node.operator == "!") || (_node.operator == "~") || (_node.operator == "-") {
+		var _folded = __GMLCcompileConstantFold(_node);
+		if (_folded != undefined) return _folded;
+	}
+	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUnaryExpression", "<Missing Error Message>", _node.line, _node.lineString);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr);
     

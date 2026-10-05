@@ -79,21 +79,24 @@ function GmlStringEscapeTestSuite() : TestSuite() constructor {
 		assert_equals(case_run(case_string_escapes_unicode_four_digits), "string:1:65", "GameMaker no longer gives the measured result");
 	});
 	addFact("\\u0041 [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("A");'); }), "string:1:65", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u0041");'); }), "string:1:65", "GMLC differs from GameMaker");
 	});
 
 	addFact("\\u1F600 [GameMaker]", function() {
-		assert_equals(case_run(case_string_escapes_unicode_five_digits), "string:2:8032,48", "GameMaker no longer gives the measured result");
+		assert_equals(case_run(case_string_escapes_unicode_five_digits), "string:1:128512", "GameMaker no longer gives the measured result");
 	});
 	addFact("\\u1F600 [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("ὠ0");'); }), "string:2:8032,48", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u1F600");'); }), "string:1:128512", "GMLC differs from GameMaker");
 	});
 
-	addFact("\\u110000 [GameMaker]", function() {
-		assert_equals(case_run(case_string_escapes_unicode_out_of_range), "string:3:4352,48,48", "GameMaker no longer gives the measured result");
-	});
-	addFact("\\u110000 [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("ᄀ00");'); }), "string:3:4352,48,48", "GMLC differs from GameMaker");
+	// \u110000: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	//   Error parsing \u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.
+	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
+	// addFact("\\u110000 [GameMaker]", function() {
+	//   return case_ords("\u110000");
+	// });
+	addFact("\\u110000 is refused [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u110000");'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
 	addFact("\\101 [GameMaker]", function() {
@@ -250,6 +253,67 @@ b");'); }), "string:3:97,10,98", "GMLC differs from GameMaker");
 	addFact("$@\"\" (template raw) is refused [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords($@"a{1}");'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
+
+	addFact("\\u1F642 assigned to a variable [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_1f642_var), "string:1:128578", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u1F642 assigned to a variable [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var s = "\u1F642";
+return case_ords(s);'); }), "string:1:128578", "GMLC differs from GameMaker");
+	});
+
+	addFact("\\u1F642 as an argument [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_1f642_arg), "string:1:128578", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u1F642 as an argument [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u1F642");'); }), "string:1:128578", "GMLC differs from GameMaker");
+	});
+
+	addFact("\\u1F600 assigned to a variable [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_1f600_var), "string:1:128512", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u1F600 assigned to a variable [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var s = "\u1F600";
+return case_ords(s);'); }), "string:1:128512", "GMLC differs from GameMaker");
+	});
+
+	addFact("\\u1F642\\u8001\\u20AC\\u41 [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_greedy_mix), "string:4:128578,32769,8364,65", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u1F642\\u8001\\u20AC\\u41 [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u1F642\u8001\u20AC\u41");'); }), "string:4:128578,32769,8364,65", "GMLC differs from GameMaker");
+	});
+
+	addFact("\\u10FFFF [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_six_digits), "string:1:1114111", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u10FFFF [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u10FFFF");'); }), "string:1:1114111", "GMLC differs from GameMaker");
+	});
+
+	addFact("\\u0041B [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_leading_zero_five), "string:1:1051", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u0041B [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u0041B");'); }), "string:1:1051", "GMLC differs from GameMaker");
+	});
+
+	// \u1234567: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	//   Error parsing \u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.
+	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
+	// addFact("\\u1234567 [GameMaker]", function() {
+	//   return case_ords("\u1234567");
+	// });
+	addFact("\\u1234567 is refused [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u1234567");'); }), "error", "GMLC accepts code GameMaker refuses");
+	});
+
+	addFact("\\u01F642 [GameMaker]", function() {
+		assert_equals(case_run(case_string_escapes_unicode_six_then_more), "string:1:128578", "GameMaker no longer gives the measured result");
+	});
+	addFact("\\u01F642 [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u01F642");'); }), "string:1:128578", "GMLC differs from GameMaker");
+	});
 }
 
 function case_string_escapes_newline() {
@@ -289,15 +353,11 @@ return case_ords("\u41");
 }
 
 function case_string_escapes_unicode_four_digits() {
-return case_ords("A");
+return case_ords("\u0041");
 }
 
 function case_string_escapes_unicode_five_digits() {
-return case_ords("ὠ0");
-}
-
-function case_string_escapes_unicode_out_of_range() {
-return case_ords("ᄀ00");
+return case_ords("\u1F600");
 }
 
 function case_string_escapes_octal() {
@@ -352,4 +412,34 @@ return case_ords($"{"in"}");
 
 function case_string_escapes_template_struct_inside() {
 return case_ords($"{ {a: 1}.a }");
+}
+
+function case_string_escapes_unicode_1f642_var() {
+var s = "\u1F642";
+return case_ords(s);
+}
+
+function case_string_escapes_unicode_1f642_arg() {
+return case_ords("\u1F642");
+}
+
+function case_string_escapes_unicode_1f600_var() {
+var s = "\u1F600";
+return case_ords(s);
+}
+
+function case_string_escapes_unicode_greedy_mix() {
+return case_ords("\u1F642\u8001\u20AC\u41");
+}
+
+function case_string_escapes_unicode_six_digits() {
+return case_ords("\u10FFFF");
+}
+
+function case_string_escapes_unicode_leading_zero_five() {
+return case_ords("\u0041B");
+}
+
+function case_string_escapes_unicode_six_then_more() {
+return case_ords("\u01F642");
 }

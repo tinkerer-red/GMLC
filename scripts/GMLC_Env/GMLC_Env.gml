@@ -713,6 +713,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		importSymbolMap(_map);
 		
 		exposeConstants({
+			"undefined": undefined, // importSymbolMap skips spec entries whose value is undefined
 			"all": all,
 			"noone": noone,
 			"GM_build_date": GM_build_date,

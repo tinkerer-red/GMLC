@@ -164,6 +164,8 @@ testFramework.addSuite(BasicConstructorTestSuit);
 testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
+testFramework.addSuite(GmlMethodBindingTestSuite);
+testFramework.addSuite(GmlConstantFoldingTestSuite);
 testFramework.addSuite(GmlUnicodeAndBytesTestSuite);
 testFramework.addSuite(GmlStringEscapeTestSuite);
 testFramework.addSuite(GmlLegacySyntaxTestSuite);

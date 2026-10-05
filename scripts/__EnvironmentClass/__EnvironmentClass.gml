@@ -6,6 +6,7 @@
 function __EnvironmentClass() constructor {
 	// === Internal Stores ===
 	envSymbols = {};
+	__functionIndexNames = {}; // string(function index) -> name, rebuilt by callableFromIndex when it is stale
 	
 	#region Public
 	#region jsDoc
@@ -28,7 +29,8 @@ function __EnvironmentClass() constructor {
 			
 			if (!is_struct(entry)) continue;
 			if (!is_string(entry.type)) continue;
-			if (entry.value == -1 || entry.value == undefined) continue; // gml_pragma = -1, and nameof = undefined, very likely many more too.
+			if (entry.value == undefined) continue; // a spec name this runtime has no value for (nameof, missing functions)
+			if (entry.type == "envFunctions") && (entry.value == -1) continue; // compile-time only, like gml_pragma; constants may be -1 (browser_not_a_browser, seqdir_left)
 			
 			if (!overwrite && struct_exists(envSymbols, key)) {
 				continue; // Skip if already exists and overwrite is false
@@ -40,9 +42,13 @@ function __EnvironmentClass() constructor {
 			
 			var sym = envSymbols[$ key];
 			
+			// the value compiled code sees when it reads the name (a built-in function is a number, as in GameMaker)
+			sym.raw = entry[$ "raw"] ?? entry.value;
+			
 			//for sandboxing purposes
 			if (entry.type == "envFunctions")
 			&& (!is_method(entry.value)) {
+				entry.raw = entry.value;
 				entry.value = method(undefined, entry.value);
 			}
 			
@@ -106,6 +112,36 @@ function __EnvironmentClass() constructor {
 		var newEnv = new __EnvironmentClass();
 		newEnv.envSymbols = variable_clone(envSymbols, 1);
 		return newEnv;
+	};
+	#region jsDoc
+	/// @func    callableFromIndex()
+	/// @desc    Returns the exposed function whose number is _index, for a call through a plain function number; throws
+	///          when this environment does not expose it.
+	/// @self    __EnvironmentClass
+	/// @param   {Real} _index : Function number (a built-in or script function read as a value)
+	/// @returns {Function}
+	#endregion
+	static callableFromIndex = function(_index) {
+		// A built-in function read as a value is a plain number (as in GameMaker), and any number is callable, so a
+		// call through a number may only reach a function this environment exposes.
+		var _key = string(_index);
+		var _sym = envSymbols[$ __functionIndexNames[$ _key] ?? ""];
+		if (_sym == undefined) || (_sym.type != "envFunctions") || (_sym.raw != _index) {
+			// rebuild: the symbols changed since the last lookup
+			__functionIndexNames = {};
+			var _names = struct_get_names(envSymbols);
+			var _i=0; repeat(array_length(_names)) {
+				var _entry = envSymbols[$ _names[_i]];
+				if (_entry[$ "type"] == "envFunctions") && (!is_method(_entry[$ "raw"])) && (is_callable(_entry[$ "raw"])) {
+					__functionIndexNames[$ string(_entry.raw)] = _names[_i];
+				}
+			_i++}
+			_sym = envSymbols[$ __functionIndexNames[$ _key] ?? ""];
+			if (_sym == undefined) {
+				throw_gmlc_error($"Attempting to call a function that is not exposed :: `{_index}`");
+			}
+		}
+		return _sym.value;
 	};
 	#region jsDoc
 	/// @func    resolve()
@@ -213,6 +249,9 @@ function __EnvironmentClass() constructor {
 				envSymbols[$ key] = {};
 			}
 			var sym = envSymbols[$ key];
+			
+			// the value compiled code sees when it reads the name (a built-in function is a number, as in GameMaker)
+			sym.raw = val;
 			
 			//for sandboxing purposes
 			if (_type == "envFunctions")

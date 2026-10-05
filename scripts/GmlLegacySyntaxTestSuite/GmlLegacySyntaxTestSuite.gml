@@ -214,6 +214,144 @@ return begin;'); }), "error", "GMLC accepts code GameMaker refuses");
 		assert_equals(case_run(function() { return compile_and_execute(@'var xor = 1;
 return xor;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
+
+	addFact("!false (constant operand) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_bang_constant), "number:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("!false (constant operand) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return !false;'); }), "number:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("true && false (constant operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_and_symbol_constant), "number:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("true && false (constant operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return true && false;'); }), "number:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("not t (variable operand) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_not_word_variable), "bool:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("not t (variable operand) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var t = true;
+return not t;'); }), "bool:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("!t (variable operand) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_bang_variable), "bool:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("!t (variable operand) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var t = true;
+return !t;'); }), "bool:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("t and f (variable operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_and_word_variable), "bool:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("t and f (variable operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var t = true, f = false;
+return t and f;'); }), "bool:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("t && f (variable operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_and_symbol_variable), "bool:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("t && f (variable operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var t = true, f = false;
+return t && f;'); }), "bool:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("1 != 2 (constant operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_neq_symbol_constant), "bool:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("1 != 2 (constant operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return 1 != 2;'); }), "bool:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("1 == 1 (constant operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_eq_constant), "bool:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("1 == 1 (constant operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return 1 == 1;'); }), "bool:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("a < b (variable operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_lt_variable), "bool:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("a < b (variable operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var a = 1, b = 2;
+return a < b;'); }), "bool:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("a[i, j] read [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_array_2d_comma_read), "number:3", "GameMaker no longer gives the measured result");
+	});
+	addFact("a[i, j] read [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var arr = [[1, 2], [3, 4]];
+return arr[1, 0];'); }), "number:3", "GMLC differs from GameMaker");
+	});
+
+	addFact("a[1][2] = 3 on an empty array [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_nested_array_autocreate), "string:[ 0,[ 0,0,3 ] ]", "GameMaker no longer gives the measured result");
+	});
+	addFact("a[1][2] = 3 on an empty array [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var a = [];
+a[1][2] = 3;
+return string(a);'); }), "string:[ 0,[ 0,0,3 ] ]", "GMLC differs from GameMaker");
+	});
+
+	addFact("a[1][0] = 5 where a[1] is a number [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_nested_array_over_number), "string:[ 0,[ 5 ] ]", "GameMaker no longer gives the measured result");
+	});
+	addFact("a[1][0] = 5 where a[1] is a number [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var a = [0, 0];
+a[1][0] = 5;
+return string(a);'); }), "string:[ 0,[ 5 ] ]", "GMLC differs from GameMaker");
+	});
+
+	addFact("!(1 == 1) (constant operand) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_bang_comparison_constant), "number:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("!(1 == 1) (constant operand) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return !(1 == 1);'); }), "number:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("true ^^ false (constant operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_xor_symbol_constant), "number:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("true ^^ false (constant operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return true ^^ false;'); }), "number:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("false || true (constant operands) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_or_symbol_constant), "number:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("false || true (constant operands) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return false || true;'); }), "number:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("t && true (one constant operand) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_and_mixed_operands), "bool:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("t && true (one constant operand) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var t = true;
+return t && true;'); }), "bool:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("!0 (constant number operand) [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_bang_number_constant), "number:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("!0 (constant number operand) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'return !0;'); }), "number:1", "GMLC differs from GameMaker");
+	});
+
+	addFact("!M with M a macro of true [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_bang_macro_constant), "number:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("!M with M a macro of true [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'#macro CASE_LEGACY_TRUE true
+return !CASE_LEGACY_TRUE;'); }), "number:0", "GMLC differs from GameMaker");
+	});
 }
 
 function case_legacy_syntax_colon_assign() {
@@ -310,4 +448,88 @@ function case_legacy_syntax_array_2d_comma() {
 var arr = [];
 arr[1, 2] = 3;
 return string(arr[1][2]) + " " + string(array_length(arr));
+}
+
+function case_legacy_syntax_bang_constant() {
+return !false;
+}
+
+function case_legacy_syntax_and_symbol_constant() {
+return true && false;
+}
+
+function case_legacy_syntax_not_word_variable() {
+var t = true;
+return not t;
+}
+
+function case_legacy_syntax_bang_variable() {
+var t = true;
+return !t;
+}
+
+function case_legacy_syntax_and_word_variable() {
+var t = true, f = false;
+return t and f;
+}
+
+function case_legacy_syntax_and_symbol_variable() {
+var t = true, f = false;
+return t && f;
+}
+
+function case_legacy_syntax_neq_symbol_constant() {
+return 1 != 2;
+}
+
+function case_legacy_syntax_eq_constant() {
+return 1 == 1;
+}
+
+function case_legacy_syntax_lt_variable() {
+var a = 1, b = 2;
+return a < b;
+}
+
+function case_legacy_syntax_array_2d_comma_read() {
+var arr = [[1, 2], [3, 4]];
+return arr[1, 0];
+}
+
+function case_legacy_syntax_nested_array_autocreate() {
+var a = [];
+a[1][2] = 3;
+return string(a);
+}
+
+function case_legacy_syntax_nested_array_over_number() {
+var a = [0, 0];
+a[1][0] = 5;
+return string(a);
+}
+
+function case_legacy_syntax_bang_comparison_constant() {
+return !(1 == 1);
+}
+
+function case_legacy_syntax_xor_symbol_constant() {
+return true ^^ false;
+}
+
+function case_legacy_syntax_or_symbol_constant() {
+return false || true;
+}
+
+function case_legacy_syntax_and_mixed_operands() {
+var t = true;
+return t && true;
+}
+
+function case_legacy_syntax_bang_number_constant() {
+return !0;
+}
+
+function case_legacy_syntax_bang_macro_constant() {
+#macro CASE_LEGACY_TRUE true
+return !CASE_LEGACY_TRUE;
 }
