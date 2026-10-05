@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"__gmlc_trie_string_matching",
+  "%Name":"GMLC_Gen_0_Lexer",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"__gmlc_trie_string_matching",
+  "name":"GMLC_Gen_0_Lexer",
   "parent":{
     "name":"Lexer",
     "path":"folders/GMLC/Lexer.yy",

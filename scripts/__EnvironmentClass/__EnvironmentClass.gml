@@ -29,7 +29,7 @@ function __EnvironmentClass() constructor {
 			
 			if (!is_struct(entry)) continue;
 			if (!is_string(entry.type)) continue;
-			if (entry.value == undefined) continue; // a spec name this runtime has no value for (nameof, missing functions)
+			if (entry.value == undefined) && (entry.type != "envConstants") continue; // a spec name this runtime has no value for (nameof, missing functions); the constant `undefined` is kept
 			if (entry.type == "envFunctions") && (entry.value == -1) continue; // compile-time only, like gml_pragma; constants may be -1 (browser_not_a_browser, seqdir_left)
 			
 			if (!overwrite && struct_exists(envSymbols, key)) {

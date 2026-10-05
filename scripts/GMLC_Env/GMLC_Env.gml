@@ -565,7 +565,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	exposeVariables(_var_map);
 	#endregion
 	
-	tokenizer      = new GMLC_Gen_0_Tokenizer(self);
+	lexer          = new GMLC_Gen_0_Lexer(self);
 	pre_processor  = new GMLC_Gen_1_PreProcessor(self);
 	parser         = new GMLC_Gen_2_Parser(self);
 	post_processor = new GMLC_Gen_3_PostProcessor(self);
@@ -604,8 +604,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _time = get_timer();
 		var _step_time = _time;
 		
-		tokenizer.initialize(_sourceCode);
-		var tokens = tokenizer.parseAll();
+		lexer.initialize(_sourceCode, currentScriptName);
+		var tokens = lexer.parseAll();
 		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
 		if (__log_step_times) {
 			show_debug_message($"Tokenizer Time took : {(get_timer() - _step_time)/1000}ms")
@@ -713,7 +713,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		importSymbolMap(_map);
 		
 		exposeConstants({
-			"undefined": undefined, // importSymbolMap skips spec entries whose value is undefined
 			"all": all,
 			"noone": noone,
 			"GM_build_date": GM_build_date,
@@ -886,6 +885,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			"script_get_name":    __gmlc_script_get_name,
 			"script_execute":     __gmlc_script_execute,
 			"script_execute_ext": __gmlc_script_execute_ext,
+			"nameof":             __gmlc_nameof, // `nameof(name)` is replaced by the name at compile time
 			"variable_global_exists" : __vanilla_method(_env, __gmlc_variable_global_exists),
 			"variable_global_get" : __vanilla_method(_env, __gmlc_variable_global_get),
 			"variable_global_set" : __vanilla_method(_env, __gmlc_variable_global_set),
@@ -942,10 +942,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	__log_step_times = true;
 	
-	__keyword_lookup  = undefined;
-	__function_lookup = undefined;
-	__constant_lookup = undefined;
-	__variable_lookup = undefined;
 	
 	#region jsDoc
 	/// @func    __is_safe_function()
@@ -1086,8 +1082,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	static __compile_pipeline = function(_source, _name = undefined) {
 		currentScriptName = __resolve_compile_source_name(_name);
 		_source = __appendMacros(_source);
-		tokenizer.initialize(_source);
-		var _program = tokenizer.parseAll();
+		lexer.initialize(_source, currentScriptName);
+		var _program = lexer.parseAll();
 		pre_processor.initialize(_program);
 		pre_processor.parseAll();
 		return _program;
@@ -1144,8 +1140,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_names[_i]  = __resolve_compile_source_name(is_string(_entry) ? undefined : ((struct_exists(_entry, "name")) ? _entry.name : undefined));
 			currentScriptName = _names[_i];
 			_source = __appendMacros(_source);
-			tokenizer.initialize(_source);
-			var _program = tokenizer.parseAll();
+			lexer.initialize(_source, currentScriptName);
+			var _program = lexer.parseAll();
 			if (__log_tokenizer_results) json_save(filename_name(_names[_i]) + "_tokenizer.json", _program);
 			pre_processor.initialize(_program);
 			pre_processor.parseAll();
@@ -1324,8 +1320,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		_i = 0; repeat(_file_count) {
 			var _source = __appendMacros(_entries[_i].source);
 			currentScriptName = __resolve_compile_source_name(_entries[_i].name);
-			tokenizer.initialize(_source);
-			var _program = tokenizer.parseAll();
+			lexer.initialize(_source, currentScriptName);
+			var _program = lexer.parseAll();
 			pre_processor.initialize(_program);
 			pre_processor.parseAll();
 			_programs[_i] = _program;

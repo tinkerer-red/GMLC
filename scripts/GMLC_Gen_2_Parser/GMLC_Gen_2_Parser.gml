@@ -617,13 +617,13 @@
 
 			#region function `identifier` :: the function's name if provided
 			var functionName = undefined;
-			if (currentToken.type == __GMLC_TokenType_Identifier) {
+			if (currentToken.type == __GMLC_TokenType_Identifier) && (env.isFunction(currentToken.value)) {
+				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}", line, lineString, sourceInfo.column)
+			}
+			else if (currentToken.type == __GMLC_TokenType_Identifier) {
 				var functionName = currentToken.value;
 				//consume the function's identifier
 				nextToken();
-			}
-			else if (currentToken.type == __GMLC_TokenType_Function) {
-				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}", line, lineString, sourceInfo.column)
 			}
 			else {
 				static __anon_id = 0;
@@ -899,6 +899,12 @@
 					}
 
 		            throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}", varLine, varLineString, varSourceInfo.column);
+		        }
+				
+				// the name is declared before it is parsed, so it resolves to the new variable even when a built-in or
+				// host function has the same name (`var log`)
+				if (!array_contains(_tableArr, currentToken.value)) {
+					array_push(_tableArr, currentToken.value);
 		        }
 
 				// we parse anything which starts with an identifier to ensure there is no postfix op attached to it like `++`, and accessor, or function call
@@ -1349,7 +1355,7 @@
 						case "(": {
 							expr = parseFunctionCall(expr);
 						break;}
-						case "[": {
+						case "[": case "[|": case "[?": case "[#": case "[$": case "[@": {
 							expr = parseBracketAccessor(expr);
 						break;}
 						case ".": {
@@ -1374,7 +1380,7 @@
 			while (currentToken != undefined) {
 				if (currentToken.type == __GMLC_TokenType_Punctuation) {
 					switch (currentToken.value) {
-						case "[": {
+						case "[": case "[|": case "[?": case "[#": case "[$": case "[@": {
 							expr = parseBracketAccessor(expr);
 						break;}
 						case ".": {
@@ -1417,6 +1423,30 @@
 				case __GMLC_TokenType_Identifier:{
 
 					var _scopeType = __find_ScopeType_from_string(currentToken.value);
+					
+					// `E.M` of an enum the environment exposes (project enums) is the member's value
+					if (_scopeType != ScopeType_MACRO) && (_scopeType != ScopeType_ENUM) && (_scopeType != ScopeType_LOCAL) {
+						var _envEnum = env.getEnum(currentToken.value);
+						if (_envEnum != undefined) {
+							var _next1 = peekToken();
+							var _next2 = __tokenAt(2);
+							if (_next1 != undefined) && (_next1.value == ".")
+							&& (_next2 != undefined) && (_next2.type == __GMLC_TokenType_Identifier)
+							&& (struct_exists(_envEnum.value, _next2.value)) {
+								var node = new ASTLiteral(_envEnum.value[$ _next2.value], sourceInfo, _next2.value);
+								nextToken();
+								nextToken();
+								nextToken();
+								return node;
+							}
+						}
+					}
+					
+					if (_scopeType == ScopeType_UNIQUE) {
+						var node = new ASTUniqueIdentifier(env.getVariable(currentToken.value).value, sourceInfo, currentToken.value);
+						nextToken();
+						return node;
+					}
 
 					if (_scopeType == ScopeType_MACRO) {
 
@@ -1451,7 +1481,7 @@
 					if (_scopeType == ScopeType_CONST) {
 						var _data = env.getConstant(currentToken.value) ?? env.getFunction(currentToken.value)
 						// the plain value, as GameMaker has it (a built-in function is a number); calls wrap it again
-						var node = new ASTLiteral(_data[$ "raw"] ?? _data.value, sourceInfo);
+						var node = new ASTLiteral(_data[$ "raw"] ?? _data.value, sourceInfo, currentToken.value);
 						nextToken(); // Move past the identifier
 						return node;
 					}
@@ -1490,7 +1520,7 @@
 						return expr;
 					}
 
-					if (currentToken.value == "[") {
+					if (currentToken.value == "[") || (currentToken.value == "[@") {
 						return parseArrayCreation();
 					}
 
@@ -1563,7 +1593,7 @@
 
 			var elements = [];
 
-		    expectToken(__GMLC_TokenType_Punctuation, "[");
+		    if (!optionalToken(__GMLC_TokenType_Punctuation, "[@")) expectToken(__GMLC_TokenType_Punctuation, "[");
 		    while (currentToken != undefined && currentToken.name != "]") {
 		        var element = parseExpression();
 				array_push(elements, element);
@@ -1751,37 +1781,33 @@
 			return _expr
 		};
 
+		#region jsDoc
+		/// @func    __tokenAt(_offset)
+		/// @desc    Returns the token `_offset` places after the current one, or undefined past the end.
+		/// @self    GMLC_Gen_2_Parser
+		/// @param   {Real} _offset : Distance from the current token
+		/// @returns {Struct|Undefined}
+		#endregion
+		static __tokenAt = function(_offset) {
+			var _i = currentTokenIndex + _offset;
+			return (_i < array_length(tokens)) ? tokens[_i] : undefined;
+		};
 		static parseBracketAccessor = function(object) {
 			var line = currentToken.line;
 			var lineString = currentToken.lineString;
 
 			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
 
-			nextToken(); // Consume [
+			// the opening token says the accessor: `[`, `[|`, `[?`, `[#`, `[$` or `[@`
 			var accessorType = __GMLC_AccessorType_Array; // Default to array accessor
-
 			switch (currentToken.value) {
-				case "|":{
-					accessorType = __GMLC_AccessorType_List;
-					nextToken(); // Consume |
-				break;}
-				case "?":{
-					accessorType = __GMLC_AccessorType_Map;
-					nextToken(); // Consume ?
-				break;}
-				case "#":{
-					accessorType = __GMLC_AccessorType_Grid;
-					nextToken(); // Consume #
-				break;}
-				case "$":{
-					accessorType = __GMLC_AccessorType_Struct;
-					nextToken(); // Consume $
-				break;}
-				case "@":{
-					accessorType = __GMLC_AccessorType_Array;
-					nextToken(); // Consume @
-				break;}
+				case "[|": accessorType = __GMLC_AccessorType_List;   break;
+				case "[?": accessorType = __GMLC_AccessorType_Map;    break;
+				case "[#": accessorType = __GMLC_AccessorType_Grid;   break;
+				case "[$": accessorType = __GMLC_AccessorType_Struct; break;
+				case "[@": accessorType = __GMLC_AccessorType_Array;  break;
 			}
+			nextToken(); // Consume the opening token
 
 			//parse the index/key
 			var _val1 = parseExpression();
@@ -1899,15 +1925,6 @@ function __find_ScopeType_from_string(_string) {
 	if array_contains(currentScript.GlobalVarNames, _string) return ScopeType_GLOBAL;
 	if struct_exists(currentScript.EnumVarNames, _string) return ScopeType_ENUM;
 
-
-	// Asset Handling
-	if (env.isFunction(_string)) {
-		return ScopeType_CONST;
-	}
-	else if (env.isConstant(_string)) {
-		return ScopeType_CONST;
-	}
-
 	if (currentFunction != undefined) {
 		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType_LOCAL;
 		if array_contains(currentFunction.StaticVarNames, _string) return ScopeType_STATIC;
@@ -1915,6 +1932,10 @@ function __find_ScopeType_from_string(_string) {
 	else {
 		if array_contains(currentScript.LocalVarNames, _string) return ScopeType_LOCAL;
 	}
+	
+	// built-in and host names of the environment
+	if (env.isFunction(_string)) || (env.isConstant(_string)) return ScopeType_CONST;
+	if (env.isVariable(_string)) return ScopeType_UNIQUE;
 
 	return ScopeType_SELF;  // Default to instance if scope is unknown
 

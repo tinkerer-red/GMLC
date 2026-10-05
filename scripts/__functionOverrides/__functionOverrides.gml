@@ -295,6 +295,18 @@ function __gmlc_script_execute(ind) {
 	
 }
 
+#region jsDoc
+/// @func    __gmlc_nameof(_value)
+/// @desc    The environment entry of `nameof`. Written as `nameof(name)` the call never runs: the preprocessor
+///          replaces it with the name as a string. Called any other way (through a variable), it returns
+///          string(_value), as the name is no longer known.
+/// @param   {Any} _value : The argument
+/// @returns {String}
+#endregion
+function __gmlc_nameof(_value) {
+	return string(_value);
+}
+
 function __gmlc_script_execute_ext(ind, array=undefined, offset=0, num_args=array_length(array)-offset) {
 	static __argArr = [];
 	array_resize(__argArr, 0)

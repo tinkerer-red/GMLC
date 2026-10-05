@@ -374,42 +374,50 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 		array_push(_out, new __GMLC_create_token(__GMLC_TokenType_Punctuation, ")", ")", _sourceInfo));
 		return _out;
 	}
-	
-	static parseRegion = function() {
-		static parseRegionTitle = function() {
-			var title = "";
-			var _length = array_length(tokens)
-			while (currentTokenIndex < _length) {
-				// Check for line break not preceded by a backslash escape
-				if (currentToken.type == __GMLC_TokenType_Whitespace)
-				&& (currentToken.value == "\n") {
-					break;  // End of macro body
-				}
 				
-				title += currentToken.name;
-				currentToken.type = __GMLC_TokenType_Comment;
+	#region jsDoc
+	/// @func    parseNameof()
+	/// @desc    `nameof(<name>)` becomes a String token holding the name as written, before macros and enums are
+	///          expanded: `nameof(SOME_MACRO)` is "SOME_MACRO", `nameof(E.m)` is "E.m", `nameof(global.x)` is
+	///          "global.x" (the tokens inside the parentheses, joined without the whitespace between them). Only
+	///          when the environment exposes `nameof`.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @returns {Bool} true when it replaced a `nameof(...)`
+	#endregion
+	static parseNameof = function() {
+		if (currentToken.type != __GMLC_TokenType_Identifier) || (currentToken.value != "nameof") return false;
+		if (!env.isFunction("nameof")) return false;
 				
-				__nextToken();
-			}
-			
-			__nextToken();
-			return title;
-		};
+		// the next significant token must be `(`
+		var _i = currentTokenIndex + 1;
+		var _length = array_length(tokens);
+		while (_i < _length) && ((tokens[_i].type == __GMLC_TokenType_Whitespace) || (tokens[_i].type == __GMLC_TokenType_Comment)) _i++;
+		if (_i >= _length) || (tokens[_i].value != "(") return false;
 		
-		if (currentToken.type == __GMLC_TokenType_Keyword) {
-			if (currentToken.value == "#region") {
-				expectToken(__GMLC_TokenType_Keyword, "#region");
-				var regionTitle = parseRegionTitle();
-				return true;
+		// the tokens up to the matching `)`
+		var _depth = 0;
+		var _text = "";
+		var _j = _i + 1;
+		while (_j < _length) {
+			var _token = tokens[_j];
+			if (_token.value == "(") _depth++;
+			if (_token.value == ")") {
+				if (_depth == 0) break;
+				_depth--;
 			}
-			if (currentToken.value == "#endregion") {
-				expectToken(__GMLC_TokenType_Keyword, "#endregion");
-				var regionTitle = parseRegionTitle(); //apparently endregion can also have a closer title. who knew!
-				return true;
+			if (_token.type != __GMLC_TokenType_Whitespace) && (_token.type != __GMLC_TokenType_Comment) {
+				_text += _token.name;
 			}
+			_j++;
 		}
-		
-		return false;
+		if (_j >= _length) return false;
+			
+		var _string = new __GMLC_create_token(__GMLC_TokenType_String, "nameof(" + _text + ")", _text, currentToken.sourceInfo);
+		array_push(processedTokens, _string);
+		currentTokenIndex = _j;
+		currentToken = tokens[_j];
+		__nextToken(); // past `)`
+		return true;
 	}
 	
 	static parseAcceptance = function() {
@@ -422,7 +430,7 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 	addParserStep(parseWhiteSpaces)
 	addParserStep(parseMacro)
 	addParserStep(parseEnum)
-	addParserStep(parseRegion)
+	addParserStep(parseNameof)
 	//addParserStep(parseDefine) //this should only be active when gms1.4 support is enabled
 	addParserStep(parseAcceptance)
 		

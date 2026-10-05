@@ -1,5 +1,5 @@
 // Generated from measured GameMaker behaviour; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-04.
+// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-05.
 function GmlDirectiveTestSuite() : TestSuite() constructor {
 
 	addFact("#region title containing # [GameMaker]", function() {
@@ -114,7 +114,7 @@ ds_grid_destroy(g);
 return _r;'); }), "number:12", "GMLC differs from GameMaker");
 	});
 
-	// [#ff0000] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// [#ff0000] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
 	//   unexpected symbol "[#" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("[#ff0000] (no space after [) [GameMaker]", function() {
@@ -134,7 +134,7 @@ return a[0];'); }), "error", "GMLC accepts code GameMaker refuses");
 return a[0];'); }), "number:255", "GMLC differs from GameMaker");
 	});
 
-	// [$FF] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// [$FF] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
 	//   unexpected symbol "[$" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("[$FF] (no space after [) [GameMaker]", function() {
@@ -162,7 +162,7 @@ return a[0];'); }), "number:255", "GMLC differs from GameMaker");
 return a[0];'); }), "string:s", "GMLC differs from GameMaker");
 	});
 
-	// [|1] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// [|1] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
 	//   unexpected symbol "[|" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("[|1] (no space after [) [GameMaker]", function() {
@@ -183,7 +183,7 @@ s.end = 1;
 return s.end;'); }), "number:1", "GMLC differs from GameMaker");
 	});
 
-	// {end: 1}: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// {end: 1}: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
 	//   unexpected symbol ":" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("{end: 1} [GameMaker]", function() {
@@ -248,6 +248,65 @@ return s.div;'); }), "number:6", "GMLC differs from GameMaker");
 s.repeat = 7;
 return s.repeat;'); }), "number:7", "GMLC differs from GameMaker");
 	});
+
+	addFact("[@ then a quote: a verbatim string or the array accessor (escape kept?) [GameMaker]", function() {
+		assert_equals(case_run(case_directives_array_at_escape), "string:3:0", "GameMaker no longer gives the measured result");
+	});
+	addFact("[@ then a quote: a verbatim string or the array accessor (escape kept?) [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var a = [@"x\ty"];
+return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0);'); }), "string:3:0", "GMLC differs from GameMaker");
+	});
+
+	addFact("[ @ with a space before the quote [GameMaker]", function() {
+		assert_equals(case_run(case_directives_array_at_space_escape), "string:4:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("[ @ with a space before the quote [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var a = [ @"x\ty"];
+return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0);'); }), "string:4:1", "GMLC differs from GameMaker");
+	});
+
+	// a[@"1"] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
+	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
+	// addFact("a[@\"1\"] = 456 on an array [GameMaker]", function() {
+	//   var a = [0, 0];
+	//   a[@"1"] = 456;
+	//   return string(a);
+	// });
+
+	// a[@"1"] read on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
+	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
+	// addFact("a[@\"1\"] read on an array [GameMaker]", function() {
+	//   var a = [5, 6];
+	//   return a[@"1"];
+	// });
+
+	// a["1"] read on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
+	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
+	// addFact("a[\"1\"] read on an array [GameMaker]", function() {
+	//   var a = [5, 6];
+	//   return a["1"];
+	// });
+
+	// a["1"] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
+	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
+	// addFact("a[\"1\"] = 456 on an array [GameMaker]", function() {
+	//   var a = [0, 0];
+	//   a["1"] = 456;
+	//   return string(a);
+	// });
+
+	// a[@ string with an escape] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
+	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
+	// addFact("a[@ string with an escape] = 456 on an array [GameMaker]", function() {
+	//   var a = [0, 0];
+	//   a[@"1\t"] = 456;
+	//   return string(a);
+	// });
 }
 
 function case_directives_region_title_hash() {
@@ -381,4 +440,14 @@ function case_directives_member_repeat() {
 var s = {};
 s.repeat = 7;
 return s.repeat;
+}
+
+function case_directives_array_at_escape() {
+var a = [@"x\ty"];
+return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0);
+}
+
+function case_directives_array_at_space_escape() {
+var a = [ @"x\ty"];
+return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0);
 }
