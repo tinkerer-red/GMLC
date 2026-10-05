@@ -523,7 +523,8 @@
 			expectToken(__GMLC_TokenType_Keyword, "throw");  // Expect the try keyword
 			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
 
-			return new ASTCallExpression(new ASTLiteral(method(undefined, throw_gmlc_error), sourceInfo, "throw_gmlc_error"), [_err_message], sourceInfo);
+			// `throw x` throws x itself (a string stays a string in the catch), as in GameMaker
+			return new ASTCallExpression(new ASTLiteral(method(undefined, __gmlc_throw_value), sourceInfo, "__gmlc_throw_value"), [_err_message], sourceInfo);
 		};
 
 		#endregion
@@ -1406,8 +1407,9 @@
 				case __GMLC_TokenType_Number:
 				case __GMLC_TokenType_String:{
 
-					// Handle literals
-					var node = new ASTLiteral(currentToken.value, sourceInfo);
+					// Handle literals; keep the source text, which tells constant folding whether a large integer was
+					// written in hex or binary (int64 to GameMaker's compiler) or in decimal (a double)
+					var node = new ASTLiteral(currentToken.value, sourceInfo, (currentToken.type == __GMLC_TokenType_Number) ? currentToken.name : undefined);
 					nextToken();
 					return node;
 
@@ -1448,7 +1450,8 @@
 
 					if (_scopeType == ScopeType_CONST) {
 						var _data = env.getConstant(currentToken.value) ?? env.getFunction(currentToken.value)
-						var node = new ASTLiteral(_data.value, sourceInfo);
+						// the plain value, as GameMaker has it (a built-in function is a number); calls wrap it again
+						var node = new ASTLiteral(_data[$ "raw"] ?? _data.value, sourceInfo);
 						nextToken(); // Move past the identifier
 						return node;
 					}
@@ -1581,6 +1584,7 @@
 			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
 
 			var _args = [];
+			var _bound = []; // keys whose value is a function literal: GameMaker binds those to the new struct
 
 		    expectToken(__GMLC_TokenType_Punctuation, "{");
 		    while (currentToken != undefined && currentToken.value != "}") {
@@ -1601,9 +1605,19 @@
 					var _prev_scope = currentScope;
 					currentScope = ScopeType_SELF;
 
+					var _is_function = (currentToken.type == __GMLC_TokenType_Keyword) && (currentToken.value == "function");
 					var value = parseConditionalExpression();
 
 					currentScope = _prev_scope;
+					
+					// `function` literal: pass the unbound function, __NewGMLStruct binds it to the struct
+					if (_is_function)
+					&& (value.type == __GMLC_NodeType_CallExpression)
+					&& (value.callee.type == __GMLC_NodeType_Literal)
+					&& (value.callee.name == "__method") {
+						value = value.arguments[1];
+						array_push(_bound, (key.type != __GMLC_TokenType_String && key.value != key.name) ? key.name : key.value);
+					}
 				}
 				else if (key.type == __GMLC_TokenType_String)
 				     || (key.type == __GMLC_TokenType_Identifier)
@@ -1637,6 +1651,8 @@
 		    expectToken(__GMLC_TokenType_Punctuation, "}");
 
 			// Properties are not all constants, use a runtime function to create the struct
+			// first argument: the keys to bind (decided here, at compile time), undefined when there are none
+			array_insert(_args, 0, new ASTLiteral(array_length(_bound) ? _bound : undefined, sourceInfo));
 			return new ASTCallExpression(new ASTLiteral(method(undefined, __NewGMLStruct), sourceInfo, "__NewGMLStruct"), _args, sourceInfo);
 		};
 
@@ -1689,6 +1705,13 @@
 						var _expr = parseConditionalExpression()
 						array_push(_arguments, _expr);
 						_argument_found = true;
+						
+						// an argument ends at `,` or `)`: `f(@"a""b")` is two adjacent strings, refused by GameMaker
+						if (currentToken != undefined)
+						&& (currentToken.name != ",")
+						&& (currentToken.name != ")") {
+							throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {currentToken.line} : got '{currentToken.name}' expected ',' or ')'", currentToken.line, currentToken.lineString, currentToken.sourceInfo.column)
+						}
 					}
 
 				}
@@ -1770,6 +1793,12 @@
 			}
 
 			expectToken(__GMLC_TokenType_Punctuation, "]"); // Consume ]
+			
+			// `a[i, j]` on an array is `a[i][j]` (GameMaker 2.3+)
+			if (accessorType == __GMLC_AccessorType_Array) && (_val2 != undefined) {
+				var _row = new ASTAccessorExpression(object, _val1, undefined, __GMLC_AccessorType_Array, sourceInfo);
+				return new ASTAccessorExpression(_row, _val2, undefined, __GMLC_AccessorType_Array, sourceInfo);
+			}
 
 			return new ASTAccessorExpression(
 				object,

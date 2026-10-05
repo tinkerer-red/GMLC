@@ -164,6 +164,14 @@ testFramework.addSuite(BasicConstructorTestSuit);
 testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
+testFramework.addSuite(GmlExceptionTestSuite);
+testFramework.addSuite(GmlMethodBindingTestSuite);
+testFramework.addSuite(GmlConstantFoldingTestSuite);
+testFramework.addSuite(GmlUnicodeAndBytesTestSuite);
+testFramework.addSuite(GmlStringEscapeTestSuite);
+testFramework.addSuite(GmlLegacySyntaxTestSuite);
+testFramework.addSuite(GmlEvaluationOrderTestSuite);
+testFramework.addSuite(GmlDirectiveTestSuite);
 
 var _added_tests = []
 

@@ -46,9 +46,12 @@ function struct_filter(_input, _predicate) {
 /// feather ignore all
 function constructor_call_ext(_constructor, _args = undefined, _offset = 0, _length = undefined) {
 	_length ??= is_array(_args) ? array_length(_args) : 0;
+	_args ??= [];
 	
-	// Short circuting, since the arguments array is optional!
-	if (_length == 0) {
+	// Short circuting, since the arguments array is optional! Not for GMLC constructors: they read their program
+	// data through `other`, which only the with() path below sets (`new` on a method-bound GMLC constructor with no
+	// arguments ran with an undefined self)
+	if (_length == 0) && (!is_gmlc_constructor(_constructor)) {
 		return new _constructor();
 	}
 	
@@ -76,6 +79,39 @@ function constructor_call_ext(_constructor, _args = undefined, _offset = 0, _len
 			return _struct;
 		}
 	}
+}
+
+#region jsDoc
+/// @func    __gmlc_new_native(_constructor, _args)
+/// @desc    Runs `new _constructor(...)` with the values of _args as arguments, for constructors that are not GMLC
+///          constructors (GameMaker's own `new` sets up `self` and the statics). Up to 16 arguments use `new`
+///          directly; more go through constructor_call_ext.
+/// @param   {Function}   _constructor : The constructor
+/// @param   {Array<Any>} _args        : The arguments
+/// @returns {Struct}
+#endregion
+function __gmlc_new_native(_constructor, _args) {
+	var a = _args;
+	switch (array_length(a)) {
+		case 0:  return new _constructor();
+		case 1:  return new _constructor(a[0]);
+		case 2:  return new _constructor(a[0], a[1]);
+		case 3:  return new _constructor(a[0], a[1], a[2]);
+		case 4:  return new _constructor(a[0], a[1], a[2], a[3]);
+		case 5:  return new _constructor(a[0], a[1], a[2], a[3], a[4]);
+		case 6:  return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5]);
+		case 7:  return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6]);
+		case 8:  return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7]);
+		case 9:  return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8]);
+		case 10: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9]);
+		case 11: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10]);
+		case 12: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11]);
+		case 13: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12]);
+		case 14: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13]);
+		case 15: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14]);
+		case 16: return new _constructor(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15]);
+	}
+	return constructor_call_ext(_constructor, _args);
 }
 
 function is_gmlc_program(_program) {
@@ -152,6 +188,15 @@ function static_exists(_struct, _name) {
 		_static = static_get(_static)
 	}
 	return false;
+}
+
+#region jsDoc
+/// @func    __gmlc_throw_value(_value)
+/// @desc    The `throw` statement of compiled code: throws the value unchanged.
+/// @param   {Any} _value : The thrown value
+#endregion
+function __gmlc_throw_value(_value) {
+	throw _value;
 }
 
 function throw_gmlc_error(_err, _line=undefined, _lineString=undefined, _column=undefined, _script=undefined) {

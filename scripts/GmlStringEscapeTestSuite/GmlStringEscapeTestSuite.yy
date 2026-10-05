@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GmlStringEscapeTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlStringEscapeTestSuite",
+  "parent":{
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

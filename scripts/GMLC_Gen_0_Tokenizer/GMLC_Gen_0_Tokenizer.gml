@@ -33,6 +33,9 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	currentCharCode = undefined;
 	
 	templateStringDepth = 0;
+	// one entry per open `{` of a template string: how many `{` of the expression inside it are still open, so the
+	// `}` of a struct literal inside `$"{ {a: 1}.a }"` does not end the expression
+	templateBraceStack = [];
 	
 	tokens = undefined;
 	program = undefined;
@@ -48,6 +51,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		sourceCodeString = string_replace_all(string_replace_all(_sourceCode, "\r\n", "\n"), "\r", "\n");
 		sourceCodeCharLength = string_length(sourceCodeString);
 		tokens = [];
+		templateBraceStack = [];
 		currentFileName = env.currentScriptName;
 		sourceCodeLineArray = string_split(sourceCodeString, "\n");
 		program = new __GMLC_ProgramTokens(tokens, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[0] ?? "", 1, 0, 0, 0));
@@ -143,6 +147,36 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		return false;
 	};
 	
+	#region jsDoc
+	/// @func    parseMemberName()
+	/// @desc    After `.`, reads the following word as a member name, keywords and function names included (`s.end`,
+	///          `s.repeat`), as GameMaker does.
+	/// @self    GMLC_Gen_0_Tokenizer
+	/// @returns {Bool} true when it read a member name
+	#endregion
+	static parseMemberName = function() {
+		if (!__char_is_alphabetic(currentCharCode ?? 0)) && (currentCharCode != ord("_")) return false;
+		var _i = array_length(tokens) - 1;
+		while (_i >= 0)
+		&& ((tokens[_i].type == __GMLC_TokenType_Whitespace) || (tokens[_i].type == __GMLC_TokenType_Comment)) {
+			_i--;
+		}
+		if (_i < 0) || (tokens[_i].type != __GMLC_TokenType_Punctuation) || (tokens[_i].value != ".") return false;
+		
+		var _start_line = line;
+		var _start_column = column;
+		var _byte_start = bytePos;
+		var _identifier = chr(currentCharCode);
+		while (__char_is_alphanumeric(__peekUTF8() ?? 0)) {
+			__nextUTF8();
+			_identifier += chr(currentCharCode);
+		}
+		nextToken();
+		var _token = new __GMLC_create_token(__GMLC_TokenType_Identifier, _identifier, _identifier, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
+		array_push(tokens, _token);
+		return _token;
+	};
+	
 	static parseKeywords = function() {
 		var _start_line = line;
 		var _start_column = column;
@@ -208,6 +242,23 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				}
 				
 				array_push(tokens, _token);
+				
+				// the rest of a #region or #endregion line is its title, never code: quotes, `/*` or `$"` in it
+				// must not open a string or comment (GameMaker ignores it)
+				if (_identifier == "#region") || (_identifier == "#endregion") {
+					var _title_line = line;
+					var _title_column = column;
+					var _title_byte = bytePos;
+					var _title = "";
+					while (currentCharCode != undefined) && (currentCharCode != ord("\n")) {
+						_title += chr(currentCharCode);
+						__nextUTF8();
+					}
+					if (_title != "") {
+						array_push(tokens, new __GMLC_create_token(__GMLC_TokenType_Comment, _title, _title, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_title_line-1], _title_line, _title_column, _title_byte, bytePos)));
+					}
+				}
+				
 				return _token;
 			}
 		}
@@ -279,7 +330,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 					
 				}
 				else {
-					var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _return.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
+					// the plain function value, as GameMaker has it when the name is read; calls wrap it (__GMLCcompileCallee)
+					var _token = new __GMLC_create_token(__GMLC_TokenType_Function, _identifier, _return[$ "raw"] ?? _return.value, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 					array_push(tokens, _token);
 					return _token;
 				}
@@ -476,6 +528,91 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		return false;
 	};
 	
+	#region jsDoc
+	/// @func    __readEscape(_start_line)
+	/// @desc    Reads one escape sequence and returns the text it stands for, as GameMaker 2024.14 does.
+	///          currentCharCode is the character after the backslash on entry
+	///          and the last character of the sequence on exit.
+	/// @self    GMLC_Gen_0_Tokenizer
+	/// @param   {Real} _start_line : Line the string starts on, for errors
+	/// @returns {String}
+	#endregion
+	static __readEscape = function(_start_line) {
+		// x takes exactly 2 hex digits; u every following hex digit (at most 0x10FFFF, no surrogates); octal 1 to 3
+		// digits below 256; code 0 ends the string (reported through __escapeEndsString); a backslash before a line
+		// break joins the lines; any other character stands for itself (q is q, { is {)
+		__escapeEndsString = false;
+		var _c = currentCharCode;
+		switch (_c) {
+			case ord("n"): return "\n";
+			case ord("r"): return "\r";
+			case ord("t"): return "\t";
+			case ord("b"): return chr(8);
+			case ord("f"): return chr(12);
+			case ord("v"): return chr(11);
+			case ord("a"): return chr(7);
+			case ord("\n"): return "";
+			case ord("x"): {
+				var _d1 = __peekUTF8(1) ?? 0;
+				var _d2 = __peekUTF8(2) ?? 0;
+				if (!__char_is_hex(_d1)) || (!__char_is_hex(_d2)) || (_d1 == ord("_")) || (_d2 == ord("_")) {
+					throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\x HEX value. 2 digits required.")
+				}
+				__nextUTF8();
+				var _hex = chr(currentCharCode);
+				__nextUTF8();
+				_hex += chr(currentCharCode);
+				return __escapeChar(real("0x" + _hex));
+			}
+			case ord("u"): {
+				// every following hex digit belongs to the code point; above 0x10FFFF or a surrogate is an error
+				var _hex = "";
+				while (true) {
+					var _d = __peekUTF8() ?? 0;
+					if (!__char_is_hex(_d)) || (_d == ord("_")) break;
+					__nextUTF8();
+					_hex += chr(currentCharCode);
+				}
+				if (_hex == "") return "u";
+				var _code = (string_length(_hex) > 8) ? infinity : real("0x" + _hex);
+				if (_code > 0x10FFFF) || ((_code >= 0xD800) && (_code <= 0xDFFF)) {
+					throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.")
+				}
+				return __escapeChar(_code);
+			}
+		}
+		if (_c >= ord("0")) && (_c <= ord("7")) {
+			var _value = _c - ord("0");
+			repeat (2) {
+				var _d = __peekUTF8() ?? 0;
+				if (_d < ord("0")) || (_d > ord("7")) break;
+				__nextUTF8();
+				_value = _value * 8 + (currentCharCode - ord("0"));
+			}
+			if (_value > 255) {
+				throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\??? OCTAL value. Value must be less than 255.")
+			}
+			return __escapeChar(_value);
+		}
+		return chr(_c);
+	};
+	__escapeEndsString = false;
+	#region jsDoc
+	/// @func    __escapeChar(_code)
+	/// @desc    Returns chr(_code), except that code 0 ends the string (GameMaker strings stop at the first NUL) and
+	///          gives "".
+	/// @self    GMLC_Gen_0_Tokenizer
+	/// @param   {Real} _code : Character code
+	/// @returns {String}
+	#endregion
+	static __escapeChar = function(_code) {
+		if (_code == 0) {
+			__escapeEndsString = true;
+			return "";
+		}
+		return chr(_code);
+	};
+	
 	static parseStringLiteral = function() {
 		var _startCharCode = currentCharCode;
 		var _byte_start = bytePos;
@@ -487,7 +624,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _raw_string = chr(currentCharCode);
 			var _string = "";
 			var _string_closed = false;
-			var _should_break = false;
+			var _should_break = false; var _truncated = false;
 			
 			__expectUTF8(ord("\"")); // consume the entry quote "
 			
@@ -498,105 +635,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				switch (currentCharCode) {
 					case ord(@'\'): {
 						__nextUTF8();
-						switch (currentCharCode) {
-							case ord(@'\'): { // \\
-								_char = "\\";
-							break;}
-							case ord(@'"'): { // \"
-								_char = "\"";
-							break;}
-							case ord(@'n'): { // \n
-								_char = "\n";
-							break;}
-							case ord(@'r'): { // \r
-								_char = "\r";
-							break;}
-							case ord(@'t'): { // \t
-								_char = "\t";
-							break;}
-							case ord(@'f'): { // \f
-								_char = "\f";
-							break;}
-							case ord(@'v'): { // \v
-								_char = "\v";
-							break;}
-							case ord(@'b'): { // \b
-								_char = "\b";
-							break;}
-							case ord(@'0'): { // \0
-								_char = "\0";
-								if (__peekUTF8() == ord("0") && __peekUTF8(1) == ord("0")) { // \000
-									__nextUTF8();
-									__nextUTF8();
-									_char = "\000"
-								}
-							break;}
-							case ord(@'u'): { // \uFFFFF
-								_char = "0x";
-								if (__char_is_hex(__peekUTF8() ?? 0)) {
-									__nextUTF8();
-									
-									var _len = 0;
-									while (currentCharCode != undefined)
-									&& (__char_is_hex(currentCharCode))
-									&& (currentCharCode != ord("_"))
-									&& (_len <= 5)
-									{
-										_len += 1;
-										_char += chr(currentCharCode);
-										
-										//if the next char is not hex back out
-										var _nextToken = __peekUTF8();
-										if (!__char_is_hex(_nextToken)) 
-										|| (_nextToken == "_")
-										{
-											break;
-										}
-										
-										__nextUTF8();
-									}
-								}
-								
-								_char = chr(real(_char))
-							
-							break;}
-							case ord(@'x'): { // \xFF
-								_char = "0x";
-								if (__char_is_hex(__peekUTF8() ?? 0)) {
-									__nextUTF8();
-									
-									var _len = 0;
-									while (currentCharCode != undefined)
-									&& (__char_is_hex(currentCharCode))
-									&& (currentCharCode != ord("_"))
-									&& (_len < 2)
-									{
-										_len += 1;
-										_char += chr(currentCharCode);
-										
-										//if the next char is not hex back out
-										var _nextToken = __peekUTF8();
-										if (!__char_is_hex(_nextToken)) 
-										|| (_nextToken == "_")
-										{
-											break;
-										}
-										
-										__nextUTF8();
-									}
-								}
-								
-								if (string_length(_char) == 2) {
-									throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\x HEX value. 2 digits required.")
-								}
-								
-								_char = chr(real(_char))
-							
-							break;}
-							default: {
-								_char = "";
-							break;}
-						}
+						_char = __readEscape(_start_line);
+						if (__escapeEndsString) _truncated = true;
 					break;}
 					case ord(@'"'): { // "
 						_raw_string += @'"';
@@ -610,7 +650,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				}
 			
 				_raw_string += _char;
-				_string += _char;
+				if (!_truncated) _string += _char;
 			
 				if (_string_closed || _should_break) break;
 				
@@ -664,6 +704,16 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 				var _raw_string = "$";
 			}
 			else if (currentCharCode == ord("#")) {
+				//`[#` with no space between is always the grid accessor in GameMaker, even before a colour (`[#ff0000]`)
+				var _prev_tok_index = array_length(tokens) - 1;
+				if (_prev_tok_index >= 0) {
+					var _prev_tok = tokens[_prev_tok_index];
+					if (_prev_tok.value == "[")
+					&& (_prev_tok.byteEnd == bytePos) {
+						return false;
+					}
+				}
+				
 				__nextUTF8(); // consume #
 				var _raw_string = "#";
 				var _is_color = true;
@@ -751,7 +801,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			array_push(tokens, _token);
 			return _token;
 		}
-		if (templateStringDepth > 0)
+		if (array_length(templateBraceStack) > 0)
+		&& (array_last(templateBraceStack) == 0)
 		&& (currentCharCode == ord(@'}'))
 		{
 			var _token = tokenizeTemplateString(true);
@@ -1390,6 +1441,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			var _start_column = column;
 		
 			var _punctuation = chr(currentCharCode);
+			// braces of an expression inside a template string (see templateBraceStack)
+			var _open = array_length(templateBraceStack);
+			if (_open > 0) {
+				if (_punctuation == "{") templateBraceStack[_open-1] += 1;
+				if (_punctuation == "}") templateBraceStack[_open-1] -= 1;
+			}
 			nextToken();
 			var _token = new __GMLC_create_token(__GMLC_TokenType_Punctuation, _punctuation, _punctuation, new GMLC_SourceInfo(currentFileName, currentFileName, sourceCodeLineArray[_start_line-1], _start_line, _start_column, _byte_start, bytePos));
 			array_push(tokens, _token);
@@ -1429,6 +1486,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 	
 	array_push(parserSteps,
 		parseSkipWhitespace,
+		parseMemberName,
 		parseKeywords,
 		parseFunctions,
 		parseConstants,
@@ -1463,7 +1521,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		var _raw_string = chr(currentCharCode);
 		var _string = "";
 		var _string_closed = false;
-		var _should_break = false;
+		var _should_break = false; var _truncated = false;
 		
 		// consume the entry quote $"
 		if (!_suffix) {
@@ -1474,6 +1532,7 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 		}
 		else {
 			__expectUTF8(ord("}"));
+			array_pop(templateBraceStack); // this `}` closes the expression part opened by the previous segment
 		}
 		
 		
@@ -1484,105 +1543,8 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 			switch (currentCharCode) {
 				case ord(@'\'): {
 					__nextUTF8();
-					switch (currentCharCode) {
-						case ord(@'\'): { // \\
-							_char = "\\";
-						break;}
-						case ord(@'"'): { // \"
-							_char = "\"";
-						break;}
-						case ord(@'n'): { // \n
-							_char = "\n";
-						break;}
-						case ord(@'r'): { // \r
-							_char = "\r";
-						break;}
-						case ord(@'t'): { // \t
-							_char = "\t";
-						break;}
-						case ord(@'f'): { // \f
-							_char = "\f";
-						break;}
-						case ord(@'v'): { // \v
-							_char = "\v";
-						break;}
-						case ord(@'b'): { // \b
-							_char = "\b";
-						break;}
-						case ord(@'0'): { // \0
-							_char = "\0";
-							if (__peekUTF8() == ord("0") && __peekUTF8(1) == ord("0")) { // \000
-								__nextUTF8();
-								__nextUTF8();
-								_char = "\000"
-							}
-						break;}
-						case ord(@'u'): { // \uFFFFF
-							_char = "0x";
-							if (__char_is_hex(__peekUTF8() ?? 0)) {
-								__nextUTF8();
-									
-								var _len = 0;
-								while (currentCharCode != undefined)
-								&& (__char_is_hex(currentCharCode))
-								&& (currentCharCode != ord("_"))
-								&& (_len <= 5)
-								{
-									_len += 1;
-									_char += chr(currentCharCode);
-										
-									//if the next char is not hex back out
-									var _nextToken = __peekUTF8();
-									if (!__char_is_hex(_nextToken)) 
-									|| (_nextToken == "_")
-									{
-										break;
-									}
-										
-									__nextUTF8();
-								}
-							}
-								
-							_char = chr(real(_char))
-							
-						break;}
-						case ord(@'x'): { // \xFF
-							_char = "0x";
-							if (__char_is_hex(__peekUTF8() ?? 0)) {
-								__nextUTF8();
-									
-								var _len = 0;
-								while (currentCharCode != undefined)
-								&& (__char_is_hex(currentCharCode))
-								&& (currentCharCode != ord("_"))
-								&& (_len < 2)
-								{
-									_len += 1;
-									_char += chr(currentCharCode);
-										
-									//if the next char is not hex back out
-									var _nextToken = __peekUTF8();
-									if (!__char_is_hex(_nextToken)) 
-									|| (_nextToken == "_")
-									{
-										break;
-									}
-										
-									__nextUTF8();
-								}
-							}
-								
-							if (string_length(_char) == 2) {
-								throw_gmlc_error($"Error : <FileName>({_start_line}) : Error parsing \\x HEX value. 2 digits required.")
-							}
-								
-							_char = chr(real(_char))
-							
-						break;}
-						default: {
-							_char = "";
-						break;}
-					}
+					_char = __readEscape(_start_line);
+					if (__escapeEndsString) _truncated = true;
 				break;}
 				case ord(@'"'): { // "
 					_raw_string += "\"";
@@ -1610,11 +1572,12 @@ function GMLC_Gen_0_Tokenizer(_env) : FlexiParseBase() constructor {
 						_char = "";
 						_should_break = true;
 					}
+					array_push(templateBraceStack, 0);
 				break;}
 			}
 			
 			_raw_string += _char;
-			_string += _char;
+			if (!_truncated) _string += _char;
 			
 			
 			if (_string_closed || _should_break) break;
@@ -1938,7 +1901,8 @@ function __char_is_operator(char) {
 	|| (char >= ord("<") && char <= ord("@")) // < = > ? @
 	|| (char == ord("^"))
 	|| (char == ord("~"))
-	|| (char == ord("|"));
+	|| (char == ord("|"))
+	|| (char == ord(":")); // only `:=` is an operator; a lone `:` falls through to parsePunctuation
 	
 }
 
@@ -1979,7 +1943,8 @@ function __cssHexToGmlColor(_hex_string) {
 	var _green = real("0x" + string_copy(_hex_string, 3, 2));
 	var _blue = real("0x" + string_copy(_hex_string, 5, 2));
 
-	return (_blue << 16) | (_green << 8) | _red;
+	// a colour literal is a real in GameMaker (`typeof(#ff0000)` is "number"); the shifts give an int64
+	return real((_blue << 16) | (_green << 8) | _red);
 }
 
 /// @ignore

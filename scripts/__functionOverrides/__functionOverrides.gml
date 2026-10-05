@@ -30,15 +30,11 @@ function __gmlc_method(_struct, _func) {
 		_i--}
 		
 		
+		var _return = method_call(_func, _argArr);
+			
 		if (_target != undefined) {
-			
-			var _return = method_call(_func, _argArr);
-			
 			global.gmlc_other_instance = _prevOther;
 			global.gmlc_self_instance  = _prevSelf;
-		}
-		else {
-			var _return = method_call(_func, _argArr);
 		}
 		
 		array_resize(_argArr, 0)
@@ -303,36 +299,22 @@ function __gmlc_script_execute_ext(ind, array=undefined, offset=0, num_args=arra
 	static __argArr = [];
 	array_resize(__argArr, 0)
 	
-	/// code coppied from html5 source, modified for speed improvements
+	// The arguments script_execute_ext passes: `num_args` values from `offset`, stopping at the end of the array.
+	// GameMaker refuses a negative offset (and crashes on a negative num_args), so both are errors here.
 	if (array != undefined) {
-		var _length = array_length(array)
-		if (_length) {
-			var dir = 1;
-			if (offset < 0) offset = _length + offset;
-			if (offset >= _length) offset = _length;
-			if (num_args < 0) {
-				dir = -1;
-				if ((offset + num_args) < 0) {
-					num_args = offset+1;
-				} // end if
-				else {
-					num_args = -num_args;
-				} // end else
-			} // end if
-			else {
-				if ((offset + num_args) > _length) {
-					num_args = _length - offset;
-				} // end if
-			} // end else
-	
-	
-			var n = offset, i=0;
-			repeat (num_args) {
-				__argArr[i] = array[n];
-			++i; n+=dir}
+		var _length = array_length(array);
+		if (offset < 0) {
+			throw_gmlc_error($"array base offset {offset} is out of range 0..{_length}");
 		}
+		if (num_args < 0) {
+			throw_gmlc_error($"script_execute_ext argument count {num_args} is out of range 0..{_length}");
+		}
+		var _start = min(offset, _length);
+		var _count = min(num_args, _length - _start);
+		var _i=0; repeat (_count) {
+			__argArr[_i] = array[_start + _i];
+		_i++}
 	}
-	///////////////////////////////////////////
 	
 	if (is_method(ind)) {
 		if (is_gmlc_method(ind)) {
@@ -396,11 +378,26 @@ function __NewGMLArray() {
 	return _arr;
 }
 
-function __NewGMLStruct() {
+#region jsDoc
+/// @func    __NewGMLStruct(_bound, ...)
+/// @desc    Creates the struct of a struct literal from key, value argument pairs. The function literals among the
+///          values are bound to the new struct, as GameMaker does.
+/// @param   {Array<String>|Undefined} _bound : Keys whose values are function literals, or undefined when none are
+/// @param   {Any} ... : Key, value pairs
+/// @returns {Struct}
+#endregion
+function __NewGMLStruct(_bound) {
 	var _struct = {};
-	var _i=0; repeat(argument_count/2) {
+	var _i=1; repeat((argument_count-1)/2) {
 		_struct[$ argument[_i]] = argument[_i+1];
 	_i+=2;}//end repeat loop
+	
+	if (_bound != undefined) {
+		var _j=0; repeat(array_length(_bound)) {
+			var _key = _bound[_j];
+			_struct[$ _key] = __gmlc_method(_struct, _struct[$ _key]);
+		_j++}
+	}
 	
 	//set the statics so they are unique
 	static_set(_struct, {});
