@@ -211,7 +211,10 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 		{
 			var enumName, memberName, _expr;
 			var enumMembers = [];
-			var defaultValue = 0;  // Default start value for enum members
+			// the previous member, for a member without a value (one more than it): its value when it is a plain
+			// number, else its tokens
+			var _prevValue = int64(-1);
+			var _prevTokens = undefined;
 			
 			// Ensure the current token is enum
 			expectToken(__GMLC_TokenType_Keyword, "enum")
@@ -246,29 +249,55 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 				__nextToken(); // Move past the member name
 				
 				// Check for = to see if a value is assigned
+				var _sourceInfo = currentToken.sourceInfo;
 				if (currentToken.value == "=") {
 					__nextToken(); // Move past =
-					_expr = [];
+					// the value runs to the `,` or `}` that ends the member; commas and braces inside brackets belong to it
+					var _value_tokens = [];
+					var _depth = 0;
 					while (currentTokenIndex < _length) {
-						if (currentToken.name != "," && currentToken.value != "}" && currentToken.value != "\n") {
-							array_push(_expr, currentToken);
-							__nextToken();
-						}
-						else {
+						var _punct = (currentToken.type == __GMLC_TokenType_Punctuation) ? currentToken.value : "";
+						if (_depth == 0)
+						&& (currentToken.name == "," || currentToken.value == "}" || currentToken.value == "\n") {
 							break;
 						}
+						if (_punct == "(" || _punct == "[" || _punct == "{") _depth++;
+						if (_punct == ")" || _punct == "]" || _punct == "}") _depth--;
+						array_push(_value_tokens, currentToken);
+						__nextToken();
+					}
+					
+					var _literal = __enumLiteralValue(_value_tokens);
+					if (_literal != undefined) {
+						_prevValue = _literal;
+						_prevTokens = undefined;
+						_expr = [__enumNumberToken(_literal, _sourceInfo)];
+					}
+					else {
+						// any other value: int64 of the expression where the member is used (GameMaker only accepts
+						// what its compiler can evaluate; GMLC evaluates the same expressions at run time)
+						_expr = __enumInt64Tokens(_value_tokens, _sourceInfo);
+						_prevTokens = _expr;
 					}
 				}
+				else if (_prevTokens == undefined) {
+					// no value: one more than the previous member (0 for the first)
+					_prevValue += 1;
+					_expr = [__enumNumberToken(_prevValue, _sourceInfo)];
+				}
 				else {
-					// No explicit value, use the default incremental value
-					_expr = [new __GMLC_create_token(__GMLC_TokenType_Number, string(defaultValue), int64(defaultValue), currentToken.sourceInfo)];
+					var _plus_one = [new __GMLC_create_token(__GMLC_TokenType_Punctuation, "(", "(", _sourceInfo)];
+					array_copy(_plus_one, 1, _prevTokens, 0, array_length(_prevTokens));
+					array_push(_plus_one,
+						new __GMLC_create_token(__GMLC_TokenType_Punctuation, ")", ")", _sourceInfo),
+						new __GMLC_create_token(__GMLC_TokenType_Operator, "+", "+", _sourceInfo),
+						new __GMLC_create_token(__GMLC_TokenType_Number, "1", 1, _sourceInfo));
+					_expr = __enumInt64Tokens(_plus_one, _sourceInfo);
+					_prevTokens = _expr;
 				}
 				
 				// Add member to the list
 				_enum_struct[$ memberName] = _expr;
-				
-				// Increment default value for the next potential member
-				defaultValue++;
 				
 				// Handle commas between enum members
 				if (currentToken.name == ",") {
@@ -290,6 +319,60 @@ function GMLC_Gen_1_PreProcessor(_env) : FlexiParseBase() constructor {
 			return true;
 		}
 		return false;
+	}
+	
+	#region jsDoc
+	/// @func    __enumLiteralValue(_tokens)
+	/// @desc    Returns the int64 value of an enum member written as a plain number (optionally signed), a bool or
+	///          a built-in constant, truncated as GameMaker does (`1.5` is 1, `true` is 1), or undefined for any
+	///          other expression.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {Array<Struct>} _tokens : The member's value tokens
+	/// @returns {Int64|Undefined}
+	#endregion
+	static __enumLiteralValue = function(_tokens) {
+		var _sign = 1;
+		var _i = 0;
+		if (array_length(_tokens) == 2)
+		&& (_tokens[0].type == __GMLC_TokenType_Operator)
+		&& (_tokens[0].value == "-" || _tokens[0].value == "+") {
+			_sign = (_tokens[0].value == "-") ? -1 : 1;
+			_i = 1;
+		}
+		if (array_length(_tokens) != _i + 1) return undefined;
+		var _token = _tokens[_i];
+		if (_token.type != __GMLC_TokenType_Number) return undefined;
+		var _value = _token.value;
+		if (!is_real(_value) && !is_int64(_value) && !is_bool(_value)) return undefined;
+		return (_sign < 0) ? -int64(_value) : int64(_value);
+	}
+	#region jsDoc
+	/// @func    __enumNumberToken(_value, _sourceInfo)
+	/// @desc    Returns a Number token holding an enum member's int64 value.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {Int64}  _value      : The member's value
+	/// @param   {Struct} _sourceInfo : Source position of the member
+	/// @returns {Struct}
+	#endregion
+	static __enumNumberToken = function(_value, _sourceInfo) {
+		return new __GMLC_create_token(__GMLC_TokenType_Number, string(_value), _value, _sourceInfo);
+	}
+	#region jsDoc
+	/// @func    __enumInt64Tokens(_tokens, _sourceInfo)
+	/// @desc    Returns the tokens of `__gmlc_enum_value(<_tokens>)`, the int64 value of an enum member's expression.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {Array<Struct>} _tokens     : The expression's tokens
+	/// @param   {Struct}        _sourceInfo : Source position of the member
+	/// @returns {Array<Struct>}
+	#endregion
+	static __enumInt64Tokens = function(_tokens, _sourceInfo) {
+		var _out = [
+			new __GMLC_create_token(__GMLC_TokenType_Function, "__gmlc_enum_value", method(undefined, __gmlc_enum_value), _sourceInfo),
+			new __GMLC_create_token(__GMLC_TokenType_Punctuation, "(", "(", _sourceInfo),
+		];
+		array_copy(_out, 2, _tokens, 0, array_length(_tokens));
+		array_push(_out, new __GMLC_create_token(__GMLC_TokenType_Punctuation, ")", ")", _sourceInfo));
+		return _out;
 	}
 	
 	static parseRegion = function() {

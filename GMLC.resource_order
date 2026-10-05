@@ -24,6 +24,7 @@
     {"name":"GMLCFastPasses","order":1,"path":"scripts/GMLCFastPasses/GMLCFastPasses.yy",},
     {"name":"GmlConstantFoldingTestSuite","order":3,"path":"scripts/GmlConstantFoldingTestSuite/GmlConstantFoldingTestSuite.yy",},
     {"name":"GmlDirectiveTestSuite","order":3,"path":"scripts/GmlDirectiveTestSuite/GmlDirectiveTestSuite.yy",},
+    {"name":"GmlEnumTestSuite","order":3,"path":"scripts/GmlEnumTestSuite/GmlEnumTestSuite.yy",},
     {"name":"GmlEvaluationOrderTestSuite","order":3,"path":"scripts/GmlEvaluationOrderTestSuite/GmlEvaluationOrderTestSuite.yy",},
     {"name":"GmlExceptionTestSuite","order":3,"path":"scripts/GmlExceptionTestSuite/GmlExceptionTestSuite.yy",},
     {"name":"GmlFunctionCallTestSuite","order":3,"path":"scripts/GmlFunctionCallTestSuite/GmlFunctionCallTestSuite.yy",},

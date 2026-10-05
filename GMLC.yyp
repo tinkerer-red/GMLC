@@ -407,6 +407,7 @@
     {"id":{"name":"GMLCFastPasses","path":"scripts/GMLCFastPasses/GMLCFastPasses.yy",},},
     {"id":{"name":"GmlConstantFoldingTestSuite","path":"scripts/GmlConstantFoldingTestSuite/GmlConstantFoldingTestSuite.yy",},},
     {"id":{"name":"GmlDirectiveTestSuite","path":"scripts/GmlDirectiveTestSuite/GmlDirectiveTestSuite.yy",},},
+    {"id":{"name":"GmlEnumTestSuite","path":"scripts/GmlEnumTestSuite/GmlEnumTestSuite.yy",},},
     {"id":{"name":"GmlEvaluationOrderTestSuite","path":"scripts/GmlEvaluationOrderTestSuite/GmlEvaluationOrderTestSuite.yy",},},
     {"id":{"name":"GmlExceptionTestSuite","path":"scripts/GmlExceptionTestSuite/GmlExceptionTestSuite.yy",},},
     {"id":{"name":"GmlFunctionCallTestSuite","path":"scripts/GmlFunctionCallTestSuite/GmlFunctionCallTestSuite.yy",},},
