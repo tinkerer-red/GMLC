@@ -25,6 +25,7 @@
     {"name":"GmlConstantFoldingTestSuite","order":3,"path":"scripts/GmlConstantFoldingTestSuite/GmlConstantFoldingTestSuite.yy",},
     {"name":"GmlDirectiveTestSuite","order":3,"path":"scripts/GmlDirectiveTestSuite/GmlDirectiveTestSuite.yy",},
     {"name":"GmlEvaluationOrderTestSuite","order":3,"path":"scripts/GmlEvaluationOrderTestSuite/GmlEvaluationOrderTestSuite.yy",},
+    {"name":"GmlExceptionTestSuite","order":3,"path":"scripts/GmlExceptionTestSuite/GmlExceptionTestSuite.yy",},
     {"name":"GmlLegacySyntaxTestSuite","order":3,"path":"scripts/GmlLegacySyntaxTestSuite/GmlLegacySyntaxTestSuite.yy",},
     {"name":"GmlMethodBindingTestSuite","order":3,"path":"scripts/GmlMethodBindingTestSuite/GmlMethodBindingTestSuite.yy",},
     {"name":"GmlStringEscapeTestSuite","order":3,"path":"scripts/GmlStringEscapeTestSuite/GmlStringEscapeTestSuite.yy",},

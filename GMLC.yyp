@@ -408,6 +408,7 @@
     {"id":{"name":"GmlConstantFoldingTestSuite","path":"scripts/GmlConstantFoldingTestSuite/GmlConstantFoldingTestSuite.yy",},},
     {"id":{"name":"GmlDirectiveTestSuite","path":"scripts/GmlDirectiveTestSuite/GmlDirectiveTestSuite.yy",},},
     {"id":{"name":"GmlEvaluationOrderTestSuite","path":"scripts/GmlEvaluationOrderTestSuite/GmlEvaluationOrderTestSuite.yy",},},
+    {"id":{"name":"GmlExceptionTestSuite","path":"scripts/GmlExceptionTestSuite/GmlExceptionTestSuite.yy",},},
     {"id":{"name":"GmlLegacySyntaxTestSuite","path":"scripts/GmlLegacySyntaxTestSuite/GmlLegacySyntaxTestSuite.yy",},},
     {"id":{"name":"GmlMethodBindingTestSuite","path":"scripts/GmlMethodBindingTestSuite/GmlMethodBindingTestSuite.yy",},},
     {"id":{"name":"GMLPromise","path":"scripts/GMLPromise/GMLPromise.yy",},},

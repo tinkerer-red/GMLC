@@ -1078,13 +1078,22 @@ function __GMLCcompileWith(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteTryCatchFinally() {
-	// one GML try per compiled try: GameMaker's own finally runs after the try, after the catch, and before an error
-	// that is not caught (no catch block, or thrown by the catch block) leaves
+	// one GML try per compiled try, so GameMaker's own rules apply: finally runs
+	// after the try and after a catch that handles the error, and before an error leaves a try that has no catch;
+	// it does not run when the catch block itself throws
+	if (catchBlock == undefined) {
+		try {
+			tryBlock()
+		}
+		finally {
+			if (finallyBlock != undefined) finallyBlock();
+		}
+		return;
+	}
 	try {
 		tryBlock()
-    }
+	}
 	catch (_e) {
-		if (catchBlock == undefined) throw _e;
 		if (parentNode.flowMask & FLOW_MASK.RETURN) return;
 		parentNode.locals[catchVariableIndex] = _e;
 		parentNode.localsWrittenTo[catchVariableIndex] = true;
@@ -1438,6 +1447,61 @@ function __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node) {
 //}
 #endregion
 #region jsDoc
+/// @func    __GMLCcallbackArgs(_name)
+/// @desc    Returns the parameters of a built-in that take a function or script (GmlSpec types `Function`,
+///          `Asset.GMScript`, `Asset.Script`, `Id.Script`), as [index, alsoTakesReal] pairs, or undefined when it has
+///          none. Cached per name.
+/// @param   {String} _name : Built-in function name
+/// @returns {Array<Array>|Undefined}
+#endregion
+function __GMLCcallbackArgs(_name) {
+	static __cache = {};
+	if (struct_exists(__cache, _name)) return __cache[$ _name];
+	
+	var _result = undefined;
+	var _entry = __GmlSpec()[$ _name];
+	if (_entry != undefined) && (_entry.type == "envFunctions") {
+		var _params = _entry.feather.parameters;
+		var _i=0; repeat(array_length(_params)) {
+			var _types = string_split(_params[_i].type ?? "", ",");
+			var _callable = false;
+			var _real = false;
+			var _j=0; repeat(array_length(_types)) {
+				switch (_types[_j]) {
+					case "Function": case "Asset.GMScript": case "Asset.Script": case "Id.Script": _callable = true; break;
+					case "Real": _real = true; break;
+				}
+			_j++}
+			if (_callable) {
+				_result ??= [];
+				array_push(_result, [_i, _real]);
+			}
+		_i++}
+	}
+	__cache[$ _name] = _result;
+	return _result;
+}
+#region jsDoc
+/// @func    __GMLCcheckCallbackArgs(_node)
+/// @desc    Checks the function and script arguments of a call to a built-in (see __GMLCcallbackArgs): a plain
+///          function number must be one the program's environment exposes. The arguments are passed on unchanged.
+/// @param   {Struct} _node : The executing call node
+#endregion
+function __GMLCcheckCallbackArgs(_node) {
+	var _list = _node.callbackArgs;
+	var _args = _node.arguments;
+	var _i=0; repeat(array_length(_list)) {
+		var _index = _list[_i][0];
+		if (_index < array_length(_args)) {
+			var _value = _args[_index];
+			// a negative number where the parameter also takes a Real is a "none" value (-1), not a function
+			if (!is_method(_value)) && (is_callable(_value)) && !(_list[_i][1] && is_numeric(_value) && _value < 0) {
+				__GMLCcallableFromIndex(_node.rootNode, _value);
+			}
+		}
+	_i++}
+}
+#region jsDoc
 /// @func    __GMLCcallableFromIndex(_rootNode, _index)
 /// @desc    Returns the function to call for a callable that is a plain number (a built-in or script function read as
 ///          a value, as in GameMaker): only one the program's environment exposes. A program compiled without an
@@ -1474,6 +1538,7 @@ function __GMLCexecuteCallExpression() {
 	var _i=argumentCount-1; repeat(argumentCount) {
 		arguments[_i] = argumentExpressions[_i]();
 	_i--}
+	if (callbackArgs != undefined) __GMLCcheckCallbackArgs(self);
 
 	var _func = callee()
 	
@@ -1559,6 +1624,7 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _node.callee);
 	
 	_output.calleeName =(struct_exists(_node.callee, "name")) ? _node.callee.name : "<Call Expression>"
+	_output.callbackArgs = (_node.callee.type == __GMLC_NodeType_Literal) ? __GMLCcallbackArgs(_output.calleeName) : undefined;
 	
 	_output.recursionCount = 0; 
 	_output.prevArgCount = 0;

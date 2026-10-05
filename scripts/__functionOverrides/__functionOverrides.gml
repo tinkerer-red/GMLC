@@ -299,24 +299,22 @@ function __gmlc_script_execute_ext(ind, array=undefined, offset=0, num_args=arra
 	static __argArr = [];
 	array_resize(__argArr, 0)
 	
-	// The arguments script_execute_ext passes (manual): from `offset` (counted from the end when negative), `num_args`
-	// values, walking backwards when num_args is negative; the count stops at the end (or start) of the array.
+	// The arguments script_execute_ext passes: `num_args` values from `offset`, stopping at the end of the array.
+	// GameMaker refuses a negative offset (and crashes on a negative num_args), so both are errors here.
 	if (array != undefined) {
 		var _length = array_length(array);
-		if (_length) {
-			var _start = (offset < 0) ? _length + offset : min(offset, _length);
-			var _step  = (num_args < 0) ? -1 : 1;
-			var _count = (num_args < 0) ? min(-num_args, _start + 1) : min(num_args, _length - _start);
-	
-			var _from = _start, _to = 0;
-			repeat (_count) {
-				__argArr[_to] = array[_from];
-				_to += 1;
-				_from += _step;
-			}
+		if (offset < 0) {
+			throw_gmlc_error($"array base offset {offset} is out of range 0..{_length}");
 		}
+		if (num_args < 0) {
+			throw_gmlc_error($"script_execute_ext argument count {num_args} is out of range 0..{_length}");
+		}
+		var _start = min(offset, _length);
+		var _count = min(num_args, _length - _start);
+		var _i=0; repeat (_count) {
+			__argArr[_i] = array[_start + _i];
+		_i++}
 	}
-	
 	
 	if (is_method(ind)) {
 		if (is_gmlc_method(ind)) {
