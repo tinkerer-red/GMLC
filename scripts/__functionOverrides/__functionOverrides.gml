@@ -285,7 +285,7 @@ function __gmlc_script_execute(ind) {
 	
 	if (argument_count > 1) {
 		var _i=1; repeat(argument_count-1) {
-			__argArr[_i] = argument[_i];
+			__argArr[_i-1] = argument[_i];
 		_i++}
 		
 		return __gmlc_script_execute_ext(argument[0], __argArr)
