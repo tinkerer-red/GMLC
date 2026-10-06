@@ -1,9 +1,9 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_0_Tokenizer",
+  "%Name":"GMLC_Gen_0_Lexer",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_0_Tokenizer",
+  "name":"GMLC_Gen_0_Lexer",
   "parent":{
     "name":"Lexer",
     "path":"folders/GMLC/Lexer.yy",

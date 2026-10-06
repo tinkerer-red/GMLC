@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GmlEnumTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlEnumTestSuite",
+  "parent":{
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

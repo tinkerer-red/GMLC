@@ -191,6 +191,17 @@ function static_exists(_struct, _name) {
 }
 
 #region jsDoc
+/// @func    __gmlc_enum_value(_value)
+/// @desc    The value of an enum member whose value is an expression: the int64 of a number or bool (truncated, as
+///          GameMaker does); anything else is an error, as GameMaker refuses it.
+/// @param   {Any} _value : The value of the member's expression
+/// @returns {Int64}
+#endregion
+function __gmlc_enum_value(_value) {
+	if (is_real(_value) || is_int64(_value) || is_bool(_value)) return int64(_value);
+	throw_gmlc_error("enum assignment must be an integer constant");
+}
+#region jsDoc
 /// @func    __gmlc_throw_value(_value)
 /// @desc    The `throw` statement of compiled code: throws the value unchanged.
 /// @param   {Any} _value : The thrown value

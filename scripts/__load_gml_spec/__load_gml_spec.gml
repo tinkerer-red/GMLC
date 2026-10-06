@@ -89,8 +89,9 @@ function __GmlSpec() {
 		for (var _i = 0; _i < array_length(_arr); _i++) {
 			var _const = _arr[_i];
 			var _name = _const.name;
+			if (!struct_exists(_lookup_table, _name)) continue; // a constant this runtime does not have
 			var _isDeprecated = _const.deprecated;
-			
+
 			_config[$ _name] = {
 				value: _lookup_table[$ _name],
 				type: "envConstants",

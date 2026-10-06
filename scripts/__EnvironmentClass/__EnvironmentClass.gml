@@ -7,6 +7,7 @@ function __EnvironmentClass() constructor {
 	// === Internal Stores ===
 	envSymbols = {};
 	__functionIndexNames = {}; // string(function index) -> name, rebuilt by callableFromIndex when it is stale
+	__hostMacrosDirty = true; // set whenever a macro is added, changed or removed; the compiler then rebuilds the exposed macros
 	
 	#region Public
 	#region jsDoc
@@ -29,7 +30,7 @@ function __EnvironmentClass() constructor {
 			
 			if (!is_struct(entry)) continue;
 			if (!is_string(entry.type)) continue;
-			if (entry.value == undefined) continue; // a spec name this runtime has no value for (nameof, missing functions)
+			if (entry.value == undefined) && (entry.type != "envConstants") continue; // a spec name this runtime has no value for (nameof, missing functions); the constant `undefined` is kept
 			if (entry.type == "envFunctions") && (entry.value == -1) continue; // compile-time only, like gml_pragma; constants may be -1 (browser_not_a_browser, seqdir_left)
 			
 			if (!overwrite && struct_exists(envSymbols, key)) {
@@ -53,6 +54,7 @@ function __EnvironmentClass() constructor {
 			}
 			
 			sym.value     = entry.value;
+			if (entry.type == "envMacros") || (sym[$ "type"] == "envMacros") __hostMacrosDirty = true;
 			sym.type      = entry.type;
 			sym.getter    = entry[$ "getter"] ?? __defaultSymbolGetter(entry.type, key, entry.value);
 			sym.setter    = entry[$ "setter"] ?? __defaultSymbolSetter(entry.type, key, entry.value);
@@ -100,6 +102,7 @@ function __EnvironmentClass() constructor {
 	#endregion
 	static importFrom = function(_env) {
 		__mergeStruct(envSymbols, _env.envSymbols);
+		__hostMacrosDirty = true; // the other environment may bring macros
 		return self;
 	};
 	#region jsDoc
@@ -337,11 +340,13 @@ function __EnvironmentClass() constructor {
 	
 	#region Types
 	static __exposeType = function(type, conf) {
+		if (type == "envMacros") __hostMacrosDirty = true;
 		__populateSymbols(conf, type);
 		return self;
 	};
 	
 	static __removeType = function(type, keys) {
+		if (type == "envMacros") __hostMacrosDirty = true;
 		var _names = struct_get_names(envSymbols);
 		for (var i = 0; i < array_length(_names); i++) {
 			var key = _names[i];
@@ -363,6 +368,7 @@ function __EnvironmentClass() constructor {
 	};
 	
 	static __clearType = function(type) {
+		if (type == "envMacros") __hostMacrosDirty = true;
 		var _names = struct_get_names(envSymbols);
 		for (var i = 0; i < array_length(_names); i++) {
 			var key = _names[i];

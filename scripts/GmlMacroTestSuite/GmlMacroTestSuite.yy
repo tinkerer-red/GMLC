@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"__gmlc_trie_string_matching",
+  "%Name":"GmlMacroTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"__gmlc_trie_string_matching",
+  "name":"GmlMacroTestSuite",
   "parent":{
-    "name":"Lexer",
-    "path":"folders/GMLC/Lexer.yy",
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",
