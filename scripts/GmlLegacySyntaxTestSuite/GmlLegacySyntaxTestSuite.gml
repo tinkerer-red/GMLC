@@ -1,5 +1,5 @@
 // Generated from measured GameMaker behaviour; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-04.
+// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-06.
 function GmlLegacySyntaxTestSuite() : TestSuite() constructor {
 
 	addFact(":= assigns [GameMaker]", function() {
@@ -155,7 +155,7 @@ arr[1, 2] = 3;
 return string(arr[1][2]) + " " + string(array_length(arr));'); }), "string:3 2", "GMLC differs from GameMaker");
 	});
 
-	// var arr[10] = 0: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// var arr[10] = 0: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
 	//   Cannot set a constant ("[") to a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("var arr[10] = 0 [GameMaker]", function() {
@@ -167,7 +167,7 @@ return string(arr[1][2]) + " " + string(array_length(arr));'); }), "string:3 2",
 return string(arr);'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// not as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// not as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
 	//   unexpected symbol "=" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("not as a variable name [GameMaker]", function() {
@@ -179,7 +179,7 @@ return string(arr);'); }), "error", "GMLC accepts code GameMaker refuses");
 return not;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// then as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// then as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("then as a variable name [GameMaker]", function() {
@@ -191,7 +191,7 @@ return not;'); }), "error", "GMLC accepts code GameMaker refuses");
 return then;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// begin as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// begin as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
 	//   unexpected symbol "=" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("begin as a variable name [GameMaker]", function() {
@@ -203,7 +203,7 @@ return then;'); }), "error", "GMLC accepts code GameMaker refuses");
 return begin;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// xor as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// xor as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
 	//   unexpected symbol "xor" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("xor as a variable name [GameMaker]", function() {
@@ -351,6 +351,26 @@ return t && true;'); }), "bool:1", "GMLC differs from GameMaker");
 	addFact("!M with M a macro of true [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'#macro CASE_LEGACY_TRUE true
 return !CASE_LEGACY_TRUE;'); }), "number:0", "GMLC differs from GameMaker");
+	});
+
+	// then as a parameter name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	//   Assignment operator expected
+	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
+	// addFact("then as a parameter name [GameMaker]", function() {
+	//   var f = function(then) { return then; };
+	//   return f(1);
+	// });
+	addFact("then as a parameter name is refused [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var f = function(then) { return then; };
+return f(1);'); }), "error", "GMLC accepts code GameMaker refuses");
+	});
+
+	addFact("then as a static name [GameMaker]", function() {
+		assert_equals(case_run(case_legacy_syntax_static_named_then), "number:1", "GameMaker no longer gives the measured result");
+	});
+	addFact("then as a static name [GMLC]", function() {
+		assert_equals(case_run(function() { return compile_and_execute(@'var f = function() { static then = 1; return 1; };
+return f();'); }), "number:1", "GMLC differs from GameMaker");
 	});
 }
 
@@ -532,4 +552,9 @@ return !0;
 function case_legacy_syntax_bang_macro_constant() {
 #macro CASE_LEGACY_TRUE true
 return !CASE_LEGACY_TRUE;
+}
+
+function case_legacy_syntax_static_named_then() {
+var f = function() { static then = 1; return 1; };
+return f();
 }

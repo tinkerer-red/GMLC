@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GmlcPipelineTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlcPipelineTestSuite",
+  "parent":{
+    "name":"AST",
+    "path":"folders/Tests/AST.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

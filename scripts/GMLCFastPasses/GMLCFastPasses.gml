@@ -25,7 +25,7 @@ function __GMLCexecuteGetPropertySelf() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.", self.line, self.lineString)
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.")
 	
 }
 #region //{
@@ -47,7 +47,7 @@ function __GMLCexecuteGetPropertyGlobal() {
 //}
 #endregion
 function __GMLCexecuteGetPropertyVarLocal() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.", line, lineString)
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
 	return locals[localIndex];
 }
 #region //{
@@ -128,16 +128,16 @@ function __GMLCexecuteSetPropertyUnique() {
 // from left to right. Compound assignment and ++/-- evaluate a dot target or a rooted array path once; every other
 // accessor is read and then written, evaluating its keys and target again for the write.
 function __GMLCarrayTargetIsRooted(_target) {
-	while (_target.type == __GMLC_NodeType_AccessorExpression)
-	&& (_target.accessorType == __GMLC_AccessorType_Array) {
-		_target = _target.expr;
+	_target = __GMLCdesugarIndex(_target);
+	while (_target.kind == __GMLC_NodeKind_Index)
+	&& (_target.accessor == "Array") {
+		_target = __GMLCdesugarIndex(_target.object);
 	}
-	if (_target.type == __GMLC_NodeType_Identifier)
-	|| (_target.type == __GMLC_NodeType_UniqueIdentifier) {
+	if (_target.kind == __GMLC_NodeKind_Identifier) {
 		return true;
 	}
-	return (_target.type == __GMLC_NodeType_AccessorExpression)
-		&& (_target.accessorType == __GMLC_AccessorType_Dot);
+	return (_target.kind == __GMLC_NodeKind_Index)
+		&& (_target.accessor == "Dot");
 }
 #endregion
 #region Array
@@ -156,8 +156,8 @@ function __GMLCexecuteArrayGet(){
 	var _target = target();
 	return _target[_key];
 }
-function __GMLCcompileArrayGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArrayGet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileArrayGet(_rootNode, _parentNode, _target, _key, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArrayGet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -228,7 +228,7 @@ function __GMLCexecuteArrayGetForWrite(){
 	}
 	// the root of a nested write must already be an array (GameMaker would create it; GMLC refuses)
 	if (!is_array(_target)) {
-		throw_gmlc_error("trying to index a variable which is not an array", line, lineString);
+		throw_gmlc_error("trying to index a variable which is not an array");
 	}
 	var _element = (_key < array_length(_target)) ? _target[_key] : undefined;
 	if (!is_array(_element)) {
@@ -237,21 +237,22 @@ function __GMLCexecuteArrayGetForWrite(){
 	}
 	return _element;
 }
-function __GMLCcompileArrayTargetForWrite(_rootNode, _parentNode, _target, _line, _lineString) {
-	if (_target.type != __GMLC_NodeType_AccessorExpression)
-	|| (_target.accessorType != __GMLC_AccessorType_Array) {
+function __GMLCcompileArrayTargetForWrite(_rootNode, _parentNode, _target, _span) {
+	_target = __GMLCdesugarIndex(_target);
+	if (_target.kind != __GMLC_NodeKind_Index)
+	|| (_target.accessor != "Array") {
 		return __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	}
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArrayGetForWrite", "<Missing Error Message>", _line, _lineString);
-	_output.target = __GMLCcompileArrayTargetForWrite(_rootNode, _parentNode, _target.expr, _line, _lineString);
-	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _target.val1);
-	_output.rooted = __GMLCarrayTargetIsRooted(_target.expr);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArrayGetForWrite", "<Missing Error Message>", _span);
+	_output.target = __GMLCcompileArrayTargetForWrite(_rootNode, _parentNode, _target.object, _span);
+	_output.key    = __GMLCcompileExpression(_rootNode, _parentNode, _target.keys[0]);
+	_output.rooted = __GMLCarrayTargetIsRooted(_target.object);
 	return method(_output, __GMLCexecuteArrayGetForWrite);
 }
-function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-	if (_target.type == __GMLC_NodeType_Identifier) {
-		if (_target.scope == ScopeType_LOCAL) {
-			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _line, _lineString);	
+function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expression, _span) {
+	if (_target.kind == __GMLC_NodeKind_Identifier) {
+		if (_target.symbol.kind == "Local") {
+			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _span);	
 			
 			_output.locals          = _parentNode.locals;
 			_output.localIndex      = _parentNode.localLookUps[$ _target.name];
@@ -262,8 +263,8 @@ function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expressio
 			
 			return __vanilla_method(_output, __GMLCexecuteArrayCreateAndSetLocal);
 		}
-		if (_target.scope == ScopeType_SELF) {
-			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _line, _lineString);	
+		if (_target.symbol.kind == "Self") {
+			var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _span);	
 			
 			_output.key = _target.name;
 			
@@ -275,9 +276,9 @@ function __GMLCcompileArraySet(_rootNode, _parentNode, _target, _key, _expressio
 		
 	}
 	
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArraySet", "<Missing Error Message>", _line, _lineString);
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileArraySet", "<Missing Error Message>", _span);
 	
-	_output.target     = __GMLCcompileArrayTargetForWrite(_rootNode, _parentNode, _target, _line, _lineString);
+	_output.target     = __GMLCcompileArrayTargetForWrite(_rootNode, _parentNode, _target, _span);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
 	_output.rooted     = __GMLCarrayTargetIsRooted(_target);
@@ -296,8 +297,8 @@ function __GMLCexecuteListGet(){
 	var _target = target();
 	return _target[| _key];
 }
-function __GMLCcompileListGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListGet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileListGet(_rootNode, _parentNode, _target, _key, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListGet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -316,8 +317,8 @@ function __GMLCexecuteListSet(){
 	var _target = target();
 	_target[| _key] = _value;
 }
-function __GMLCcompileListSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListSet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileListSet(_rootNode, _parentNode, _target, _key, _expression, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileListSet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -337,8 +338,8 @@ function __GMLCexecuteMapGet(){
 	var _target = target();
 	return _target[? _key];
 }
-function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapGet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileMapGet(_rootNode, _parentNode, _target, _key, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapGet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -357,8 +358,8 @@ function __GMLCexecuteMapSet(){
 	var _target = target();
 	_target[? _key] = _value;
 }
-function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapSet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileMapSet(_rootNode, _parentNode, _target, _key, _expression, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileMapSet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -381,8 +382,8 @@ function __GMLCexecuteGridGet(){
 	var _target = target();
 	return _target[# _keyX, _keyY];
 }
-function __GMLCcompileGridGet(_rootNode, _parentNode, _target, _keyX, _keyY, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridGet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileGridGet(_rootNode, _parentNode, _target, _keyX, _keyY, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridGet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.keyX       = __GMLCcompileExpression(_rootNode, _parentNode, _keyX);
@@ -404,8 +405,8 @@ function __GMLCexecuteGridSet(){
 	var _target = target();
 	_target[# _keyX, _keyY] = _value;
 }
-function __GMLCcompileGridSet(_rootNode, _parentNode, _target, _keyX, _keyY, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridSet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileGridSet(_rootNode, _parentNode, _target, _keyX, _keyY, _expression, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileGridSet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.keyX       = __GMLCcompileExpression(_rootNode, _parentNode, _keyX);
@@ -426,8 +427,8 @@ function __GMLCexecuteStructGet(){
 	var _target = target();
 	return _target[$ _key];
 }
-function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructGet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileStructGet(_rootNode, _parentNode, _target, _key, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructGet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -445,12 +446,12 @@ function __GMLCexecuteStructSet(){
 	var _key = key();
 	var _target = target();
 	if (is_numeric(_target) && !is_handle(_target) && !(_target == -2 || _target == -1)) { // -5 is global, -4 is all, -3 is noone, throw error by default
-		throw_gmlc_error($"struct_get argument 1 incorrect type ({typeof(_target)}>) expecting a Number.", self.line, self.lineString)
+		throw_gmlc_error($"struct_get argument 1 incorrect type ({typeof(_target)}>) expecting a Number.")
 	}
 	_target[$ _key] = _value;
 }
-function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructSet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileStructSet(_rootNode, _parentNode, _target, _key, _expression, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructSet", "<Missing Error Message>", _span);
 	
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
 	_output.key        = __GMLCcompileExpression(_rootNode, _parentNode, _key);
@@ -488,13 +489,13 @@ function __GMLCexecuteStructDotAccGet(){
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.", self.line, self.lineString)
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.")
 	
 }
-function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _line, _lineString) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccGet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _target, _key, _span) {
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccGet", "<Missing Error Message>", _span);
 	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key    = _key.value;
+	_output.key    = _key;
 	
 	return method(_output, __GMLCexecuteStructDotAccGet)
 }
@@ -594,7 +595,8 @@ function __GMLCdotOwner(_target, _key, _node) {
 		}
 		_static = __gmlc_static_get(_static)
 	}
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{_key} not set before reading it.", _node.line, _node.lineString)
+	var _at = __gmlc_node_position(_node);
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{_key} not set before reading it.", _at.line, _at.lineString, _at.column, _at.fileName)
 }
 function __GMLCcompoundPlus(_a, _b)       { return _a + _b; }
 function __GMLCcompoundMinus(_a, _b)      { return _a - _b; }
@@ -604,28 +606,10 @@ function __GMLCcompoundMod(_a, _b)        { return _a % _b; }
 function __GMLCcompoundBitwiseXOR(_a, _b) { return _a ^ _b; }
 function __GMLCcompoundBitwiseAND(_a, _b) { return _a & _b; }
 function __GMLCcompoundBitwiseOR(_a, _b)  { return _a | _b; }
-function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression, _line, _lineString) {
-    
-	//incase it's a valid scope, lets hoist it to a better fitted function
-	if (_target.type == __GMLC_NodeType_Identifier) {
-		var _setter = __GMLCGetScopeSetter(_target.scope)
-		
-		var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
-		_output.key        = _key.value;
-		_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
-		
-		if (_target.scope == ScopeType_GLOBAL) {
-			_output.globals = _rootNode.globals;
-		}
-		
-		method(_output, _setter)
-	}
-	
-	//leave the following to allow for thing.thing.thing() to be a valid call
-	
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _expression, _span) {
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__compileStructDotAccSet", "<Missing Error Message>", _span);
 	_output.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target);
-	_output.key        = _key.value;
+	_output.key        = _key;
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _expression);
 	
     return method(_output, __GMLCexecuteStructDotAccSet)
@@ -708,19 +692,19 @@ function __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix() {
 #endregion
 #region Local
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.", line, lineString)
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return ++locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.", line, lineString)
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return locals[localIndex]++;
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.", line, lineString)
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return --locals[localIndex];
 }
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix() {
-	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.", line, lineString)
+	if (!localsWrittenTo[localIndex]) throw_gmlc_error($"local variable {key}({localIndex}) not set before reading it.")
     return locals[localIndex]--;
 }
 #endregion
@@ -827,17 +811,17 @@ function __GMLCexecuteUpdateStruct() {
 	return prefix ? _old + delta : _old;
 }
 function __GMLCcompileUpdateAccessor(_rootNode, _parentNode, _node, _executor) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateAccessor", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateAccessor", "<Missing Error Message>", _node.span);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node[$ "argument"].object);
 	if (_executor == __GMLCexecuteUpdateGrid) {
-		_output.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
-		_output.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val2);
+		_output.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _node[$ "argument"].keys[0]);
+		_output.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _node[$ "argument"].keys[1]);
 	}
 	else {
-		_output.key = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.val1);
+		_output.key = __GMLCcompileExpression(_rootNode, _parentNode, _node[$ "argument"].keys[0]);
 	}
-	_output.rooted = (_executor == __GMLCexecuteUpdateArray) && __GMLCarrayTargetIsRooted(_node.expr.expr);
-	_output.delta  = (_node.operator == "++") ? 1 : -1;
+	_output.rooted = (_executor == __GMLCexecuteUpdateArray) && __GMLCarrayTargetIsRooted(_node[$ "argument"].object);
+	_output.delta  = (_node.op == "++") ? 1 : -1;
 	_output.prefix = _node.prefix;
 	return method(_output, _executor);
 }
@@ -869,7 +853,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.", self.line, self.lineString)
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.")
 	
 }
 function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
@@ -893,7 +877,7 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.", self.line, self.lineString)
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.")
 	
 	var _target = target();
 	return _target[$ key]++;
@@ -919,7 +903,7 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.", self.line, self.lineString)
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.")
 	
 }
 function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
@@ -943,15 +927,15 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 		_static = __gmlc_static_get(_static)
 	}
 	
-	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.", self.line, self.lineString)
+	throw_gmlc_error($"Variable <{typeof(_target)}>.{key} not set before reading it.")
 	
 }
 function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node) {
-	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateStructDotAcc", "<Missing Error Message>", _node.line, _node.lineString);
-	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.expr.expr);
-	_output.key    = _node.expr.val1.value
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateStructDotAcc", "<Missing Error Message>", _node.span);
+	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node[$ "argument"].object);
+	_output.key    = _node[$ "argument"].member
     
-    var _increment = (_node.operator == "++") ? true : false;
+    var _increment = (_node.op == "++") ? true : false;
 	var _prefix = _node.prefix;
 	
 	if (_increment  &&  _prefix) return method(_output, __GMLCexecuteUpdateStructDotAccPlusPlusPrefix);
@@ -961,15 +945,15 @@ function __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node) {
 }
 #endregion
 #region Variable
-function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _increment, _prefix, _line, _lineString) {
-    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateVariable", "<Missing Error Message>", _line, _lineString);
+function __GMLCcompileUpdateVariable(_rootNode, _parentNode, _scope, _key, _increment, _prefix, _span) {
+    var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUpdateVariable", "<Missing Error Message>", _span);
 	_output.key = _key;
-    if (_scope == ScopeType_LOCAL) {
+    if (_scope == "Local") {
 		_output.locals = _parentNode.locals;
 		_output.localsWrittenTo = _parentNode.localsWrittenTo;
 		_output.localIndex = _parentNode.localLookUps[$ _output.key];
 	}
-	else if (_scope == ScopeType_GLOBAL) {
+	else if (_scope == "Global") {
 		_output.globals = _rootNode.globals;
 	}
 	

@@ -202,17 +202,74 @@ function __gmlc_enum_value(_value) {
 	throw_gmlc_error("enum assignment must be an integer constant");
 }
 #region jsDoc
-/// @func    __gmlc_throw_value(_value)
-/// @desc    The `throw` statement of compiled code: throws the value unchanged.
-/// @param   {Any} _value : The thrown value
+/// @func    __gmlc_struct_has(_struct, _key)
+/// @desc    struct_exists for tables keyed by names from source code: every struct answers `toString` with the same
+///          default method, which does not count; a `toString` the table itself holds does.
+/// @param   {Struct} _struct : The table
+/// @param   {String} _key    : The name
+/// @returns {Bool}
 #endregion
-function __gmlc_throw_value(_value) {
-	throw _value;
+function __gmlc_struct_has(_struct, _key) {
+	static __defaultToString = undefined;
+	if (__defaultToString == undefined) {
+		var _empty = {};
+		__defaultToString = _empty[$ "toString"];
+	}
+	if (!struct_exists(_struct, _key)) return false;
+	return (_key != "toString") || (_struct[$ _key] != __defaultToString);
+}
+#region jsDoc
+/// @func    __gmlc_struct_get(_struct, _key)
+/// @desc    The value of a name in a table keyed by names from source code, undefined when the table does not hold it
+///          (see __gmlc_struct_has).
+/// @param   {Struct} _struct : The table
+/// @param   {String} _key    : The name
+/// @returns {Any}
+#endregion
+function __gmlc_struct_get(_struct, _key) {
+	return __gmlc_struct_has(_struct, _key) ? _struct[$ _key] : undefined;
+}
+#region jsDoc
+/// @func    __GMLC_InternalFunctions()
+/// @desc    GMLC's own run-time helpers that the pipeline writes calls to, by name.
+/// @returns {Struct}
+#endregion
+function __GMLC_InternalFunctions() {
+	static __functions = {
+		__gmlc_enum_value: __gmlc_enum_value,
+	};
+	return __functions;
+}
+
+#region jsDoc
+/// @func    __gmlc_node_position(_node)
+/// @desc    Where a compiled node is in its source: file name, line, column and line text, from its span and the
+///          program's source table; undefined when the node has none.
+/// @param   {Struct} _node : A compiled node (anything with `span` and `rootNode`)
+/// @returns {Struct|Undefined}
+#endregion
+function __gmlc_node_position(_node) {
+	var _span = is_struct(_node) ? _node[$ "span"] : undefined;
+	var _root = is_struct(_node) ? _node[$ "rootNode"] : undefined;
+	var _sources = is_struct(_root) ? _root[$ "sources"] : undefined;
+	if (_span == undefined) || (_sources == undefined) return undefined;
+	return _sources.position(_span);
 }
 
 function throw_gmlc_error(_err, _line=undefined, _lineString=undefined, _column=undefined, _script=undefined) {
 	var _token = struct_get(self, "currentToken");
 	var _env   = struct_get(self, "env");
+	
+	// a compiled node knows where it is by its span
+	if (_line == undefined) {
+		var _at = __gmlc_node_position(self);
+		if (_at != undefined) {
+			_line = _at.line;
+			_lineString ??= _at.lineString;
+			_column ??= _at.column;
+			_script ??= _at.fileName;
+		}
+	}
 	
 	if (_line == undefined) {
 		_line = (_token != undefined) ? struct_get(_token, "line") : undefined;

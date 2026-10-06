@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_5_Compiler",
+  "%Name":"GMLC_Gen_4_PostProcessor",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_5_Compiler",
+  "name":"GMLC_Gen_4_PostProcessor",
   "parent":{
-    "name":"Runtime",
-    "path":"folders/GMLC/Backends/Runtime.yy",
+    "name":"Sema",
+    "path":"folders/GMLC/Sema.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

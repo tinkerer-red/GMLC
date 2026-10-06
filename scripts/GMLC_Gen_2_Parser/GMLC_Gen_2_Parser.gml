@@ -1,1848 +1,1145 @@
 #region Parser.gml
+// GMLC_Gen_2_Parser: the preprocessed tokens of one file to a syntax tree.
+// One node kind per construct, every body a Block, names left unresolved (the resolver binds them), nothing lowered.
+// It reads only the file's tokens and declaration tables, never the environment. Binary operators are parsed by
+// precedence climbing over these tiers, loosest first, in the order GameMaker uses (measured):
+//   ?:   ??   ||   &&   ^^   == != < <= > >= (and `=` as equality)   | & ^   << >>   + -   * / div mod   prefix   postfix
+// `=` assigns only at the start of a statement, in declarations and in parameter defaults; anywhere else it compares.
+// Every node gets the span of its tokens (a token from a macro or an enum reference counts at its use) and, when its
+// first and last tokens came from the same macro use or enum reference, that origin. Each `@NoOp` pragma gets as
+// its target the first statement that starts after it and every other statement that starts on that statement's
+// line: the whole next line, and with it the bodies of the statements on it (a function, an if, a loop).
 
-	#region 2. Parser Module
-	/*
-	Purpose: To take tokens from the Tokenizer and build an Abstract Syntax Tree (AST) that represents the program structure.
-
-	Methods:
-
-	parse(tokens): Convert a list of tokens into an AST.
-	parseExpression(tokens): Parse an expression from tokens.
-	parseStatement(tokens): Parse a statement from tokens.
-	*/
+function GMLC_Gen_2_Parser(_env) constructor {
+	#region Config
+	static maxDepth = 256; // syntax nested deeper than this is an error
 	#endregion
-	function GMLC_Gen_2_Parser(_env) constructor {
-		env = _env;
 
-		finished = false;
-		tokens = undefined;
-		currentTokenIndex = 0;
-		currentToken = undefined;
-		currentFunction = undefined;
-		currentMetadataFunctionName = undefined;
-		currentScope = ScopeType_GLOBAL; //used to change `function(){}` into `method(self, function(){}` when applicable
-		scriptAST = undefined;
-
-		lastFiveTokens = array_create(5, undefined);
-
-		static initialize = function(_program) {
-			finished = false;
-
-			program = _program;
-			tokens = _program.tokens;
-			currentFunction = undefined;
-			currentMetadataFunctionName = undefined;
-			var _sourceInfo = (array_length(tokens) > 0) ? currentSourceInfo(tokens[0].sourceInfo) : currentSourceInfo(program.sourceInfo);
-
-			scriptAST = new ASTScript(_sourceInfo);
-			currentScript = scriptAST;
-
-			//apply the variable names from program to ast
-			scriptAST.GlobalVar      = program.GlobalVar;
-			scriptAST.GlobalVarNames = program.GlobalVarNames;
-
-			currentTokenIndex = 0;
-			currentToken = (array_length(tokens) > 0) ? tokens[currentTokenIndex] : undefined;
-
-			operatorStack = []; // Stack for operators
-			operandStack = []; // Stack for operands (AST nodes)
-
-		};
-
-		static cleanup = function() {
-			// i mean idk, what do you wanna do?
-		}
-
-		static currentSourceInfo = function(_sourceInfo, _functionName=undefined) {
-			var _resolvedFunctionName = _functionName ?? ((currentFunction != undefined) ? currentFunction.name : (currentMetadataFunctionName ?? _sourceInfo.functionName));
-			return new GMLC_SourceInfo(_sourceInfo.fileName, _resolvedFunctionName, _sourceInfo.lineString, _sourceInfo.line, _sourceInfo.column, _sourceInfo.byteStart, _sourceInfo.byteEnd);
-		}
-
-		static parseAll = function() {
-			while (!finished) {
-				parseNext();
-			}
-
-			return scriptAST;
-		};
-
-		static parseNext = function() {
-			if (currentToken != undefined) {
-
-				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-				if (currentToken == undefined) return;
-
-				var statement = parseStatement();
-
-				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-				if (statement) {
-					array_push(scriptAST.statements.statements, statement);
-				}
-			}
-			else {
-				finished = true;
-			}
-		};
-
-		static nextToken = function() {
-			lastFiveTokens[0] = lastFiveTokens[1];
-			lastFiveTokens[1] = lastFiveTokens[2];
-			lastFiveTokens[2] = lastFiveTokens[3];
-			lastFiveTokens[3] = lastFiveTokens[4];
-			lastFiveTokens[4] = currentToken;
-
-			currentTokenIndex++;
-			if (currentTokenIndex < array_length(tokens)) {
-				currentToken = tokens[currentTokenIndex];
-			}
-			else {
-				currentToken = undefined; // End of token stream
-			}
-		};
-
-		static peekToken = function() {
-			if (currentTokenIndex + 1 < array_length(tokens)) {
-				return tokens[currentTokenIndex + 1];
-			}
-			else {
-				return undefined; // No more tokens
-			}
-		};
-
-		#region AST Builder Methods
-
-		static parseStatement = function() {
-			switch (currentToken.value) {
-				case "if":			return parseIfStatement();
-				case "for":			return parseForStatement();
-				case "while":		return parseWhileStatement();
-				case "do":			return parseDoUntilStatement();  // Note: Adjust this if the actual keyword differs
-				case "switch":		return parseSwitchStatement();
-				case "with":		return parseWithStatement();
-				case "repeat":		return parseRepeatStatement();
-				case "try":			return parseTryCatchStatement();
-				case "throw":		return parseThrowExpression();
-				case "function":	parseFunctionDeclaration() return undefined;
-				//case "let":			//
-				case "var":			//
-				case "static":		//
-				case "globalvar":	return parseVariableDeclaration();
-				case "continue":	return parseContinueStatement();
-				case "break":		return parseBreakStatement();
-				case "exit":		return parseExitStatement();
-				case "return":		return parseReturnStatement();
-				case "delete":		return parseDeleteStatement();
-				//case "#macro":		return undefined;
-				//case "enum":		return undefined;
-				case "{":			return parseBlock();
-				default:			return parseExpressionStatement();  // Assume any other token starts an expression statement
-			}
-		};
-
-		static parseBlock = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			if (currentToken.value == "{") {
-				nextToken(); // Consume the {
-				var _statements = [];
-				while (currentToken != undefined && currentToken.value != "}") {
-					//specifically Juju Adams will use `;` in macros to denote the next line, i really only ever expect a block statement to start with a `;` if its a Juju macro
-					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-					if (currentToken == undefined || currentToken.value == "}") break;
-
-					var _statement = parseStatement();
-
-					if (_statement != undefined) {
-						array_push(_statements, _statement);
-					}
-
-					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-					if (currentToken == undefined || currentToken.value == "}") break;
-
-					// Parse each statement until } is found
-					// Optional: Handle error checking for unexpected end of file
-				}
-
-				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-				nextToken(); // Consume the }
-
-				//compile better code
-				if (array_length(_statements) == 0) {
-					return new ASTEmpty(sourceInfo);
-				}
-
-				if (array_length(_statements) == 1) {
-					return _statements[0];
-				}
-
-				return new ASTBlockStatement(_statements, sourceInfo); // Return a block statement containing all parsed statements
-			}
-			else {
-				// If no {, its a single statement block
-				var singleStatement = parseStatement();
-
-				//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-				while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-				return new ASTBlockStatement([singleStatement], sourceInfo);
-			}
-		};
-
-		#region Statements
-		#region Keyword Statement types
-
-		static parseIfStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			// Assume currentToken is if
-			nextToken(); // Move past if
-			var _condition = parseConditionalExpression();
-			optionalToken(__GMLC_TokenType_Keyword, "then")
-			var _codeBlock = parseBlock();
-			var _elseBlock = undefined;
-
-
-
-			if (currentToken != undefined)
-			&& (currentToken.value == "else") {
-				nextToken(); // Consume else
-				_elseBlock = parseBlock();
-			}
-			return new ASTIfStatement(_condition, _codeBlock, _elseBlock, sourceInfo);
-		};
-
-		static parseForStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Move past for
-			expectToken(__GMLC_TokenType_Punctuation, "(");
-
-			//example of a really cursed for statement, but it is valid syntax
-			//////////////////////////////////////////////////////////////
-			//for (;; {
-			//  show_message("me second!");
-			//  break;
-			//}) {
-			//  show_message("me first!");
-			//}
-			/////////////////////////////////////////////////////////////
-
-
-
-			//it's possible to make a for statement with no initializer variable
-			if (currentToken.name != ";") {
-				if (currentToken.value == "var") {
-					var _initialization = parseVariableDeclaration();
-				}
-				else {
-					var _initialization = parseExpression();
-				}
-			}
-			else {
-				var _initialization = undefined;
-			}
-			optionalToken(__GMLC_TokenType_Punctuation, ";");
-
-			//it's possible to make a for statement with no conditional statement
-			if (currentToken.name != ";") {
-				var _condition = parseConditionalExpression();
-			}
-			else {
-				var _condition = undefined;
-			}
-			optionalToken(__GMLC_TokenType_Punctuation, ";");
-
-			if (currentToken.name != ")" && currentToken.name != ";") {
-				var _increment = parseBlock();
-			}
-			else {
-				var _increment = undefined;
-			}
-
-			//these are typically already handled by the parseBlock
-			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-			while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-			expectToken(__GMLC_TokenType_Punctuation, ")");
-
-			var _codeBlock = parseBlock();
-			return new ASTForStatement(_initialization, _condition, _increment, _codeBlock, sourceInfo);
-		};
-
-		static parseWhileStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			// Assume currentToken is while
-			nextToken(); // Move past while
-			var _condition = parseConditionalExpression();
-			var _codeBlock = parseBlock();
-			return new ASTWhileStatement(_condition, _codeBlock, sourceInfo);
-		};
-
-		static parseRepeatStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			// Assume currentToken is repeat
-			nextToken(); // Move past repeat
-			var _condition = parseExpression();
-			var _codeBlock = parseBlock();
-			return new ASTRepeatStatement(_condition, _codeBlock, sourceInfo);
-		};
-
-		static parseDoUntilStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			// Assume currentToken is do
-			nextToken(); // Move past do
-			var _codeBlock = parseBlock();
-			expectToken(__GMLC_TokenType_Keyword, "until");
-			var _condition = parseConditionalExpression();
-			return new ASTDoUntilStatement(_condition, _codeBlock, sourceInfo);
-		};
-
-		static parseSwitchStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-		    nextToken(); // Move past switch
-		    var switchExpression = parseExpression(); // Parse the switch expression
-
-			expectToken(__GMLC_TokenType_Punctuation, "{"); // Ensure { and consume it
-
-			var cases = [];
-		    var statements = undefined;
-
-		    while (currentToken != undefined && currentToken.value != "}") {
-				if (currentToken.type == __GMLC_TokenType_Keyword) {
-					if (currentToken.value == "case") {
-						var caseLine = currentToken.line;
-							var caseLineString = currentToken.lineString;
-
-							var caseSourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-						expectToken(__GMLC_TokenType_Keyword, "case"); //consume case
-						var _label = parseExpression();
-
-						expectToken(__GMLC_TokenType_Punctuation, ":"); // Ensure : and consume it
-
-						statements = [];
-						array_push(cases, new ASTCaseExpression(_label, statements, caseSourceInfo));
-					}
-					else if (currentToken.value == "default") {
-						var caseLine = currentToken.line;
-							var caseLineString = currentToken.lineString;
-
-							var caseSourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-						nextToken(); //consume default
-
-						expectToken(__GMLC_TokenType_Punctuation, ":"); // Ensure : and consume it
-
-						statements = [];
-						array_push(cases, new ASTCaseDefault(statements, sourceInfo));
-					}
-					else {
-						array_push(statements, parseStatement());
-
-						//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-						while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-					}
-				}
-				else {
-					array_push(statements, parseStatement());
-
-					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-				}
-		    }
-
-		    expectToken(__GMLC_TokenType_Punctuation, "}"); // Ensure } and consume it
-
-			//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-			while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-
-		    return new ASTSwitchStatement(switchExpression, cases, sourceInfo);
-		};
-
-		static parseWithStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			// Assume currentToken is with
-			nextToken(); // Move past with
-			var _condition = parseExpression();
-			var _codeBlock = parseBlock();
-			return new ASTWithStatement(_condition, _codeBlock, sourceInfo);
-		};
-
-		static parseTryCatchStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			expectToken(__GMLC_TokenType_Keyword, "try");  // Expect the try keyword
-			var _tryBlock = parseBlock();  // Parse the block of statements under try
-
-			var _catchBlock = undefined;
-			var _exceptionVar = undefined;
-			if (currentToken != undefined)
-			&& (currentToken.value == "catch") {
-				nextToken();  // Move past catch
-				expectToken(__GMLC_TokenType_Punctuation, "(");
-
-				//parse and identify the exception variable as a local variable.
-				_exceptionVar = currentToken.value;  // Parse the exception variable
-				array_push((currentFunction ?? scriptAST).LocalVarNames, _exceptionVar);
-
-				nextToken();  // Move past Identifier
-				expectToken(__GMLC_TokenType_Punctuation, ")");
-				_catchBlock = parseBlock();  // Parse the block of statements under catch
-			}
-
-			var _finallyBlock = undefined;
-			if (currentToken != undefined)
-			&& (currentToken.value == "finally") {
-				nextToken();  // Move past finally
-				_finallyBlock = parseBlock();  // Parse the block of statements under finally
-			}
-
-			return new ASTTryStatement(_tryBlock, _catchBlock, _exceptionVar, _finallyBlock, sourceInfo);
-		};
-
-		static parseThrowExpression = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			expectToken(__GMLC_TokenType_Keyword, "throw");  // Expect the try keyword
-			var _err_message = parseExpressionStatement();  // Parse the block of statements under try
-
-			// `throw x` throws x itself (a string stays a string in the catch), as in GameMaker
-			return new ASTCallExpression(new ASTLiteral(method(undefined, __gmlc_throw_value), sourceInfo, "__gmlc_throw_value"), [_err_message], sourceInfo);
-		};
-
-		#endregion
-		#region Keyword Executions
-		static parseContinueStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Consume break
-			return new ASTContinueStatement(sourceInfo);
-		};
-
-		static parseBreakStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Consume break
-			return new ASTBreakStatement(sourceInfo);
-		};
-
-		static parseExitStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Consume exit
-			return new ASTExitStatement(sourceInfo);
-		};
-
-		static parseReturnStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Consume return
-			var expr = undefined;
-			if (currentToken.name == ";") {
-				// dont attempt to parse if its expected to return undefined
-			}
-			else if (currentToken.type == __GMLC_TokenType_Keyword)
-			&& (currentToken.value != "new")
-			&& (currentToken.value != "function") {
-				// dont attempt to parse keywords if new block is starting, or if a function is being defined.
-			}
-			else if (currentToken.type == __GMLC_TokenType_Punctuation)
-			&& (currentToken.value == "}") {
-				// dont attempt to parse if end of block statement
-			}
-			else if (currentToken.type == __GMLC_TokenType_Whitespace)
-			&& (currentToken.value == "\n") {
-				// dont attempt to parse if end of block statement
-			}
-			else {
-				expr = parseConditionalExpression(); // Parse the return expression if any
-			}
-
-			return new ASTReturnStatement(expr, sourceInfo);
-		};
-
-		static parseDeleteStatement = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Consume `default`
-			var expr = parseLogicalOrExpression(); // cascades down the tree and across to ternary.
-
-			return new ASTAssignmentExpression("=", expr, new ASTLiteral(undefined, sourceInfo), sourceInfo);
-		};
-
-		#endregion
-		#region Declarations / Definitions
-
-		static parseFunctionDeclaration = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			#region `function`
-			expectToken(__GMLC_TokenType_Keyword, "function");
-			#endregion
-
-			#region function `identifier` :: the function's name if provided
-			var functionName = undefined;
-			if (currentToken.type == __GMLC_TokenType_Identifier) && (env.isFunction(currentToken.value)) {
-				throw_gmlc_error($"Duplicate function name of existing function :: {currentToken.name}", line, lineString, sourceInfo.column)
-			}
-			else if (currentToken.type == __GMLC_TokenType_Identifier) {
-				var functionName = currentToken.value;
-				//consume the function's identifier
-				nextToken();
-			}
-			else {
-				static __anon_id = 0;
-				var functionName = $"GMLC@anon@{__anon_id++}";
-			}
-			sourceInfo = currentSourceInfo(sourceInfo, functionName);
-			#endregion
-
-			#region function`(arguments)` :: the argument list, or an emply block statement
-
-			var _old_metadata_function_name = currentMetadataFunctionName;
-			currentMetadataFunctionName = functionName;
-			var _argList = parseArgumentDefaultList();
-
-			var _local_var_names = [];
-			var _i=0; repeat(array_length(_argList.statements)) {
-				var _arg = _argList.statements[_i]
-				array_push(_local_var_names, _arg.identifier)
-			_i++}
-
-			#endregion
-
-			var _isConstructor = false;
-			var _parentName = undefined;
-			var _parentCall = undefined;
-			#region function foo() `:` bar() constructor {} :: check and consume the `:` if it has a parent defined
-			if (optionalToken(__GMLC_TokenType_Punctuation, ":")) {
-				#region function foo() : `bar`() constructor {} :: parse constructor parent
-
-				var _parent = parseCallAccessExpression();
-
-				//if its an internally defined function, like a function defined in the same program we're parsing
-				if (_parent.type != __GMLC_NodeType_CallExpression) {
-					throw_gmlc_error($"Trying to set a constructor parent to a non global defined value, got :: {_parent}", line, lineString, sourceInfo.column)
-				}
-
-				//if it's a global identifier
-				if (!is_callable(_parent.callee.value))
-				&& (_parent.callee.type == __GMLC_NodeType_Identifier)
-				&& (_parent.callee.scope == ScopeType_GLOBAL)
-				{
-					var _ref = program.GlobalVar[$ _parent.callee.value]
-					if (_ref.type != __GMLC_NodeType_ConstructorDeclaration) {
-						throw_gmlc_error($"Trying to set a constructor parent to a non global defined value, got :: {_parent.callee.name}", line, lineString, sourceInfo.column)
-					}
-				}
-
-
-				#endregion
-
-				_parentCall = _parent;
-				_parentName = _parent.callee.name;
-			}
-			#endregion
-			#region function foo() `constructor` :: parse constructor keyword (if provided)
-			if (optionalToken(__GMLC_TokenType_Keyword, "constructor")) {
-				_isConstructor = true;
-			}
-			#endregion
-
-
-
-			// Register function as a global variable and move its body to GlobalVar
-			if (!_isConstructor) {
-				var globalFunctionNode = new ASTFunctionDeclaration(
-					functionName,
-					_argList,
-					_local_var_names,
-					undefined, //will be set after body is parsed
-					sourceInfo
-				)
-			}
-			else {
-				var globalFunctionNode = new ASTConstructorDeclaration(
-					functionName,
-					_parentName,
-					_argList,
-					_parentCall,
-					_local_var_names,
-					undefined, //will be set after body is parsed
-					sourceInfo
-				)
-			}
-
-
-			//cache the old current function, incase we are declaring a function inside a function
-			var _old_function = currentFunction;
-			var _old_scope = currentScope;
-			currentFunction = globalFunctionNode;
-
-			//change the scope if needed
-			if (_isConstructor) currentScope = ScopeType_SELF;
-
-			// Parse the function body and apply it
-			globalFunctionNode.statements = parseBlock();
-
-			//reset the current function
-			currentFunction = _old_function;
-			currentScope = _old_scope;
-			currentMetadataFunctionName = _old_metadata_function_name;
-
-			// Add to GlobalVar mapping of the Program node
-			scriptAST.GlobalVar[$ functionName] = globalFunctionNode;
-			array_push(scriptAST.GlobalVarNames, functionName);
-
-			var _func_ref = new ASTIdentifier(functionName, ScopeType_GLOBAL, sourceInfo);
-
-			// now correctly set the assignment, either a global lookup, or a method call, depending on if it's inside a constructor or not
-			switch (currentScope) {
-				case ScopeType_GLOBAL: {
-					var _func = _func_ref;
-				break;}
-				case ScopeType_STATIC: {
-					var _func = new ASTCallExpression(
-						new ASTLiteral(method(undefined, __gmlc_method), sourceInfo, "__method"),
-						[
-							new ASTLiteral(undefined, sourceInfo, "undefined"),
-							_func_ref
-						],
-						sourceInfo
-					)
-				break;}
-				case ScopeType_SELF  : {
-					var _self = new ASTUniqueIdentifier(env.getVariable("self").value, sourceInfo);
-					var _func = new ASTCallExpression(
-						new ASTLiteral(method(undefined, __gmlc_method), sourceInfo, "__method"),
-						[
-							_self,
-							_func_ref
-						],
-						sourceInfo
-					)
-				break;}
-			}
-
-
-			// Return a reference to the function in the global scope
-			return _func;
-		};
-		static parseArgumentDefaultList = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			expectToken(__GMLC_TokenType_Punctuation, "(");
-			var parameters = [];
-			while (currentToken.name != ")") {
-			    var _argNode = parseArgumentDefaultSingle()
-				_argNode.argument_index = array_length(parameters);
-
-				array_push(parameters, _argNode);
-
-
-			    if (currentToken.name == ",") {
-			        nextToken();  // Handle multiple parameters
-			    }
-			}
-			nextToken();  // Close parameters list
-
-			return new ASTArgumentList(parameters, sourceInfo);
-
-		}
-		static parseArgumentDefaultSingle = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			var identifier = currentToken.value;  // Parse the parameter name
-			nextToken();  // Move past Identifier
-
-			var expr = undefined;
-			if (optionalToken(__GMLC_TokenType_Operator, "=")) {
-				expr = parseAssignmentExpression(); // Assignment is right-associative
-			}
-			else {
-				expr = new ASTLiteral(undefined, sourceInfo);
-			}
-
-			return new ASTArgument(identifier, expr, undefined, sourceInfo);
-		}
-
-
-		static parseVariableDeclaration = function () {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-			var _should_hoist = false
-			var type = currentToken.value;  // var, globalvar, or static
-			var _variable_scope = undefined;
-
-			// convert string to scope type
-			switch (type) {
-				//case "let":{
-				//	//dont to nuttin`!
-				//break;}
-				case "var":{
-					_variable_scope = ScopeType_LOCAL;
-				break;}
-				case "static":{
-					_should_hoist = true;
-					_variable_scope = ScopeType_STATIC;
-				break;}
-				case "globalvar":{
-					_variable_scope = ScopeType_GLOBAL;
-				break;}
-				default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column)
-			}
-
-
-			// Fetch the array containing variable names
-			var _tableArr = undefined
-			if (currentFunction == undefined) {
-				//script scrope
-				switch (_variable_scope) {
-					//case "let":{
-					//	//dont to nuttin`!
-					//break;}
-					case ScopeType_LOCAL: _tableArr = scriptAST.LocalVarNames; break;
-					case ScopeType_STATIC: throw_gmlc_error($"Script: {env.currentScriptName} at line {currentToken.line} : static can only be declared inside a function", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column); break;
-					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column)
-				}
-
-			}
-			else {
-				//function scope
-				switch (_variable_scope) {
-					//case "let":{
-					//	//dont to nuttin`!
-					//break;}
-					case ScopeType_LOCAL:  _tableArr = currentFunction.LocalVarNames; break;
-					case ScopeType_STATIC: _tableArr = currentFunction.StaticVarNames; break;
-					case ScopeType_GLOBAL: _tableArr = scriptAST.GlobalVarNames; break;
-					default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column)
-				}
-			}
-
-
-			// Cache the scoping and update if needed
-			var _old_scope = currentScope;
-			if (_variable_scope = ScopeType_STATIC) {
-				currentScope = _variable_scope;
-			}
-
-
-			nextToken();
-
-			var declarations = [];
-
-			// this variable is used to help prevent issues where many variables are defined at once but were not properly ended with `;`:
-			var _found_one = false;
-			// Example:
-			// var c_black = #000000,
-			//     c_white = #FFFFFF,
-			//
-			// with (thing) { ... }
-
-			//parse all declarations
-		    while (true) {
-				// optionally skip redeclarations
-				var varLine = currentToken.line;
-				var varLineString = currentToken.lineString;
-
-				var varSourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				//these must be a identifier one can not `var try = 123`
-				if (currentToken.type != __GMLC_TokenType_Identifier) {
-					if (_found_one) {
-						break;
-					}
-
-		            throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved: {currentToken}\nLast five tokens:\n{lastFiveTokens}", varLine, varLineString, varSourceInfo.column);
-		        }
-				
-				// the name is declared before it is parsed, so it resolves to the new variable even when a built-in or
-				// host function has the same name (`var log`)
-				if (!array_contains(_tableArr, currentToken.value)) {
-					array_push(_tableArr, currentToken.value);
-		        }
-
-				// we parse anything which starts with an identifier to ensure there is no postfix op attached to it like `++`, and accessor, or function call
-		        var identifier = parsePostfixExpression();
-
-				if (identifier.type != __GMLC_NodeType_Identifier) {
-					if (_found_one) {
-						break;
-					}
-
-					throw_gmlc_error($"Expected identifier in variable declaration.\nRecieved type: {identifier.type}, {currentToken}\nLast five tokens:\n{lastFiveTokens}", varLine, varLineString, varSourceInfo.column);
-				}
-
-				//push to the table array
-				if (!array_contains(_tableArr, identifier)) {
-					array_push(_tableArr, identifier.name);
-				}
-
-				_found_one = true;
-
-				//fetch expression
-				var expr = undefined;
-				if (optionalToken(__GMLC_TokenType_Operator, "=")) {
-					expr = parseConditionalExpression();
-					var _declaration = new ASTVariableDeclaration(identifier, expr, _variable_scope, varSourceInfo);
-
-					// either push it to the declarations array, or push it to the statics array
-					switch (_variable_scope) {
-						//case "let":{
-						//	//dont to nuttin`!
-						//break;}
-						case ScopeType_LOCAL:
-						case ScopeType_GLOBAL:{
-							array_push(declarations, _declaration);
-						break;}
-						case ScopeType_STATIC:{
-							array_push(currentFunction.StaticVarArray, _declaration)
-						break;}
-						default: throw_gmlc_error($"How did we enter variable declaration with out meeting a variable keyword?", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column)
-					}
-
-				}
-
-				if (currentToken.name == ";") {
-					break
-				}
-		        if (currentToken == undefined || currentToken.name != ",") {
-		            break; // End of declaration list
-		        }
-
-		        nextToken(); // Consume , and move to the next identifier
-		    }
-
-			//reset the current scope
-			currentScope = _old_scope;
-
-			if (_should_hoist) {
-				return undefined;
-			}
-
-			if (array_length(declarations) == 1) {
-				return declarations[0];
-			}
-			else {
-				return new ASTVariableDeclarationList(declarations, _variable_scope, sourceInfo);
-			}
-		};
-
-		#endregion
-		#region Execution
-
-		static parseNewExpression = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			expectToken(__GMLC_TokenType_Keyword, "new");  // Expect the new keyword
-
-			var expr = parseAccessExpression();
-			expr = parseFunctionCall(expr);
-
-			return new ASTNewExpression(expr, sourceInfo);
-		};
-
-		#endregion
-
-		static parseExpressionStatement = function() {
-			var expr = parseExpression();
-			if (expr == undefined) {
-				throw_gmlc_error($"Getting an error parsing expression, current token is:\n{currentToken}\nLast Five Tokens:\n{lastFiveTokens}", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column)
-			}
-			return expr;
-		}
-
-		#endregion
-
-		#region Expressions
-		static parseExpression = function() {
-			return parseAssignmentExpression();
-		};
-
-		static parseConditionalExpression = function() {
-			var expr = parseConditionalEqualityExpression();
-
-			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "?") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-				nextToken(); // consume ?
-				var trueExpr = parseConditionalExpression();
-				expectToken(__GMLC_TokenType_Punctuation, ":");
-				var falseExpr = parseConditionalExpression();
-				return new ASTConditionalExpression(expr, trueExpr, falseExpr, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		// Handles ternary without the equality-= of parseConditionalEqualityExpression,
-		// so parseAssignmentExpression can still treat = as assignment.
-		static parseTernaryExpression = function() {
-			var expr = parseLogicalOrExpression();
-
-			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "?") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-				nextToken(); // consume ?
-				var trueExpr = parseConditionalExpression();
-				expectToken(__GMLC_TokenType_Punctuation, ":");
-				var falseExpr = parseConditionalExpression();
-				return new ASTConditionalExpression(expr, trueExpr, falseExpr, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseAssignmentExpression = function() {
-			var expr = parseTernaryExpression();
-			static __arr = ["=", "+=", "-=", "*=", "/=", "^=", "&=", "|=", "%=", "??="];
-			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseAssignmentExpression(); // Assignment is right-associative
-
-				expr = new ASTAssignmentExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseConditionalEqualityExpression = function() {
-			var expr = parseLogicalOrExpression();
-			static __arr = ["=", "==", "!="];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = (currentToken.value == "=") ? "==" : currentToken.value;
-
-				nextToken();
-				var right = parseLogicalOrExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseLogicalOrExpression = function() {
-			var expr = parseLogicalAndExpression();
-			while (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "||") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseLogicalAndExpression();
-				expr = new ASTLogicalExpression(operator, expr, right, sourceInfo);
-			}
-			return parseTerneryExpression(expr); // Check if this is a conditional expression after logical operations
-		};
-
-		static parseTerneryExpression = function(expr) {
-
-			if (currentToken != undefined && currentToken.type == __GMLC_TokenType_Operator && currentToken.value == "?") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				expectToken(__GMLC_TokenType_Operator, "?"); // Consume ?
-				var trueExpr = parseExpression(); // Parse the true branch
-				expectToken(__GMLC_TokenType_Punctuation, ":"); // Consume :
-				var falseExpr = parseExpression(); // Parse the false branch
-				expr = new ASTConditionalExpression(expr, trueExpr, falseExpr, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseLogicalAndExpression = function() {
-			var expr = parseLogicalXorExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "&&") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseBitwiseOrExpression();
-				expr = new ASTLogicalExpression(operator, expr, right, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseLogicalXorExpression = function() {
-			var expr = parseNullishExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "^^") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseBitwiseOrExpression();
-				expr = new ASTLogicalExpression(operator, expr, right, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseNullishExpression = function() {
-			var expr = parseBitwiseOrExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "??") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseBitwiseOrExpression();
-				expr = new ASTNullishExpression(operator, expr, right, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseBitwiseOrExpression = function() {
-			var expr = parseBitwiseXorExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "|") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseBitwiseXorExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseBitwiseXorExpression = function() {
-			var expr = parseBitwiseAndExpression();
-			while (currentToken != undefined) && (currentToken.value == "^") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseBitwiseAndExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseBitwiseAndExpression = function() {
-			var expr = parseEqualityExpression();
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (currentToken.value == "&") {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseEqualityExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-
-			return expr;
-		};
-
-		static parseEqualityExpression = function() {
-			var expr = parseRelationalExpression();
-			static __arr = ["==", "!="];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseRelationalExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseRelationalExpression = function() {
-			var expr = parseShiftExpression();
-
-			static __arr = ["<", "<=", ">", ">="];
-			while (currentToken != undefined)
-			&& (currentToken.type == __GMLC_TokenType_Operator)
-			&& (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseShiftExpression();
-				var _prev_expr = expr
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseShiftExpression = function() {
-			var expr = parseAdditiveExpression();
-			static __arr = ["<<", ">>"];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseAdditiveExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseAdditiveExpression = function() {
-			var expr = parseMultiplicativeExpression();
-			static __arr = ["+", "-"];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseMultiplicativeExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseMultiplicativeExpression = function() {
-			var expr = parseUnaryExpression();
-			static __arr = ["*", "/", "mod", "div"];
-			while (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var right = parseUnaryExpression();
-				expr = new ASTBinaryExpression(operator, expr, right, sourceInfo);
-			}
-			return expr;
-		};
-
-		static parseUnaryExpression = function() {
-			static __arr = ["!", "+", "-", "~", "++", "--"];
-			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value)) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				nextToken();
-				var expr = parseUnaryExpression(); // Right-associative
-
-				if (operator == "++" || operator == "--") {
-					return new ASTUpdateExpression(operator, expr, true, sourceInfo);
-				}
-
-				return new ASTUnaryExpression(operator, expr, sourceInfo);
-			}
-			else {
-				return parsePostfixExpression();
-			}
-		};
-
-		static parsePostfixExpression = function() {
-			var expr = parseCallAccessExpression();
-			static __arr = ["++", "--"];
-			if (currentToken != undefined) && currentToken.type == __GMLC_TokenType_Operator && (array_contains(__arr, currentToken.value))
-			&& !(expr.type == "Literal" && expr.scope == ScopeType_CONST) {
-				var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-				var operator = currentToken.value;
-				var postfixExpr = new ASTUpdateExpression(operator, expr, false, sourceInfo);
-				nextToken();
-				expr = postfixExpr;
-			}
-			return expr;
-		};
-
-		static parseCallAccessExpression = function() {
-			var expr = parseAccessExpression();
-
-			while (currentToken != undefined) {
-				if (currentToken.type == __GMLC_TokenType_Punctuation) {
-					switch (currentToken.value) {
-						case "(": {
-							expr = parseFunctionCall(expr);
-						break;}
-						case "[": case "[|": case "[?": case "[#": case "[$": case "[@": {
-							expr = parseBracketAccessor(expr);
-						break;}
-						case ".": {
-							expr = parseDotAccessor(expr);
-						break;}
-						default: {
-							return expr
-						break;}
-					}
-				}
-				else {
-					return expr
-				}
-			}
-			return expr;
-		};
-
-		static parseAccessExpression = function() {
-			var expr = parsePrimaryExpression();
-
-			var _should_break = false;
-			while (currentToken != undefined) {
-				if (currentToken.type == __GMLC_TokenType_Punctuation) {
-					switch (currentToken.value) {
-						case "[": case "[|": case "[?": case "[#": case "[$": case "[@": {
-							expr = parseBracketAccessor(expr);
-						break;}
-						case ".": {
-							expr = parseDotAccessor(expr);
-						break;}
-						default: {
-							return expr
-						break;}
-					}
-				}
-				else {
-					return expr
-				}
-			}
-			return expr;
-		};
+	env = _env; // kept so the stage API stays the same; never read
+	
+	program = undefined;
+	tokens = [];
+	tokenCount = 0;
+	tokenIndex = 0;
+	currentToken = undefined;
+	previousToken = undefined;
+	script = undefined;
+	depth = 0;
+	pragmaIndex = 0; // the first pragma that has no statement yet
+	openTarget = undefined; // the target of the last pragmas while statements on its line may still extend it
+	
+	#region Tables
+	// the tier of each binary operator, tightest highest; `=` there compares
+	static __binaryTiers = {
+		"??": 1, "||": 2, "&&": 3, "^^": 4,
+		"==": 5, "!=": 5, "<": 5, "<=": 5, ">": 5, ">=": 5, "=": 5,
+		"|": 6, "&": 6, "^": 6,
+		"<<": 7, ">>": 7,
+		"+": 8, "-": 8,
+		"*": 9, "/": 9, "div": 9, "mod": 9,
+	};
+	#endregion
+	
+	#region Public
+	#region jsDoc
+	/// @func    initialize(_program)
+	/// @desc    Prepares parsing of one preprocessed file.
+	/// @self    GMLC_Gen_2_Parser
+	/// @param   {Struct} _program : The preprocessor's program record (tokens, file and declaration tables)
+	#endregion
+	static initialize = function(_program) {
+		program = _program;
+		tokens = _program.tokens;
+		tokenCount = array_length(tokens);
+		tokenIndex = 0;
+		currentToken = (tokenCount > 0) ? tokens[0] : undefined;
+		previousToken = undefined;
+		depth = 0;
+		pragmaIndex = 0;
+		openTarget = undefined;
 		
-		static parsePrimaryExpression = function() {
-			if (currentToken == undefined) {
-				var sourceInfo = currentSourceInfo(program.sourceInfo);
-				throw_gmlc_error("Unexpected end of input", sourceInfo.line, sourceInfo.lineString, sourceInfo.column);
+		var _file = _program.file;
+		script = new ASTScript(new GMLC_Span(_file.fileId, 0, _file.byteLength()), []);
+		
+		// the declaration tables of the file, as nodes
+		var _i = 0; repeat (array_length(_program.macros)) {
+			var _def = _program.macros[_i];
+			array_push(script.macros, new ASTMacroDecl(_def.span, _def.name, _def.config, _def.text));
+		_i++}
+		_i = 0; repeat (array_length(_program.enums)) {
+			var _def = _program.enums[_i];
+			var _members = [];
+			var _m = 0; repeat (array_length(_def.members)) {
+				var _member = _def.members[_m];
+				array_push(_members, new ASTEnumMember(_member.span, _member.name, _member.value, _member.init != undefined));
+			_m++}
+			array_push(script.enums, new ASTEnumDecl(_def.span, _def.name, _members));
+		_i++}
+		script.regions = _program.regions;
+		script.pragmas = _program.pragmas;
+	};
+	
+	#region jsDoc
+	/// @func    parseAll()
+	/// @desc    Parses the whole file. Throws the first syntax error.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTScript}
+	#endregion
+	static parseAll = function() {
+		while (currentToken != undefined) {
+			array_push(script.body, parseStatement());
+		}
+		return script;
+	};
+
+	static cleanup = function() {};
+	#endregion
+
+	#region Tokens
+	static advance = function() {
+		previousToken = currentToken;
+		tokenIndex++;
+		currentToken = (tokenIndex < tokenCount) ? tokens[tokenIndex] : undefined;
+	};
+	
+	static peek = function() {
+		return (tokenIndex + 1 < tokenCount) ? tokens[tokenIndex + 1] : undefined;
+	};
+	
+	static isPunctuation = function(_value) {
+		return (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Punctuation) && (currentToken.value == _value);
+	};
+	
+	static isOperator = function(_value) {
+		return (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Operator) && (currentToken.value == _value);
+	};
+	
+	static isKeyword = function(_value) {
+		return (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Keyword) && (currentToken.value == _value);
+	};
+	
+	#region jsDoc
+	/// @func    expect(_type, _value)
+	/// @desc    Consumes the current token when it is the given one, otherwise throws GMLC1002.
+	/// @self    GMLC_Gen_2_Parser
+	/// @param   {Real}   _type  : Token type
+	/// @param   {String} _value : Token value
+	#endregion
+	static expect = function(_type, _value) {
+		if (currentToken == undefined) {
+			__error("GMLC1002", $"expected {_value}, found the end of the file");
+		}
+		if (currentToken.type != _type) || (currentToken.value != _value) {
+			__error("GMLC1002", $"expected {_value}, found {currentToken.name}");
+		}
+		advance();
+	};
+
+	static optional = function(_type, _value) {
+		if (currentToken != undefined) && (currentToken.type == _type) && (currentToken.value == _value) {
+			advance();
+			return true;
+		}
+		return false;
+	};
+
+	#region jsDoc
+	/// @func    __error(_code, _message, [_token])
+	/// @desc    Throws a syntax error at a token (the current one, or the last one at the end of the file).
+	/// @self    GMLC_Gen_2_Parser
+	#endregion
+	static __error = function(_code, _message, _token = undefined) {
+		_token ??= currentToken ?? previousToken;
+		var _sources = program[$ "sources"];
+		var _at;
+		if (_token == undefined) {
+			_at = { fileName: program.file.name, line: 1, column: 1, lineString: "" };
+		}
+		else if (_sources != undefined) {
+			_at = _sources.position(_token);
+		}
+		else {
+			_at = program.file.position(_token.start);
+		}
+		throw_gmlc_error(_code + ": " + _message, _at.line, _at.lineString, _at.column, _at.fileName);
+	};
+	#endregion
+
+	#region Spans and origins
+	// Where a token counts in a span: at its use when a macro or an enum reference made it (a token has the fields
+	// of a span: file, start, end)
+	static __site = function(_t) {
+		var _origin = _t[$ "origin"];
+		return (_origin != undefined) ? _origin.use_span : _t;
+	};
+	
+	#region jsDoc
+	/// @func    finish(_node, _first)
+	/// @desc    Gives a node the span from its first token to the last token consumed, and the origin of its tokens when
+	///          the first and the last came from the same macro use or enum reference.
+	/// @self    GMLC_Gen_2_Parser
+	/// @param   {Struct.ASTNode} _node  : The node
+	/// @param   {Struct}         _first : Its first token
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static finish = function(_node, _first) {
+		var _last = previousToken ?? _first;
+		var _from = __site(_first);
+		var _to = __site(_last);
+		_node.span = new GMLC_Span(_from.file, _from.start, max(_from[$ "end"], _to[$ "end"]));
+		// one macro use or enum reference makes one origin, shared by all of its tokens
+		var _origin = _first[$ "origin"];
+		_node.origin = (_origin != undefined) && (_origin == _last[$ "origin"]) ? _origin : undefined;
+		return _node;
+	};
+	
+	// a body that is not a block is wrapped in one with its span
+	static __asBlock = function(_statement) {
+		if (_statement == undefined) return new ASTBlock(__emptySpan(), []);
+		if (_statement.kind == __GMLC_NodeKind_Block) return _statement;
+		return new ASTBlock(_statement.span, [_statement], _statement.origin);
+	};
+	
+	static __emptySpan = function() {
+		var _t = previousToken ?? currentToken;
+		if (_t == undefined) return new GMLC_Span(program.file.fileId, 0, 0);
+		var _site = __site(_t);
+		return new GMLC_Span(_site.file, _site[$ "end"], _site[$ "end"]);
+	};
+	#endregion
+
+	#region Statements
+	#region jsDoc
+	/// @func    parseStatement()
+	/// @desc    Parses one statement and the `;` that may end it. A `;` on its own is an Empty statement. The
+	///          `@NoOp` pragmas before it target it and the rest of its line.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parseStatement = function() {
+		if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+		var _first = currentToken;
+		var _statement;
+		
+		// the pragmas written before this statement
+		var _pragmas = script.pragmas;
+		var _firstPragma = pragmaIndex;
+		var _site = __site(_first);
+		while (pragmaIndex < array_length(_pragmas)) && (_pragmas[pragmaIndex].span.start < _site.start) {
+			pragmaIndex++;
+		}
+		
+		switch (currentToken.type) {
+			case __GMLC_TokenType_Punctuation: {
+				if (currentToken.value == ";") {
+					advance();
+					_statement = finish(new ASTEmpty(), _first);
+					__targetPragmas(_firstPragma, _statement);
+					depth--;
+					return _statement;
+				}
+				_statement = (currentToken.value == "{") ? parseBlock() : parseSimpleStatement();
+			break;}
+			case __GMLC_TokenType_Keyword: {
+				switch (currentToken.value) {
+					case "var":       _statement = parseDeclList(); break;
+					case "static":    _statement = parseDeclList(); break;
+					case "globalvar": _statement = parseGlobalvar(); break;
+					case "function": {
+						var _next = peek();
+						_statement = (_next != undefined) && (_next.type == __GMLC_TokenType_Identifier) ? parseFunctionDecl() : parseSimpleStatement();
+					break;}
+					case "if":       _statement = parseIf(); break;
+					case "for":      _statement = parseFor(); break;
+					case "while":    _statement = parseWhile(); break;
+					case "repeat":   _statement = parseRepeat(); break;
+					case "with":     _statement = parseWith(); break;
+					case "do":       _statement = parseDoUntil(); break;
+					case "switch":   _statement = parseSwitch(); break;
+					case "try":      _statement = parseTry(); break;
+					case "return":   _statement = parseReturn(); break;
+					case "throw":    _statement = parseThrow(); break;
+					case "delete":   _statement = parseDelete(); break;
+					case "break": {
+						advance();
+						_statement = finish(new ASTBreak(), _first);
+					break;}
+					case "continue": {
+						advance();
+						_statement = finish(new ASTContinue(), _first);
+					break;}
+					case "exit": {
+						advance();
+						_statement = finish(new ASTExit(), _first);
+					break;}
+					case "case":
+					case "default":  __error("GMLC1026", $"`{currentToken.value}` outside a switch"); break;
+					case "else":     __error("GMLC1024", "`else` without an `if`"); break;
+					case "enum":     __error("GMLC1012", "an enum declaration the preprocessor did not read"); break;
+					default:         _statement = parseSimpleStatement(); break;
+				}
+			break;}
+			default: {
+				_statement = parseSimpleStatement();
+			break;}
+		}
+
+		// the `;` that ends a statement belongs to it
+		if (optional(__GMLC_TokenType_Punctuation, ";")) {
+			finish(_statement, _first);
+		}
+		__targetPragmas(_firstPragma, _statement);
+		depth--;
+		return _statement;
+	};
+	
+	#region jsDoc
+	/// @func    __targetPragmas(_from, _statement)
+	/// @desc    The pragmas from _from up to pragmaIndex were written before this statement: their target starts with it.
+	///          A later statement of the same nesting that starts on the same line extends the target to its end.
+	/// @self    GMLC_Gen_2_Parser
+	#endregion
+	static __targetPragmas = function(_from, _statement) {
+		var _span = _statement.span;
+		if (pragmaIndex > _from) {
+			var _target = new GMLC_Span(_span.file, _span.start, _span[$ "end"]);
+			var _p = _from; repeat (pragmaIndex - _from) {
+				script.pragmas[_p].target = _target;
+			_p++}
+			openTarget = { target: _target, depth: depth, line: __lineOf(_span) };
+			return;
+		}
+		if (openTarget == undefined) || (depth > openTarget.depth) return;
+		if (depth == openTarget.depth) && (_span.file == openTarget.target.file) && (__lineOf(_span) == openTarget.line) {
+			openTarget.target[$ "end"] = _span[$ "end"];
+			return;
+		}
+		openTarget = undefined;
+	};
+	
+	// the line a span starts on in this file, -1 for another file
+	static __lineOf = function(_span) {
+		return (_span.file == program.file.fileId) ? program.file.lineOf(_span.start) : -1;
+	};
+	
+	#region jsDoc
+	/// @func    parseBlock()
+	/// @desc    Parses `{ statements }` (`begin` and `end` arrive as braces).
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTBlock}
+	#endregion
+	static parseBlock = function() {
+		var _first = currentToken;
+		expect(__GMLC_TokenType_Punctuation, "{");
+		var _body = [];
+		while (currentToken != undefined) && !isPunctuation("}") {
+			array_push(_body, parseStatement());
+		}
+		if (currentToken == undefined) __error("GMLC1003", "a block is not closed", _first);
+		advance();
+		return finish(new ASTBlock(undefined, _body), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseBody()
+	/// @desc    Parses the body of a statement: a block, or one statement wrapped in a block with its span.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTBlock}
+	#endregion
+	static parseBody = function() {
+		if (currentToken == undefined) __error("GMLC1002", "expected a statement, found the end of the file");
+		return __asBlock(parseStatement());
+	};
+	
+	#region jsDoc
+	/// @func    parseSimpleStatement()
+	/// @desc    Parses an assignment (`target op value`) or an expression statement.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTExprStmt}
+	#endregion
+	static parseSimpleStatement = function() {
+		var _first = currentToken;
+		var _target = parseUnary();
+		if (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Operator) {
+			switch (currentToken.value) {
+				case "=": case "+=": case "-=": case "*=": case "/=": case "%=":
+				case "&=": case "|=": case "^=": case "??=": {
+					var _op = currentToken.value;
+					__checkTarget(_target, _first);
+					advance();
+					var _value = parseExpression();
+					var _assign = finish(new ASTAssign(undefined, _op, _target, _value), _first);
+					return finish(new ASTExprStmt(undefined, _assign), _first);
+				}
 			}
-			
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
+		}
+		// not an assignment: the rest of an expression that starts with what was parsed
+		var _expression = parseConditional(_target, _first);
+		return finish(new ASTExprStmt(undefined, _expression), _first);
+	};
+	
+	static __checkTarget = function(_target, _first) {
+		switch (_target.kind) {
+			case __GMLC_NodeKind_Identifier:
+			case __GMLC_NodeKind_Index:
+			return;
+			case __GMLC_NodeKind_Literal: {
+				// a macro's or an enum member's value, left for the resolver to report
+				if (_target.origin != undefined) return;
+			break;}
+		}
+		__error("GMLC1004", "this cannot be assigned to", _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseDeclList()
+	/// @desc    Parses `var` or `static` and its declarators: a VarDeclList or a StaticDecl.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parseDeclList = function() {
+		var _first = currentToken;
+		var _isStatic = (currentToken.value == "static");
+		advance();
+		var _declarations = [];
+		do {
+			var _declFirst = currentToken;
+			// GameMaker takes `then` as the name of a static, not of a var (measured)
+			var _target = __parseName("a variable name", _isStatic);
+			var _init = undefined;
+			if (isOperator("=")) {
+				advance();
+				_init = parseExpression();
+			}
+			else if (_isStatic) {
+				__error("GMLC1023", "a static variable must be given a value");
+			}
+			array_push(_declarations, finish(new ASTVarDecl(undefined, _target, _init), _declFirst));
+		}
+		// a comma not followed by a name ends the list (`var a = 0,` then the next statement, which GameMaker accepts)
+		until (!optional(__GMLC_TokenType_Punctuation, ",")
+			|| (currentToken == undefined) || (currentToken.type != __GMLC_TokenType_Identifier));
+		return finish(_isStatic ? new ASTStaticDecl(undefined, _declarations) : new ASTVarDeclList(undefined, _declarations), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseGlobalvar()
+	/// @desc    Parses `globalvar a, b`.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTGlobalVarDecl}
+	#endregion
+	static parseGlobalvar = function() {
+		var _first = currentToken;
+		advance();
+		var _names = [];
+		do {
+			array_push(_names, __parseName("a variable name"));
+			if (isOperator("=")) __error("GMLC1011", "a globalvar declaration cannot have a value");
+		}
+		until (!optional(__GMLC_TokenType_Punctuation, ","));
+		return finish(new ASTGlobalVarDecl(undefined, _names), _first);
+	};
+	
+	// an Identifier from a name token: keywords are not names, as GameMaker refuses them, except `then` where
+	// _thenIsName says GameMaker takes it
+	static __parseName = function(_what, _thenIsName = false) {
+		var _first = currentToken;
+		if (_first == undefined) __error("GMLC1002", $"expected {_what}, found the end of the file");
+		var _then = _thenIsName && (_first.type == __GMLC_TokenType_Keyword) && (_first.value == "then");
+		if (_first.type != __GMLC_TokenType_Identifier) && (!_then) {
+			__error("GMLC1002", $"expected {_what}, found {_first.name}");
+		}
+		advance();
+		return finish(new ASTIdentifier(undefined, _first.name), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseFunctionDecl()
+	/// @desc    Parses `function name(...) {}` at the start of a statement: a FunctionDecl, or a ConstructorDecl with
+	///          `constructor`.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parseFunctionDecl = function() {
+		var _first = currentToken;
+		advance(); // function
+		var _name = currentToken.name;
+		advance();
+		var _rest = parseFunctionRest();
+		if (_rest.isConstructor) {
+			return finish(new ASTConstructorDecl(undefined, _name, _rest.params, _rest.parent, _rest.body), _first);
+		}
+		return finish(new ASTFunctionDecl(undefined, _name, _rest.params, _rest.body), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseFunctionRest()
+	/// @desc    Parses what follows the name of a function: parameters, an optional `: Parent(args)`, an optional
+	///          `constructor` and the body.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct} {params, parent, isConstructor, body}
+	#endregion
+	static parseFunctionRest = function() {
+		var _params = parseParams();
+		var _parent = undefined;
+		var _colon = currentToken;
+		if (optional(__GMLC_TokenType_Punctuation, ":")) {
+			_parent = parsePostfix();
+			if (_parent.kind != __GMLC_NodeKind_Call) __error("GMLC1001", "a parent constructor must be a call", _colon);
+		}
+		var _isConstructor = optional(__GMLC_TokenType_Keyword, "constructor");
+		if (_parent != undefined) && (!_isConstructor) __error("GMLC1010", "a parent call needs `constructor`", _colon);
+		var _body = parseBlock();
+		return { params: _params, parent: _parent, isConstructor: _isConstructor, body: _body };
+	};
+	
+	#region jsDoc
+	/// @func    parseParams()
+	/// @desc    Parses `(a, b = 1)`: the parameters of a function.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Array<Struct.ASTParam>}
+	#endregion
+	static parseParams = function() {
+		expect(__GMLC_TokenType_Punctuation, "(");
+		var _params = [];
+		while (!isPunctuation(")")) {
+			var _first = currentToken;
+			var _target = __parseName("a parameter name");
+			var _default = undefined;
+			if (isOperator("=")) {
+				advance();
+				_default = parseExpression();
+			}
+			array_push(_params, finish(new ASTParam(undefined, _target, _default), _first));
+			if (!optional(__GMLC_TokenType_Punctuation, ",")) break;
+		}
+		expect(__GMLC_TokenType_Punctuation, ")");
+		return _params;
+	};
+	
+	static parseIf = function() {
+		var _first = currentToken;
+		advance();
+		var _test = parseExpression();
+		optional(__GMLC_TokenType_Keyword, "then");
+		var _consequent = parseBody();
+		var _alternate = undefined;
+		if (optional(__GMLC_TokenType_Keyword, "else")) {
+			_alternate = parseBody();
+		}
+		return finish(new ASTIf(undefined, _test, _consequent, _alternate), _first);
+	};
+	
+	static parseFor = function() {
+		var _first = currentToken;
+		advance();
+		expect(__GMLC_TokenType_Punctuation, "(");
+		var _init = undefined;
+		if (!isPunctuation(";")) {
+			_init = isKeyword("var") ? parseDeclList() : parseSimpleStatement();
+		}
+		expect(__GMLC_TokenType_Punctuation, ";");
+		var _test = isPunctuation(";") ? undefined : parseExpression();
+		expect(__GMLC_TokenType_Punctuation, ";");
+		var _update = undefined;
+		if (!isPunctuation(")")) {
+			// GameMaker also takes a block here: `for (;; { i++ })`
+			_update = isPunctuation("{") ? parseBlock() : parseSimpleStatement();
+		}
+		while (optional(__GMLC_TokenType_Punctuation, ";")) {}
+		expect(__GMLC_TokenType_Punctuation, ")");
+		var _body = parseBody();
+		return finish(new ASTFor(undefined, _init, _test, _update, _body), _first);
+	};
+	
+	static parseWhile = function() {
+		var _first = currentToken;
+		advance();
+		var _test = parseExpression();
+		var _body = parseBody();
+		return finish(new ASTWhile(undefined, _test, _body), _first);
+	};
+	
+	static parseRepeat = function() {
+		var _first = currentToken;
+		advance();
+		var _count = parseExpression();
+		var _body = parseBody();
+		return finish(new ASTRepeat(undefined, _count, _body), _first);
+	};
+	
+	static parseWith = function() {
+		var _first = currentToken;
+		advance();
+		var _target = parseExpression();
+		var _body = parseBody();
+		return finish(new ASTWith(undefined, _target, _body), _first);
+	};
+	
+	static parseDoUntil = function() {
+		var _first = currentToken;
+		advance();
+		var _body = parseBody();
+		if (!isKeyword("until")) __error("GMLC1025", "keyword until expected");
+		advance();
+		var _test = parseExpression();
+		return finish(new ASTDoUntil(undefined, _body, _test), _first);
+	};
+	
+	static parseSwitch = function() {
+		var _first = currentToken;
+		advance();
+		var _discriminant = parseExpression();
+		expect(__GMLC_TokenType_Punctuation, "{");
+		var _cases = [];
+		var _hasDefault = false;
+		while (currentToken != undefined) && !isPunctuation("}") {
+			var _caseFirst = currentToken;
+			if (isKeyword("case")) {
+				advance();
+				var _test = parseExpression();
+				expect(__GMLC_TokenType_Punctuation, ":");
+				var _clause = new ASTCase(undefined, _test, __parseCaseBody());
+			}
+			else if (isKeyword("default")) {
+				if (_hasDefault) __error("GMLC1008", "default cannot be used multiple times");
+				_hasDefault = true;
+				advance();
+				expect(__GMLC_TokenType_Punctuation, ":");
+				var _clause = new ASTDefault(undefined, __parseCaseBody());
+			}
+			else {
+				__error("GMLC1007", "a statement in a switch must come after case or default");
+			}
+			array_push(_cases, finish(_clause, _caseFirst));
+		}
+		if (currentToken == undefined) __error("GMLC1003", "a switch is not closed", _first);
+		advance();
+		return finish(new ASTSwitch(undefined, _discriminant, _cases), _first);
+	};
+	
+	static __parseCaseBody = function() {
+		var _body = [];
+		while (currentToken != undefined) && !isPunctuation("}") && !isKeyword("case") && !isKeyword("default") {
+			array_push(_body, parseStatement());
+		}
+		return _body;
+	};
+	
+	static parseTry = function() {
+		var _first = currentToken;
+		advance();
+		var _block = parseBody();
+		var _catchParam = undefined;
+		var _catchBody = undefined;
+		var _finallyBody = undefined;
+		if (optional(__GMLC_TokenType_Keyword, "catch")) {
+			if (!isPunctuation("(")) __error("GMLC1020", "catch needs ( name )");
+			advance();
+			_catchParam = __parseName("the name of the caught value");
+			expect(__GMLC_TokenType_Punctuation, ")");
+			_catchBody = parseBody();
+		}
+		if (optional(__GMLC_TokenType_Keyword, "finally")) {
+			_finallyBody = parseBody();
+		}
+		return finish(new ASTTry(undefined, _block, _catchParam, _catchBody, _finallyBody), _first);
+	};
+	
+	static parseReturn = function() {
+		var _first = currentToken;
+		advance();
+		var _argument = __startsExpression() ? parseExpression() : undefined;
+		return finish(new ASTReturn(undefined, _argument), _first);
+	};
+	
+	// whether the current token can start an expression (`return` takes a value only then)
+	static __startsExpression = function() {
+		if (currentToken == undefined) return false;
+		switch (currentToken.type) {
+			case __GMLC_TokenType_Punctuation: return (currentToken.value != ";") && (currentToken.value != "}") && (currentToken.value != ")") && (currentToken.value != "]") && (currentToken.value != ",") && (currentToken.value != ":");
+			case __GMLC_TokenType_Keyword: return (currentToken.value == "function") || (currentToken.value == "new");
+		}
+		return true;
+	};
+	
+	static parseThrow = function() {
+		var _first = currentToken;
+		advance();
+		var _argument = parseExpression();
+		return finish(new ASTThrow(undefined, _argument), _first);
+	};
+	
+	static parseDelete = function() {
+		var _first = currentToken;
+		advance();
+		var _target = parsePostfix();
+		return finish(new ASTDelete(undefined, _target), _first);
+	};
+	#endregion
 
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
+	#region Expressions
+	// The conditional and binary tiers take an optional left operand already parsed (with its first token), so a
+	// statement that started as an assignment target can continue as an expression.
+	
+	static parseExpression = function() {
+		if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+		var _expression = parseConditional();
+		depth--;
+		return _expression;
+	};
+	
+	static parseConditional = function(_left = undefined, _first = currentToken) {
+		var _test = parseBinary(1, _left, _first);
+		if (!isOperator("?")) return _test;
+		advance();
+		// each branch counts toward the nesting limit, so a long chain of conditionals cannot exhaust the stack
+		var _consequent = parseExpression();
+		expect(__GMLC_TokenType_Punctuation, ":");
+		var _alternate = parseExpression();
+		return finish(new ASTConditional(undefined, _test, _consequent, _alternate), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseBinary(_minTier, [_left], [_first])
+	/// @desc    Parses binary operators of tier _minTier or tighter (see __binaryTiers), left to right: each operator
+	///          takes as its right operand everything of a tighter tier.
+	/// @self    GMLC_Gen_2_Parser
+	/// @param   {Real}           _minTier : The loosest tier to take
+	/// @param   {Struct.ASTNode} [_left]  : The left operand, already parsed
+	/// @param   {Struct}         [_first] : The first token of the left operand
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parseBinary = function(_minTier, _left = undefined, _first = currentToken) {
+		var _expression = _left ?? parseUnary();
+		while (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Operator) {
+			var _op = currentToken.value;
+			var _tier = __binaryTiers[$ _op];
+			if (_tier == undefined) || (_tier < _minTier) break;
+			advance();
+			var _right = parseBinary(_tier + 1);
+			switch (_tier) {
+				case 1: _expression = new ASTNullish(undefined, _expression, _right); break;
+				case 2: case 3: case 4: _expression = new ASTLogical(undefined, _op, _expression, _right); break;
+				default: _expression = new ASTBinary(undefined, (_op == "=") ? "==" : _op, _expression, _right); break;
+			}
+			finish(_expression, _first);
+		}
+		return _expression;
+	};
 
-			switch (currentToken.type) {
-				case __GMLC_TokenType_Number:
-				case __GMLC_TokenType_String:{
-
-					// Handle literals; keep the source text, which tells constant folding whether a large integer was
-					// written in hex or binary (int64 to GameMaker's compiler) or in decimal (a double)
-					var node = new ASTLiteral(currentToken.value, sourceInfo, (currentToken.type == __GMLC_TokenType_Number) ? currentToken.name : undefined);
-					nextToken();
-					return node;
-
-				break;}
-				case __GMLC_TokenType_Identifier:{
-
-					var _scopeType = __find_ScopeType_from_string(currentToken.value);
-					
-					// `E.M` of an enum the environment exposes (project enums) is the member's value
-					if (_scopeType != ScopeType_LOCAL) {
-						var _envEnum = env.getEnum(currentToken.value);
-						if (_envEnum != undefined) {
-							var _next1 = peekToken();
-							var _next2 = __tokenAt(2);
-							if (_next1 != undefined) && (_next1.value == ".")
-							&& (_next2 != undefined) && (_next2.type == __GMLC_TokenType_Identifier)
-							&& (struct_exists(_envEnum.value, _next2.value)) {
-								var node = new ASTLiteral(_envEnum.value[$ _next2.value], sourceInfo, _next2.value);
-								nextToken();
-								nextToken();
-								nextToken();
-								return node;
-							}
-						}
-					}
-					
-					if (_scopeType == ScopeType_UNIQUE) {
-						var node = new ASTUniqueIdentifier(env.getVariable(currentToken.value).value, sourceInfo, currentToken.value);
-						nextToken();
-						return node;
-					}
-
-					if (_scopeType == ScopeType_CONST) {
-						var _data = env.getConstant(currentToken.value) ?? env.getFunction(currentToken.value)
-						// the plain value, as GameMaker has it (a built-in function is a number); calls wrap it again
-						var node = new ASTLiteral(_data[$ "raw"] ?? _data.value, sourceInfo, currentToken.value);
-						nextToken(); // Move past the identifier
-						return node;
-					}
-
-					if (_scopeType == ScopeType_SELF) {
-						var node = new ASTIdentifier(currentToken.value, undefined, sourceInfo);
-						nextToken(); // Move past the identifier
-						return node;
-					}
-
-					var node = new ASTIdentifier(currentToken.value, _scopeType, sourceInfo);
-
-					nextToken(); // Move past the identifier
-					return node;
-
-				break;}
-				case __GMLC_TokenType_Function:{
-					var node = new ASTLiteral(currentToken.value, sourceInfo, currentToken.name);
-					nextToken(); // Move past the identifier
-					return node;
-
-				break;}
-				case __GMLC_TokenType_Keyword:{
-					switch (currentToken.value) {
-						case "function": return parseFunctionDeclaration();
-						case "new": return parseNewExpression()
-					}
-				break;}
-				case __GMLC_TokenType_Punctuation:{
-
-					if (currentToken.name == "(") {
-						// Handle expressions wrapped in parentheses
-						nextToken(); // Consume (
-						var expr = parseConditionalExpression();
-						expectToken(__GMLC_TokenType_Punctuation, ")");
-						return expr;
-					}
-
-					if (currentToken.value == "[") || (currentToken.value == "[@") {
-						return parseArrayCreation();
-					}
-
-					if (currentToken.value == "{") {
-						return parseStructCreation();
-					}
-
-				break;}
-				case __GMLC_TokenType_UniqueVariable:{
-
-					var node = new ASTUniqueIdentifier(currentToken.value, sourceInfo, currentToken.name);
-					nextToken();
-					return node;
-
-				break;}
-				case __GMLC_TokenType_TemplateStringBegin:{
-
-					var _template_string = currentToken.value;
-
-					//consume the beginning
-					nextToken();
-
-					var _arguments = [];
-					var _index = 0;
-					while (currentToken != undefined && currentToken.type != __GMLC_TokenType_TemplateStringEnd) {
-						if (currentToken.type == __GMLC_TokenType_TemplateStringMiddle) {
-							_template_string += currentToken.value;
-							nextToken();  // Consume the middle segment
+	static parseUnary = function() {
+		if (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Operator) {
+			var _first = currentToken;
+			switch (currentToken.value) {
+				case "!": case "-": case "+": case "~": {
+					if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+					var _op = currentToken.value;
+					advance();
+					var _argument = parseUnary();
+					depth--;
+					return finish(new ASTUnary(undefined, _op, _argument), _first);
+				}
+				case "++": case "--": {
+					if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+					var _op = currentToken.value;
+					advance();
+					var _argument = parseUnary();
+					__checkUpdateTarget(_argument, _first);
+					depth--;
+					return finish(new ASTUpdate(undefined, _op, true, _argument), _first);
+				}
+			}
+		}
+		return parsePostfix();
+	};
+	
+	// what `++` and `--` change: a name, an index, or a literal (left for the resolver to report)
+	static __checkUpdateTarget = function(_target, _first) {
+		switch (_target.kind) {
+			case __GMLC_NodeKind_Identifier:
+			case __GMLC_NodeKind_Index:
+			case __GMLC_NodeKind_Literal:
+			return;
+		}
+		__error("GMLC1004", "this cannot be incremented or decremented", _first);
+	};
+	
+	#region jsDoc
+	/// @func    parsePostfix()
+	/// @desc    Parses a primary and its postfix steps in order: arguments make a Call (a MethodCall right after
+	///          `.name`), `[` and the accessor openers an Index, `.name` an Index with the Dot accessor; a trailing `++`
+	///          or `--` makes a postfix Update and ends the chain.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parsePostfix = function() {
+		var _first = currentToken;
+		var _expression = parsePrimary();
+		var _afterDot = false;
+		while (currentToken != undefined) {
+			if (currentToken.type == __GMLC_TokenType_Punctuation) {
+				switch (currentToken.value) {
+					case "(": {
+						var _args = parseArguments();
+						if (_afterDot) {
+							_expression = finish(new ASTMethodCall(undefined, _expression.object, _expression.member, _args), _first);
 						}
 						else {
-							var _expr = parseExpression()
-							array_push(_arguments, _expr); // Parse each argument as an expression
-							_template_string += "{"+string(_index)+"}"
-							_index++
+							_expression = finish(new ASTCall(undefined, _expression, _args), _first);
 						}
+						_afterDot = false;
+						continue;
 					}
-
-					//add the template strings end, then consume
-					_template_string += currentToken.value;
-					nextToken();  // Consume the middle segment
-
-					//push the template string into the beginning of the arguments
-					array_insert(_arguments, 0, new ASTLiteral(_template_string, sourceInfo));
-
-					var _literalStringFunction = new ASTLiteral(string, sourceInfo, "string");
-					var _node = new ASTCallExpression(_literalStringFunction, _arguments, sourceInfo);
-
-					return _node
-				break;}
-				case __GMLC_TokenType_NoOpPragma: {
-					nextToken();
-					if (currentToken == undefined) return undefined;
-					var _node = parseStatement();
-					//frequently people will accidently include multiple ; at the end of their line, just ignore this.
-					while (optionalToken(__GMLC_TokenType_Punctuation, ";")) {}
-					_node.skipOptimization = true;
-					return _node;
-
-				break;}
-			}
-
-			throw_gmlc_error($"Unexpected token in expression: {currentToken}\nLast five tokens were:\n{json_stringify(lastFiveTokens, true)}", line, lineString, sourceInfo.column);
-		};
-
-		static parseArrayCreation = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			var elements = [];
-
-		    if (!optionalToken(__GMLC_TokenType_Punctuation, "[@")) expectToken(__GMLC_TokenType_Punctuation, "[");
-		    while (currentToken != undefined && currentToken.name != "]") {
-		        var element = parseExpression();
-				array_push(elements, element);
-
-				if (currentToken.name == ",") {
-		            nextToken();  // Skip the comma
-		        }
-		    }
-		    expectToken(__GMLC_TokenType_Punctuation, "]");
-
-			return new ASTCallExpression(new ASTLiteral(method(undefined, __NewGMLArray), sourceInfo, "__NewGMLArray"), elements, sourceInfo);
-		};
-
-		static parseStructCreation = function() {
-		    var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			var _args = [];
-			var _bound = []; // keys whose value is a function literal: GameMaker binds those to the new struct
-
-		    expectToken(__GMLC_TokenType_Punctuation, "{");
-		    while (currentToken != undefined && currentToken.value != "}") {
-		        if (currentToken.type != __GMLC_TokenType_Identifier)
-				&& (currentToken.type != __GMLC_TokenType_String)
-				&& (currentToken.type != __GMLC_TokenType_UniqueVariable)
-				&& (currentToken.type != __GMLC_TokenType_Number)
-				&& (currentToken.type != __GMLC_TokenType_Keyword)
-				&& (currentToken.type != __GMLC_TokenType_Function)
-				{
-		            throw_gmlc_error($"Expected identifier for struct property name.\n{currentToken}\nLast Five Tokens:\n{json_stringify(lastFiveTokens, true)}", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column);
-		        }
-
-				var key = currentToken;
-		        nextToken();  // Move past the identifier
-
-				if (optionalToken(__GMLC_TokenType_Punctuation, ":")) {
-					var _prev_scope = currentScope;
-					currentScope = ScopeType_SELF;
-
-					var _is_function = (currentToken.type == __GMLC_TokenType_Keyword) && (currentToken.value == "function");
-					var value = parseConditionalExpression();
-
-					currentScope = _prev_scope;
-					
-					// `function` literal: pass the unbound function, __NewGMLStruct binds it to the struct
-					if (_is_function)
-					&& (value.type == __GMLC_NodeType_CallExpression)
-					&& (value.callee.type == __GMLC_NodeType_Literal)
-					&& (value.callee.name == "__method") {
-						value = value.arguments[1];
-						array_push(_bound, (key.type != __GMLC_TokenType_String && key.value != key.name) ? key.name : key.value);
+					case "[": case "[@": case "[|": case "[?": case "[#": case "[$": {
+						// the same openers as in __isIndexOpener
+						_expression = parseIndex(_expression, _first);
+						_afterDot = false;
+						continue;
+					}
+					case ".": {
+						advance();
+						var _member = __parseMemberName();
+						_expression = finish(new ASTIndex(undefined, "Dot", _expression, [], _member), _first);
+						_afterDot = true;
+						continue;
 					}
 				}
-				else if (key.type == __GMLC_TokenType_String)
-				     || (key.type == __GMLC_TokenType_Identifier)
-				     || (key.type == __GMLC_TokenType_UniqueVariable)
-				     || (key.type == __GMLC_TokenType_Number)
-				{
-					var value = new ASTIdentifier(key.value, __find_ScopeType_from_string(key.value), currentSourceInfo(key.sourceInfo));
+			}
+			else if (isOperator("++") || isOperator("--")) {
+				__checkUpdateTarget(_expression, _first);
+				var _op = currentToken.value;
+				advance();
+				return finish(new ASTUpdate(undefined, _op, false, _expression), _first);
+			}
+			break;
+		}
+		return _expression;
+	};
+	
+	// the word after `.`: any identifier, keyword or alias word, by its source text
+	static __parseMemberName = function() {
+		if (currentToken == undefined) __error("GMLC1002", "expected a name after ., found the end of the file");
+		switch (currentToken.type) {
+			case __GMLC_TokenType_Identifier:
+			case __GMLC_TokenType_Keyword: {
+				var _name = currentToken.name;
+				advance();
+				return _name;
+			}
+			case __GMLC_TokenType_Operator: {
+				if (__isAliasWord(currentToken)) {
+					var _name = currentToken.name;
+					advance();
+					return _name;
+				}
+			break;}
+		}
+		__error("GMLC1002", $"expected a name after ., found {currentToken.name}");
+	};
+	
+	// alias words (`and`, `div`, ...) arrive as operators; their text starts with a letter
+	static __isAliasWord = function(_t) {
+		return __char_is_alphabetic(string_ord_at(_t.name, 1));
+	};
+	
+	#region jsDoc
+	/// @func    parseArguments()
+	/// @desc    Parses `(a, , b)`: the arguments of a call. A missing argument before a comma is an Empty node; a
+	///          trailing comma adds nothing.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Array<Struct.ASTNode>}
+	#endregion
+	static parseArguments = function() {
+		var _open = currentToken;
+		expect(__GMLC_TokenType_Punctuation, "(");
+		var _args = [];
+		while (true) {
+			if (currentToken == undefined) __error("GMLC1002", "expected , or ), found the end of the file", _open);
+			if (isPunctuation(")")) break;
+			if (isPunctuation(",")) {
+				// a hole: Empty, zero-width at the comma
+				var _site = __site(currentToken);
+				array_push(_args, new ASTEmpty(new GMLC_Span(_site.file, _site.start, _site.start)));
+				advance();
+				continue;
+			}
+			array_push(_args, parseExpression());
+			if (isPunctuation(")")) break;
+			if (!isPunctuation(",")) __error("GMLC1016", $"expected , or ), found {currentToken.name}");
+			advance();
+		}
+		advance();
+		return _args;
+	};
+	
+	#region jsDoc
+	/// @func    parseIndex(_object, _first)
+	/// @desc    Parses one accessor after an expression: `[i]`, `[i, j]`, `[@ i]`, `[@ i, j]`, `[| i]`, `[? k]`,
+	///          `[# x, y]`, `[$ k]`.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTIndex}
+	#endregion
+	static parseIndex = function(_object, _first) {
+		var _open = currentToken.value;
+		advance();
+		var _keys = [parseExpression()];
+		if (optional(__GMLC_TokenType_Punctuation, ",")) {
+			array_push(_keys, parseExpression());
+		}
+		expect(__GMLC_TokenType_Punctuation, "]");
+		var _two = (array_length(_keys) == 2);
+		var _accessor;
+		switch (_open) {
+			case "[":  _accessor = _two ? "Array2D" : "Array"; break;
+			case "[@": _accessor = _two ? "Array2DAt" : "ArrayAt"; break;
+			case "[|": _accessor = "List"; break;
+			case "[?": _accessor = "Map"; break;
+			case "[#": _accessor = "Grid"; break;
+			case "[$": _accessor = "Struct"; break;
+		}
+		// a grid takes two keys, a list, a map and a struct one
+		var _gridKeys = (_accessor == "Grid") && !_two;
+		var _oneKey = _two && ((_accessor == "List") || (_accessor == "Map") || (_accessor == "Struct"));
+		if (_gridKeys || _oneKey) {
+			__error("GMLC1001", $"the accessor {_open} takes {(_accessor == "Grid") ? 2 : 1} key(s)");
+		}
+		return finish(new ASTIndex(undefined, _accessor, _object, _keys, undefined), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parsePrimary()
+	/// @desc    Parses a literal, a name, a parenthesised expression, an array or struct literal, a template string, a
+	///          function expression or `new`.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parsePrimary = function() {
+		if (currentToken == undefined) __error("GMLC1002", "expected an expression, found the end of the file");
+		var _first = currentToken;
+		switch (currentToken.type) {
+			case __GMLC_TokenType_Number:
+			case __GMLC_TokenType_String: {
+				advance();
+				return finish(__literal(_first), _first);
+			}
+			case __GMLC_TokenType_TemplateStringBegin: return parseTemplate();
+			case __GMLC_TokenType_Identifier: {
+				advance();
+				return finish(new ASTIdentifier(undefined, _first.name), _first);
+			}
+			case __GMLC_TokenType_Keyword: {
+				switch (currentToken.value) {
+					case "function": return parseFunctionExpr();
+					case "new":      return parseNew();
+				}
+			break;}
+			case __GMLC_TokenType_Punctuation: {
+				switch (currentToken.value) {
+					case "(": {
+						// parentheses leave no node
+						advance();
+						var _inner = parseExpression();
+						expect(__GMLC_TokenType_Punctuation, ")");
+						return _inner;
+					}
+					case "[": case "[@": return parseArrayLiteral();
+					case "{": return parseStructLiteral();
+				}
+			break;}
+		}
+		__error("GMLC1001", $"unexpected {currentToken.name}");
+	};
+
+	// the Literal of a number or string token
+	static __literal = function(_t) {
+		var _ty = _t[$ "ty"];
+		if (_ty == undefined) {
+			if (_t.type == __GMLC_TokenType_String) {
+				_ty = "string";
+			}
+			else if (is_int64(_t.value)) {
+				_ty = "int64";
+			}
+			else {
+				_ty = "real";
+			}
+		}
+		return new ASTLiteral(undefined, _ty, _t.name, _t.value);
+	};
+	
+	#region jsDoc
+	/// @func    parseTemplate()
+	/// @desc    Parses `$"text {expression} text"`: the cooked text parts and the expressions between them.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTTemplateString}
+	#endregion
+	static parseTemplate = function() {
+		var _first = currentToken;
+		var _strings = [currentToken.value];
+		var _exprs = [];
+		advance();
+		while (true) {
+			if (currentToken == undefined) __error("GMLC1002", "a template string is not closed", _first);
+			if (currentToken.type == __GMLC_TokenType_TemplateStringMiddle) || (currentToken.type == __GMLC_TokenType_TemplateStringEnd) {
+				__error("GMLC1014", "an empty {} in a template string");
+			}
+			array_push(_exprs, parseExpression());
+			if (currentToken == undefined) __error("GMLC1002", "a template string is not closed", _first);
+			if (currentToken.type == __GMLC_TokenType_TemplateStringMiddle) {
+				array_push(_strings, currentToken.value);
+				advance();
+				continue;
+			}
+			if (currentToken.type == __GMLC_TokenType_TemplateStringEnd) {
+				array_push(_strings, currentToken.value);
+				advance();
+				break;
+			}
+			__error("GMLC1002", $"expected }} in a template string, found {currentToken.name}");
+		}
+		return finish(new ASTTemplateString(undefined, _strings, _exprs), _first);
+	};
+	
+	static parseArrayLiteral = function() {
+		var _first = currentToken;
+		advance(); // `[` or `[@`
+		var _elements = [];
+		while (!isPunctuation("]")) {
+			if (currentToken == undefined) __error("GMLC1002", "an array literal is not closed", _first);
+			if (isPunctuation(",")) __error("GMLC1017", "an empty element in an array literal");
+			array_push(_elements, parseExpression());
+			if (isPunctuation("]")) break;
+			if (!isPunctuation(",")) __error("GMLC1016", $"expected , or ], found {(currentToken != undefined) ? currentToken.name : "the end of the file"}");
+			advance();
+		}
+		advance();
+		return finish(new ASTArrayLiteral(undefined, _elements), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseStructLiteral()
+	/// @desc    Parses `{key: value, "key": value, name}`. A key is a word or a string; a word alone is shorthand for
+	///          `name: name`.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTStructLiteral}
+	#endregion
+	static parseStructLiteral = function() {
+		var _first = currentToken;
+		advance(); // {
+		var _entries = [];
+		while (!isPunctuation("}")) {
+			if (currentToken == undefined) __error("GMLC1002", "a struct literal is not closed", _first);
+			var _keyToken = currentToken;
+			var _quoted = false;
+			var _key;
+			switch (_keyToken.type) {
+				case __GMLC_TokenType_String: {
+					_quoted = true;
+					_key = _keyToken.value;
+				break;}
+				case __GMLC_TokenType_Identifier:
+				case __GMLC_TokenType_Keyword:
+				case __GMLC_TokenType_Number: {
+					_key = _keyToken.name;
+				break;}
+				case __GMLC_TokenType_Operator: {
+					if (!__isAliasWord(_keyToken)) __error("GMLC1015", $"{_keyToken.name} cannot be a struct key");
+					_key = _keyToken.name;
+				break;}
+				default: {
+					__error("GMLC1015", $"{_keyToken.name} cannot be a struct key");
+				}
+			}
+			advance();
+			var _value;
+			var _shorthand = false;
+			if (optional(__GMLC_TokenType_Punctuation, ":")) {
+				_value = parseExpression();
+			}
+			else {
+				// `{name}` is `{name: name}` and `{5}` is `{5: 5}`, as GameMaker reads them; nothing else stands alone
+				_shorthand = true;
+				if (_keyToken.type == __GMLC_TokenType_Identifier) {
+					_value = finish(new ASTIdentifier(undefined, _key), _keyToken);
+				}
+				else if (_keyToken.type == __GMLC_TokenType_Number) {
+					_value = finish(__literal(_keyToken), _keyToken);
 				}
 				else {
-					throw_gmlc_error($"Object: {Object1} Event: {Create} at line {line} : got {key.type} {key.value} expected id", key.line, key.lineString, currentSourceInfo(key.sourceInfo).column)
-				}
-
-				//correct constants to be the string they are expected to be
-				if (key.type != __GMLC_TokenType_String)
-				&& (key.value != key.name) {
-					key.value = key.name;
-				}
-
-				//push the key and the value
-				array_push(
-					_args,
-					new ASTLiteral(key.value, currentSourceInfo(key.sourceInfo)),
-					value
-				);
-
-		        if (currentToken.name == ",") {
-		            nextToken();  // Skip the comma
-		        }
-
-		    }
-		    expectToken(__GMLC_TokenType_Punctuation, "}");
-
-			// Properties are not all constants, use a runtime function to create the struct
-			// first argument: the keys to bind (decided here, at compile time), undefined when there are none
-			array_insert(_args, 0, new ASTLiteral(array_length(_bound) ? _bound : undefined, sourceInfo));
-			return new ASTCallExpression(new ASTLiteral(method(undefined, __NewGMLStruct), sourceInfo, "__NewGMLStruct"), _args, sourceInfo);
-		};
-
-		static parseFunctionCall = function(callee) {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			var arg = parseArgumentInput();
-
-			// Dot accessor callees become CallMethodExpression so scope update is free and target is evaluated once
-			if (callee.type == __GMLC_NodeType_AccessorExpression)
-			&& (callee.accessorType == __GMLC_AccessorType_Dot) {
-				return new ASTCallMethodExpression(callee.expr, callee.val1.value, arg, sourceInfo);
-			}
-
-			return new ASTCallExpression(callee, arg, sourceInfo);
-		};
-		static parseArgumentInput = function() {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			var _arguments = [];
-			expectToken(__GMLC_TokenType_Punctuation, "("); // Ensure ( and consume it
-
-			//early out
-			if (currentToken != undefined && currentToken.name != ")") {
-
-				var _found_closing_bracket = false;
-				var _argument_found = false;
-
-				while (currentToken != undefined) {
-
-					if (currentToken.name == ")") break;
-
-					if (currentToken.name == ",") {
-						//handle empty argument values as undefined `func(,,,,,arg5)`
-						if (!_argument_found) {
-							array_push(_arguments, new ASTLiteral(undefined, currentSourceInfo(currentToken.sourceInfo))); // Parse each argument as an expression
-						}
-
-						nextToken();  // Consume the comma to continue to the next argument
-						_argument_found = false;
-					}
-					else {
-						// Parse each argument as a conditional expression
-						var _expr = parseConditionalExpression()
-						array_push(_arguments, _expr);
-						_argument_found = true;
-						
-						// an argument ends at `,` or `)`: `f(@"a""b")` is two adjacent strings, refused by GameMaker
-						if (currentToken != undefined)
-						&& (currentToken.name != ",")
-						&& (currentToken.name != ")") {
-							throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {currentToken.line} : got '{currentToken.name}' expected ',' or ')'", currentToken.line, currentToken.lineString, currentToken.sourceInfo.column)
-						}
-					}
-
+					__error("GMLC1002", $"expected : after the struct key {_keyToken.name}");
 				}
 			}
-
-			if (currentToken == undefined) {
-				throw_gmlc_error($"<Object>: <Object1> <Event>: <Create> at line {line} : Symbol , or ) expected, got <EndOfFile>", line, lineString, sourceInfo.column)
-			}
-
-			expectToken(__GMLC_TokenType_Punctuation, ")"); // Ensure ) and consume it
-
-			return _arguments;
+			array_push(_entries, finish(new ASTStructEntry(undefined, _key, _quoted, _shorthand, _value), _keyToken));
+			if (isPunctuation("}")) break;
+			if (!isPunctuation(",")) __error("GMLC1016", $"expected , or }}, found {(currentToken != undefined) ? currentToken.name : "the end of the file"}");
+			advance();
 		}
-
-
-		static parseDotAccessor = function(object) {
-		    var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			nextToken(); // Consume .
-			var _keyLine = currentToken.line;
-			var _keyLineString = currentToken.lineString;
-
-			var _keySourceInfo = currentSourceInfo(currentToken.sourceInfo);
-			var _key = parseKey(); // validates type, returns string name, advances
-
-			var _expr = new ASTAccessorExpression(
-				object,
-				new ASTLiteral(_key, _keySourceInfo),
-				undefined,
-				__GMLC_AccessorType_Dot,
-				sourceInfo
-			)
-
-			return _expr
-		};
-
-		#region jsDoc
-		/// @func    __tokenAt(_offset)
-		/// @desc    Returns the token `_offset` places after the current one, or undefined past the end.
-		/// @self    GMLC_Gen_2_Parser
-		/// @param   {Real} _offset : Distance from the current token
-		/// @returns {Struct|Undefined}
-		#endregion
-		static __tokenAt = function(_offset) {
-			var _i = currentTokenIndex + _offset;
-			return (_i < array_length(tokens)) ? tokens[_i] : undefined;
-		};
-		static parseBracketAccessor = function(object) {
-			var line = currentToken.line;
-			var lineString = currentToken.lineString;
-
-			var sourceInfo = currentSourceInfo(currentToken.sourceInfo);
-
-			// the opening token says the accessor: `[`, `[|`, `[?`, `[#`, `[$` or `[@`
-			var accessorType = __GMLC_AccessorType_Array; // Default to array accessor
-			switch (currentToken.value) {
-				case "[|": accessorType = __GMLC_AccessorType_List;   break;
-				case "[?": accessorType = __GMLC_AccessorType_Map;    break;
-				case "[#": accessorType = __GMLC_AccessorType_Grid;   break;
-				case "[$": accessorType = __GMLC_AccessorType_Struct; break;
-				case "[@": accessorType = __GMLC_AccessorType_Array;  break;
-			}
-			nextToken(); // Consume the opening token
-
-			//parse the index/key
-			var _val1 = parseExpression();
-			var _val2 = undefined;
-			if (currentToken.name == ",") {
-				nextToken();
-				//parse the second array index
-				var _val2 = parseExpression();
-			}
-
-			expectToken(__GMLC_TokenType_Punctuation, "]"); // Consume ]
-			
-			// `a[i, j]` on an array is `a[i][j]` (GameMaker 2.3+)
-			if (accessorType == __GMLC_AccessorType_Array) && (_val2 != undefined) {
-				var _row = new ASTAccessorExpression(object, _val1, undefined, __GMLC_AccessorType_Array, sourceInfo);
-				return new ASTAccessorExpression(_row, _val2, undefined, __GMLC_AccessorType_Array, sourceInfo);
-			}
-
-			return new ASTAccessorExpression(
-				object,
-				_val1,
-				_val2,
-				accessorType,
-				sourceInfo
-			)
-
-		};
-
-		#endregion
-
-		#region Helper Functions
-
-		// Validates the current token can be used as a property/member key, returns its string name, and advances.
-		// Valid: Identifier, UniqueVariable, Function, and constant-style Number tokens (name starts with letter or _).
-		// Rejects numeric literals (123, 0xff, #ff) even though they are Number tokens.
-		static parseKey = function() {
-			switch (currentToken.type) {
-				case __GMLC_TokenType_Identifier:
-				case __GMLC_TokenType_UniqueVariable:
-				case __GMLC_TokenType_Keyword:
-				case __GMLC_TokenType_Function:{
-					var _name = currentToken.name;
-					nextToken();
-					return _name;
-				break;}
-				case __GMLC_TokenType_Number:{
-					var _first = string_ord_at(currentToken.name, 1);
-					if (__char_is_alphabetic(_first) || (_first == ord("_"))) {
-						var _name = currentToken.name;
-						nextToken();
-						return _name;
-					}
-				break;}
-			}
-
-			throw_gmlc_error($"Expected identifier after .\n{currentToken.lineString}\n", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column);
-		};
-
-		static expectToken = function(expectedType, expectedValue) {
-			if (currentToken == undefined) {
-				throw_gmlc_error($"Unexpected end of input. Expected {expectedValue} but found EOF.");
-			}
-			if (currentToken.type != expectedType || currentToken.value != expectedValue) {
-				//pprint("lastFiveTokens :: ",lastFiveTokens)
-				throw_gmlc_error($"Syntax Error: Expected {expectedValue} but found {currentToken}\nLast five tokens:\n{lastFiveTokens}.", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column);
-			}
-			nextToken();
-		};
-
-		static optionalToken = function(optionalType, optionalValue) {
-			if (currentToken == undefined) return false;
-
-			if (currentToken.type == optionalType && currentToken.value == optionalValue) {
-				nextToken();
-				return true;
-			}
-
-			return false;
-		};
-
-		#endregion
-
-		#endregion
-
-	}
-
-#endregion
-
-
-#region Helper Functions
-/// @ignore
-function __determineScopeType(_node) {
-	gml_pragma("forceinline");
-
-	var _scope = _node.scope;
-	if (_scope == undefined) {
-		return __find_ScopeType_from_string(_node.value);
-	}
-	return _scope
-}
-/// @ignore
-function __find_ScopeType_from_string(_string) {
-	gml_pragma("forceinline");
-	// == Ordered in priority ==
-	//ScopeType_MACRO;
-	//ScopeType_GLOBAL;
-	//ScopeType_ENUM;
-	//ScopeType_UNIQUE;
-	//ScopeType_LOCAL;
-	//ScopeType_STATIC;
-	//ScopeType_SELF;
-	//ScopeType_CONST;
-
-	if array_contains(currentScript.GlobalVarNames, _string) return ScopeType_GLOBAL;
-
-	if (currentFunction != undefined) {
-		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType_LOCAL;
-		if array_contains(currentFunction.StaticVarNames, _string) return ScopeType_STATIC;
-	}
-	else {
-		if array_contains(currentScript.LocalVarNames, _string) return ScopeType_LOCAL;
-	}
+		advance();
+		return finish(new ASTStructLiteral(undefined, _entries), _first);
+	};
 	
-	// built-in and host names of the environment
-	if (env.isFunction(_string)) || (env.isConstant(_string)) return ScopeType_CONST;
-	if (env.isVariable(_string)) return ScopeType_UNIQUE;
-
-	return ScopeType_SELF;  // Default to instance if scope is unknown
-
-}
-/// @ignore
-function array_insert_ext(array, index, arr_of_val, offset=0, length=max(array_length(arr_of_val)-offset, 0)) {
-	static __args = [];
-	if (length == 0) return;
-	array_resize(__args, length);
-	array_copy(__args, 0, arr_of_val, offset, length);
-	array_insert(__args, 0, array, index);
-	return script_execute_ext(array_insert, __args);
+	#region jsDoc
+	/// @func    parseFunctionExpr()
+	/// @desc    Parses `function [name](...) [: Parent(...)] [constructor] {}` in an expression.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTFunctionExpr}
+	#endregion
+	static parseFunctionExpr = function() {
+		var _first = currentToken;
+		advance(); // function
+		var _name = undefined;
+		if (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Identifier) {
+			_name = currentToken.name;
+			advance();
+		}
+		var _rest = parseFunctionRest();
+		return finish(new ASTFunctionExpr(undefined, _name, _rest.isConstructor, _rest.params, _rest.parent, _rest.body), _first);
+	};
+	
+	#region jsDoc
+	/// @func    parseNew()
+	/// @desc    Parses `new Callee(args)`: the callee is a name or a parenthesised expression with `.name` and index
+	///          steps; the first argument list belongs to `new`.
+	/// @self    GMLC_Gen_2_Parser
+	/// @returns {Struct.ASTNew}
+	#endregion
+	static parseNew = function() {
+		var _first = currentToken;
+		advance(); // new
+		var _calleeFirst = currentToken;
+		var _callee;
+		if (isPunctuation("(")) {
+			advance();
+			_callee = parseExpression();
+			expect(__GMLC_TokenType_Punctuation, ")");
+		}
+		else {
+			_callee = __parseName("a constructor");
+		}
+		while (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Punctuation) {
+			if (currentToken.value == ".") {
+				advance();
+				var _member = __parseMemberName();
+				_callee = finish(new ASTIndex(undefined, "Dot", _callee, [], _member), _calleeFirst);
+				continue;
+			}
+			if (__isIndexOpener(currentToken.value)) {
+				_callee = parseIndex(_callee, _calleeFirst);
+				continue;
+			}
+			break;
+		}
+		var _args = isPunctuation("(") ? parseArguments() : [];
+		return finish(new ASTNew(undefined, _callee, _args), _first);
+	};
+	
+	static __isIndexOpener = function(_value) {
+		switch (_value) {
+			case "[": case "[@": case "[|": case "[?": case "[#": case "[$": return true;
+		}
+		return false;
+	};
+	#endregion
 }
 #endregion

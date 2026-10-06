@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_3_PostProcessor",
+  "%Name":"GMLC_AstJson",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_3_PostProcessor",
+  "name":"GMLC_AstJson",
   "parent":{
-    "name":"Sema",
-    "path":"folders/GMLC/Sema.yy",
+    "name":"Util",
+    "path":"folders/GMLC/Util.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

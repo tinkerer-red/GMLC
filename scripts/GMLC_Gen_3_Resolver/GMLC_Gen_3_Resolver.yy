@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Gen_3_Resolver",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Gen_3_Resolver",
+  "parent":{
+    "name":"Sema",
+    "path":"folders/GMLC/Sema.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

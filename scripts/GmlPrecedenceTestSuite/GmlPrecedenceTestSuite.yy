@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_4_Optimizer",
+  "%Name":"GmlPrecedenceTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_4_Optimizer",
+  "name":"GmlPrecedenceTestSuite",
   "parent":{
-    "name":"Optimizer",
-    "path":"folders/GMLC/Optimizer.yy",
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

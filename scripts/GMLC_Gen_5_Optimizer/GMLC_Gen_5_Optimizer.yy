@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Gen_5_Optimizer",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Gen_5_Optimizer",
+  "parent":{
+    "name":"Optimizer",
+    "path":"folders/GMLC/Optimizer.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

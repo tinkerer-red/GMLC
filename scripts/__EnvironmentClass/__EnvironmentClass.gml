@@ -155,7 +155,7 @@ function __EnvironmentClass() constructor {
 	/// @returns {Struct|Undefined} Returns the symbol struct { value, type, getter, setter, highlight, feather?, context? } or undefined
 	#endregion
 	static resolve = function(name, context=undefined) {
-		if (is_undefined(envSymbols[$ name])) return undefined;
+		if (!__gmlc_struct_has(envSymbols, name)) return undefined;
 		
 		var entry = envSymbols[$ name];
 		entry.context = context;
@@ -358,12 +358,12 @@ function __EnvironmentClass() constructor {
 	};
 	
 	static __getType = function(type, name) {
-		var sym = envSymbols[$ name];
+		var sym = __gmlc_struct_get(envSymbols, name);
 		return (sym != undefined && struct_exists(sym, "type") && sym.type == type) ? sym : undefined;
 	};
 	
 	static __isType = function(type, name) {
-		var _data = envSymbols[$ name];
+		var _data = __gmlc_struct_get(envSymbols, name);
 		return _data && _data.type == type;
 	};
 	

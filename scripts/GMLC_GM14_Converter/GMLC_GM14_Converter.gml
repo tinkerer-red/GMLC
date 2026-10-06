@@ -52,6 +52,13 @@
 			return ast;
 		}
 		
+		// an Identifier naming one of the compatibility functions
+		static __builtin = function(_name, _span) {
+			var _identifier = new ASTIdentifier(_span, _name);
+			_identifier.symbol = new GMLC_Symbol("BuiltinFunction", _name);
+			return _identifier;
+		};
+		
 		static nextNode = function() {
 			if (!array_length(nodeStack)) {
 				finished = true;
@@ -62,18 +69,19 @@
 			currentNode = array_pop(nodeStack);
 			
 			// Process children first (post-order traversal)
-			if (currentNode.node.visited == false) {
-				currentNode.node.visited = true;
+			if (!(currentNode[$ "visited"] ?? false)) {
+				currentNode.visited = true;
 				
 				// Push current node back onto stack to process after children
 				array_push(nodeStack, currentNode);
 				
-				currentNode.node.push_children_to_node_stack(nodeStack);
+				var _slots = currentNode.node.childSlots();
+				array_reverse_ext(_slots);
+				array_copy(nodeStack, array_length(nodeStack), _slots, 0, array_length(_slots));
 			}
 			else {
 				// Process the current node as all children have been processed
 				var _node = convert(currentNode.node);
-				_node.visited = false
 				
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
@@ -124,146 +132,86 @@
 		
 		static convertBackgrounds = function(node) {
 			
-			if (node.type == "FunctionCall") {
+			if (node.kind == __GMLC_NodeKind_Call) {
 				if (node.callee.value == array_get) {
 					var ind_node = arguments[0]
-					if (ind_node.type == "Identifier") {
+					if (ind_node.kind == __GMLC_NodeKind_Identifier) {
 						
-						switch (ind_node.value) {
+						switch (ind_node.name) {
 							case "background_visible": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Visible, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Visible), e__BG.Visible),
+									]);
 							break;}
 							case "background_foreground": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Foreground, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Foreground), e__BG.Foreground),
+									]);
 							break;}
 							case "background_index": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Index, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Index), e__BG.Index),
+									]);
 							break;}
 							case "background_x": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.X, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.X), e__BG.X),
+									]);
 							break;}
 							case "background_y": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Y, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Y), e__BG.Y),
+									]);
 							break;}
 							case "background_width": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Width, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Width), e__BG.Width),
+									]);
 							break;}
 							case "background_height": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Height, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Height), e__BG.Height),
+									]);
 							break;}
 							case "background_htiled": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.HTiled, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.HTiled), e__BG.HTiled),
+									]);
 							break;}
 							case "background_vtiled": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.VTiled, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.VTiled), e__BG.VTiled),
+									]);
 							break;}
 							case "background_xscale": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.XScale, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.XScale), e__BG.XScale),
+									]);
 							break;}
 							case "background_yscale": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.YScale, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.YScale), e__BG.YScale),
+									]);
 							break;}
 							case "background_hspeed": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.HSpeed, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.HSpeed), e__BG.HSpeed),
+									]);
 							break;}
 							case "background_vspeed": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.VSpeed, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.VSpeed), e__BG.VSpeed),
+									]);
 							break;}
 							case "background_blend": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Blend, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Blend), e__BG.Blend),
+									]);
 							break;}
 							case "background_alpha": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_get, ind_node.sourceInfo, "__background_get"),
-									[
-										new ASTLiteral(e__BG.Alpha, ind_node.sourceInfo),
-									],
-									ind_node.sourceInfo
-								);
+								return new ASTCall(ind_node.span, __builtin("__background_get", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Alpha), e__BG.Alpha),
+									]);
 							break;}
 						}
 						
@@ -271,158 +219,98 @@
 				}
 				if (node.callee.value == array_set) {
 					var ind_node = arguments[0]
-					if (ind_node.type == "Identifier") {
+					if (ind_node.kind == __GMLC_NodeKind_Identifier) {
 						
-						switch (ind_node.value) {
+						switch (ind_node.name) {
 							case "background_visible": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Visible, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Visible), e__BG.Visible),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_foreground": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Foreground, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Foreground), e__BG.Foreground),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_index": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Index, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Index), e__BG.Index),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_x": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.X, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.X), e__BG.X),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_y": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Y, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Y), e__BG.Y),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_width": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Width, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Width), e__BG.Width),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_height": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Height, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Height), e__BG.Height),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_htiled": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.HTiled, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.HTiled), e__BG.HTiled),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_vtiled": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.VTiled, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.VTiled), e__BG.VTiled),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_xscale": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.XScale, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.XScale), e__BG.XScale),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_yscale": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.YScale, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.YScale), e__BG.YScale),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_hspeed": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.HSpeed, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.HSpeed), e__BG.HSpeed),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_vspeed": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.VSpeed, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.VSpeed), e__BG.VSpeed),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_blend": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Blend, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Blend), e__BG.Blend),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 							case "background_alpha": {
-								return new ASTCallExpression(
-									new ASTLiteral(__background_set, ind_node.sourceInfo, "__background_set"),
-									[
-										new ASTLiteral(e__BG.Alpha, ind_node.sourceInfo),
+								return new ASTCall(ind_node.span, __builtin("__background_set", ind_node.span), [
+										new ASTLiteral(ind_node.span, "real", string(e__BG.Alpha), e__BG.Alpha),
 										arguments[1]
-									],
-									ind_node.sourceInfo
-								);
+									]);
 							break;}
 						}
 						
@@ -430,53 +318,33 @@
 				}
 			}
 			
-			if (node.type == "AssignmentExpression") {
-				if (node.left.type == "Identifier") {
-					if (node.left.value == "background_color") || (node.left.value == "background_colour") {
-						return new ASTCallExpression(
-							new ASTLiteral(__background_set_colour, _node.sourceInfo, "__background_set_colour"),
-							[node.right ],
-							_node.sourceInfo
-						);
+			if (node.kind == __GMLC_NodeKind_Assign) {
+				if (node.target.kind == __GMLC_NodeKind_Identifier) {
+					if (node.target.name == "background_color") || (node.target.name == "background_colour") {
+						return new ASTCall(_node.span, __builtin("__background_set_colour", _node.span), [node.value]);
 					}
 				}
 			}
 			
-			if (node.type == "Identifier") {
-				switch (node.value) {
+			if (node.kind == __GMLC_NodeKind_Identifier) {
+				switch (node.name) {
 					case "background_color":
 					case "background_colour":{
-						return new ASTCallExpression(
-								new ASTLiteral(__background_get_colour, _node.sourceInfo, "__background_get_colour"),
-								[],
-								_node.sourceInfo
-							);
+						return new ASTCall(_node.span, __builtin("__background_get_colour", _node.span), []);
 					break;}
 					
 					case "background_showcolor":
 					case "background_showcolour":{
-						return new ASTCallExpression(
-								new ASTLiteral(__background_get_showcolour, _node.sourceInfo, "__background_get_showcolour"),
-								[],
-								_node.sourceInfo
-							);
+						return new ASTCall(_node.span, __builtin("__background_get_showcolour", _node.span), []);
 					break;}
 					
 				}
 			}
 			
 			//background_visible
-			return new ASTCallExpression(
-								new ASTLiteral(background_visible, _node.sourceInfo, "background_visible"),
-								[],
-								_node.sourceInfo
-							);
+			return new ASTCall(_node.span, __builtin("background_visible", _node.span), []);
 			//background_showcolor
-			return new ASTCallExpression(
-								new ASTLiteral(background_showcolor, _node.sourceInfo, "background_showcolor"),
-								[],
-								_node.sourceInfo
-							);
+			return new ASTCall(_node.span, __builtin("background_showcolor", _node.span), []);
 							
 			
 			
@@ -485,185 +353,121 @@
 		
 		static convertViews = function(node) {
 			
-			if (node.type == "AssignmentExpression") {
-				if (node.left.type == "Identifier") {
-					if (node.left.value == "background_color") || (node.left.value == "background_colour") {
-						return new ASTCallExpression(
-							new ASTLiteral(__background_set_colour, _node.sourceInfo, "__background_set_colour"),
-							[node.right ],
-							_node.sourceInfo
-						);
+			if (node.kind == __GMLC_NodeKind_Assign) {
+				if (node.target.kind == __GMLC_NodeKind_Identifier) {
+					if (node.target.name == "background_color") || (node.target.name == "background_colour") {
+						return new ASTCall(_node.span, __builtin("__background_set_colour", _node.span), [node.value]);
 					}
 				}
 			}
 			
-			if (node.type == "FunctionCall") {
+			if (node.kind == __GMLC_NodeKind_Call) {
 				if (node.callee.value == array_get) {
 					var ind_node = arguments[0]
-					if (ind_node.type == "Identifier") {
-						if (ind_node.value == "background_visible") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Visible, _node.sourceInfo, "e__BG.Visible"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+					if (ind_node.kind == __GMLC_NodeKind_Identifier) {
+						if (ind_node.name == "background_visible") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Visible), e__BG.Visible),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_foreground") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Foreground, _node.sourceInfo, "e__BG.Foreground"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_foreground") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Foreground), e__BG.Foreground),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_index") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Index, _node.sourceInfo, "e__BG.Index"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_index") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Index), e__BG.Index),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_x") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.X, _node.sourceInfo, "e__BG.X"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_x") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.X), e__BG.X),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_y") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Y, _node.sourceInfo, "e__BG.Y"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_y") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Y), e__BG.Y),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_width") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Width, _node.sourceInfo, "e__BG.Width"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_width") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Width), e__BG.Width),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_height") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Height, _node.sourceInfo, "e__BG.Height"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_height") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Height), e__BG.Height),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_htiled") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.HTiled, _node.sourceInfo, "e__BG.HTiled"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_htiled") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.HTiled), e__BG.HTiled),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_vtiled") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.VTiled, _node.sourceInfo, "e__BG.VTiled"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_vtiled") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.VTiled), e__BG.VTiled),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_xscale") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.XScale, _node.sourceInfo, "e__BG.XScale"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_xscale") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.XScale), e__BG.XScale),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_yscale") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.YScale, _node.sourceInfo, "e__BG.YScale"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_yscale") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.YScale), e__BG.YScale),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_hspeed") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.HSpeed, _node.sourceInfo, "e__BG.HSpeed"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_hspeed") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.HSpeed), e__BG.HSpeed),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_vspeed") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.VSpeed, _node.sourceInfo, "e__BG.VSpeed"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_vspeed") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.VSpeed), e__BG.VSpeed),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_blend") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Blend, _node.sourceInfo, "e__BG.Blend"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_blend") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Blend), e__BG.Blend),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_alpha") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_get, _node.sourceInfo, "__background_get"),
-								[
-									new ASTLiteral(e__BG.Alpha, _node.sourceInfo, "e__BG.Alpha"),
-									node.right
-								],
-								_node.sourceInfo
-							);
+						if (ind_node.name == "background_alpha") {
+							return new ASTCall(_node.span, __builtin("__background_get", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Alpha), e__BG.Alpha),
+									node.value
+								]);
 							
 						}
 						
@@ -678,201 +482,141 @@
 						
 						
 						
-						if (ind_node.value == "view_visible") {
+						if (ind_node.name == "view_visible") {
 							
 						}
-						if (ind_node.value == "view_hport") {
+						if (ind_node.name == "view_hport") {
 							
 						}
-						if (ind_node.value == "view_hview") {
+						if (ind_node.name == "view_hview") {
 							
 						}
-						if (ind_node.value == "view_wport") {
+						if (ind_node.name == "view_wport") {
 							
 						}
-						if (ind_node.value == "view_wview") {
+						if (ind_node.name == "view_wview") {
 							
 						}
-						if (ind_node.value == "view_xport") {
+						if (ind_node.name == "view_xport") {
 							
 						}
-						if (ind_node.value == "view_xview") {
+						if (ind_node.name == "view_xview") {
 							
 						}
-						if (ind_node.value == "view_yport") {
+						if (ind_node.name == "view_yport") {
 							
 						}
-						if (ind_node.value == "view_yview") {
+						if (ind_node.name == "view_yview") {
 							
 						}
 					}
 				}
 				if (node.callee.value == array_set) {
 					var ind_node = arguments[0]
-					if (ind_node.type == "Identifier") {
-						if (ind_node.value == "background_visible") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Visible, _node.sourceInfo, "e__BG.Visible"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+					if (ind_node.kind == __GMLC_NodeKind_Identifier) {
+						if (ind_node.name == "background_visible") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Visible), e__BG.Visible),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_foreground") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Foreground, _node.sourceInfo, "e__BG.Foreground"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_foreground") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Foreground), e__BG.Foreground),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_index") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Index, _node.sourceInfo, "e__BG.Index"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_index") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Index), e__BG.Index),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_x") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.X, _node.sourceInfo, "e__BG.X"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_x") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.X), e__BG.X),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_y") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Y, _node.sourceInfo, "e__BG.Y"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_y") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Y), e__BG.Y),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_width") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Width, _node.sourceInfo, "e__BG.Width"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_width") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Width), e__BG.Width),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_height") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Height, _node.sourceInfo, "e__BG.Height"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_height") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Height), e__BG.Height),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_htiled") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.HTiled, _node.sourceInfo, "e__BG.HTiled"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_htiled") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.HTiled), e__BG.HTiled),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_vtiled") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.VTiled, _node.sourceInfo, "e__BG.VTiled"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_vtiled") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.VTiled), e__BG.VTiled),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_xscale") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.XScale, _node.sourceInfo, "e__BG.XScale"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_xscale") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.XScale), e__BG.XScale),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_yscale") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.YScale, _node.sourceInfo, "e__BG.YScale"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_yscale") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.YScale), e__BG.YScale),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_hspeed") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.HSpeed, _node.sourceInfo, "e__BG.HSpeed"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_hspeed") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.HSpeed), e__BG.HSpeed),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_vspeed") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.VSpeed, _node.sourceInfo, "e__BG.VSpeed"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_vspeed") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.VSpeed), e__BG.VSpeed),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_blend") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Blend, _node.sourceInfo, "e__BG.Blend"),
-									node.right
-								],
-								_node.sourceInfo
-							);
-							
+						if (ind_node.name == "background_blend") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Blend), e__BG.Blend),
+									node.value
+								]);
+								
 						}
-						if (ind_node.value == "background_alpha") {
-							return new ASTCallExpression(
-								new ASTLiteral(__background_set, _node.sourceInfo, "__background_set"),
-								[
-									new ASTLiteral(e__BG.Alpha, _node.sourceInfo, "e__BG.Alpha"),
-									node.right
-								],
-								_node.sourceInfo
-							);
+						if (ind_node.name == "background_alpha") {
+							return new ASTCall(_node.span, __builtin("__background_set", _node.span), [
+									new ASTLiteral(_node.span, "real", string(e__BG.Alpha), e__BG.Alpha),
+									node.value
+								]);
 							
 						}
 					}
@@ -883,17 +627,9 @@
 			
 			
 			//background_visible
-			return new ASTCallExpression(
-								new ASTLiteral(background_visible, _node.sourceInfo, "background_visible"),
-								[],
-								_node.sourceInfo
-							);
+			return new ASTCall(_node.span, __builtin("background_visible", _node.span), []);
 			//background_showcolor
-			return new ASTCallExpression(
-								new ASTLiteral(background_showcolor, _node.sourceInfo, "background_showcolor"),
-								[],
-								_node.sourceInfo
-							);
+			return new ASTCall(_node.span, __builtin("background_showcolor", _node.span), []);
 							
 			
 			

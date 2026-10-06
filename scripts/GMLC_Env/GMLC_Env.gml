@@ -1,7 +1,7 @@
 #region jsDoc
 /// @func	GMLC_Env()
 /// @desc	Constructs a new GMLC compiler/evaluator environment. Sets up keyword/operator/variable exposure, wires the full pipeline
-///			(tokenizer -> preprocessor -> parser -> post-processor -> optional optimizer -> compiler),
+///			(tokenizer -> preprocessor -> parser -> resolver -> post-processor -> optional optimizer -> compiler),
 ///			and provides methods to configure exposure tiers and compile source text.
 /// @returns {Struct.GMLC_Env}
 #endregion
@@ -568,15 +568,20 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	lexer          = new GMLC_Gen_0_Lexer(self);
 	pre_processor  = new GMLC_Gen_1_PreProcessor(self);
 	parser         = new GMLC_Gen_2_Parser(self);
-	post_processor = new GMLC_Gen_3_PostProcessor(self);
-	optimizer      = new GMLC_Gen_4_Optimizer(self);
-	compiler       = new GMLC_Gen_5_Compiler(self);
+	resolver       = new GMLC_Gen_3_Resolver(self);
+	post_processor = new GMLC_Gen_4_PostProcessor(self);
+	optimizer      = new GMLC_Gen_5_Optimizer(self);
+	compiler       = new GMLC_Gen_6_Compiler(self);
+	
+	anonFunctionCount = 0; // anonymous functions are named GMLC@anon@N, N counted across this environment
 	
 	// the active build configuration and its ancestors, nearest first: `#macro Config:NAME` definitions of
 	// these configurations apply, the nearest one first, then plain `#macro NAME` (configuration Default)
 	configChain = ["Default"];
 	// the exposed macros as preprocessor definitions, rebuilt when exposeMacros, removeMacros or clearMacros ran
 	__hostUnit = undefined;
+	// the files of the exposed macros' values: the first files of every compile's source table
+	__hostFiles = [];
 	
 	set_exposure(GMLC_EXPOSURE.SAFE);
 	
@@ -600,7 +605,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @desc    Runs the complete compilation pipeline on the given source text.
 	/// @self    GMLC_Env
 	/// @param   {String} sourceCode : Source text to compile
-	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_5_Compiler
+	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_6_Compiler
 	#endregion
 	static compile = function(_sourceCode = "", _name = "") {
 		currentScriptName = __resolve_compile_source_name(_name);
@@ -608,15 +613,18 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _time = get_timer();
 		var _step_time = _time;
 		
-		lexer.initialize(_sourceCode, currentScriptName);
+		var _sources = __newSourceTable();
+		lexer.initialize(_sourceCode, currentScriptName, array_length(_sources.files));
 		var tokens = lexer.parseAll();
+		_sources.add(tokens.file);
+		tokens.sources = _sources;
 		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
 		if (__log_step_times) {
 			show_debug_message($"Tokenizer Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
 		}
 		
-		__preprocess([tokens]);
+		__preprocess([tokens], _sources);
 		var preprocessedTokens = tokens;
 		if (__log_pre_processer_results) json_save("pre_processor.json", preprocessedTokens)
 		if (__log_step_times) {
@@ -632,7 +640,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_step_time = get_timer();
 		}
 		
-		post_processor.initialize(ast);
+		resolver.initialize(ast, _sources);
+		var ast = resolver.parseAll();
+		if (__log_step_times) {
+			show_debug_message($"Resolver Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
+		}
+		
+		post_processor.initialize(ast, _sources, resolver.compileTimeUses > 0);
 		var ast = post_processor.parseAll();
 		if (__log_post_processer_results) json_save("post_processor.json", ast)
 		if (__log_step_times) {
@@ -641,14 +656,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		}
 		
 		if (should_optimize) {
-			optimizer.initialize(ast);
+			optimizer.initialize(ast, _sources);
 			var ast = optimizer.parseAll();
 			if (__log_optimizer_results) json_save("optimizer.json", ast)
 		}
 		
 		var _global = getConstant("global");
 		var _globals = (is_struct(_global)) ? _global.value : {};
-		compiler.initialize(ast, _globals);
+		compiler.initialize(ast, _globals, _sources);
 		var program = compiler.parseAll();
 		if (__log_compiler_results) json_save("post_processor.json", ast)
 		if (__log_step_times) {
@@ -661,11 +676,42 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	
 	#region jsDoc
+	/// @func    compile_ast(_json)
+	/// @desc    Compiles a syntax tree given in its JSON form (as GMLC_AstToJson writes it):
+	///          the tree is read back into nodes, its names are bound when the dump was taken before that, and the
+	///          rest of the pipeline runs as for source text.
+	/// @self    GMLC_Env
+	/// @param   {String} json : The dump
+	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_6_Compiler
+	#endregion
+	static compile_ast = function(_json) {
+		var _dump = GMLC_AstFromJson(_json);
+		var _ast = _dump.root;
+		var _sources = _dump.sources;
+		var _needed = true;
+		if (_dump.stage == "parsed") {
+			resolver.initialize(_ast, _sources);
+			_ast = resolver.parseAll();
+			_needed = (resolver.compileTimeUses > 0);
+		}
+		post_processor.initialize(_ast, _sources, _needed);
+		_ast = post_processor.parseAll();
+		if (should_optimize) {
+			optimizer.initialize(_ast, _sources);
+			_ast = optimizer.parseAll();
+		}
+		var _global = getConstant("global");
+		var _globals = (is_struct(_global)) ? _global.value : {};
+		compiler.initialize(_ast, _globals, _sources);
+		return compiler.parseAll();
+	}
+	
+	#region jsDoc
 	/// @func    get()
 	/// @desc    Fetch a function from the global struct
 	/// @self    GMLC_Env
 	/// @param   {String} func : The name of the function to get from the global struct
-	/// @returns {Any} Compiled function artifact produced by GMLC_Gen_5_Compiler
+	/// @returns {Any} Compiled function artifact produced by GMLC_Gen_6_Compiler
 	#endregion
 	static get = function(_func) {
 		var _globals = getConstant("global").value;
@@ -1004,6 +1050,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		if (array_length(_names) == 0) return undefined;
 		array_sort(_names, true);
 		var _unit = { program: undefined, stream: [], macros: [], enums: [], regions: [], pragmas: [] };
+		__hostFiles = [];
 		var _i = 0; repeat (array_length(_names)) {
 			var _name = _names[_i];
 			var _value = _macros[$ _name].value;
@@ -1020,28 +1067,28 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			else {
 				throw_gmlc_error($"GMLC5007: the exposed macro {_name} holds a {typeof(_value)}, not GML text or a number");
 			}
-			lexer.initialize(_gml, "<macro " + _name + ">");
+			lexer.initialize(_gml, "<macro " + _name + ">", array_length(__hostFiles));
 			var _program = lexer.parseAll();
+			array_push(__hostFiles, _program.file);
 			array_push(_unit.macros, pre_processor.hostMacro(_name, _program));
 		_i++}
 		return _unit;
 	}
 	
 	#region jsDoc
-	/// @func    __preprocess(_programs)
+	/// @func    __preprocess(_programs, _sources)
 	/// @desc    Runs the preprocessor over a batch of lexed files: collects every file, merges their definitions
 	///          with the exposed macros (first) and the configuration chain, and expands every file.
 	/// @self    GMLC_Env
-	/// @param   {Array<Struct>} programs : The lexer's program records, in batch order
+	/// @param   {Array<Struct>}           programs : The lexer's program records, in batch order
+	/// @param   {Struct.GMLC_SourceTable} sources  : The compile's files, for the positions of errors
 	/// @returns {Array<Struct>} The same records, preprocessed
 	/// @ignore
 	#endregion
-	static __preprocess = function(_programs) {
+	static __preprocess = function(_programs, _sources) {
 		var _units = [];
-		if (__hostMacrosDirty) {
-			__hostUnit = __hostMacroUnit();
-			__hostMacrosDirty = false;
-		}
+		__updateHostMacros();
+		pre_processor.sources = _sources;
 		// tokens are never modified once made, so the exposed macros' definitions are reused by every compile
 		if (__hostUnit != undefined) array_push(_units, __hostUnit);
 		var _first = array_length(_units);
@@ -1055,6 +1102,37 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		return _programs;
 	}
 	
+	#region jsDoc
+	/// @func    __updateHostMacros()
+	/// @desc    Rebuilds the exposed macros' definitions when they changed.
+	/// @self    GMLC_Env
+	/// @ignore
+	#endregion
+	static __updateHostMacros = function() {
+		if (__hostMacrosDirty) {
+			__hostFiles = [];
+			__hostUnit = __hostMacroUnit();
+			__hostMacrosDirty = false;
+		}
+	}
+	
+	#region jsDoc
+	/// @func    __newSourceTable()
+	/// @desc    The source table of a new compile: the files of the exposed macros come first, so the files of the
+	///          compile are numbered after them.
+	/// @self    GMLC_Env
+	/// @returns {Struct.GMLC_SourceTable}
+	/// @ignore
+	#endregion
+	static __newSourceTable = function() {
+		__updateHostMacros();
+		var _sources = new GMLC_SourceTable();
+		var _i = 0; repeat (array_length(__hostFiles)) {
+			_sources.add(__hostFiles[_i]);
+		_i++}
+		return _sources;
+	}
+	
 	#endregion
 
 	#region Batch & Project Compilation
@@ -1066,34 +1144,66 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static __compile_pipeline = function(_source, _name = undefined) {
 		currentScriptName = __resolve_compile_source_name(_name);
-		lexer.initialize(_source, currentScriptName);
+		var _sources = __newSourceTable();
+		lexer.initialize(_source, currentScriptName, array_length(_sources.files));
 		var _program = lexer.parseAll();
-		__preprocess([_program]);
+		_sources.add(_program.file);
+		_program.sources = _sources;
+		__preprocess([_program], _sources);
 		return _program;
 	}
 
 	#region jsDoc
-	/// @func    __finish_compile()
-	/// @desc    Runs parser → post-processor → (optimizer) → compiler on an already-preprocessed program.
+	/// @func    __parse_program()
+	/// @desc    Runs the parser on an already-preprocessed program.
 	/// @ignore
 	#endregion
-	static __finish_compile = function(_program, _log_name = undefined) {
-		currentScriptName = __resolve_compile_source_name(_log_name, _program.sourceInfo.fileName);
-		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
+	static __parse_program = function(_program, _log_name = undefined) {
+		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
 		parser.initialize(_program);
 		var _ast = parser.parseAll();
-		if (_prefix != undefined && __log_parser_results) json_save(_prefix + "parser.json", _ast);
-		post_processor.initialize(_ast);
+		if (_log_name != undefined && __log_parser_results) json_save(filename_name(_log_name) + "_parser.json", _ast);
+		return _ast;
+	}
+	
+	#region jsDoc
+	/// @func    __parse_batch()
+	/// @desc    Parses every program of a batch and collects the global names they declare, so each file can use the
+	///          functions of the others.
+	/// @ignore
+	#endregion
+	static __parse_batch = function(_programs, _names) {
+		var _asts = array_create(array_length(_programs), undefined);
+		var _i = 0; repeat (array_length(_programs)) {
+			_asts[_i] = __parse_program(_programs[_i], _names[_i]);
+		_i++}
+		return { asts: _asts, globals: resolver.collectGlobals(_asts) };
+	}
+	
+	#region jsDoc
+	/// @func    __finish_compile()
+	/// @desc    Runs parser → resolver → post-processor → (optimizer) → compiler on an already-preprocessed program,
+	///          or resolver onwards on a parsed one (with the batch's global names).
+	/// @ignore
+	#endregion
+	static __finish_compile = function(_program, _log_name = undefined, _ast = undefined, _batchGlobals = undefined) {
+		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
+		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
+		var _sources = _program[$ "sources"];
+		_ast ??= __parse_program(_program, _log_name);
+		resolver.initialize(_ast, _sources, _batchGlobals);
+		_ast = resolver.parseAll();
+		post_processor.initialize(_ast, _sources, resolver.compileTimeUses > 0);
 		_ast = post_processor.parseAll();
 		if (_prefix != undefined && __log_post_processer_results) json_save(_prefix + "post_processor.json", _ast);
 		if (should_optimize) {
-			optimizer.initialize(_ast);
+			optimizer.initialize(_ast, _sources);
 			_ast = optimizer.parseAll();
 			if (_prefix != undefined && __log_optimizer_results) json_save(_prefix + "optimizer.json", _ast);
 		}
 		var _global  = getConstant("global");
 		var _globals = is_struct(_global) ? _global.value : {};
-		compiler.initialize(_ast, _globals);
+		compiler.initialize(_ast, _globals, _sources);
 		compiler.parseAll();
 	}
 
@@ -1113,28 +1223,32 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _names    = array_create(_count, "");
 
 		// Phase 1: lex every file
+		var _table = __newSourceTable();
 		var _i = 0; repeat(_count) {
 			var _entry  = _sources[_i];
 			var _source = is_string(_entry) ? _entry : _entry.source;
 			_names[_i]  = __resolve_compile_source_name(is_string(_entry) ? undefined : ((struct_exists(_entry, "name")) ? _entry.name : undefined));
 			currentScriptName = _names[_i];
-			lexer.initialize(_source, currentScriptName);
+			lexer.initialize(_source, currentScriptName, array_length(_table.files));
 			_programs[_i] = lexer.parseAll();
+			_programs[_i].sources = _table;
+			_table.add(_programs[_i].file);
 			if (__log_tokenizer_results) json_save(filename_name(_names[_i]) + "_tokenizer.json", _programs[_i]);
 		_i++}
 		
 		// Phase 2: macros and enums of the whole batch, then the expansion of every file
-		__preprocess(_programs);
+		__preprocess(_programs, _table);
 		if (__log_pre_processer_results) {
 			_i = 0; repeat(_count) { json_save(filename_name(_names[_i]) + "_pre_processor.json", _programs[_i]); _i++ }
 		}
 
-		// Phase 3: compile every preprocessed file
+		// Phase 3: parse every file, then compile each with the global names of the whole batch
+		var _parsed = __parse_batch(_programs, _names);
 		var _result = new GMLC_BatchResult();
 		_i = 0; repeat(_count) {
 			var _success = false;
 			var _error   = undefined;
-			__finish_compile(_programs[_i], _names[_i]);
+			__finish_compile(_programs[_i], _names[_i], _parsed.asts[_i], _parsed.globals);
 			_success = true;
 			_result.add(_names[_i], _success, _error);
 		_i++;}
@@ -1261,22 +1375,30 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _programs   = array_create(_file_count, undefined);
 
 		// Phase 1: lex every file
+		var _table = __newSourceTable();
+		var _project = (variable_struct_exists(_yyp, "name") && is_string(_yyp.name)) ? _yyp.name : undefined;
 		_i = 0; repeat(_file_count) {
 			currentScriptName = __resolve_compile_source_name(_entries[_i].name);
-			lexer.initialize(_entries[_i].source, currentScriptName);
+			lexer.initialize(_entries[_i].source, currentScriptName, array_length(_table.files));
 			_programs[_i] = lexer.parseAll();
+			_programs[_i].file.project = _project;
+			_programs[_i].sources = _table;
+			_table.add(_programs[_i].file);
 		_i++}
 
 		// Phase 2: macros and enums of the whole project, then the expansion of every file
-		__preprocess(_programs);
+		__preprocess(_programs, _table);
 
-		// Phase 3: compile every preprocessed file
+		// Phase 3: parse every file, then compile each with the global names of the whole project
+		var _entryNames = array_create(_file_count, undefined);
+		_i = 0; repeat(_file_count) { _entryNames[_i] = _entries[_i].name; _i++ }
+		var _parsed = __parse_batch(_programs, _entryNames);
 		var _result = new GMLC_BatchResult();
 		_i = 0; repeat(_file_count) {
 			var _name    = _entries[_i].name;
 			var _success = false;
 			var _error   = undefined;
-			__finish_compile(_programs[_i], _name);
+			__finish_compile(_programs[_i], _name, _parsed.asts[_i], _parsed.globals);
 			_success = true;
 			_result.add(_name, _success, _error);
 		_i++;}

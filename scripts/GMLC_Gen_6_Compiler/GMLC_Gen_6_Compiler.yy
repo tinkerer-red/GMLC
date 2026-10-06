@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Gen_6_Compiler",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Gen_6_Compiler",
+  "parent":{
+    "name":"Runtime",
+    "path":"folders/GMLC/Backends/Runtime.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
