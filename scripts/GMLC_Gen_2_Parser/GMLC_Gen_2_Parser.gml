@@ -37,20 +37,9 @@
 			scriptAST = new ASTScript(_sourceInfo);
 			currentScript = scriptAST;
 
-			//apply the variable names and token streams from program to ast
-			scriptAST.MacroVar      = program.MacroVar;
-			scriptAST.MacroVarNames = program.MacroVarNames;
-
-			scriptAST.EnumVar      = program.EnumVar;
-			scriptAST.EnumVarNames = program.EnumVarNames;
-
+			//apply the variable names from program to ast
 			scriptAST.GlobalVar      = program.GlobalVar;
 			scriptAST.GlobalVarNames = program.GlobalVarNames;
-
-			// Note this function isnt actually async, so if there is a module with tons of lines of code its possible for this to cause lag.
-			// For development i just said fuck it though.
-
-			replaceAllMacrosAndEnums(tokens);
 
 			currentTokenIndex = 0;
 			currentToken = (array_length(tokens) > 0) ? tokens[currentTokenIndex] : undefined;
@@ -123,67 +112,6 @@
 				return undefined; // No more tokens
 			}
 		};
-
-		static replaceAllMacrosAndEnums = function(_tokens) {
-			var _loop_count = 0;
-			var _hasChanged = true;
-			while (_hasChanged) { //recursively ensure all macros and enums have been applied
-				_hasChanged = false;
-				for (var _i = 0; _i < array_length(_tokens); _i++) {
-					var _token = _tokens[_i];
-
-					if (_token.type == __GMLC_TokenType_Identifier)
-					|| (_token.type == __GMLC_TokenType_Function) {
-
-						var _lookup = _token.name;
-						var _scopeType = __find_ScopeType_from_string(_lookup);
-
-						if (_scopeType == ScopeType_MACRO) {
-
-							var _macroTokens = currentScript.MacroVar[$ _lookup];
-
-							array_delete(_tokens, _i, 1); //remove the macro from the token array
-							array_insert_ext(_tokens, _i, _macroTokens); //insert the macro definition into the token array
-
-							_hasChanged = true;
-						}
-
-						if (_token.type == __GMLC_TokenType_Identifier)
-						&& (_scopeType == ScopeType_ENUM) {
-							var _header = _token.value;
-
-							var _next1 = (_i+1 < array_length(_tokens)) ? _tokens[_i+1] : undefined;
-							var _next2 = (_i+2 < array_length(_tokens)) ? _tokens[_i+2] : undefined;
-							var _memberIsKey = (_next2 != undefined)
-							    && ((_next2.type == __GMLC_TokenType_Identifier)
-							    ||  (_next2.type == __GMLC_TokenType_UniqueVariable)
-							    ||  (_next2.type == __GMLC_TokenType_Function)
-							    ||  (_next2.type == __GMLC_TokenType_Number
-							        && __char_is_alphabetic(ord(string_char_at(_next2.name, 1)))));
-
-							if (_next1 != undefined)
-							&& (_next1.type == __GMLC_TokenType_Punctuation)
-							&& (_next1.value == ".")
-							&& _memberIsKey {
-
-								var _member = _next2.name;
-								var _enumTokens = variable_clone(currentScript.EnumVar[$ _header][$ _member]);
-
-								array_delete(_tokens, _i, 3); //remove the enum from the token array
-								array_insert_ext(_tokens, _i, _enumTokens); //insert the enum definition into the token array
-
-								_hasChanged = true;
-							}
-						}
-
-					}
-				}
-				_loop_count++
-				if (_loop_count > 10_000) {
-					throw_gmlc_error($"Recursive Macro or Enum Declaration detected! Quitting", currentToken.line, currentToken.lineString, currentSourceInfo(currentToken.sourceInfo).column)
-				}
-			}
-		}
 
 		#region AST Builder Methods
 
@@ -1425,7 +1353,7 @@
 					var _scopeType = __find_ScopeType_from_string(currentToken.value);
 					
 					// `E.M` of an enum the environment exposes (project enums) is the member's value
-					if (_scopeType != ScopeType_MACRO) && (_scopeType != ScopeType_ENUM) && (_scopeType != ScopeType_LOCAL) {
+					if (_scopeType != ScopeType_LOCAL) {
 						var _envEnum = env.getEnum(currentToken.value);
 						if (_envEnum != undefined) {
 							var _next1 = peekToken();
@@ -1445,36 +1373,6 @@
 					if (_scopeType == ScopeType_UNIQUE) {
 						var node = new ASTUniqueIdentifier(env.getVariable(currentToken.value).value, sourceInfo, currentToken.value);
 						nextToken();
-						return node;
-					}
-
-					if (_scopeType == ScopeType_MACRO) {
-
-						var _macroTokens = variable_clone(currentScript.MacroVar[$ currentToken.value]);
-
-						array_delete(tokens, currentTokenIndex, 1); //remove the macro from the token array
-						array_insert_ext(tokens, currentTokenIndex, _macroTokens); //insert the macro definition into the token array
-
-						return node;
-					}
-
-					if (_scopeType == ScopeType_ENUM) {
-						var _header = currentToken.value
-						if (optionalToken(__GMLC_TokenType_Punctuation, ".")) {
-							if (currentToken.type == __GMLC_TokenType_Identifier) {
-								var _member = currentToken.value;
-								var _enumTokens = variable_clone(currentScript.EnumVar[$ _header][$ _member]);
-
-								array_delete(tokens, currentTokenIndex, 1); //remove the enum from the token array
-								array_insert_ext(tokens, currentTokenIndex, _enumTokens); //insert the enum definition into the token array
-
-								return node;
-							}
-						}
-
-						//this will eventually get defaulted to instance if no dot accessor is eventually found
-						var node = new ASTIdentifier(currentToken.value, undefined, sourceInfo);
-						nextToken(); // Move past the identifier
 						return node;
 					}
 
@@ -1921,9 +1819,7 @@ function __find_ScopeType_from_string(_string) {
 	//ScopeType_SELF;
 	//ScopeType_CONST;
 
-	if array_contains(currentScript.MacroVarNames, _string) return ScopeType_MACRO;
 	if array_contains(currentScript.GlobalVarNames, _string) return ScopeType_GLOBAL;
-	if struct_exists(currentScript.EnumVarNames, _string) return ScopeType_ENUM;
 
 	if (currentFunction != undefined) {
 		if array_contains(currentFunction.LocalVarNames,  _string) return ScopeType_LOCAL;

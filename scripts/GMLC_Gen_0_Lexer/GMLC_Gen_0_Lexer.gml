@@ -503,9 +503,15 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		pos++;
 		var _cooked = __cookText(_start, ord("\""), false);
 		var _end = __cookEnd;
-		if (_end == "quote") pos++;
-		else if (_end == "newline") __diagnostic(10, "error", _start, pos, "unterminated string literal (a raw line break is not allowed)");
-		else __diagnostic(9, "error", _start, pos, "unterminated string literal");
+		if (_end == "quote") {
+			pos++;
+		}
+		else if (_end == "newline") {
+			__diagnostic(10, "error", _start, pos, "unterminated string literal (a raw line break is not allowed)");
+		}
+		else {
+			__diagnostic(9, "error", _start, pos, "unterminated string literal");
+		}
 		var _token = __makeToken(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, pos, _cooked);
 		array_push(tokens, _token);
 		return __GMLC_TokenKind_String;
@@ -523,8 +529,12 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		var _from = pos;
 		while (pos < len) && (__byte(pos) != _quote) pos++;
 		var _value = __text(_from, pos);
-		if (pos < len) pos++;
-		else __diagnostic(9, "error", _start, pos, "unterminated string literal");
+		if (pos < len) {
+			pos++;
+		}
+		else {
+			__diagnostic(9, "error", _start, pos, "unterminated string literal");
+		}
 		var _token = __makeToken(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, pos, _value);
 		array_push(tokens, _token);
 		return __GMLC_TokenKind_String;
@@ -549,9 +559,15 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			_type = _isStart ? __GMLC_TokenType_TemplateStringBegin : __GMLC_TokenType_TemplateStringMiddle;
 		}
 		else {
-			if (_end == "quote") pos++;
-			else if (_end == "newline") __diagnostic(14, "error", _start, pos, "unterminated template string (a raw line break is not allowed)");
-			else __diagnostic(13, "error", _start, pos, "unterminated template string");
+			if (_end == "quote") {
+				pos++;
+			}
+			else if (_end == "newline") {
+				__diagnostic(14, "error", _start, pos, "unterminated template string (a raw line break is not allowed)");
+			}
+			else {
+				__diagnostic(13, "error", _start, pos, "unterminated template string");
+			}
 			// a template with no interpolation is a plain string to the parser
 			_kind = _isStart ? __GMLC_TokenKind_TemplateFull : __GMLC_TokenKind_TemplateTail;
 			_type = _isStart ? __GMLC_TokenType_String : __GMLC_TokenType_TemplateStringEnd;
@@ -942,12 +958,13 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 #endregion
 function __GMLC_ProgramTokens(_tokens, _sourceInfo) constructor {
 	GlobalVar = {};
-	MacroVar  = {};
-	EnumVar   = {};
 	GlobalVarNames = [];
-	MacroVarNames  = [];
-	EnumVarNames   = {}; //structure is {HEADER1: [TAIL1, TAIL2, TAIL3], HEADER2: [TAIL1, TAIL2, TAIL3]}
 	LocalVarNames  = [];
+	// filled by the preprocessor
+	macros  = [];
+	enums   = [];
+	regions = [];
+	pragmas = [];
 	
 	tokens = _tokens;
 	sourceInfo = _sourceInfo;

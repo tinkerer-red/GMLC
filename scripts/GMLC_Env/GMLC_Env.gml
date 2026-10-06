@@ -572,6 +572,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	optimizer      = new GMLC_Gen_4_Optimizer(self);
 	compiler       = new GMLC_Gen_5_Compiler(self);
 	
+	// the active build configuration and its ancestors, nearest first: `#macro Config:NAME` definitions of
+	// these configurations apply, the nearest one first, then plain `#macro NAME` (configuration Default)
+	configChain = ["Default"];
+	// the exposed macros as preprocessor definitions, rebuilt when exposeMacros, removeMacros or clearMacros ran
+	__hostUnit = undefined;
+	
 	set_exposure(GMLC_EXPOSURE.SAFE);
 	
 	#endregion
@@ -598,8 +604,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static compile = function(_sourceCode = "", _name = "") {
 		currentScriptName = __resolve_compile_source_name(_name);
-		//append the macros to the end of the source code.
-		_sourceCode = __appendMacros(_sourceCode);
 		
 		var _time = get_timer();
 		var _step_time = _time;
@@ -612,8 +616,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_step_time = get_timer();
 		}
 		
-		pre_processor.initialize(tokens);
-		var preprocessedTokens = pre_processor.parseAll();
+		__preprocess([tokens]);
+		var preprocessedTokens = tokens;
 		if (__log_pre_processer_results) json_save("pre_processor.json", preprocessedTokens)
 		if (__log_step_times) {
 			show_debug_message($"Pre Processor Time took : {(get_timer() - _step_time)/1000}ms")
@@ -986,93 +990,74 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	
 	#region jsDoc
-	/// @func    __appendMacros()
-	/// @desc    Appends exposed macros on new lines at the bottom of the source code provided.
+	/// @func    __hostMacroUnit()
+	/// @desc    The exposed macros as a preprocessor unit, in name order. Each value is lexed on its own as
+	///          the host gave it, so its tokens and line text are the host's own; a string is GML text, a number or
+	///          bool is written as a literal; any other value is an error.
 	/// @self    GMLC_Env
-	/// @param   {String} sourceCode : Source code to append exposed macros to.
-	/// @returns {String}
+	/// @returns {Struct|Undefined} undefined when no macro is exposed
 	/// @ignore
 	#endregion
-	static __appendMacros = function(_sourceCode) {
-		//tokenize exposed macros
-		var _exposed_macro_str = "\n// Start of appended macros which were exposed\n\n";
+	static __hostMacroUnit = function() {
 		var _macros = getAllMacros();
 		var _names = struct_get_names(_macros);
-		var _i=0; repeat(array_length(_names)) {
+		if (array_length(_names) == 0) return undefined;
+		array_sort(_names, true);
+		var _unit = { program: undefined, stream: [], macros: [], enums: [], regions: [], pragmas: [] };
+		var _i = 0; repeat (array_length(_names)) {
 			var _name = _names[_i];
-			var _macro_struct = _macros[$ _name];
-			_exposed_macro_str += $"#macro {_name} {_macro_struct.value}\n";
-		_i++;}
-		
-		return _sourceCode + _exposed_macro_str;
+			var _value = _macros[$ _name].value;
+			var _gml;
+			if (is_string(_value)) {
+				_gml = _value;
+			}
+			else if (is_int64(_value)) {
+				_gml = string(_value);
+			}
+			else if (is_real(_value) || is_bool(_value)) {
+				_gml = (frac(_value) == 0) ? string(_value) : string_format(_value, 0, 17);
+			}
+			else {
+				throw_gmlc_error($"GMLC5007: the exposed macro {_name} holds a {typeof(_value)}, not GML text or a number");
+			}
+			lexer.initialize(_gml, "<macro " + _name + ">");
+			var _program = lexer.parseAll();
+			array_push(_unit.macros, pre_processor.hostMacro(_name, _program));
+		_i++}
+		return _unit;
+	}
+	
+	#region jsDoc
+	/// @func    __preprocess(_programs)
+	/// @desc    Runs the preprocessor over a batch of lexed files: collects every file, merges their definitions
+	///          with the exposed macros (first) and the configuration chain, and expands every file.
+	/// @self    GMLC_Env
+	/// @param   {Array<Struct>} programs : The lexer's program records, in batch order
+	/// @returns {Array<Struct>} The same records, preprocessed
+	/// @ignore
+	#endregion
+	static __preprocess = function(_programs) {
+		var _units = [];
+		if (__hostMacrosDirty) {
+			__hostUnit = __hostMacroUnit();
+			__hostMacrosDirty = false;
+		}
+		// tokens are never modified once made, so the exposed macros' definitions are reused by every compile
+		if (__hostUnit != undefined) array_push(_units, __hostUnit);
+		var _first = array_length(_units);
+		var _i = 0; repeat (array_length(_programs)) {
+			array_push(_units, pre_processor.collect(_programs[_i]));
+		_i++}
+		var _batch = pre_processor.merge(_units, configChain);
+		_i = 0; repeat (array_length(_programs)) {
+			pre_processor.expand(_units[_first + _i], _batch);
+		_i++}
+		return _programs;
 	}
 	
 	#endregion
 
 	#region Batch & Project Compilation
-
-	#region jsDoc
-	/// @func    __inject_batch_context()
-	/// @desc    Merges batch-level macros and enums into a program without overwriting
-	///          locally-defined symbols.
-	/// @ignore
-	#endregion
-	/// @func    __cross_expand_macro_bodies()
-	/// @desc    Expands macro-referencing tokens within each macro body in the global pool so
-	///          that macro A = macro_B and macro_B = 5 results in A's body being [5] before
-	///          any file compilation begins. Mutates the body arrays in place.
-	/// @ignore
-	static __cross_expand_macro_bodies = function(_globalMacros, _globalMacroNames) {
-		var _hasChanged = true;
-		var _loop_count = 0;
-		while (_hasChanged) {
-			_hasChanged = false;
-			var _i = 0; repeat(array_length(_globalMacroNames)) {
-				var _name = _globalMacroNames[_i];
-				var _body = _globalMacros[$ _name];
-				var _j = 0;
-				while (_j < array_length(_body)) {
-					var _token = _body[_j];
-					if ((_token.type == __GMLC_TokenType_Identifier)
-					&&  (_token.name != _name)
-					&&  (variable_struct_exists(_globalMacros, _token.name))) {
-						var _expansion = _globalMacros[$ _token.name];
-						array_delete(_body, _j, 1);
-						var _elen = array_length(_expansion);
-						var _k = _elen - 1;
-						repeat(_elen) {
-							array_insert(_body, _j, _expansion[_k]);
-						_k--;}
-						_hasChanged = true;
-					}
-					else {
-						_j++;
-					}
-				}
-			_i++;}
-			if (++_loop_count > 10000) {
-				throw_gmlc_error("Circular macro reference detected during batch cross-expansion");
-			}
-		}
-	}
-
-	static __inject_batch_context = function(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
-		var _i = 0; repeat(array_length(_batchMacroNames)) {
-			var _name = _batchMacroNames[_i];
-			if (!variable_struct_exists(_program.MacroVar, _name)) {
-				_program.MacroVar[$ _name] = _batchMacros[$ _name];
-				array_push(_program.MacroVarNames, _name);
-			}
-		_i++;}
-		var _headers = struct_get_names(_batchEnums);
-		var _j = 0; repeat(array_length(_headers)) {
-			var _header = _headers[_j];
-			if (!variable_struct_exists(_program.EnumVar, _header)) {
-				_program.EnumVar[$ _header]      = _batchEnums[$ _header];
-				_program.EnumVarNames[$ _header] = _batchEnumNames[$ _header];
-			}
-		_j++;}
-	}
 
 	#region jsDoc
 	/// @func    __compile_pipeline()
@@ -1081,11 +1066,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static __compile_pipeline = function(_source, _name = undefined) {
 		currentScriptName = __resolve_compile_source_name(_name);
-		_source = __appendMacros(_source);
 		lexer.initialize(_source, currentScriptName);
 		var _program = lexer.parseAll();
-		pre_processor.initialize(_program);
-		pre_processor.parseAll();
+		__preprocess([_program]);
 		return _program;
 	}
 
@@ -1126,65 +1109,40 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static compile_batch = function(_sources) {
 		var _count = array_length(_sources);
-		var _globalMacros     = {};
-		var _globalMacroNames = [];
-		var _globalEnums      = {};
-		var _globalEnumNames  = {};
 		var _programs = array_create(_count, undefined);
 		var _names    = array_create(_count, "");
 
-		// Phase 1 — Tokenize + preprocess each file ONCE; collect global symbol table
+		// Phase 1: lex every file
 		var _i = 0; repeat(_count) {
 			var _entry  = _sources[_i];
 			var _source = is_string(_entry) ? _entry : _entry.source;
 			_names[_i]  = __resolve_compile_source_name(is_string(_entry) ? undefined : ((struct_exists(_entry, "name")) ? _entry.name : undefined));
 			currentScriptName = _names[_i];
-			_source = __appendMacros(_source);
 			lexer.initialize(_source, currentScriptName);
-			var _program = lexer.parseAll();
-			if (__log_tokenizer_results) json_save(filename_name(_names[_i]) + "_tokenizer.json", _program);
-			pre_processor.initialize(_program);
-			pre_processor.parseAll();
-			if (__log_pre_processer_results) json_save(filename_name(_names[_i]) + "_pre_processor.json", _program);
-			_programs[_i] = _program;
-			var _j = 0; repeat(array_length(_program.MacroVarNames)) {
-				var _mname = _program.MacroVarNames[_j];
-				if (!variable_struct_exists(_globalMacros, _mname)) {
-					_globalMacros[$ _mname] = _program.MacroVar[$ _mname];
-					array_push(_globalMacroNames, _mname);
-				}
-			_j++;}
-			var _headers = struct_get_names(_program.EnumVar);
-			var _k = 0; repeat(array_length(_headers)) {
-				var _header = _headers[_k];
-				if (!variable_struct_exists(_globalEnums, _header)) {
-					_globalEnums[$ _header]     = _program.EnumVar[$ _header];
-					_globalEnumNames[$ _header] = _program.EnumVarNames[$ _header];
-				}
-			_k++;}
-		_i++;}
+			_programs[_i] = lexer.parseAll();
+			if (__log_tokenizer_results) json_save(filename_name(_names[_i]) + "_tokenizer.json", _programs[_i]);
+		_i++}
+		
+		// Phase 2: macros and enums of the whole batch, then the expansion of every file
+		__preprocess(_programs);
+		if (__log_pre_processer_results) {
+			_i = 0; repeat(_count) { json_save(filename_name(_names[_i]) + "_pre_processor.json", _programs[_i]); _i++ }
+		}
 
-		// Phase 2 — Cross-expand macro bodies in global pool
-		__cross_expand_macro_bodies(_globalMacros, _globalMacroNames);
-
-		// Phase 3 — Compile each saved (already preprocessed) program with global context
+		// Phase 3: compile every preprocessed file
 		var _result = new GMLC_BatchResult();
 		_i = 0; repeat(_count) {
 			var _success = false;
 			var _error   = undefined;
-			//try {
-				__inject_batch_context(_programs[_i], _globalMacros, _globalMacroNames, _globalEnums, _globalEnumNames);
-				__finish_compile(_programs[_i], _names[_i]);
-				_success = true;
-			//}
-			//catch (_err) { _error = _err; }
+			__finish_compile(_programs[_i], _names[_i]);
+			_success = true;
 			_result.add(_names[_i], _success, _error);
 		_i++;}
 		return _result;
 	}
 
 	/// @ignore
-	static __compile_script_asset = function(_yy, _asset_dir, _result, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
+	static __compile_script_asset = function(_yy, _asset_dir, _result) {
 		var _name     = _yy.name;
 		var _gml_path = _asset_dir + _name + ".gml";
 		var _source   = gmlc_file_read_all_text(_gml_path);
@@ -1194,18 +1152,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		}
 		var _success = false;
 		var _error   = undefined;
-		//try {
-			var _program = __compile_pipeline(_source, _name);
-			__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-			__finish_compile(_program, _name);
-			_success = true;
-		//}
-		//catch (_err) { _error = _err; }
+		var _program = __compile_pipeline(_source, _name);
+		__finish_compile(_program, _name);
+		_success = true;
 		_result.add(_name, _success, _error);
 	}
 
 	/// @ignore
-	static __compile_object_asset = function(_yy, _asset_dir, _result, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames) {
+	static __compile_object_asset = function(_yy, _asset_dir, _result) {
 		var _obj_name = _yy.name;
 		var _files    = gumshoe(_asset_dir, "gml", false);
 		var _i = 0; repeat(array_length(_files)) {
@@ -1214,13 +1168,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			var _source     = gmlc_file_read_all_text(_gml_path);
 			var _success    = false;
 			var _error      = undefined;
-			//try {
-				var _program = __compile_pipeline(_source, _entry_name);
-				__inject_batch_context(_program, _batchMacros, _batchMacroNames, _batchEnums, _batchEnumNames);
-				__finish_compile(_program, _entry_name);
-				_success = true;
-			//}
-			//catch (_err) { _error = _err; }
+			var _program = __compile_pipeline(_source, _entry_name);
+			__finish_compile(_program, _entry_name);
+			_success = true;
 			_result.add(_entry_name, _success, _error);
 		_i++;}
 	}
@@ -1241,13 +1191,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _yy     = snap_from_json(_yy_string);
 		var _type   = _yy.resourceType;
 		var _result = new GMLC_BatchResult();
-		var _empty  = {};
-		var _emptyA = [];
 		if (_type == "GMScript") {
-			__compile_script_asset(_yy, _asset_dir, _result, _empty, _emptyA, _empty, _empty);
+			__compile_script_asset(_yy, _asset_dir, _result);
 		}
 		else if (_type == "GMObject") {
-			__compile_object_asset(_yy, _asset_dir, _result, _empty, _emptyA, _empty, _empty);
+			__compile_object_asset(_yy, _asset_dir, _result);
 		}
 		else if (variable_struct_exists(_yy, "name") && is_string(_yy.name)) {
 			var _sym = {};
@@ -1309,54 +1257,27 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			}
 		_i++;}
 
-		var _file_count      = array_length(_entries);
-		var _programs        = array_create(_file_count, undefined);
-		var _globalMacros     = {};
-		var _globalMacroNames = [];
-		var _globalEnums      = {};
-		var _globalEnumNames  = {};
+		var _file_count = array_length(_entries);
+		var _programs   = array_create(_file_count, undefined);
 
-		// Phase 1 — Tokenize + preprocess each file ONCE; collect global symbol table
+		// Phase 1: lex every file
 		_i = 0; repeat(_file_count) {
-			var _source = __appendMacros(_entries[_i].source);
 			currentScriptName = __resolve_compile_source_name(_entries[_i].name);
-			lexer.initialize(_source, currentScriptName);
-			var _program = lexer.parseAll();
-			pre_processor.initialize(_program);
-			pre_processor.parseAll();
-			_programs[_i] = _program;
-			var _j = 0; repeat(array_length(_program.MacroVarNames)) {
-				var _mname = _program.MacroVarNames[_j];
-				if (!variable_struct_exists(_globalMacros, _mname)) {
-					_globalMacros[$ _mname] = _program.MacroVar[$ _mname];
-					array_push(_globalMacroNames, _mname);
-				}
-			_j++;}
-			var _headers = struct_get_names(_program.EnumVar);
-			var _k = 0; repeat(array_length(_headers)) {
-				var _header = _headers[_k];
-				if (!variable_struct_exists(_globalEnums, _header)) {
-					_globalEnums[$ _header]     = _program.EnumVar[$ _header];
-					_globalEnumNames[$ _header] = _program.EnumVarNames[$ _header];
-				}
-			_k++;}
-		_i++;}
+			lexer.initialize(_entries[_i].source, currentScriptName);
+			_programs[_i] = lexer.parseAll();
+		_i++}
 
-		// Phase 2 — Cross-expand macro bodies across the unified global pool
-		__cross_expand_macro_bodies(_globalMacros, _globalMacroNames);
+		// Phase 2: macros and enums of the whole project, then the expansion of every file
+		__preprocess(_programs);
 
-		// Phase 3 — Compile each saved program with global context
+		// Phase 3: compile every preprocessed file
 		var _result = new GMLC_BatchResult();
 		_i = 0; repeat(_file_count) {
 			var _name    = _entries[_i].name;
 			var _success = false;
 			var _error   = undefined;
-			//try {
-				__inject_batch_context(_programs[_i], _globalMacros, _globalMacroNames, _globalEnums, _globalEnumNames);
-				__finish_compile(_programs[_i], _name);
-				_success = true;
-			//}
-			//catch (_err) { _error = _err; }
+			__finish_compile(_programs[_i], _name);
+			_success = true;
 			_result.add(_name, _success, _error);
 		_i++;}
 		return _result;

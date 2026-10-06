@@ -411,6 +411,7 @@
     {"id":{"name":"GmlExceptionTestSuite","path":"scripts/GmlExceptionTestSuite/GmlExceptionTestSuite.yy",},},
     {"id":{"name":"GmlFunctionCallTestSuite","path":"scripts/GmlFunctionCallTestSuite/GmlFunctionCallTestSuite.yy",},},
     {"id":{"name":"GmlLegacySyntaxTestSuite","path":"scripts/GmlLegacySyntaxTestSuite/GmlLegacySyntaxTestSuite.yy",},},
+    {"id":{"name":"GmlMacroTestSuite","path":"scripts/GmlMacroTestSuite/GmlMacroTestSuite.yy",},},
     {"id":{"name":"GmlMethodBindingTestSuite","path":"scripts/GmlMethodBindingTestSuite/GmlMethodBindingTestSuite.yy",},},
     {"id":{"name":"GMLPromise","path":"scripts/GMLPromise/GMLPromise.yy",},},
     {"id":{"name":"GMLPromiseFunctions","path":"scripts/GMLPromiseFunctions/GMLPromiseFunctions.yy",},},

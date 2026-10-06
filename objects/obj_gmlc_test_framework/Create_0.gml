@@ -164,6 +164,7 @@ testFramework.addSuite(BasicConstructorTestSuit);
 testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
+testFramework.addSuite(GmlMacroTestSuite);
 testFramework.addSuite(GmlFunctionCallTestSuite);
 testFramework.addSuite(GmlEnumTestSuite);
 testFramework.addSuite(GmlExceptionTestSuite);

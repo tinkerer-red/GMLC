@@ -28,6 +28,7 @@
     {"name":"GmlExceptionTestSuite","order":3,"path":"scripts/GmlExceptionTestSuite/GmlExceptionTestSuite.yy",},
     {"name":"GmlFunctionCallTestSuite","order":3,"path":"scripts/GmlFunctionCallTestSuite/GmlFunctionCallTestSuite.yy",},
     {"name":"GmlLegacySyntaxTestSuite","order":3,"path":"scripts/GmlLegacySyntaxTestSuite/GmlLegacySyntaxTestSuite.yy",},
+    {"name":"GmlMacroTestSuite","order":3,"path":"scripts/GmlMacroTestSuite/GmlMacroTestSuite.yy",},
     {"name":"GmlMethodBindingTestSuite","order":3,"path":"scripts/GmlMethodBindingTestSuite/GmlMethodBindingTestSuite.yy",},
     {"name":"GmlStringEscapeTestSuite","order":3,"path":"scripts/GmlStringEscapeTestSuite/GmlStringEscapeTestSuite.yy",},
     {"name":"GmlUnicodeAndBytesTestSuite","order":3,"path":"scripts/GmlUnicodeAndBytesTestSuite/GmlUnicodeAndBytesTestSuite.yy",},
