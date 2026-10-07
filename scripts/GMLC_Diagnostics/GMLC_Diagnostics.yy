@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Diagnostics",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Diagnostics",
+  "parent":{
+    "name":"Driver",
+    "path":"folders/GMLC/Driver.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

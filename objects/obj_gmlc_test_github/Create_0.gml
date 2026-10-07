@@ -38,7 +38,7 @@ var _i = 0; repeat(_length) {
 		}
 	_j++;}
 
-	// Compile this repo as its own isolated batch (errors silenced — failures recorded in entries)
+	// Compile this repo as its own isolated batch (errors silenced; failures recorded in entries)
 	var _batch_result = new GMLC_BatchResult();
 	var _error = undefined;
 	try {

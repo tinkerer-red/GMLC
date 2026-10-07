@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GmlExtensionLoweringTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlExtensionLoweringTestSuite",
+  "parent":{
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

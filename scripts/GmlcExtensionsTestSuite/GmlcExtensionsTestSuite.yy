@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GmlcExtensionsTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlcExtensionsTestSuite",
+  "parent":{
+    "name":"Extensions",
+    "path":"folders/Tests/Extensions.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

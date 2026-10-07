@@ -382,40 +382,6 @@ function __gmlc_variable_global_set(_name, _val) {
 ////////////////////////////////////////////////
 ////////////////////////////////////////////////
 
-function __NewGMLArray() {
-	var _arr = [];
-	var _i=argument_count-1; repeat(argument_count) {
-		_arr[_i] = argument[_i];
-	_i--;}//end repeat loop
-	return _arr;
-}
-
-#region jsDoc
-/// @func    __NewGMLStruct(_bound, ...)
-/// @desc    Creates the struct of a struct literal from key, value argument pairs. The function literals among the
-///          values are bound to the new struct, as GameMaker does.
-/// @param   {Array<String>|Undefined} _bound : Keys whose values are function literals, or undefined when none are
-/// @param   {Any} ... : Key, value pairs
-/// @returns {Struct}
-#endregion
-function __NewGMLStruct(_bound) {
-	var _struct = {};
-	var _i=1; repeat((argument_count-1)/2) {
-		_struct[$ argument[_i]] = argument[_i+1];
-	_i+=2;}//end repeat loop
-	
-	if (_bound != undefined) {
-		var _j=0; repeat(array_length(_bound)) {
-			var _key = _bound[_j];
-			_struct[$ _key] = __gmlc_method(_struct, _struct[$ _key]);
-		_j++}
-	}
-	
-	//set the statics so they are unique
-	static_set(_struct, {});
-	
-	return _struct;
-}
 
 
 

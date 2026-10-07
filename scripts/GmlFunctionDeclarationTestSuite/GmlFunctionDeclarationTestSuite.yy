@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GmlFunctionDeclarationTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GmlFunctionDeclarationTestSuite",
+  "parent":{
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

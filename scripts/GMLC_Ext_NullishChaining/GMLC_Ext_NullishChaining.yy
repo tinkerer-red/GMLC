@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_5_Compiler",
+  "%Name":"GMLC_Ext_NullishChaining",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_5_Compiler",
+  "name":"GMLC_Ext_NullishChaining",
   "parent":{
-    "name":"Runtime",
-    "path":"folders/GMLC/Backends/Runtime.yy",
+    "name":"Extensions",
+    "path":"folders/GMLC/Extensions.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

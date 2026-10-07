@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_4_Optimizer",
+  "%Name":"GMLC_AstJson",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_4_Optimizer",
+  "name":"GMLC_AstJson",
   "parent":{
-    "name":"Optimizer",
-    "path":"folders/GMLC/Optimizer.yy",
+    "name":"Util",
+    "path":"folders/GMLC/Util.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

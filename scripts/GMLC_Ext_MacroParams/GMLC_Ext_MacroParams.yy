@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Ext_MacroParams",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Ext_MacroParams",
+  "parent":{
+    "name":"Extensions",
+    "path":"folders/GMLC/Extensions.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

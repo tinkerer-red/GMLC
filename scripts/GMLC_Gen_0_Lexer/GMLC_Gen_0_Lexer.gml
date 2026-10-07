@@ -6,8 +6,9 @@
 // Bad input never throws while lexing: it becomes an Illegal token plus a diagnostic, and the first error
 // is thrown once the whole file is lexed.
 //
-// Every token carries its kind, byte range and type (kind, start, end, ty) and the fields the preprocessor and
-// parser read (type, name, value, line, column, lineString, sourceInfo).
+// Every token carries its kind, file, byte range and type (kind, file, start, end, ty) and the fields the
+// preprocessor and parser read (type, name, value). Lines and columns come from the file's GMLC_SourceFile when an
+// error needs them.
 
 #macro __GMLC_TokenKind_Eof            0
 #macro __GMLC_TokenKind_Illegal        1
@@ -42,21 +43,16 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 	scratch = buffer_create(256, buffer_grow, 1);
 	
 	fileName = "input";
+	fileId = 0;             // number of the file in the compile's source table
 	lineStarts = [0];       // byte offset of the start of every line
-	lineTexts = [];         // text of each line, filled on first use
 	hadBom = false;
 	crlfDominant = false;
 	
 	tokens = [];            // tokens for the preprocessor (no Eof)
 	eofToken = undefined;
-	diagnostics = [];       // {code, severity, start, end, message}
+	diagnostics = [];       // GMLC_Diagnostic records of this file
 	modes = [];             // template mode stack: one entry per open interpolation, its count of open `{`
 	program = undefined;
-	
-	// position cache for line and column (tokens are made in source order)
-	__lineIndex = 0;
-	__colPos = 0;
-	__colCount = 1;
 	
 	#region Tables
 	static __keywords = {
@@ -74,23 +70,22 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 	
 	#region Public
 	#region jsDoc
-	/// @func    initialize(_source, _fileName)
+	/// @func    initialize(_source, _fileName, [_fileId])
 	/// @desc    Prepares lexing of one file: normalises the source into a byte buffer (BOM removed at offset 0, every
 	///          run of CR followed by LF and every other CR becomes LF) and builds the line table.
 	/// @self    GMLC_Gen_0_Lexer
 	/// @param   {String} _source   : Source text
 	/// @param   {String} _fileName : Name used in positions and errors
+	/// @param   {Real}   [_fileId] : Number of the file in the compile's source table
 	#endregion
-	static initialize = function(_source, _fileName = "input") {
+	static initialize = function(_source, _fileName = "input", _fileId = 0) {
 		fileName = _fileName;
+		fileId = _fileId;
 		tokens = [];
 		eofToken = undefined;
 		diagnostics = [];
 		modes = [];
 		pos = 0;
-		__lineIndex = 0;
-		__colPos = 0;
-		__colCount = 1;
 		
 		var _raw = buffer_create(string_byte_length(_source) + 1, buffer_fixed, 1);
 		buffer_write(_raw, buffer_text, _source);
@@ -144,29 +139,27 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		buffer_delete(_raw);
 		len = _out;
 		crlfDominant = (_crlf > _lf);
-		lineTexts = array_create(array_length(lineStarts), undefined);
 		
-		program = new __GMLC_ProgramTokens(tokens, new GMLC_SourceInfo(fileName, fileName, __lineText(0), 1, 1, 0, 0));
+		program = new __GMLC_ProgramTokens(tokens, new GMLC_SourceFile(fileId, fileName, __text(0, len), lineStarts));
 		return self;
 	};
 	#region jsDoc
 	/// @func    parseAll()
-	/// @desc    Lexes the whole file. Throws the first error diagnostic, if any, after lexing.
+	/// @desc    Lexes the whole file. Throws when a diagnostic is an error, after lexing; `program` still holds the
+	///          tokens then.
 	/// @self    GMLC_Gen_0_Lexer
-	/// @returns {Struct} The program token record (tokens and the empty declaration tables)
+	/// @returns {Struct} The program token record (tokens, the file's lines and the empty declaration tables)
 	#endregion
 	static parseAll = function() {
 		while (nextToken() != __GMLC_TokenKind_Eof) {}
-		
-		var _i=0; repeat(array_length(diagnostics)) {
-			var _d = diagnostics[_i];
-			if (_d.severity == "error") {
-				var _info = __sourceInfo(_d.start, _d.end);
-				throw_gmlc_error(_d.message, _info.line, _info.lineString, _info.column, fileName);
-			}
-		_i++}
-		
 		program.tokens = tokens;
+		program.eof = eofToken;
+		
+		if (__gmlc_has_errors(diagnostics)) {
+			var _sources = new GMLC_SourceTable();
+			_sources.add(program.file);
+			__gmlc_throw_diagnostics(diagnostics, _sources);
+		}
 		return program;
 	};
 	#endregion
@@ -215,22 +208,31 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			case ord("/"): {
 				var _n = __byte(pos + 1);
 				if (_n == ord("/")) {
-					while (pos < len) && (__byte(pos) != 10) pos++;
-					return __push(__GMLC_TokenKind_Comment, __GMLC_TokenType_Comment, _start, __text(_start, pos));
+					__high = false;
+					while (pos < len) {
+						var _c = __byte(pos);
+						if (_c == 10) break;
+						if (_c >= 0x80) __high = true;
+						pos++;
+					}
+					return __push(__GMLC_TokenKind_Comment, __GMLC_TokenType_Comment, _start, __utf8Value(_start, __text(_start, pos)));
 				}
 				if (_n == ord("*")) {
 					pos += 2;
+					__high = false;
 					var _closed = false;
 					while (pos < len) {
-						if (__byte(pos) == ord("*")) && (__byte(pos + 1) == ord("/")) {
+						var _c = __byte(pos);
+						if (_c == ord("*")) && (__byte(pos + 1) == ord("/")) {
 							pos += 2;
 							_closed = true;
 							break;
 						}
+						if (_c >= 0x80) __high = true;
 						pos++;
 					}
-					if (!_closed) __diagnostic(15, "error", _start, pos, "unclosed comment");
-					return __push(__GMLC_TokenKind_Comment, __GMLC_TokenType_Comment, _start, __text(_start, pos));
+					// an unclosed block comment runs to the end of the file
+					return __push(__GMLC_TokenKind_Comment, __GMLC_TokenType_Comment, _start, __utf8Value(_start, __text(_start, pos)));
 				}
 				return lexOperator(_start);
 			}
@@ -239,7 +241,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				var _n = __byte(pos + 1);
 				if (_n == ord("\"")) || (_n == ord("'")) return lexVerbatim(_start);
 				pos++;
-				return __illegal(_start, 2, "unexpected symbol \"@\"");
+				return __illegal(2, _start, ["@"]);
 			}
 			case ord("$"): {
 				var _n = __byte(pos + 1);
@@ -249,7 +251,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				}
 				if (__isHex(_n)) return lexNumber(_start);
 				pos++;
-				return __illegal(_start, 2, "unexpected symbol \"$\"");
+				return __illegal(2, _start, ["$"]);
 			}
 			case ord("#"): return lexDirective(_start);
 			case ord("'"): {
@@ -257,7 +259,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				pos++;
 				while (pos < len) && (__byte(pos) != 10) && (__byte(pos) != ord("'")) pos++;
 				if (pos < len) && (__byte(pos) == ord("'")) pos++;
-				return __illegal(_start, 17, "single-quoted strings are not GML");
+				return __illegal(17, _start);
 			}
 			case ord("\\"): {
 				pos++;
@@ -289,10 +291,10 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		var _cp = __decode(pos);
 		if (_cp < 0) {
 			pos++;
-			return __illegal(_start, 1, "invalid UTF-8");
+			return __illegal(1, _start);
 		}
 		pos += __utf8Length(_b);
-		return __illegal(_start, 2, "unexpected character");
+		return __illegal(2, _start, [__text(_start, pos)]);
 	};
 	#endregion
 	
@@ -313,10 +315,10 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		var _prev = __previousSignificant();
 		var _afterDot = (_prev != undefined) && (_prev.kind == __GMLC_TokenKind_Op) && (_prev.value == ".");
 		if (!_afterDot) {
-			if (struct_exists(__keywords, _word)) {
+			if (__gmlc_struct_has(__keywords, _word)) {
 				return __push(__GMLC_TokenKind_Keyword, __GMLC_TokenType_Keyword, _start, _word);
 			}
-			var _alias = __aliases[$ _word];
+			var _alias = __gmlc_struct_get(__aliases, _word);
 			if (_alias != undefined) {
 				return __pushOp(_start, _alias, _word);
 			}
@@ -329,7 +331,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 	#region jsDoc
 	/// @func    lexDirective(_start)
 	/// @desc    Lexes a token starting with `#`: `#macro`, `#region` / `#endregion` (one token to the end of the line,
-	///          the title is free text), a colour `#RRGGBB`, or an error for `#define` and unknown directives.
+	///          the title is free text), a colour `#RRGGBB`, or an error for any other directive.
 	///          GameMaker accepts directives after code on the same line.
 	/// @self    GMLC_Gen_0_Lexer
 	/// @param   {Real} _start : Byte offset of `#`
@@ -367,19 +369,15 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				return __GMLC_TokenKind_Number;
 			}
 			pos = _h;
-			return __illegal(_start, 5, "css hex color needs to be 6 digits");
+			return __illegal(5, _start);
 		}
 		
-		if (_word == "define") {
-			while (pos < len) && (__byte(pos) != 10) pos++;
-			return __illegal(_start, 4, "#define is not supported");
-		}
 		if (_word != "") {
 			while (pos < len) && (__byte(pos) != 10) pos++;
-			return __illegal(_start, 3, "unknown directive #" + _word);
+			return __illegal(3, _start, [_word]);
 		}
 		pos++;
-		return __illegal(_start, 2, "unexpected symbol \"#\"");
+		return __illegal(2, _start, ["#"]);
 	};
 	#endregion
 	
@@ -425,10 +423,10 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			pos = _i;
 			if (_count == 0) || (__isWordByte(__byte(pos))) {
 				while (pos < len) && (__isWordByte(__byte(pos)) || __byte(pos) == ord(".")) pos++;
-				return __illegal(_start, 6, "malformed number " + __text(_start, pos));
+				return __illegal(6, _start, [__text(_start, pos)]);
 			}
 			if ((_radix == 16) && (_count > 16)) || ((_radix == 2) && (_count > 64)) {
-				return __illegal(_start, 7, "integer literal wider than 64 bits");
+				return __illegal(7, _start);
 			}
 			var _v = (_radix == 16) ? __hexValue(_digits, pos) : __binaryValue(_digits, pos);
 			var _token;
@@ -459,7 +457,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		}
 		if (__isWordByte(__byte(pos))) || ((__byte(pos) == ord(".")) && __isDigit(__byte(pos + 1))) {
 			while (pos < len) && (__isWordByte(__byte(pos)) || __byte(pos) == ord(".")) pos++;
-			return __illegal(_start, 6, "Number " + __text(_start, pos) + " in incorrect format");
+			return __illegal(6, _start, [__text(_start, pos)]);
 		}
 		var _text = string_replace_all(__text(_start, pos), "_", "");
 		var _token;
@@ -480,7 +478,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				_token.ty = "int64";
 			}
 			else {
-				__diagnostic(8, "warning", _start, pos, "integer literal does not fit in int64");
+				__report(8, _start, pos, [__text(_start, pos)]);
 				_token = __makeToken(__GMLC_TokenKind_Number, __GMLC_TokenType_Number, _start, pos, real(_digitsText));
 				_token.ty = "real";
 			}
@@ -507,12 +505,12 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			pos++;
 		}
 		else if (_end == "newline") {
-			__diagnostic(10, "error", _start, pos, "unterminated string literal (a raw line break is not allowed)");
+			__report(10, _start, pos);
 		}
 		else {
-			__diagnostic(9, "error", _start, pos, "unterminated string literal");
+			__report(9, _start, pos);
 		}
-		var _token = __makeToken(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, pos, _cooked);
+		var _token = __makeToken(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, pos, __utf8Value(_start, _cooked));
 		array_push(tokens, _token);
 		return __GMLC_TokenKind_String;
 	};
@@ -527,15 +525,21 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		var _quote = __byte(pos + 1);
 		pos += 2;
 		var _from = pos;
-		while (pos < len) && (__byte(pos) != _quote) pos++;
+		__high = false;
+		while (pos < len) {
+			var _c = __byte(pos);
+			if (_c == _quote) break;
+			if (_c >= 0x80) __high = true;
+			pos++;
+		}
 		var _value = __text(_from, pos);
 		if (pos < len) {
 			pos++;
 		}
 		else {
-			__diagnostic(9, "error", _start, pos, "unterminated string literal");
+			__report(9, _start, pos);
 		}
-		var _token = __makeToken(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, pos, _value);
+		var _token = __makeToken(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, pos, __utf8Value(_start, _value));
 		array_push(tokens, _token);
 		return __GMLC_TokenKind_String;
 	};
@@ -563,21 +567,46 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				pos++;
 			}
 			else if (_end == "newline") {
-				__diagnostic(14, "error", _start, pos, "unterminated template string (a raw line break is not allowed)");
+				__report(14, _start, pos);
 			}
 			else {
-				__diagnostic(13, "error", _start, pos, "unterminated template string");
+				__report(13, _start, pos);
 			}
 			// a template with no interpolation is a plain string to the parser
 			_kind = _isStart ? __GMLC_TokenKind_TemplateFull : __GMLC_TokenKind_TemplateTail;
 			_type = _isStart ? __GMLC_TokenType_String : __GMLC_TokenType_TemplateStringEnd;
 		}
-		var _token = __makeToken(_kind, _type, _start, pos, _cooked);
+		var _token = __makeToken(_kind, _type, _start, pos, __utf8Value(_start, _cooked));
 		array_push(tokens, _token);
 		return _kind;
 	};
 	
 	__cookEnd = "";
+	__high = false; // a byte of 0x80 or more was in the text the last string, template text or comment scan read
+	
+	#region jsDoc
+	/// @func    __utf8Value(_start, _value)
+	/// @desc    The value of a string, template text or comment token that ends at `pos`. Any bytes are allowed there;
+	///          when they are not all UTF-8, the value has U+FFFD for each bad byte, so the
+	///          token's value stays text.
+	/// @self    GMLC_Gen_0_Lexer
+	/// @param   {Real}   _start : Byte offset of the token
+	/// @param   {String} _value : The token's value
+	/// @returns {String}
+	#endregion
+	static __utf8Value = function(_start, _value) {
+		if (!__high) return _value;
+		var _p = _start;
+		while (_p < pos) {
+			var _n = __GMLC_utf8Length(buf, _p, len);
+			if (_n == 0) {
+				program.file.invalidUtf8 = true; // its dumps then replace those bytes
+				return __GMLC_lossyUtf8(_value);
+			}
+			_p += _n;
+		}
+		return _value;
+	};
 	#region jsDoc
 	/// @func    __cookText(_start, _quote, _template)
 	/// @desc    Reads string text from `pos` and returns it with escapes applied, leaving `pos` on what ended it and
@@ -593,13 +622,18 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		var _out = "";
 		var _run = pos;
 		var _ended = false; // after \0
+		__high = false;
 		while (true) {
 			if (pos >= len) { __cookEnd = "eof"; break; }
 			var _c = __byte(pos);
 			if (_c == _quote) { __cookEnd = "quote"; break; }
 			if (_c == 10) { __cookEnd = "newline"; break; }
 			if (_template) && (_c == ord("{")) { __cookEnd = "brace"; break; }
-			if (_c != ord("\\")) { pos++; continue; }
+			if (_c != ord("\\")) {
+				if (_c >= 0x80) __high = true;
+				pos++;
+				continue;
+			}
 			
 			if (!_ended) _out += __text(_run, pos);
 			pos++;
@@ -644,7 +678,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 					pos += 2;
 					return __escapeChar(_v);
 				}
-				__diagnostic(12, "error", _escStart, pos, "Error parsing \\x HEX value. 2 digits required.");
+				__report(12, _escStart, pos, [__text(_escStart, pos)]);
 				return "";
 			}
 			case ord("u"): {
@@ -652,12 +686,12 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				var _from = pos;
 				while (pos < len) && (__isHexDigit(__byte(pos))) pos++;
 				if (pos == _from) || (pos - _from > 8) {
-					__diagnostic(12, "error", _escStart, pos, "Error parsing \\u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.");
+					__report(12, _escStart, pos, [__text(_escStart, pos)]);
 					return "";
 				}
 				var _v = __hexValue(_from, pos);
 				if (_v > 0x10FFFF) || ((_v >= 0xD800) && (_v <= 0xDFFF)) {
-					__diagnostic(12, "error", _escStart, pos, "Error parsing \\u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.");
+					__report(12, _escStart, pos, [__text(_escStart, pos)]);
 					return "";
 				}
 				return __escapeChar(_v);
@@ -672,7 +706,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				_n++;
 			}
 			if (_v > 255) {
-				__diagnostic(12, "error", _escStart, pos, "Error parsing \\??? OCTAL value. Value must be less than 255.");
+				__report(12, _escStart, pos, [__text(_escStart, pos)]);
 				return "";
 			}
 			return __escapeChar(_v);
@@ -717,7 +751,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		
 		if (_two == "<<" || _two == ">>") && (_n2 == "=") {
 			pos += 3;
-			return __illegal(_start, 16, "unexpected symbol \"" + _two + "=\"");
+			return __illegal(16, _start, [_two + "="]);
 		}
 		if (_two == "??") && (_n2 == "=") {
 			pos += 3;
@@ -747,7 +781,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				return __pushOp(_start, "mod", "%");
 		}
 		pos++;
-		return __illegal(_start, 2, "unexpected symbol \"" + _c + "\"");
+		return __illegal(2, _start, [_c]);
 	};
 	#endregion
 	
@@ -856,50 +890,9 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		if (string_length(_digits) != string_length(_limit)) return string_length(_digits) < string_length(_limit);
 		return (_digits <= _limit);
 	};
-	static __lineText = function(_index) {
-		if (_index >= array_length(lineTexts)) return "";
-		var _text = lineTexts[_index];
-		if (_text == undefined) {
-			var _s = lineStarts[_index];
-			var _e = (_index + 1 < array_length(lineStarts)) ? lineStarts[_index + 1] - 1 : len;
-			_text = __text(_s, max(_s, _e));
-			lineTexts[_index] = _text;
-		}
-		return _text;
-	};
-	#region jsDoc
-	/// @func    __sourceInfo(_start, _end)
-	/// @desc    Position of a byte range: 1-based line, and 1-based column counted in code points.
-	///          Tokens are made in source order, so the line and column of the previous call are the starting point.
-	/// @self    GMLC_Gen_0_Lexer
-	/// @param   {Real} _start : First byte
-	/// @param   {Real} _end   : Byte after the last
-	/// @returns {Struct.GMLC_SourceInfo}
-	#endregion
-	static __sourceInfo = function(_start, _end) {
-		if (_start < __colPos) || (_start < lineStarts[__lineIndex]) {
-			__lineIndex = 0;
-			__colPos = 0;
-			__colCount = 1;
-		}
-		var _lines = array_length(lineStarts);
-		while (__lineIndex + 1 < _lines) && (lineStarts[__lineIndex + 1] <= _start) {
-			__lineIndex++;
-			__colPos = lineStarts[__lineIndex];
-			__colCount = 1;
-		}
-		while (__colPos < _start) {
-			var _b = buffer_peek(buf, __colPos, buffer_u8);
-			if (_b < 0x80) || (_b > 0xBF) __colCount++;
-			__colPos++;
-		}
-		return new GMLC_SourceInfo(fileName, fileName, __lineText(__lineIndex), __lineIndex + 1, __colCount, _start, _end);
-	};
 	static __makeToken = function(_kind, _type, _start, _end, _value) {
-		var _token = new __GMLC_create_token(_type, __text(_start, _end), _value, __sourceInfo(_start, _end));
+		var _token = new __GMLC_create_token(_type, __text(_start, _end), _value, fileId, _start, _end);
 		_token.kind = _kind;
-		_token.start = _start;
-		_token.end = _end;
 		_token.ty = undefined;
 		return _token;
 	};
@@ -920,20 +913,15 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		array_push(tokens, _token);
 		return __GMLC_TokenKind_Op;
 	};
-	static __illegal = function(_start, _code, _message) {
-		__diagnostic(_code, "error", _start, pos, _message);
-		array_push(tokens, __makeToken(__GMLC_TokenKind_Illegal, __GMLC_TokenType_Illegal, _start, pos, _message));
+	static __illegal = function(_code, _start, _args = undefined) {
+		__report(_code, _start, pos, _args);
+		array_push(tokens, __makeToken(__GMLC_TokenKind_Illegal, __GMLC_TokenType_Illegal, _start, pos, undefined));
 		return __GMLC_TokenKind_Illegal;
 	};
-	static __diagnostic = function(_code, _severity, _start, _end, _message) {
-		var _diagnostic = {
-			code: "GMLC" + string_replace_all(string_format(_code, 4, 0), " ", "0"),
-			severity: _severity,
-			start: _start,
-			message: _message,
-		};
-		_diagnostic.end = _end; // `end` is a keyword in a struct literal, not after `.`
-		array_push(diagnostics, _diagnostic);
+	static __report = function(_code, _start, _end, _args = undefined) {
+		if (_code == 1) program.file.invalidUtf8 = true; // its dumps then replace those bytes
+		var _name = "GMLC" + string_replace_all(string_format(_code, 4, 0), " ", "0");
+		array_push(diagnostics, new GMLC_Diagnostic(_name, new GMLC_Span(fileId, _start, _end), _args));
 	};
 	static __previousSignificant = function() {
 		var _i = array_length(tokens) - 1;
@@ -950,16 +938,15 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 
 #region Token records
 #region jsDoc
-/// @func    __GMLC_ProgramTokens(_tokens, _sourceInfo)
-/// @desc    The lexer's output for one file: its tokens and the declaration tables the preprocessor fills.
-/// @param   {Array<Struct>} _tokens     : The tokens
-/// @param   {Struct}        _sourceInfo : Position of the file
+/// @func    __GMLC_ProgramTokens(_tokens, _file)
+/// @desc    The lexer's output for one file: its tokens, its file and the declaration tables the preprocessor fills.
+/// @param   {Array<Struct>}          _tokens : The tokens
+/// @param   {Struct.GMLC_SourceFile} _file   : The file
 /// @returns {Struct}
 #endregion
-function __GMLC_ProgramTokens(_tokens, _sourceInfo) constructor {
-	GlobalVar = {};
-	GlobalVarNames = [];
-	LocalVarNames  = [];
+function __GMLC_ProgramTokens(_tokens, _file) constructor {
+	file = _file;
+	eof = undefined; // the Eof token, which the token list leaves out
 	// filled by the preprocessor
 	macros  = [];
 	enums   = [];
@@ -967,34 +954,29 @@ function __GMLC_ProgramTokens(_tokens, _sourceInfo) constructor {
 	pragmas = [];
 	
 	tokens = _tokens;
-	sourceInfo = _sourceInfo;
-	fileName = _sourceInfo.fileName;
-	functionName = _sourceInfo.functionName;
+	fileName = _file.name;
 }
 #region jsDoc
-/// @func    __GMLC_create_token(_type, _name, _value, _sourceInfo)
-/// @desc    A token as the preprocessor and parser read it: type, source text (name), value and position.
-/// @param   {Real}   _type       : __GMLC_TokenType_* of the token
-/// @param   {String} _name       : Source text
-/// @param   {Any}    _value      : Value
-/// @param   {Struct} _sourceInfo : Position
+/// @func    __GMLC_create_token(_type, _name, _value, _file, _start, _end)
+/// @desc    A token as the preprocessor and parser read it: type, source text (name), value and where it is.
+/// @param   {Real}   _type  : __GMLC_TokenType_* of the token
+/// @param   {String} _name  : Source text
+/// @param   {Any}    _value : Value
+/// @param   {Real}   _file  : Number of the file in the compile's source table
+/// @param   {Real}   _start : First byte
+/// @param   {Real}   _end   : Byte after the last
 /// @returns {Struct}
 #endregion
-function __GMLC_create_token(_type, _name, _value, _sourceInfo) constructor {
+function __GMLC_create_token(_type, _name, _value, _file, _start, _end) constructor {
 	type   = _type;
 	name   = _name;
 	value  = _value;
-	sourceInfo = _sourceInfo;
-	fileName = _sourceInfo.fileName;
-	functionName = _sourceInfo.functionName;
-	lineString = _sourceInfo.lineString;
-	line   = _sourceInfo.line;
-	column = _sourceInfo.column;
-	byteStart  = _sourceInfo.byteStart;
-	byteEnd    = _sourceInfo.byteEnd;
+	file   = _file;
+	start  = _start;
+	self[$ "end"] = _end; // `end` is a keyword outside of `[$ ]` and `.`
 	
 	static toString = function() {
-		return $"\{type: \"{type}\", name: \"{name}\", value: \"{value}\", line: {line}, column: {column}, lineString: {lineString}\}"
+		return $"\{type: \"{type}\", name: \"{name}\", value: \"{value}\", file: {file}, start: {start}\}"
 	}
 };
 #endregion

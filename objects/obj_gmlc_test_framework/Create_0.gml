@@ -164,6 +164,15 @@ testFramework.addSuite(BasicConstructorTestSuit);
 testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
+testFramework.addSuite(GmlFunctionDeclarationTestSuite);
+testFramework.addSuite(GmlExtensionLoweringTestSuite);
+testFramework.addSuite(GmlcExtensionsTestSuite);
+testFramework.addSuite(GmlCompileVerdictTestSuite);
+testFramework.addSuite(GmlJsonNumberTestSuite);
+testFramework.addSuite(GmlScopingTestSuite);
+testFramework.addSuite(GmlcPipelineTestSuite);
+testFramework.addSuite(GmlStatementTestSuite);
+testFramework.addSuite(GmlPrecedenceTestSuite);
 testFramework.addSuite(GmlMacroTestSuite);
 testFramework.addSuite(GmlFunctionCallTestSuite);
 testFramework.addSuite(GmlEnumTestSuite);
@@ -175,6 +184,7 @@ testFramework.addSuite(GmlStringEscapeTestSuite);
 testFramework.addSuite(GmlLegacySyntaxTestSuite);
 testFramework.addSuite(GmlEvaluationOrderTestSuite);
 testFramework.addSuite(GmlDirectiveTestSuite);
+testFramework.addSuite(AstJsonTestSuite);
 
 var _added_tests = []
 

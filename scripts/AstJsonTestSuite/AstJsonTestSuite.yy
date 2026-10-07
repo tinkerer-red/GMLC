@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"AstJsonTestSuite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"AstJsonTestSuite",
+  "parent":{
+    "name":"AST",
+    "path":"folders/Tests/AST.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
