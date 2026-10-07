@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLC_Gen_4_PostProcessor",
+  "%Name":"GMLC_Ext_Const",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLC_Gen_4_PostProcessor",
+  "name":"GMLC_Ext_Const",
   "parent":{
-    "name":"Sema",
-    "path":"folders/GMLC/Sema.yy",
+    "name":"Extensions",
+    "path":"folders/GMLC/Extensions.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

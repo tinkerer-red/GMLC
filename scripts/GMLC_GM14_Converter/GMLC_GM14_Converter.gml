@@ -86,7 +86,7 @@
 				if (currentNode.parent == undefined) {
 					//the entire tree has been optimized and we are at the top most "Program" node
 					if (array_length(nodeStack)) {
-						throw_gmlc_error($"We still have nodes in the nodeStack, we shouldnt be finished")
+						__gmlc_internal_error("the converter finished with nodes left on its stack")
 					}
 					
 					finished = true;

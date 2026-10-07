@@ -48,6 +48,64 @@ function gmlc_pipeline_nodes(_node, _kind, _out = []) {
 	return _out;
 }
 
+#region jsDoc
+/// @func    gmlc_pipeline_codes(_diagnostics)
+/// @desc    The codes of a list of diagnostics in report order, joined by commas.
+/// @param   {Array<Struct.GMLC_Diagnostic>} _diagnostics : The diagnostics
+/// @returns {String}
+#endregion
+function gmlc_pipeline_codes(_diagnostics) {
+	var _list = GMLC_SortDiagnostics(_diagnostics ?? []);
+	var _codes = array_create(array_length(_list));
+	var _i = 0; repeat (array_length(_list)) {
+		_codes[_i] = _list[_i].code;
+	_i++}
+	return string_join_ext(",", _codes);
+}
+
+#region jsDoc
+/// @func    gmlc_pipeline_check(_source)
+/// @desc    The codes GMLC's check reports for a source.
+/// @param   {String} _source : GML source
+/// @returns {String}
+#endregion
+function gmlc_pipeline_check(_source) {
+	static __env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+	return gmlc_pipeline_codes(__env.check(_source, "check.gml"));
+}
+
+#region jsDoc
+/// @func    gmlc_pipeline_lowered(_source)
+/// @desc    The tree of a source after lowering.
+/// @param   {String} _source : GML source
+/// @returns {Struct.ASTScript}
+#endregion
+function gmlc_pipeline_lowered(_source) {
+	static __env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+	var _sources = __env.__newSourceTable();
+	__env.lexer.initialize(_source, "lowered.gml", array_length(_sources.files));
+	var _program = __env.lexer.parseAll();
+	_sources.add(_program.file);
+	_program.sources = _sources;
+	__env.__preprocess([_program], _sources, []);
+	__env.parser.initialize(_program);
+	var _ast = __env.parser.parseAll();
+	__env.resolver.initialize(_ast, _sources);
+	_ast = __env.resolver.parseAll();
+	__env.lower.initialize(_ast, _sources);
+	return __env.lower.parseAll();
+}
+
+// what a function is, how it is reachable and its binding: "fn_kind registration binding"
+function gmlc_pipeline_kind(_info) {
+	return _info.fn_kind + " " + _info.registration + " " + _info.binding;
+}
+
+// gmlc_pipeline_kind, the enclosing function and the two counts: "... parent_fn | statements nodes"
+function gmlc_pipeline_info(_info) {
+	return gmlc_pipeline_kind(_info) + " " + string(_info.parent_fn) + " | " + string(_info.facts.statement_count) + " " + string(_info.facts.node_count);
+}
+
 function GmlcPipelineTestSuite() : TestSuite() constructor {
 	
 	#region Names in a file
@@ -222,7 +280,7 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 	});
 	
 	addFact("An enum reference keeps its text, other literals keep theirs [GMLC]", function() {
-		var _r = ast_json_round_trip("enum RpE { A = 3, B = 1 + 1 }\nreturn [RpE.A, RpE.B, 7];");
+		var _r = ast_json_round_trip("enum RpE { A = 3, B = 1 + 1 }\nreturn [RpE.A, RpE.B, 7];", "lowered");
 		var _literals = gmlc_pipeline_nodes(_r.tree, __GMLC_NodeKind_Literal);
 		var _texts = "";
 		var _i = 0; repeat (array_length(_literals)) {
@@ -253,6 +311,314 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		var _function = _r.tree.body[0];
 		assert_equals(_target.start, _function.span.start, "the target does not start at the function");
 		assert_equals(_target[$ "end"], _function.span[$ "end"], "the target does not cover the function's body");
+	});
+	
+	addFact("gml_pragma(\"@NoOp\") as a statement is the @NoOp pragma and leaves no call [GMLC]", function() {
+		var _r = ast_json_round_trip("var a = 1;\ngml_pragma(\"@NoOp\");\na = 2; a = 3;\na = 4;\n");
+		var _pragmas = _r.tree.pragmas;
+		assert_equals(array_length(_pragmas), 1, "the statement did not become one pragma");
+		assert_equals(array_length(_r.tree.body), 4, "the call was kept as a statement");
+		assert_equals(_pragmas[0].target.start, _r.tree.body[1].span.start, "the pragma does not target the next line");
+		assert_equals(_pragmas[0].target[$ "end"], _r.tree.body[2].span[$ "end"], "the pragma does not cover the whole next line");
+	});
+	
+	addFact("gml_pragma(\"@NoOp\") as the body of an if, or another gml_pragma, stays a call [GMLC]", function() {
+		var _r = ast_json_round_trip("var a = 1;\nif (a) gml_pragma(\"@NoOp\");\ngml_pragma(\"forceinline\");\n");
+		assert_equals(array_length(_r.tree.pragmas), 0, "a pragma was made");
+		assert_equals(array_length(_r.tree.body), 3, "a statement was lost");
+	});
+	
+	addFact("An enum value never runs a function the host put in place of a foldable built-in [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _calls = { n: 0 };
+		_env.exposeFunctions({ floor: method(_calls, function(_x) { n++; return 7; }) });
+		var _codes = gmlc_pipeline_codes(_env.check("enum GmlcFoldOv { A = floor(1.5) }\nvar a = GmlcFoldOv.A;", "fold.gml"));
+		assert_equals(_codes + ":" + string(_calls.n), "GMLC0316:0", "the host's function ran while compiling");
+	});
+
+	addFact("The optimizer never runs a function the host put in place of a foldable built-in [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		_env.should_optimize = true;
+		var _calls = { n: 0 };
+		_env.exposeFunctions({ floor: method(_calls, function(_x) { n++; return 7; }) });
+		var _program = _env.compile("return floor(1.5);", "fold.gml");
+		var _compiled = _calls.n;
+		var _result = executeProgram(_program);
+		assert_equals(string(_compiled) + ":" + string(_result), "0:7", "the host's function ran while compiling, or was not called");
+	});
+
+	addFact("The optimizer still folds GameMaker's own foldable built-in [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		_env.should_optimize = true;
+		assert_equals(executeProgram(_env.compile("return floor(1.5) + sqr(3);", "fold.gml")), 10, "the fold changed the result");
+	});
+
+	addFact("The optimizer folds a string built-in through compile [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		_env.should_optimize = true;
+		assert_equals(executeProgram(_env.compile("return string_upper(\"ab\") + string(string_length(\"abc\"));", "fold.gml")), "AB3", "the fold changed the result");
+	});
+	
+	addFact("A child slot's parent is the node that holds the child [GMLC]", function() {
+		var _node = new ASTReturn(undefined, new ASTLiteral(undefined, "real", "1", 1));
+		var _slots = _node.childSlots();
+		assert_true((array_length(_slots) == 1) && (_slots[0].parent == _node), "the slot's parent is not the node");
+	});
+	
+	addFact("_GMFUNCTION_: a script's own code outside functions is gml_GlobalScript_<script>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("return _GMFUNCTION_;", "Script1.gml")), "gml_GlobalScript_Script1", "GameMaker gives another name");
+	});
+	
+	addFact("_GMFUNCTION_: a global function is gml_Script_<name>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("function gml_gf_a() { return _GMFUNCTION_; }\nreturn gml_gf_a();", "scr_names.gml")), "gml_Script_gml_gf_a", "GameMaker gives another name");
+	});
+	
+	addFact("_GMFUNCTION_: a function declared in a constructor is <name>@<constructor>@<script>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("function GmlGfD() constructor { function step() { return _GMFUNCTION_; } }\nreturn new GmlGfD().step();", "scr_names.gml")), "gml_Script_step@GmlGfD@scr_names", "GameMaker gives another name");
+	});
+	
+	addFact("_GMFUNCTION_: a function expression is anon@<offset>@<outer>@<script>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("function gml_gf_b() { var f = function() { return _GMFUNCTION_; }; return f(); }\nreturn gml_gf_b();", "scr_names.gml")), "gml_Script_anon@30@gml_gf_b@scr_names", "GameMaker gives another name");
+	});
+	
+	addFact("_GMFUNCTION_: a struct literal's method adds ___struct___<n>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("function gml_gf_s() { var s = { m: function() { return _GMFUNCTION_; } }; return s.m(); }\nreturn gml_gf_s();", "scr_names.gml")), "gml_Script_anon@35@___struct___0@gml_gf_s@scr_names", "GameMaker gives another name");
+	});
+	
+	addFact("_GMFUNCTION_: a static's function starts with the static's name, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("function GmlGfE() constructor { static m = function() { return _GMFUNCTION_; }; }\nreturn new GmlGfE().m();", "scr_names.gml")), "gml_Script_m@anon@43@GmlGfE@scr_names", "GameMaker gives another name");
+	});
+	
+	addFact("_GMFUNCTION_: a function declared in a function is <name>@<outer>@<script>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("function gml_gf_f() { function gml_gf_g() { return _GMFUNCTION_; } return gml_gf_g(); }\nreturn gml_gf_f();", "scr_names.gml")), "gml_Script_gml_gf_g@gml_gf_f@scr_names", "GameMaker gives another name");
+	});
+	
+	addFact("A static at the top of an object event is GMLC2007, as at the top of a script [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(gmlc_pipeline_codes(_env.check("static fx_hits = 0;", "Create_0.gml", "event")), "GMLC2007", "the event's static was accepted");
+	});
+
+	addFact("A parser warning reaches the diagnostics of a check: a second default is GMLC1008 [GMLC]", function() {
+		assert_equals(gmlc_pipeline_check("var n = 1;\nswitch (n) {\n\tdefault: break;\n\tdefault: break;\n}"), "GMLC1008", "the parser's warning was lost");
+	});
+
+	addFact("A parser warning reaches the diagnostics of a compile [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		_env.compile("var n = 1;\nswitch (n) {\n\tdefault: break;\n\tdefault: break;\n}", "warn.gml");
+		assert_equals(gmlc_pipeline_codes(_env.diagnostics), "GMLC1008", "the parser's warning was lost");
+	});
+
+	addFact("A program with gml_pragma(\"@NoOp\") runs as if it were not there [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _result = executeProgram(_env.compile("var a = 1;\ngml_pragma(\"@NoOp\");\na += 2;\nreturn a;", "noop.gml"));
+		assert_equals(_result, 3, "the program gave a wrong result");
+	});
+	
+	addFact("var static is a static whose value lasts between calls, as in GameMaker [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _result = executeProgram(_env.compile("var f = function() { var static n = 0; n += 1; return n; };\nf();\nreturn f();", "var-static.gml"));
+		assert_equals(_result, 2, "the static was reset between calls");
+	});
+	#endregion
+	
+	#region Diagnostics
+	addFact("check reports warnings without compiling [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _list = _env.check("var a = 1;\nvar a = 2;\nreturn a;", "check.gml");
+		assert_equals(array_length(_list), 1, "wrong number of diagnostics");
+		assert_equals(_list[0].code, "GMLC2005", "wrong code");
+		assert_equals(_list[0].severity, "warning", "wrong severity");
+		assert_equals(_env.sources.position(_list[0].span).line, 2, "wrong line");
+	});
+	
+	addFact("A compile keeps its warnings and returns the program [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _program = _env.compile("var a = 1;\nvar a = 2;\nreturn a;");
+		assert_equals(executeProgram(_program), 2, "the program did not run");
+		assert_equals(gmlc_pipeline_codes(_env.diagnostics), "GMLC2005", "the warning was not kept");
+	});
+	
+	addFact("An error carries every diagnostic of the compile [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _error = undefined;
+		try {
+			_env.compile("var a = 1;\nvar a = 2;\nc_red = 1;\nabs = 2;");
+		}
+		catch (_e) {
+			_error = _e;
+		}
+		assert_equals(gmlc_pipeline_codes(_error[$ "diagnostics"]), "GMLC2005,GMLC2201,GMLC2204", "wrong diagnostics");
+		assert_equals(_error.line, 3, "the error is not the first one");
+	});
+	
+	addFact("A file of a batch that fails does not stop the others [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _result = _env.compile_batch([
+			{ name: "rp_iso_a.gml", source: "function rp_iso_a() { return 1; }" },
+			{ name: "rp_iso_b.gml", source: "function rp_iso_b() {\n\treturn (;\n}" },
+			{ name: "rp_iso_c.gml", source: "function rp_iso_c() { return 3; }" },
+		]);
+		var _entries = _result.entries;
+		assert_equals(string(_entries[0].success) + string(_entries[1].success) + string(_entries[2].success), "101", "wrong successes");
+		assert_equals(_entries[1].error.line, 2, "the failure has no position");
+		assert_equals(executeProgram(variable_global_get("rp_iso_c")), 3, "the file after the failure was not compiled");
+	});
+	
+	addFact("The text form names the place and marks it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		// call arguments are evaluated right to left: check first, then read its sources
+		var _list = _env.check("var a = 1;\nvar a = 2;", "text.gml");
+		var _text = GMLC_DiagnosticsToText(_list, _env.sources);
+		assert_true(string_pos("warning[GMLC2005]: a is already declared with var in this function", _text) > 0, _text);
+		assert_true(string_pos("text.gml:2:5", _text) > 0, _text);
+		assert_true(string_pos("    ^", _text) > 0, _text);
+		assert_true(string_pos("Feather GM2044", _text) > 0, _text);
+	});
+	
+	addFact("The JSON form is the diagnostics stage [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _list = _env.check("var a = 1;\nvar a = 2;", "json.gml");
+		var _json = GMLC_DiagnosticsToJson(_list, _env.sources);
+		assert_true(string_pos("\"stage\":\"diagnostics\"", _json) > 0, _json);
+		assert_true(string_pos("{\"code\":\"GMLC2005\",\"feather_code\":\"GM2044\",\"severity\":\"warning\"", _json) > 0, _json);
+	});
+	
+	addFact("A message argument that looks like a placeholder is kept as written [GMLC]", function() {
+		var _d = new GMLC_Diagnostic("GMLC1002", new GMLC_Span(0, 0, 0), ["{1}", "x"]);
+		assert_equals(GMLC_DiagnosticMessage(_d), "expected {1}, found x", "wrong message");
+	});
+	
+	addFact("An unclosed bracket is labelled where it opens [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _list = _env.check("var a = [1, 2;");
+		assert_equals(_list[0].code, "GMLC1016", "wrong code");
+		_list = _env.check("var a = [1, 2");
+		assert_equals(_list[0].code, "GMLC1002", "wrong code");
+		assert_equals(_list[0].labels[0].span.start, 8, "the label is not at the [");
+	});
+	
+	addFact("Warnings for what GameMaker compiles but likely is a mistake [GMLC]", function() {
+		assert_equals(gmlc_pipeline_check("function rp_w1(a = 1, b) { return b; }"), "GMLC2008", "optional before required");
+		assert_equals(gmlc_pipeline_check("function rp_w2(a) { return argument0 + a; }"), "GMLC2009", "argument with parameters");
+		assert_equals(gmlc_pipeline_check("return argument0;"), "GMLC2010", "argument outside a function");
+		assert_equals(gmlc_pipeline_check("function rp_w3() { rp_late = 1; var rp_late = 2; return rp_late; }"), "GMLC2102", "used before var");
+		assert_equals(gmlc_pipeline_check("function rp_w4() {}\nvar s = new rp_w4();"), "GMLC2108", "new on a function");
+		assert_equals(gmlc_pipeline_check("function RpW5() constructor {}\nvar s = RpW5();"), "GMLC2109", "constructor without new");
+		assert_equals(gmlc_pipeline_check("function rp_w6() { var k = 3; var f = function() { return k; }; return f(); }"), "GMLC2110", "enclosing local");
+		assert_equals(gmlc_pipeline_check("function rp_w7() { var t = 5; static s = t; return s; }"), "GMLC2301", "static reads a local");
+		assert_equals(gmlc_pipeline_check("static s = 1;"), "GMLC2007", "static outside a function");
+		assert_equals(gmlc_pipeline_check("function rp_w8() {}\nfunction rp_w8() {}"), "GMLC2015", "a function declared twice");
+	});
+	
+	addFact("A function bound by method to a struct literal reads the struct's keys without GMLC2110 [GMLC]", function() {
+		assert_equals(gmlc_pipeline_check("function rp_m1() { var k = 3; var f = method({ k: k }, function() { return k; }); return f(); }"), "", "a bound key warned");
+		assert_equals(gmlc_pipeline_check("function rp_m2() { var k = 3; var f = method({ k }, function() { return k; }); return f(); }"), "", "a shorthand key warned");
+		assert_equals(gmlc_pipeline_check("function rp_m3() { var k = 3, j = 4; var f = method({ k: k }, function() { return j; }); return f(); }"), "GMLC2110", "a key the struct lacks did not warn");
+		assert_equals(gmlc_pipeline_check("function rp_m4() { var k = 3; var f = method({ k: k }, function() { return function() { return k; }; }); return f(); }"), "GMLC2110", "a function nested in the bound one did not warn");
+	});
+
+	addFact("A function declared at the top of an object event is a method of the instance, not a global [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _holder = {};
+		var _program = _env.compile("function rp_ev_step() { return 5; }\nreturn rp_ev_step();", "obj_rp::Step_0.gml", "event");
+		var _result = method(_holder, executeProgram)(_program);
+		assert_equals(_result, 5, "the event's function did not run");
+	});
+	
+	addFact("Two object events may declare functions of the same name without GMLC2015, two scripts may not [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _events = _env.__compile_units([
+			{ source: "function rp_ev_dup() { return 1; }", name: "obj_a::Step_0.gml", kind: "event" },
+			{ source: "function rp_ev_dup() { return 2; }", name: "obj_b::Step_0.gml", kind: "event" },
+		], undefined);
+		var _scripts = _env.__compile_units([
+			{ source: "function rp_sc_dup() { return 1; }", name: "scr_a" },
+			{ source: "function rp_sc_dup() { return 2; }", name: "scr_b" },
+		], undefined);
+		var _eventCodes = gmlc_pipeline_codes(_events.entries[0].diagnostics) + gmlc_pipeline_codes(_events.entries[1].diagnostics);
+		var _scriptCodes = gmlc_pipeline_codes(_scripts.entries[0].diagnostics) + gmlc_pipeline_codes(_scripts.entries[1].diagnostics);
+		assert_equals(_eventCodes, "", "the events' functions were taken for globals");
+		assert_true(string_pos("GMLC2015", _scriptCodes) > 0, "two scripts declaring one function were accepted");
+	});
+	
+	addFact("Errors for what GameMaker refuses [GMLC]", function() {
+		assert_equals(gmlc_pipeline_check("function rp_e1(a, a) { return a; }"), "GMLC2001", "duplicate parameter");
+		assert_equals(gmlc_pipeline_check("var sprite_get_width = 1;"), "GMLC2003", "var named like a built-in function");
+		assert_equals(gmlc_pipeline_check("enum RpE1 { A }\nvar v = RpE1;"), "GMLC2101", "bare enum");
+		assert_equals(gmlc_pipeline_check("function rp_e2() {}\nfunction RpE3() : rp_e2() constructor {}"), "GMLC2107", "parent not a constructor");
+		assert_equals(gmlc_pipeline_check("instance_count = 0;"), "GMLC2202", "read-only variable");
+		assert_equals(gmlc_pipeline_check("return string_length();"), "GMLC3003", "too few arguments");
+		assert_equals(gmlc_pipeline_check("return string_length(\"a\", \"b\");"), "GMLC3002", "too many arguments");
+		assert_equals(gmlc_pipeline_check("return max();"), "", "a function of any number of arguments");
+		assert_equals(gmlc_pipeline_check("function abs() { return 1; }"), "GMLC2011", "a function named like a built-in");
+	});
+	#endregion
+	
+	#region Lowering
+	addFact("The function table of the lowering design's worked example [GMLC]", function() {
+		var _ast = gmlc_pipeline_lowered("function Button(_label) constructor {\n    label = _label;\n    static padding = 4;\n    on_click = function() { show_debug_message(_GMLINE_); };\n}\n");
+		var _f = _ast.functions;
+		assert_equals(array_length(_f), 3, "wrong number of functions");
+		assert_equals(gmlc_pipeline_info(_f[0]), "unit_body none none undefined | 1 1", "the file's body");
+		assert_equals(gmlc_pipeline_info(_f[1]), "constructor global none 0 | 3 12", "Button");
+		assert_equals(gmlc_pipeline_info(_f[2]), "method value creator_self 1 | 1 4", "on_click");
+		assert_equals(_f[1].statics[0], "padding", "the static was not listed");
+		assert_true(_f[1].facts.has_statics && _f[1].facts.has_nested_functions, "Button's facts");
+		assert_true(_f[0].facts.has_nested_functions, "the body's facts");
+	});
+	
+	addFact("Where a function is declared decides its binding [GMLC]", function() {
+		var _ast = gmlc_pipeline_lowered(@'
+			function rp_b1() {
+				function rp_b2() {}
+				var g = function() {};
+				var s = { m: function() {} };
+				static st = function() {};
+			}
+			var top = function() {};
+			var V = function() constructor {};
+		');
+		var _f = _ast.functions;
+		assert_equals(gmlc_pipeline_kind(_f[1]), "script_function global none", "a top-level function");
+		assert_equals(gmlc_pipeline_kind(_f[2]), "method instance creator_self", "a function declared in a function");
+		assert_equals(gmlc_pipeline_kind(_f[3]), "method value creator_self", "a function expression in a function");
+		assert_equals(gmlc_pipeline_kind(_f[4]), "method value new_struct", "a struct literal's function");
+		assert_equals(gmlc_pipeline_kind(_f[5]), "method value none", "a static function");
+		assert_equals(gmlc_pipeline_kind(_f[6]), "method value none", "a function expression in the file's body");
+		assert_equals(gmlc_pipeline_kind(_f[7]), "constructor value none", "a constructor expression");
+	});
+	
+	addFact("The facts of a function's body [GMLC]", function() {
+		var _ast = gmlc_pipeline_lowered(@'
+			function rp_f1(a) {
+				with (other) { exit; }
+				try { throw argument[0]; } catch (e) {}
+				if (argument_count > 2) return argument2;
+				return rp_f1(a - 1);
+			}
+		');
+		var _facts = _ast.functions[1].facts;
+		assert_true(_facts.contains_with && _facts.contains_exit && _facts.contains_try, "with, exit, try");
+		assert_true(_facts.reads_other && _facts.uses_argument_array && _facts.uses_argument_count, "other, argument, argument_count");
+		assert_equals(_facts.max_argument_index, 2, "argument2");
+		assert_true(_facts.direct_recursion, "the call of itself");
+		assert_false(_facts.single_trailing_return, "two returns");
+		_ast = gmlc_pipeline_lowered("function rp_f2(a) { var b = a + 1; return b; }");
+		assert_true(_ast.functions[1].facts.single_trailing_return, "one return, last");
+	});
+	
+	addFact("Lowering keeps a function's parameters and locals apart [GMLC]", function() {
+		var _ast = gmlc_pipeline_lowered("function rp_l1(a, b) { var c = 1; try {} catch (e) {} return a + b + c; }");
+		var _info = _ast.functions[1];
+		assert_equals(string(_info.params) + string(_info.locals), "[ \"a\",\"b\" ][ \"c\",\"e\" ]", "wrong slots");
+		assert_equals(compile_and_execute("function rp_l2(a, b) { var c = 1; return a + b + c; }\nreturn rp_l2(1, 2);"), 4, "the slots do not run");
 	});
 	#endregion
 }

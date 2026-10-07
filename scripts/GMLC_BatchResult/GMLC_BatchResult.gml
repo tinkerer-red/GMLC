@@ -14,13 +14,15 @@ function GMLC_BatchResult() constructor {
 	/// @param   {String} name     : Identifier for this entry (filename, asset name, etc.)
 	/// @param   {Bool}   success  : Whether compilation succeeded
 	/// @param   {Any}    [error]  : Error struct if compilation failed
+	/// @param   {Array}  [diagnostics] : The entry's GMLC_Diagnostic records, warnings included
 	/// @returns {Struct.GMLC_BatchResult} self
 	#endregion
-	static add = function(_name, _success, _error = undefined) {
+	static add = function(_name, _success, _error = undefined, _diagnostics = []) {
 		array_push(entries, {
 			name    : _name,
 			success : _success,
 			error   : _error,
+			diagnostics : _diagnostics,
 		});
 		return self;
 	}

@@ -1,7 +1,7 @@
 #region jsDoc
 /// @func	GMLC_Env()
 /// @desc	Constructs a new GMLC compiler/evaluator environment. Sets up keyword/operator/variable exposure, wires the full pipeline
-///			(tokenizer -> preprocessor -> parser -> resolver -> post-processor -> optional optimizer -> compiler),
+///			(tokenizer -> preprocessor -> parser -> resolver -> lower -> optional optimizer -> compiler),
 ///			and provides methods to configure exposure tiers and compile source text.
 /// @returns {Struct.GMLC_Env}
 #endregion
@@ -538,12 +538,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			get: function(){ throw_gmlc_error($"_GMFILE_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
 			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFILE_", struct_get(self, "line"), struct_get(self, "lineString")) },
 			compileTimeConstant: true,
+			valueOfPlace: true, // the value is where the code is, so moving the code changes it
 			compileTimeGet: function(_context){ return _context.fileName; },
 		},
 		"_GMFUNCTION_":{
 			get: function(){ throw_gmlc_error($"_GMFUNCTION_ must be resolved at compile time", struct_get(self, "line"), struct_get(self, "lineString")) },
 			set: function(_value){ throw_gmlc_error($"Attempting to write to a read-only variable _GMFUNCTION_", struct_get(self, "line"), struct_get(self, "lineString")) },
 			compileTimeConstant: true,
+			valueOfPlace: true,
 			compileTimeGet: function(_context){ return _context.functionName; },
 		},
 		"_GMLINE_":{
@@ -569,11 +571,15 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	pre_processor  = new GMLC_Gen_1_PreProcessor(self);
 	parser         = new GMLC_Gen_2_Parser(self);
 	resolver       = new GMLC_Gen_3_Resolver(self);
-	post_processor = new GMLC_Gen_4_PostProcessor(self);
+	lower = new GMLC_Gen_4_Lower(self);
 	optimizer      = new GMLC_Gen_5_Optimizer(self);
 	compiler       = new GMLC_Gen_6_Compiler(self);
 	
 	anonFunctionCount = 0; // anonymous functions are named GMLC@anon@N, N counted across this environment
+	extensions = [];       // the language extensions switched on, in the order their rewrites run
+	diagnostics = [];      // the diagnostics of the last compile, check or batch
+	sources = undefined;   // the files of the last compile, check or batch, for the positions of its diagnostics
+	__unitFile = 0;        // number of the file being compiled, for a fault of GMLC itself (GMLC5901)
 	
 	// the active build configuration and its ancestors, nearest first: `#macro Config:NAME` definitions of
 	// these configurations apply, the nearest one first, then plain `#macro NAME` (configuration Default)
@@ -589,6 +595,104 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 
 	#region Public
 
+	#region jsDoc
+	/// @func    foldableFunctions
+	/// @desc    The built-in functions a compile-time fold may run when every argument is a constant (the optimizer's
+	///          constant folding and the values of enum members): name to [GameMaker's function, fewest, most arguments],
+	///          -1 for any number. A name folds only while the environment exposes GameMaker's own function under it, so
+	///          a function the host put in its place is never run while compiling. `sqrt` (it depends on math_set_epsilon) and `choose` (random) are not in it.
+	#endregion
+	static foldableFunctions = {
+		abs: [abs, 1, 1], angle_difference: [angle_difference, 2, 2], ansi_char: [ansi_char, 1, 1], arccos: [arccos, 1, 1],
+		arcsin: [arcsin, 1, 1], arctan: [arctan, 1, 1], arctan2: [arctan2, 2, 2], base64_decode: [base64_decode, 1, 1],
+		base64_encode: [base64_encode, 1, 1], buffer_sizeof: [buffer_sizeof, 1, 1], ceil: [ceil, 1, 1], chr: [chr, 1, 1],
+		clamp: [clamp, 3, 3], code_is_compiled: [code_is_compiled, 0, 0], color_get_blue: [color_get_blue, 1, 1],
+		color_get_green: [color_get_green, 1, 1], color_get_hue: [color_get_hue, 1, 1],
+		color_get_red: [color_get_red, 1, 1], color_get_saturation: [color_get_saturation, 1, 1],
+		color_get_value: [color_get_value, 1, 1], colour_get_blue: [colour_get_blue, 1, 1],
+		colour_get_green: [colour_get_green, 1, 1], colour_get_hue: [colour_get_hue, 1, 1],
+		colour_get_red: [colour_get_red, 1, 1], colour_get_saturation: [colour_get_saturation, 1, 1],
+		colour_get_value: [colour_get_value, 1, 1], cos: [cos, 1, 1], darccos: [darccos, 1, 1], darcsin: [darcsin, 1, 1],
+		darctan: [darctan, 1, 1], darctan2: [darctan2, 2, 2], dcos: [dcos, 1, 1], degtorad: [degtorad, 1, 1],
+		dot_product: [dot_product, 4, 4], dot_product_3d: [dot_product_3d, 6, 6],
+		dot_product_3d_normalised: [dot_product_3d_normalised, 6, 6],
+		dot_product_normalised: [dot_product_normalised, 4, 4], dsin: [dsin, 1, 1], dtan: [dtan, 1, 1], exp: [exp, 1, 1],
+		floor: [floor, 1, 1], frac: [frac, 1, 1], int64: [int64, 1, 1], is_array: [is_array, 1, 1],
+		is_bool: [is_bool, 1, 1], is_callable: [is_callable, 1, 1], is_handle: [is_handle, 1, 1],
+		is_infinity: [is_infinity, 1, 1], is_int32: [is_int32, 1, 1], is_method: [is_method, 1, 1], is_nan: [is_nan, 1, 1],
+		is_numeric: [is_numeric, 1, 1], is_ptr: [is_ptr, 1, 1], is_string: [is_string, 1, 1], is_struct: [is_struct, 1, 1],
+		is_undefined: [is_undefined, 1, 1], lengthdir_x: [lengthdir_x, 2, 2], lengthdir_y: [lengthdir_y, 2, 2],
+		lerp: [lerp, 3, 3], ln: [ln, 1, 1], log10: [log10, 1, 1], log2: [log2, 1, 1], logn: [logn, 2, 2],
+		make_color_hsv: [make_color_hsv, 3, 3], make_color_rgb: [make_color_rgb, 3, 3],
+		make_colour_hsv: [make_colour_hsv, 3, 3], make_colour_rgb: [make_colour_rgb, 3, 3], max: [max, 0, -1],
+		md5_string_unicode: [md5_string_unicode, 1, 1], md5_string_utf8: [md5_string_utf8, 1, 1], mean: [mean, 0, -1],
+		median: [median, 0, -1], min: [min, 0, -1], object_exists: [object_exists, 1, 1],
+		object_get_name: [object_get_name, 1, 1], object_get_parent: [object_get_parent, 1, 1],
+		object_get_physics: [object_get_physics, 1, 1], object_is_ancestor: [object_is_ancestor, 2, 2], ord: [ord, 1, 1],
+		os_get_config: [os_get_config, 0, 0], point_direction: [point_direction, 4, 4],
+		point_distance: [point_distance, 4, 4], point_distance_3d: [point_distance_3d, 6, 6], power: [power, 2, 2],
+		radtodeg: [radtodeg, 1, 1], real: [real, 1, 1], round: [round, 1, 1], script_exists: [script_exists, 1, 1],
+		script_get_name: [script_get_name, 1, 1], sha1_string_unicode: [sha1_string_unicode, 1, 1],
+		sha1_string_utf8: [sha1_string_utf8, 1, 1], sign: [sign, 1, 1], sin: [sin, 1, 1], sqr: [sqr, 1, 1],
+		string: [string, 0, -1], string_byte_length: [string_byte_length, 1, 1], string_char_at: [string_char_at, 2, 2],
+		string_concat: [string_concat, 1, -1], string_concat_ext: [string_concat_ext, 1, 3],
+		string_copy: [string_copy, 3, 3], string_count: [string_count, 2, 2], string_delete: [string_delete, 3, 3],
+		string_digits: [string_digits, 1, 1], string_ends_with: [string_ends_with, 2, 2], string_ext: [string_ext, 2, 2],
+		string_format: [string_format, 3, 3], string_hash_to_newline: [string_hash_to_newline, 1, 1],
+		string_insert: [string_insert, 3, 3], string_join: [string_join, 1, -1], string_join_ext: [string_join_ext, 2, 4],
+		string_last_pos: [string_last_pos, 2, 2], string_last_pos_ext: [string_last_pos_ext, 3, 3],
+		string_length: [string_length, 1, 1], string_letters: [string_letters, 1, 1], string_lower: [string_lower, 1, 1],
+		string_ord_at: [string_ord_at, 2, 2], string_pos: [string_pos, 2, 2], string_pos_ext: [string_pos_ext, 3, 3],
+		string_repeat: [string_repeat, 2, 2], string_replace: [string_replace, 3, 3],
+		string_replace_all: [string_replace_all, 3, 3], string_set_byte_at: [string_set_byte_at, 3, 3],
+		string_starts_with: [string_starts_with, 2, 2], string_trim: [string_trim, 1, 2],
+		string_trim_end: [string_trim_end, 1, 2], string_trim_start: [string_trim_start, 1, 2],
+		string_upper: [string_upper, 1, 1], tan: [tan, 1, 1]
+	};
+	
+	#region jsDoc
+	/// @func    foldableArity(_name)
+	/// @desc    The [fewest, most] arguments of a foldable built-in this environment exposes as GameMaker's own
+	///          function, undefined otherwise.
+	/// @self    GMLC_Env
+	/// @param   {String} _name : The function name
+	/// @returns {Array<Real>|Undefined}
+	#endregion
+	static foldableArity = function(_name) {
+		if (!__gmlc_struct_has(foldableFunctions, _name)) return undefined;
+		var _data = getFunction(_name);
+		if (_data == undefined) return undefined;
+		var _entry = foldableFunctions[$ _name];
+		if ((_data[$ "raw"] ?? _data.value) != _entry[0]) return undefined;
+		return [_entry[1], _entry[2]];
+	};
+	
+	#region jsDoc
+	/// @func    foldCall(_name, _args)
+	/// @desc    Runs a foldable built-in on constant arguments: [true, value] when it is foldable here, the argument
+	///          count fits and it returns a number, a string, a bool or undefined without an error; [false] otherwise.
+	/// @self    GMLC_Env
+	/// @param   {String} _name : The function name
+	/// @param   {Array}  _args : The argument values
+	/// @returns {Array}
+	#endregion
+	static foldCall = function(_name, _args) {
+		var _arity = foldableArity(_name);
+		if (_arity == undefined) return [false];
+		var _count = array_length(_args);
+		if (_count < _arity[0]) || ((_arity[1] >= 0) && (_count > _arity[1])) return [false];
+		var _data = getFunction(_name);
+		var _function = _data[$ "raw"] ?? _data.value;
+		try {
+			var _value = script_execute_ext(_function, _args);
+		}
+		catch (_error) {
+			return [false];
+		}
+		if (!is_string(_value)) && (!is_numeric(_value)) && (!is_undefined(_value)) return [false];
+		return [true, _value];
+	};
+	
 	static __new_anonymous_script_name = function() {
 		static __anonymous_script_id = 0;
 		return $"gml_Script_anon@{__anonymous_script_id++}";
@@ -602,21 +706,72 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 
 	#region jsDoc
 	/// @func    compile()
-	/// @desc    Runs the complete compilation pipeline on the given source text.
+	/// @desc    Runs the complete compilation pipeline on the given source text. Its warnings are in `diagnostics`
+	///          afterwards; an error stops it with the error struct GMLC throws (message, line, ... and every
+	///          diagnostic under `diagnostics`).
 	/// @self    GMLC_Env
 	/// @param   {String} sourceCode : Source text to compile
+	/// @param   {String} [name]     : Name of the file, for errors
+	/// @param   {String} [kind]     : "script" (default) or "event": an object event's top-level functions are methods
+	///                                of the instance running it, not global functions
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_6_Compiler
 	#endregion
-	static compile = function(_sourceCode = "", _name = "") {
+	static compile = function(_sourceCode = "", _name = "", _kind = "script") {
+		diagnostics = [];
+		try {
+			var _program = __compile_source(_sourceCode, _name, true, _kind);
+			diagnostics = GMLC_SortDiagnostics(diagnostics);
+			return _program;
+		}
+		catch (_e) {
+			var _error = __withDiagnostics(_e, diagnostics);
+			diagnostics = GMLC_SortDiagnostics(diagnostics);
+			throw _error;
+		}
+	}
+	
+	#region jsDoc
+	/// @func    check()
+	/// @desc    Finds the problems of a source without compiling or running it: lexer, preprocessor, parser, resolver
+	///          and lowering run, and their diagnostics (warnings and errors) come back sorted. Nothing is thrown for
+	///          a problem in the source.
+	/// @self    GMLC_Env
+	/// @param   {String} sourceCode : Source text to check
+	/// @param   {String} [name]     : Name of the file, for positions
+	/// @param   {String} [kind]     : "script" (default) or "event", as for compile
+	/// @returns {Array<Struct.GMLC_Diagnostic>}
+	#endregion
+	static check = function(_sourceCode = "", _name = "", _kind = "script") {
+		diagnostics = [];
+		try {
+			__compile_source(_sourceCode, _name, false, _kind);
+		}
+		catch (_e) {
+			__withDiagnostics(_e, diagnostics);
+		}
+		diagnostics = GMLC_SortDiagnostics(diagnostics);
+		return diagnostics;
+	}
+	
+	#region jsDoc
+	/// @func    __compile_source()
+	/// @desc    The pipeline of one source text, gathering each stage's diagnostics into `diagnostics`; stops after
+	///          lowering when _compile is false.
+	/// @ignore
+	#endregion
+	static __compile_source = function(_sourceCode, _name, _compile, _kind = "script") {
 		currentScriptName = __resolve_compile_source_name(_name);
 		
 		var _time = get_timer();
 		var _step_time = _time;
 		
 		var _sources = __newSourceTable();
-		lexer.initialize(_sourceCode, currentScriptName, array_length(_sources.files));
+		sources = _sources;
+		__unitFile = array_length(_sources.files);
+		lexer.initialize(_sourceCode, currentScriptName, __unitFile);
+		_sources.add(lexer.program.file); // before lexing, so a lexer error has its file
 		var tokens = lexer.parseAll();
-		_sources.add(tokens.file);
+		__gather(diagnostics, lexer);
 		tokens.sources = _sources;
 		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
 		if (__log_step_times) {
@@ -624,7 +779,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_step_time = get_timer();
 		}
 		
-		__preprocess([tokens], _sources);
+		__preprocess([tokens], _sources, diagnostics);
 		var preprocessedTokens = tokens;
 		if (__log_pre_processer_results) json_save("pre_processor.json", preprocessedTokens)
 		if (__log_step_times) {
@@ -632,8 +787,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_step_time = get_timer();
 		}
 		
-		parser.initialize(preprocessedTokens);
+		parser.initialize(preprocessedTokens, _kind);
 		var ast = parser.parseAll();
+		// the parser's warnings; its errors were thrown with every diagnostic of the file
+		__gather(diagnostics, parser);
+		ast.unitKind = _kind;
 		if (__log_parser_results) json_save("parser.json", ast)
 		if (__log_step_times) {
 			show_debug_message($"Parser Time took : {(get_timer() - _step_time)/1000}ms")
@@ -642,18 +800,22 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		resolver.initialize(ast, _sources);
 		var ast = resolver.parseAll();
+		__gather(diagnostics, resolver);
 		if (__log_step_times) {
 			show_debug_message($"Resolver Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
 		}
 		
-		post_processor.initialize(ast, _sources, resolver.compileTimeUses > 0);
-		var ast = post_processor.parseAll();
-		if (__log_post_processer_results) json_save("post_processor.json", ast)
+		lower.initialize(ast, _sources);
+		var ast = lower.parseAll();
+		__gather(diagnostics, lower);
+		__resolveEnums([ast], _sources, [diagnostics]);
+		if (__log_lower_results) json_save("lowered.json", ast)
 		if (__log_step_times) {
 			show_debug_message($"Post Processor Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
 		}
+		if (!_compile) return undefined;
 		
 		if (should_optimize) {
 			optimizer.initialize(ast, _sources);
@@ -665,7 +827,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _globals = (is_struct(_global)) ? _global.value : {};
 		compiler.initialize(ast, _globals, _sources);
 		var program = compiler.parseAll();
-		if (__log_compiler_results) json_save("post_processor.json", ast)
+		if (__log_compiler_results) json_save("compiled.json", ast)
 		if (__log_step_times) {
 			show_debug_message($"Compile Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
@@ -673,6 +835,33 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		
 		return program;
+	}
+	
+	#region jsDoc
+	/// @func    __gather()
+	/// @desc    Adds a stage's diagnostics to a list.
+	/// @ignore
+	#endregion
+	static __gather = function(_list, _stage) {
+		var _found = _stage.diagnostics;
+		array_copy(_list, array_length(_list), _found, 0, array_length(_found));
+	}
+	
+	#region jsDoc
+	/// @func    __withDiagnostics()
+	/// @desc    What a compile throws: a stage's error struct gets every diagnostic of the compile under `diagnostics`;
+	///          anything else a stage threw is a fault of GMLC, kept as GMLC5901 at the start of the unit and thrown on.
+	/// @ignore
+	#endregion
+	static __withDiagnostics = function(_error, _list) {
+		if (is_struct(_error)) && is_array(_error[$ "diagnostics"]) {
+			if (_error.diagnostics != _list) array_copy(_list, array_length(_list), _error.diagnostics, 0, array_length(_error.diagnostics));
+			_error.diagnostics = GMLC_SortDiagnostics(_list);
+			return _error;
+		}
+		var _message = is_struct(_error) ? string(_error[$ "message"] ?? _error) : string(_error);
+		array_push(_list, new GMLC_Diagnostic("GMLC5901", new GMLC_Span(__unitFile, 0, 0), [_message]));
+		return _error;
 	}
 	
 	#region jsDoc
@@ -685,17 +874,26 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_6_Compiler
 	#endregion
 	static compile_ast = function(_json) {
+		diagnostics = [];
 		var _dump = GMLC_AstFromJson(_json);
 		var _ast = _dump.root;
 		var _sources = _dump.sources;
-		var _needed = true;
-		if (_dump.stage == "parsed") {
-			resolver.initialize(_ast, _sources);
-			_ast = resolver.parseAll();
-			_needed = (resolver.compileTimeUses > 0);
+		sources = _sources;
+		__unitFile = _ast.span.file;
+		try {
+			if (_dump.stage == "parsed") {
+				resolver.initialize(_ast, _sources);
+				_ast = resolver.parseAll();
+				__gather(diagnostics, resolver);
+			}
+			lower.initialize(_ast, _sources);
+			_ast = lower.parseAll();
+			__gather(diagnostics, lower);
+			__resolveEnums([_ast], _sources, [diagnostics]);
 		}
-		post_processor.initialize(_ast, _sources, _needed);
-		_ast = post_processor.parseAll();
+		catch (_e) {
+			throw __withDiagnostics(_e, diagnostics);
+		}
 		if (should_optimize) {
 			optimizer.initialize(_ast, _sources);
 			_ast = optimizer.parseAll();
@@ -730,6 +928,67 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		should_optimize = _bool;
 		return self;
 	}
+	
+	#region jsDoc
+	/// @func    enableExtension(_name)
+	/// @desc    Switches a language extension on: GMLC then accepts its construct (`?.`, `let`, ...) and turns it into
+	///          plain GML. The built-in ones are nullish-chaining, macro-params, const, let and closure.
+	/// @self    GMLC_Env
+	/// @param   {String} _name : The extension's name
+	/// @returns {Struct.GMLC_Env}
+	#endregion
+	static enableExtension = function(_name) {
+		var _registry = __GMLC_ExtensionRegistry();
+		var _extension = __gmlc_struct_get(_registry.byName, _name);
+		if (_extension == undefined) {
+			__gmlc_throw_diagnostics([new GMLC_Diagnostic("GMLC5008", new GMLC_Span(0, 0, 0), [_name])], undefined);
+		}
+		if (!array_contains(extensions, _extension)) {
+			array_push(extensions, _extension);
+			__orderExtensions(_registry);
+		}
+		return self;
+	};
+	
+	#region jsDoc
+	/// @func    disableExtension(_name)
+	/// @desc    Switches a language extension off.
+	/// @self    GMLC_Env
+	/// @param   {String} _name : The extension's name
+	/// @returns {Struct.GMLC_Env}
+	#endregion
+	static disableExtension = function(_name) {
+		var _i = 0; repeat (array_length(extensions)) {
+			if (extensions[_i].name == _name) {
+				array_delete(extensions, _i, 1);
+				break;
+			}
+		_i++}
+		return self;
+	};
+	
+	#region jsDoc
+	/// @func    isExtensionEnabled(_name)
+	/// @desc    Whether a language extension is switched on.
+	/// @self    GMLC_Env
+	/// @param   {String} _name : The extension's name
+	/// @returns {Bool}
+	#endregion
+	static isExtensionEnabled = function(_name) {
+		var _i = 0; repeat (array_length(extensions)) {
+			if (extensions[_i].name == _name) return true;
+		_i++}
+		return false;
+	};
+	
+	// the extensions switched on, in registration order (the order their rewrites must run in)
+	static __orderExtensions = function(_registry) {
+		var _ordered = [];
+		var _i = 0; repeat (array_length(_registry.order)) {
+			if (array_contains(extensions, _registry.order[_i])) array_push(_ordered, _registry.order[_i]);
+		_i++}
+		extensions = _ordered;
+	};
 	
 	#region jsDoc
 	/// @func    set_exposure()
@@ -836,7 +1095,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @desc    Exposes functions according to the selected exposure tier:
 	///          - NONE: no functions
 	///          - SAFE: pure built-ins that pass safety filter, plus overwrite shims
-	///          - MODERATE: currently same as SAFE (pending spec/policy expansion), plus overwrite shims
+	///          - MODERATE: currently same as SAFE (to be widened), plus overwrite shims
 	///          - ALL: all native built-ins, plus overwrite shims
 	///          - FULL: all native built-ins, user scripts, plus overwrite shims
 	/// @self    GMLC_Env
@@ -986,7 +1245,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_tokenizer_results      = true;
 	__log_pre_processer_results  = true;
 	__log_parser_results         = true;
-	__log_post_processer_results = true;
+	__log_lower_results = true;
 	__log_optimizer_results      = true;
 	__log_compiler_results       = false;
 	
@@ -1065,7 +1324,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				_gml = (frac(_value) == 0) ? string(_value) : string_format(_value, 0, 17);
 			}
 			else {
-				throw_gmlc_error($"GMLC5007: the exposed macro {_name} holds a {typeof(_value)}, not GML text or a number");
+				__gmlc_throw_diagnostics([new GMLC_Diagnostic("GMLC5007", new GMLC_Span(array_length(__hostFiles), 0, 0), [_name, typeof(_value)])], undefined);
 			}
 			lexer.initialize(_gml, "<macro " + _name + ">", array_length(__hostFiles));
 			var _program = lexer.parseAll();
@@ -1076,29 +1335,37 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	
 	#region jsDoc
-	/// @func    __preprocess(_programs, _sources)
+	/// @func    __preprocess(_programs, _sources, _diagnostics)
 	/// @desc    Runs the preprocessor over a batch of lexed files: collects every file, merges their definitions
 	///          with the exposed macros (first) and the configuration chain, and expands every file.
 	/// @self    GMLC_Env
 	/// @param   {Array<Struct>}           programs : The lexer's program records, in batch order
 	/// @param   {Struct.GMLC_SourceTable} sources  : The compile's files, for the positions of errors
+	/// @param   {Array}                   diagnostics : Where the preprocessor's warnings go
 	/// @returns {Array<Struct>} The same records, preprocessed
 	/// @ignore
 	#endregion
-	static __preprocess = function(_programs, _sources) {
+	static __preprocess = function(_programs, _sources, _diagnostics) {
 		var _units = [];
 		__updateHostMacros();
 		pre_processor.sources = _sources;
 		// tokens are never modified once made, so the exposed macros' definitions are reused by every compile
 		if (__hostUnit != undefined) array_push(_units, __hostUnit);
 		var _first = array_length(_units);
+		// every file is collected, and later expanded, before an error stops the batch, so its errors do not depend
+		// on the order of the files
 		var _i = 0; repeat (array_length(_programs)) {
 			array_push(_units, pre_processor.collect(_programs[_i]));
+			__gather(_diagnostics, pre_processor);
 		_i++}
+		if (__gmlc_has_errors(_diagnostics)) __gmlc_throw_diagnostics(_diagnostics, _sources);
 		var _batch = pre_processor.merge(_units, configChain);
+		__gather(_diagnostics, pre_processor);
 		_i = 0; repeat (array_length(_programs)) {
 			pre_processor.expand(_units[_first + _i], _batch);
+			__gather(_diagnostics, pre_processor);
 		_i++}
+		if (__gmlc_has_errors(_diagnostics)) __gmlc_throw_diagnostics(_diagnostics, _sources);
 		return _programs;
 	}
 	
@@ -1138,64 +1405,37 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#region Batch & Project Compilation
 
 	#region jsDoc
-	/// @func    __compile_pipeline()
-	/// @desc    Runs the full pipeline from pre-processed program through to compiled output.
-	/// @ignore
-	#endregion
-	static __compile_pipeline = function(_source, _name = undefined) {
-		currentScriptName = __resolve_compile_source_name(_name);
-		var _sources = __newSourceTable();
-		lexer.initialize(_source, currentScriptName, array_length(_sources.files));
-		var _program = lexer.parseAll();
-		_sources.add(_program.file);
-		_program.sources = _sources;
-		__preprocess([_program], _sources);
-		return _program;
-	}
-
-	#region jsDoc
-	/// @func    __parse_program()
-	/// @desc    Runs the parser on an already-preprocessed program.
-	/// @ignore
-	#endregion
-	static __parse_program = function(_program, _log_name = undefined) {
-		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
-		parser.initialize(_program);
-		var _ast = parser.parseAll();
-		if (_log_name != undefined && __log_parser_results) json_save(filename_name(_log_name) + "_parser.json", _ast);
-		return _ast;
-	}
-	
-	#region jsDoc
-	/// @func    __parse_batch()
-	/// @desc    Parses every program of a batch and collects the global names they declare, so each file can use the
-	///          functions of the others.
-	/// @ignore
-	#endregion
-	static __parse_batch = function(_programs, _names) {
-		var _asts = array_create(array_length(_programs), undefined);
-		var _i = 0; repeat (array_length(_programs)) {
-			_asts[_i] = __parse_program(_programs[_i], _names[_i]);
-		_i++}
-		return { asts: _asts, globals: resolver.collectGlobals(_asts) };
-	}
-	
-	#region jsDoc
 	/// @func    __finish_compile()
-	/// @desc    Runs parser → resolver → post-processor → (optimizer) → compiler on an already-preprocessed program,
-	///          or resolver onwards on a parsed one (with the batch's global names).
+	/// @desc    Runs resolver → lowering → (optimizer) → compiler on a parsed program of a batch (with the batch's
+	///          global names), gathering the diagnostics into _diagnostics.
 	/// @ignore
 	#endregion
-	static __finish_compile = function(_program, _log_name = undefined, _ast = undefined, _batchGlobals = undefined) {
+	static __finish_compile = function(_program, _log_name, _ast, _batchGlobals, _diagnostics) {
+		_ast = __lower_unit(_program, _log_name, _ast, _batchGlobals, _diagnostics);
+		__resolveEnums([_ast], _program[$ "sources"], [_diagnostics]);
+		__compile_unit(_program, _log_name, _ast);
+	}
+	
+	// resolves and lowers one file of a batch
+	static __lower_unit = function(_program, _log_name, _ast, _batchGlobals, _diagnostics) {
 		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
 		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
 		var _sources = _program[$ "sources"];
-		_ast ??= __parse_program(_program, _log_name);
 		resolver.initialize(_ast, _sources, _batchGlobals);
 		_ast = resolver.parseAll();
-		post_processor.initialize(_ast, _sources, resolver.compileTimeUses > 0);
-		_ast = post_processor.parseAll();
-		if (_prefix != undefined && __log_post_processer_results) json_save(_prefix + "post_processor.json", _ast);
+		__gather(_diagnostics, resolver);
+		lower.initialize(_ast, _sources);
+		_ast = lower.parseAll();
+		__gather(_diagnostics, lower);
+		if (_prefix != undefined && __log_lower_results) json_save(_prefix + "lowered.json", _ast);
+		return _ast;
+	}
+	
+	// optimizes and compiles one lowered file of a batch whose enums have their values
+	static __compile_unit = function(_program, _log_name, _ast) {
+		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
+		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
+		var _sources = _program[$ "sources"];
 		if (should_optimize) {
 			optimizer.initialize(_ast, _sources);
 			_ast = optimizer.parseAll();
@@ -1208,6 +1448,203 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 
 	#region jsDoc
+	/// @func    __resolveEnums(_asts, _sources, _lists)
+	/// @desc    Gives the enums of lowered files their values (GMLC_Gen_4_Lower.resolveEnums); each file's diagnostics
+	///          go to its list, and a file with an error stops the compile.
+	/// @ignore
+	#endregion
+	static __resolveEnums = function(_asts, _sources, _lists) {
+		var _found = lower.resolveEnums(_asts, _sources);
+		var _i = 0; repeat (array_length(_found)) {
+			var _list = _found[_i];
+			// an error is thrown with its file's diagnostics, which the compile then gathers
+			if (__gmlc_has_errors(_list)) __gmlc_throw_diagnostics(_list, _sources);
+			array_copy(_lists[_i], array_length(_lists[_i]), _list, 0, array_length(_list));
+		_i++}
+	};
+	
+	#region jsDoc
+	/// @func    __compile_units()
+	/// @desc    Compiles files as one batch: lexes each, preprocesses them together (macros and enums of every file),
+	///          parses each, collects the global names of all of them, then resolves, lowers and compiles each. A file
+	///          that fails is recorded with its error and diagnostics and the others go on; a preprocessor error fails
+	///          every file, as the batch's definitions are shared.
+	/// @ignore
+	#endregion
+	static __compile_units = function(_entries, _project) {
+		var _count = array_length(_entries);
+		var _result = new GMLC_BatchResult();
+		diagnostics = [];
+		var _table;
+		try {
+			_table = __newSourceTable();
+		}
+		catch (_e) {
+			// the exposed macros do not lex: no file of the batch can be compiled
+			var _error = __withDiagnostics(_e, diagnostics);
+			diagnostics = GMLC_SortDiagnostics(diagnostics);
+			var _f = 0; repeat (_count) {
+				_result.add(_entries[_f].name, false, _error, diagnostics);
+			_f++}
+			return _result;
+		}
+		sources = _table;
+		var _units = []; // {name, program, ast, diagnostics, error}
+		
+		// Phase 1: lex every file
+		var _i = 0; repeat (_count) {
+			var _unit = { name: _entries[_i].name, kind: _entries[_i][$ "kind"] ?? "script", program: undefined, ast: undefined, diagnostics: [], error: undefined };
+			currentScriptName = _unit.name;
+			__unitFile = array_length(_table.files);
+			try {
+				lexer.initialize(_entries[_i].source, currentScriptName, __unitFile);
+				// added before lexing: a file that does not lex keeps its number, so the other files' spans stay right
+				lexer.program.file.project = _project;
+				_table.add(lexer.program.file);
+				_unit.program = lexer.parseAll();
+				__gather(_unit.diagnostics, lexer);
+				_unit.program.sources = _table;
+				if (__log_tokenizer_results) json_save(filename_name(_unit.name) + "_tokenizer.json", _unit.program);
+			}
+			catch (_e) {
+				_unit.error = __withDiagnostics(_e, _unit.diagnostics);
+			}
+			array_push(_units, _unit);
+		_i++}
+		
+		// Phase 2: macros and enums of the whole batch, then the expansion of every file
+		var _programs = [];
+		var _live = [];
+		_i = 0; repeat (_count) {
+			if (_units[_i].error == undefined) {
+				array_push(_programs, _units[_i].program);
+				array_push(_live, _units[_i]);
+			}
+		_i++}
+		var _batchDiagnostics = [];
+		// a fault of GMLC here belongs to the batch, not to the last file lexed
+		__unitFile = array_length(_table.files);
+		try {
+			__preprocess(_programs, _table, _batchDiagnostics);
+		}
+		catch (_e) {
+			var _error = __withDiagnostics(_e, _batchDiagnostics);
+			_i = 0; repeat (array_length(_live)) {
+				_live[_i].error = _error;
+			_i++}
+			_live = [];
+		}
+		// each preprocessor diagnostic goes to the file it is in; one in an exposed macro's text belongs to no file of
+		// the batch and is kept with the batch's own
+		var _unrouted = [];
+		_i = 0; repeat (array_length(_batchDiagnostics)) {
+			var _d = _batchDiagnostics[_i];
+			var _routed = false;
+			var _j = 0; repeat (array_length(_units)) {
+				var _program = _units[_j].program;
+				if (_program != undefined) && (_program.file.fileId == _d.span.file) {
+					array_push(_units[_j].diagnostics, _d);
+					_routed = true;
+				}
+			_j++}
+			if (!_routed) array_push(_unrouted, _d);
+		_i++}
+		
+		// Phase 3: parse every file, then compile each with the global names of the whole batch
+		var _parsed = [];
+		_i = 0; repeat (array_length(_live)) {
+			var _unit = _live[_i];
+			currentScriptName = _unit.name;
+			__unitFile = _unit.program.file.fileId;
+			try {
+				parser.initialize(_unit.program, _unit.kind);
+				_unit.ast = parser.parseAll();
+				__gather(_unit.diagnostics, parser);
+				// an object event's top-level functions are methods of the instance, not global functions
+				_unit.ast.unitKind = _unit.kind;
+				if (__log_parser_results) json_save(filename_name(_unit.name) + "_parser.json", _unit.ast);
+				array_push(_parsed, _unit.ast);
+			}
+			catch (_e) {
+				_unit.error = __withDiagnostics(_e, _unit.diagnostics);
+			}
+		_i++}
+		var _globals = undefined;
+		__unitFile = array_length(_table.files);
+		try {
+			_globals = resolver.collectGlobals(_parsed);
+		}
+		catch (_e) {
+			var _error = __withDiagnostics(_e, _unrouted);
+			_i = 0; repeat (array_length(_live)) {
+				_live[_i].error ??= _error;
+			_i++}
+		}
+		_i = 0; repeat (array_length(_live)) {
+			var _unit = _live[_i];
+			if (_unit.error == undefined) {
+				__unitFile = _unit.program.file.fileId;
+				try {
+					_unit.ast = __lower_unit(_unit.program, _unit.name, _unit.ast, _globals, _unit.diagnostics);
+				}
+				catch (_e) {
+					_unit.error = __withDiagnostics(_e, _unit.diagnostics);
+				}
+			}
+		_i++}
+		
+		// the enums of every file get their values together: a file may use the enum of another
+		var _lowered = [];
+		var _owners = [];
+		_i = 0; repeat (array_length(_live)) {
+			var _unit = _live[_i];
+			if (_unit.error == undefined) {
+				array_push(_lowered, _unit.ast);
+				array_push(_owners, _unit);
+			}
+		_i++}
+		var _found = lower.resolveEnums(_lowered, _table);
+		_i = 0; repeat (array_length(_owners)) {
+			var _unit = _owners[_i];
+			var _list = _found[_i];
+			if (__gmlc_has_errors(_list)) {
+				try {
+					__gmlc_throw_diagnostics(_list, _table);
+				}
+				catch (_e) {
+					_unit.error = __withDiagnostics(_e, _unit.diagnostics);
+				}
+			}
+			else {
+				array_copy(_unit.diagnostics, array_length(_unit.diagnostics), _list, 0, array_length(_list));
+			}
+		_i++}
+		
+		_i = 0; repeat (array_length(_live)) {
+			var _unit = _live[_i];
+			if (_unit.error == undefined) {
+				__unitFile = _unit.program.file.fileId;
+				try {
+					__compile_unit(_unit.program, _unit.name, _unit.ast);
+				}
+				catch (_e) {
+					_unit.error = __withDiagnostics(_e, _unit.diagnostics);
+				}
+			}
+		_i++}
+		
+		_i = 0; repeat (_count) {
+			var _unit = _units[_i];
+			_unit.diagnostics = GMLC_SortDiagnostics(_unit.diagnostics);
+			array_copy(diagnostics, array_length(diagnostics), _unit.diagnostics, 0, array_length(_unit.diagnostics));
+			_result.add(_unit.name, _unit.error == undefined, _unit.error, _unit.diagnostics);
+		_i++}
+		array_copy(diagnostics, array_length(diagnostics), _unrouted, 0, array_length(_unrouted));
+		diagnostics = GMLC_SortDiagnostics(diagnostics);
+		return _result;
+	}
+	
+	#region jsDoc
 	/// @func    compile_batch()
 	/// @desc    Compiles an array of source strings (or {source, name} structs) as a single
 	///          logical unit. A two-phase approach is used: all sources are first scanned for
@@ -1218,41 +1655,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @returns {Struct.GMLC_BatchResult}
 	#endregion
 	static compile_batch = function(_sources) {
-		var _count = array_length(_sources);
-		var _programs = array_create(_count, undefined);
-		var _names    = array_create(_count, "");
-
-		// Phase 1: lex every file
-		var _table = __newSourceTable();
-		var _i = 0; repeat(_count) {
-			var _entry  = _sources[_i];
-			var _source = is_string(_entry) ? _entry : _entry.source;
-			_names[_i]  = __resolve_compile_source_name(is_string(_entry) ? undefined : ((struct_exists(_entry, "name")) ? _entry.name : undefined));
-			currentScriptName = _names[_i];
-			lexer.initialize(_source, currentScriptName, array_length(_table.files));
-			_programs[_i] = lexer.parseAll();
-			_programs[_i].sources = _table;
-			_table.add(_programs[_i].file);
-			if (__log_tokenizer_results) json_save(filename_name(_names[_i]) + "_tokenizer.json", _programs[_i]);
+		var _entries = array_create(array_length(_sources), undefined);
+		var _i = 0; repeat (array_length(_sources)) {
+			var _entry = _sources[_i];
+			var _name = is_string(_entry) ? undefined : _entry[$ "name"];
+			_entries[_i] = { name: __resolve_compile_source_name(_name), source: is_string(_entry) ? _entry : _entry.source };
 		_i++}
-		
-		// Phase 2: macros and enums of the whole batch, then the expansion of every file
-		__preprocess(_programs, _table);
-		if (__log_pre_processer_results) {
-			_i = 0; repeat(_count) { json_save(filename_name(_names[_i]) + "_pre_processor.json", _programs[_i]); _i++ }
-		}
-
-		// Phase 3: parse every file, then compile each with the global names of the whole batch
-		var _parsed = __parse_batch(_programs, _names);
-		var _result = new GMLC_BatchResult();
-		_i = 0; repeat(_count) {
-			var _success = false;
-			var _error   = undefined;
-			__finish_compile(_programs[_i], _names[_i], _parsed.asts[_i], _parsed.globals);
-			_success = true;
-			_result.add(_names[_i], _success, _error);
-		_i++;}
-		return _result;
+		return __compile_units(_entries, undefined);
 	}
 
 	/// @ignore
@@ -1264,29 +1673,27 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_result.add(_name, false, { message: $"Could not read file: {_gml_path}" });
 			return;
 		}
-		var _success = false;
-		var _error   = undefined;
-		var _program = __compile_pipeline(_source, _name);
-		__finish_compile(_program, _name);
-		_success = true;
-		_result.add(_name, _success, _error);
+		__merge_result(_result, __compile_units([{ name: _name, source: _source }], undefined));
 	}
 
 	/// @ignore
 	static __compile_object_asset = function(_yy, _asset_dir, _result) {
 		var _obj_name = _yy.name;
 		var _files    = gumshoe(_asset_dir, "gml", false);
+		var _entries  = [];
 		var _i = 0; repeat(array_length(_files)) {
-			var _gml_path   = _files[_i];
-			var _entry_name = _obj_name + "::" + filename_name(_gml_path);
-			var _source     = gmlc_file_read_all_text(_gml_path);
-			var _success    = false;
-			var _error      = undefined;
-			var _program = __compile_pipeline(_source, _entry_name);
-			__finish_compile(_program, _entry_name);
-			_success = true;
-			_result.add(_entry_name, _success, _error);
+			var _gml_path = _files[_i];
+			array_push(_entries, { name: _obj_name + "::" + filename_name(_gml_path), source: gmlc_file_read_all_text(_gml_path) });
 		_i++;}
+		__merge_result(_result, __compile_units(_entries, undefined));
+	}
+	
+	/// @ignore
+	static __merge_result = function(_into, _from) {
+		var _i = 0; repeat (array_length(_from.entries)) {
+			var _e = _from.entries[_i];
+			_into.add(_e.name, _e.success, _e.error, _e.diagnostics);
+		_i++}
 	}
 
 	#region jsDoc
@@ -1361,7 +1768,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				var _files = gumshoe(_asset_dir, "gml", false);
 				var _j = 0; repeat(array_length(_files)) {
 					var _source = gmlc_file_read_all_text(_files[_j]);
-					if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]) });
+					if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]), kind: "event" });
 				_j++;}
 			}
 			else if (variable_struct_exists(_yy, "name") && is_string(_yy.name)) {
@@ -1371,38 +1778,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			}
 		_i++;}
 
-		var _file_count = array_length(_entries);
-		var _programs   = array_create(_file_count, undefined);
-
-		// Phase 1: lex every file
-		var _table = __newSourceTable();
 		var _project = (variable_struct_exists(_yyp, "name") && is_string(_yyp.name)) ? _yyp.name : undefined;
-		_i = 0; repeat(_file_count) {
-			currentScriptName = __resolve_compile_source_name(_entries[_i].name);
-			lexer.initialize(_entries[_i].source, currentScriptName, array_length(_table.files));
-			_programs[_i] = lexer.parseAll();
-			_programs[_i].file.project = _project;
-			_programs[_i].sources = _table;
-			_table.add(_programs[_i].file);
-		_i++}
-
-		// Phase 2: macros and enums of the whole project, then the expansion of every file
-		__preprocess(_programs, _table);
-
-		// Phase 3: parse every file, then compile each with the global names of the whole project
-		var _entryNames = array_create(_file_count, undefined);
-		_i = 0; repeat(_file_count) { _entryNames[_i] = _entries[_i].name; _i++ }
-		var _parsed = __parse_batch(_programs, _entryNames);
-		var _result = new GMLC_BatchResult();
-		_i = 0; repeat(_file_count) {
-			var _name    = _entries[_i].name;
-			var _success = false;
-			var _error   = undefined;
-			__finish_compile(_programs[_i], _name, _parsed.asts[_i], _parsed.globals);
-			_success = true;
-			_result.add(_name, _success, _error);
-		_i++;}
-		return _result;
+		return __compile_units(_entries, _project);
 	}
 
 	#endregion
@@ -1419,7 +1796,7 @@ enum GMLC_EXPOSURE {
     NONE,
     /*
         Nothing is exposed.
-        No assets, no constants, no functions — built-in or user-defined — are available.
+        No assets, no constants and no functions (built-in or user-defined) are available.
     */
 
     PURE,
@@ -1454,7 +1831,7 @@ enum GMLC_EXPOSURE {
 
     ALL,
     /*
-        Exposes the entire native GML runtime — including all built-in functions for file access,
+        Exposes the entire native GML runtime, including all built-in functions for file access,
         buffer manipulation, networking, and system-level operations.
         However, user-defined scripts and functions are still excluded in this mode.
         This is a trusted runtime with full engine access but without user script inclusion.

@@ -7,7 +7,7 @@
 /// @param   {String} _source : GML source
 /// @returns {Struct} {env, json, again, tree}
 #endregion
-function ast_json_round_trip(_source) {
+function ast_json_round_trip(_source, _stage = "resolved") {
 	static __env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 	var _env = __env;
 	var _sources = _env.__newSourceTable();
@@ -15,14 +15,19 @@ function ast_json_round_trip(_source) {
 	var _program = _env.lexer.parseAll();
 	_sources.add(_program.file);
 	_program.sources = _sources;
-	_env.__preprocess([_program], _sources);
+	_env.__preprocess([_program], _sources, []);
 	_env.parser.initialize(_program);
 	var _ast = _env.parser.parseAll();
 	_env.resolver.initialize(_ast, _sources);
 	_ast = _env.resolver.parseAll();
-	var _json = GMLC_AstToJson(_ast, _sources, "resolved");
+	if (_stage == "lowered") {
+		_env.lower.initialize(_ast, _sources);
+		_ast = _env.lower.parseAll();
+		_env.lower.resolveEnums([_ast], _sources);
+	}
+	var _json = GMLC_AstToJson(_ast, _sources, _stage);
 	var _tree = GMLC_AstFromJson(_json).root;
-	return { env: _env, json: _json, again: GMLC_AstToJson(_tree, _sources, "resolved"), tree: _tree };
+	return { env: _env, json: _json, again: GMLC_AstToJson(_tree, _sources, _stage), tree: _tree };
 }
 
 function AstJsonTestSuite() : TestSuite() constructor {
@@ -73,12 +78,20 @@ function AstJsonTestSuite() : TestSuite() constructor {
 		assert_equals(_elements[6].value, int64("9223372036854775807"), "the largest int64 changed");
 	});
 	
+	addFact("Before lowering an enum reference is an Index and a member keeps its written value [GMLC]", function() {
+		var _r = ast_json_round_trip("enum AstJsonLate { A = 2 + 1 }\nreturn AstJsonLate.A;");
+		assert_equals(_r.again, _r.json, "the JSON read back and written again differs");
+		var _use = _r.tree.body[0][$ "argument"];
+		var _member = _r.tree.enums[0].members[0];
+		assert_true((_use.kind == __GMLC_NodeKind_Index) && (_member.value == undefined) && (_member.init.kind == __GMLC_NodeKind_Binary), "the enum was given its value before lowering");
+	});
+	
 	addFact("Macro and enum origins survive the round trip", function() {
 		var _r = ast_json_round_trip(@'
 			#macro AST_JSON_SPEED 4
 			enum AstJsonDir { Left = -1, Right = 1 }
 			return AstJsonDir.Right * AST_JSON_SPEED;
-		');
+		', "lowered");
 		assert_equals(_r.again, _r.json, "the JSON read back and written again differs");
 		var _binary = _r.tree.body[0][$ "argument"];
 		assert_equals(_binary.left.origin.kind, "enum", "the enum origin was lost");

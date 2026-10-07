@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Gen_4_Lower",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Gen_4_Lower",
+  "parent":{
+    "name":"Lower",
+    "path":"folders/GMLC/Lower.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

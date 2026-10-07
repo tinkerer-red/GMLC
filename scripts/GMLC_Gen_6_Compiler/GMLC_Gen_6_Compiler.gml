@@ -283,28 +283,33 @@ function __GMLCcompileProgram(_node, _globalsStruct, _env=undefined, _sources=un
 
 #region jsDoc
 /// @func    __GMLClocalLookUps(_rootNode, _node)
-/// @desc    The locals of a function as name to slot, from what the resolver found (the file's `functions`), with their
-///          count.
+/// @desc    The parameters and locals of a function as name to slot, from what the resolver found (the file's
+///          `functions`), with their count.
 /// @param   {Struct} _rootNode : The program node
 /// @param   {Struct} _node     : A function node or the Script
 /// @returns {Struct} {lookUps, count}
 #endregion
 function __GMLClocalLookUps(_rootNode, _node) {
-	var _locals = _rootNode.functions[(_node.kind == __GMLC_NodeKind_Script) ? 0 : _node.fn_id].locals;
+	var _info = _rootNode.functions[(_node.kind == __GMLC_NodeKind_Script) ? 0 : _node.fn_id];
 	var _lookUps = {};
-	var _i = 0; repeat (array_length(_locals)) {
-		_lookUps[$ _locals[_i]] = _i;
+	// the parameters take slots 0 to n-1, the locals the slots after them
+	var _i = 0; repeat (array_length(_info.params)) {
+		_lookUps[$ _info.params[_i]] = _i;
 	_i++}
-	return { lookUps: _lookUps, count: array_length(_locals) };
+	var _n = array_length(_info.params);
+	_i = 0; repeat (array_length(_info.locals)) {
+		_lookUps[$ _info.locals[_i]] = _n + _i;
+	_i++}
+	return { lookUps: _lookUps, count: _n + array_length(_info.locals) };
 }
 
 function __GMLCexecuteExpression() {};
 function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 	if (_parentNode=undefined && _node==undefined) {
-		throw_gmlc_error("Red forgot to add the `rootNode` and `parentNode` when calling `__GMLCcompileExpression`!")
+		__gmlc_internal_error("__GMLCcompileExpression was called without its root and parent nodes")
 	}
 	if (!is_instanceof(_node, ASTNode)) {
-		throw_gmlc_error($"Supplied Node is not a valid AST - Red's fault\ninstanceof(_node) == {instanceof(_node)}")
+		__gmlc_internal_error($"__GMLCcompileExpression was given a {instanceof(_node)}, not a node")
 	}
 	
 	//check every different ast node, and see how it should be compiled,
@@ -432,7 +437,7 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 		
 		default:
 			
-			throw_gmlc_error($"Current Node does not have a valid type for the compiler,\nkind: {_node.kind}", _node.span)
+			__gmlc_internal_error($"the compiler has no case for node kind {_node.kind}", _node.span)
 		break;
 				
 		// Add cases for other types of nodes
@@ -463,6 +468,8 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	// the body of the file (a Script) is a function without parameters
 	_output.isScriptBody = (_node.kind == __GMLC_NodeKind_Script);
+	// an object event's top-level functions become methods of the instance
+	_output.isEventBody = _output.isScriptBody && (_node[$ "unitKind"] == "event");
 	var _params = _node[$ "params"] ?? [];
 	
 	//this assists with converting locals from struct accessors to an array write
@@ -893,8 +900,8 @@ function __GMLCcompileStatements(_rootNode, _parentNode, _statements, _out) {
 			break;}
 			case __GMLC_NodeKind_FunctionDecl:
 			case __GMLC_NodeKind_ConstructorDecl: {
-				if (_parentNode[$ "isScriptBody"] == true) {
-					// at the top level of a file: a global, compiled before the program runs
+				if (_parentNode[$ "isScriptBody"] == true) && (_parentNode[$ "isEventBody"] != true) {
+					// at the top level of a script: a global, compiled before the program runs
 					__GMLCcompileDeclaredFunction(_rootNode, _statement);
 				}
 				else {
@@ -1509,8 +1516,8 @@ function __GMLCcompileLiteralExpression(_rootNode, _parentNode, _node) {
 
 #region //{
 // used to call a dot-accessor method: target.key(args)
-//    target: <expression>,   — the object before the dot (evaluated once)
-//    key:    <string>,        — the property name
+//    target: <expression>,   the object before the dot (evaluated once)
+//    key:    <string>,        the property name
 //    argArr: array<expression>,
 //}
 #endregion
@@ -2022,7 +2029,7 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		return __vanilla_method(_output, _setter);
 	}
 	
-	throw_gmlc_error($"Couldnt find a proper assignment op for the node kind :: {_target.kind}", _node.span)
+	__gmlc_internal_error($"the compiler cannot assign to a node of kind {_target.kind}", _node.span)
 }
 #region jsDoc
 /// @func    __GMLCcompoundExecutor(_op)
@@ -2401,7 +2408,7 @@ function __GMLCcompileUpdateExpression(_rootNode, _parentNode, _node) {
 		
 	}
 	
-	throw_gmlc_error("Malformed assignment", _node.span)
+	__gmlc_internal_error("malformed assignment", _node.span)
 }
 
 #endregion
@@ -2420,7 +2427,7 @@ function __GMLCGetScopeGetter(_scopeType) {
 		case "Static":     return __GMLCexecuteGetPropertyVarStatic break;
 		case "Self":       return __GMLCexecuteGetPropertySelf      break;
 		case "BuiltinVar": return __GMLCexecuteGetPropertyUnique    break;
-		default: throw_gmlc_error($"Unsupported scope to be read from :: {_scopeType}");
+		default: __gmlc_internal_error($"the compiler cannot read a {_scopeType} name");
 	}
 }
 function __GMLCGetScopeSetter(_scopeType) {
@@ -2430,7 +2437,7 @@ function __GMLCGetScopeSetter(_scopeType) {
 		case "Static":     return __GMLCexecuteSetPropertyVarStatic break;
 		case "Self":       return __GMLCexecuteSetPropertySelf      break;
 		case "BuiltinVar": return __GMLCexecuteSetPropertyUnique    break;
-		default: throw_gmlc_error($"Unsupported scope to be written to :: {_scopeType}");
+		default: __gmlc_internal_error($"the compiler cannot write a {_scopeType} name");
 	}
 }
 function __GMLCGetScopeUpdater(_scopeType, _increment, _prefix) {
@@ -2520,7 +2527,7 @@ function __GMLCcompileAccessor(_rootNode, _parentNode, _node) {
 			}
 			return __GMLCcompileStructDotAccGet(_rootNode, _parentNode, _node.object, _node.member, _node.span)
 		}
-		default: throw_gmlc_error($"Unsupported accessor type: {_node.accessor}", _node.span);
+		default: __gmlc_internal_error($"the compiler has no case for accessor {_node.accessor}", _node.span);
 	}
 }
 
@@ -2538,7 +2545,7 @@ function __GMLCcompileIdentifier(_rootNode, _parentNode, _node) {
 			return __vanilla_method(_output, __GMLCexecuteUniqueGet);
 		}
 		case "Enum": {
-			throw_gmlc_error($"the enum {_node.name} is not a value", _node.span);
+			__gmlc_internal_error($"the enum {_node.name} reached the compiler as a value", _node.span);
 		}
 	}
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileIdentifier", "<Missing Error Message>", _node.span);
@@ -2588,6 +2595,12 @@ function __GMLCscopeKey(_rootNode, _identifier) {
 /// @returns {Any}
 #endregion
 function __GMLCidentifierValue(_rootNode, _identifier) {
+	// a function a language extension's rewrite calls is GMLC's own, whatever the environment exposes
+	var _origin = _identifier.origin;
+	if (_origin != undefined) && (_origin.kind == "extension") {
+		var _own = __GMLC_InternalFunctions()[$ _identifier.name];
+		if (_own != undefined) return _own;
+	}
 	var _env = _rootNode.env;
 	var _data = (_identifier.symbol.kind == "BuiltinConstant") ? _env.getConstant(_identifier.name) : _env.getFunction(_identifier.name);
 	if (_data == undefined) {
@@ -2635,6 +2648,7 @@ function __GMLCcompileArrayLiteral(_rootNode, _parentNode, _node) {
 //    keys: array<string>,
 //    values: array<expression>,
 //    bound: array<string>, the keys whose value is a function literal, bound to the new struct
+//    selfKeys: array<string>, the keys whose whole value is `self`, which GameMaker sets to the new struct
 //    size: <real>,
 //}
 #endregion
@@ -2648,6 +2662,9 @@ function __GMLCexecuteStructLiteral() {
 		var _key = bound[_j];
 		_struct[$ _key] = __gmlc_method(_struct, _struct[$ _key]);
 	_j++}
+	var _k = 0; repeat (array_length(selfKeys)) {
+		_struct[$ selfKeys[_k]] = _struct;
+	_k++}
 	
 	//set the statics so they are unique
 	static_set(_struct, {});
@@ -2668,6 +2685,9 @@ function __GMLCexecuteStructLiteralRepeatedKeys() {
 		var _key = bound[_j];
 		_struct[$ _key] = __gmlc_method(_struct, _struct[$ _key]);
 	_j++}
+	var _k = 0; repeat (array_length(selfKeys)) {
+		_struct[$ selfKeys[_k]] = _struct;
+	_k++}
 	
 	//set the statics so they are unique
 	static_set(_struct, {});
@@ -2680,6 +2700,7 @@ function __GMLCcompileStructLiteral(_rootNode, _parentNode, _node) {
 	_output.keys = array_create(_output.size);
 	_output.values = array_create(_output.size);
 	_output.bound = [];
+	_output.selfKeys = [];
 	var _seen = {};
 	var _repeated = false;
 	// function expressions in the values are bound to `self`; a function literal that is a value itself is bound to
@@ -2688,11 +2709,22 @@ function __GMLCcompileStructLiteral(_rootNode, _parentNode, _node) {
 	var _i = 0; repeat (_output.size) {
 		var _entry = _node.entries[_i];
 		_output.keys[_i] = _entry.key;
-		if (__gmlc_struct_has(_seen, _entry.key)) _repeated = true;
+		if (__gmlc_struct_has(_seen, _entry.key)) {
+			_repeated = true;
+			// a later value of the key replaces an earlier `self`
+			var _at = array_get_index(_output.selfKeys, _entry.key);
+			if (_at >= 0) array_delete(_output.selfKeys, _at, 1);
+		}
 		_seen[$ _entry.key] = true;
 		if (_entry.value.kind == __GMLC_NodeKind_FunctionExpr) {
 			_output.values[_i] = __vanilla_method({ value: __GMLCcompileFunctionValue(_rootNode, _entry.value) }, __GMLCexecuteLiteralExpression);
 			array_push(_output.bound, _entry.key);
+		}
+		else if (_entry.value.kind == __GMLC_NodeKind_Identifier) && (_entry.value.name == "self") {
+			// `{ me: self }` stores the new struct in GameMaker, though `self` anywhere else in the value (`self.x`,
+			// `[self]`, `f(self)`) is the creator (measured)
+			_output.values[_i] = __vanilla_method({ value: undefined }, __GMLCexecuteLiteralExpression);
+			array_push(_output.selfKeys, _entry.key);
 		}
 		else {
 			_output.values[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _entry.value);

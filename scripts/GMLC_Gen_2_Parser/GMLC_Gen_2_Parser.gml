@@ -1,7 +1,9 @@
 #region Parser.gml
 // GMLC_Gen_2_Parser: the preprocessed tokens of one file to a syntax tree.
 // One node kind per construct, every body a Block, names left unresolved (the resolver binds them), nothing lowered.
-// It reads only the file's tokens and declaration tables, never the environment. Binary operators are parsed by
+// It reads only the file's tokens and declaration tables, and from the environment only which language extensions
+// are switched on: their hooks parse their constructs, and their rewrites turn them into plain GML once the file is
+// parsed, so the tree it returns has only the node kinds of the AST contract. Binary operators are parsed by
 // precedence climbing over these tiers, loosest first, in the order GameMaker uses (measured):
 //   ?:   ??   ||   &&   ^^   == != < <= > >= (and `=` as equality)   | & ^   << >>   + -   * / div mod   prefix   postfix
 // `=` assigns only at the start of a statement, in declarations and in parameter defaults; anywhere else it compares.
@@ -15,7 +17,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static maxDepth = 256; // syntax nested deeper than this is an error
 	#endregion
 
-	env = _env; // kept so the stage API stays the same; never read
+	env = _env; // read only for the language extensions switched on
 	
 	program = undefined;
 	tokens = [];
@@ -25,8 +27,14 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	previousToken = undefined;
 	script = undefined;
 	depth = 0;
+	diagnostics = []; // GMLC_Diagnostic records of this file
 	pragmaIndex = 0; // the first pragma that has no statement yet
 	openTarget = undefined; // the target of the last pragmas while statements on its line may still extend it
+	extensionState = {}; // per switched-on extension, what its hooks recorded in this file for its rewrite
+	__extensionId = 0;   // numbers the names extensions make in this file
+	__statementHooks = {}; // statement word to the extension that parses it
+	__primaryHooks = {};   // expression word to the extension that parses it
+	__postfixHooks = {};   // postfix operator to the extension that parses it
 	
 	#region Tables
 	// the tier of each binary operator, tightest highest; `=` there compares
@@ -42,12 +50,13 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	
 	#region Public
 	#region jsDoc
-	/// @func    initialize(_program)
+	/// @func    initialize(_program, [_kind])
 	/// @desc    Prepares parsing of one preprocessed file.
 	/// @self    GMLC_Gen_2_Parser
 	/// @param   {Struct} _program : The preprocessor's program record (tokens, file and declaration tables)
+	/// @param   {String} [_kind]  : "script", or "event" for an object's event code
 	#endregion
-	static initialize = function(_program) {
+	static initialize = function(_program, _kind = "script") {
 		program = _program;
 		tokens = _program.tokens;
 		tokenCount = array_length(tokens);
@@ -55,26 +64,18 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		currentToken = (tokenCount > 0) ? tokens[0] : undefined;
 		previousToken = undefined;
 		depth = 0;
+		diagnostics = [];
 		pragmaIndex = 0;
 		openTarget = undefined;
+		__initializeExtensions();
 		
 		var _file = _program.file;
-		script = new ASTScript(new GMLC_Span(_file.fileId, 0, _file.byteLength()), []);
+		script = new ASTScript(new GMLC_Span(_file.fileId, 0, _file.byteLength()));
+		script.unitKind = _kind;
 		
 		// the declaration tables of the file, as nodes
-		var _i = 0; repeat (array_length(_program.macros)) {
-			var _def = _program.macros[_i];
-			array_push(script.macros, new ASTMacroDecl(_def.span, _def.name, _def.config, _def.text));
-		_i++}
-		_i = 0; repeat (array_length(_program.enums)) {
-			var _def = _program.enums[_i];
-			var _members = [];
-			var _m = 0; repeat (array_length(_def.members)) {
-				var _member = _def.members[_m];
-				array_push(_members, new ASTEnumMember(_member.span, _member.name, _member.value, _member.init != undefined));
-			_m++}
-			array_push(script.enums, new ASTEnumDecl(_def.span, _def.name, _members));
-		_i++}
+		script.macros = __GMLC_MacroDeclNodes(_program);
+		script.enums = __GMLC_EnumDeclNodes(_program);
 		script.regions = _program.regions;
 		script.pragmas = _program.pragmas;
 	};
@@ -89,7 +90,72 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		while (currentToken != undefined) {
 			array_push(script.body, parseStatement());
 		}
+		__parseEnumValues();
+		// the extensions' constructs become plain GML; their errors stop the file
+		var _extensions = env.extensions;
+		var _x = 0; repeat (array_length(_extensions)) {
+			var _extension = _extensions[_x];
+			if (_extension.rewrite != undefined) _extension.rewrite(script, self, extensionState[$ _extension.name]);
+		_x++}
+		if (__gmlc_has_errors(diagnostics)) __gmlc_throw_diagnostics(diagnostics, program[$ "sources"] ?? __fileTable());
 		return script;
+	};
+	
+	// each enum member's written value, parsed as an expression from the tokens the preprocessor kept for it
+	static __parseEnumValues = function() {
+		var _tokens = tokens;
+		var _count = tokenCount;
+		var _e = 0; repeat (array_length(script.enums)) {
+			var _def = program.enums[_e];
+			var _node = script.enums[_e];
+			var _m = 0; repeat (array_length(_def.members)) {
+				var _value = _def.members[_m][$ "expanded"];
+				if (_value != undefined) {
+					tokens = _value;
+					tokenCount = array_length(_value);
+					tokenIndex = 0;
+					currentToken = (tokenCount > 0) ? tokens[0] : undefined;
+					previousToken = undefined;
+					var _init = parseExpression();
+					if (currentToken != undefined) __fail("GMLC1002", currentToken, ["the end of the enum value", currentToken.name]);
+					_node.members[_m].init = _init;
+				}
+			_m++}
+		_e++}
+		tokens = _tokens;
+		tokenCount = _count;
+		tokenIndex = _count;
+		currentToken = undefined;
+		previousToken = undefined;
+	};
+	
+	// the hook tables of the extensions switched on, and a fresh state for each
+	static __initializeExtensions = function() {
+		extensionState = {};
+		__extensionId = 0;
+		__statementHooks = {};
+		__primaryHooks = {};
+		__postfixHooks = {};
+		var _extensions = env.extensions;
+		var _x = 0; repeat (array_length(_extensions)) {
+			var _extension = _extensions[_x];
+			extensionState[$ _extension.name] = {};
+			__addHooks(__statementHooks, _extension.statementWords, _extension);
+			__addHooks(__primaryHooks, _extension.primaryWords, _extension);
+			__addHooks(__postfixHooks, _extension.postfixOperators, _extension);
+		_x++}
+	};
+	static __addHooks = function(_table, _words, _extension) {
+		var _w = 0; repeat (array_length(_words)) {
+			_table[$ _words[_w]] = _extension;
+		_w++}
+	};
+	
+	// a statement an extension parses, at a word one claims; undefined when none does
+	static __extensionStatement = function() {
+		if (currentToken.type != __GMLC_TokenType_Identifier) return undefined;
+		var _extension = __gmlc_struct_get(__statementHooks, currentToken.value);
+		return (_extension != undefined) ? _extension.parseStatement(self) : undefined;
 	};
 
 	static cleanup = function() {};
@@ -119,18 +185,19 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	};
 	
 	#region jsDoc
-	/// @func    expect(_type, _value)
-	/// @desc    Consumes the current token when it is the given one, otherwise throws GMLC1002.
+	/// @func    expect(_type, _value, [_opener])
+	/// @desc    Takes the token _value of _type, or stops with GMLC1002.
 	/// @self    GMLC_Gen_2_Parser
-	/// @param   {Real}   _type  : Token type
-	/// @param   {String} _value : Token value
+	/// @param   {Real}   _type     : The token type
+	/// @param   {String} _value    : The token text
+	/// @param   {Struct} [_opener] : The bracket the token closes, which the error then labels
 	#endregion
-	static expect = function(_type, _value) {
+	static expect = function(_type, _value, _opener = undefined) {
 		if (currentToken == undefined) {
-			__error("GMLC1002", $"expected {_value}, found the end of the file");
+			__fail("GMLC1002", undefined, [_value, "the end of the file"], undefined, _opener);
 		}
 		if (currentToken.type != _type) || (currentToken.value != _value) {
-			__error("GMLC1002", $"expected {_value}, found {currentToken.name}");
+			__fail("GMLC1002", currentToken, [_value, currentToken.name], undefined, _opener);
 		}
 		advance();
 	};
@@ -144,24 +211,49 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	};
 
 	#region jsDoc
-	/// @func    __error(_code, _message, [_token])
-	/// @desc    Throws a syntax error at a token (the current one, or the last one at the end of the file).
+	/// @func    __report(_code, [_at], [_args], [_messageId], [_opener])
+	/// @desc    Records a diagnostic at a token or span (the current token by default; undefined is the end of the
+	///          file). _opener, when given, is the unclosed bracket, kept as a label.
 	/// @self    GMLC_Gen_2_Parser
+	/// @param   {String}        _code        : The code
+	/// @param   {Struct}        [_at]        : A token or a span
+	/// @param   {Array<String>} [_args]      : The values the message's template takes
+	/// @param   {String}        [_messageId] : The code, or the code and a variant key
+	/// @param   {Struct}        [_opener]    : The bracket left open
 	#endregion
-	static __error = function(_code, _message, _token = undefined) {
-		_token ??= currentToken ?? previousToken;
-		var _sources = program[$ "sources"];
-		var _at;
-		if (_token == undefined) {
-			_at = { fileName: program.file.name, line: 1, column: 1, lineString: "" };
-		}
-		else if (_sources != undefined) {
-			_at = _sources.position(_token);
+	static __report = function(_code, _at = currentToken, _args = undefined, _messageId = _code, _opener = undefined) {
+		var _span;
+		if (_at == undefined) {
+			var _end = program.file.byteLength();
+			_span = new GMLC_Span(program.file.fileId, _end, _end);
 		}
 		else {
-			_at = program.file.position(_token.start);
+			var _site = __site(_at);
+			_span = new GMLC_Span(_site.file, _site.start, _site[$ "end"]);
 		}
-		throw_gmlc_error(_code + ": " + _message, _at.line, _at.lineString, _at.column, _at.fileName);
+		var _diagnostic = new GMLC_Diagnostic(_code, _span, _args, _messageId);
+		if (_opener != undefined) {
+			var _open = __site(_opener);
+			array_push(_diagnostic.labels, new GMLC_Label(new GMLC_Span(_open.file, _open.start, _open[$ "end"]), _code + ".unclosed-delimiter", [_opener.name]));
+		}
+		array_push(diagnostics, _diagnostic);
+	};
+	
+	#region jsDoc
+	/// @func    __fail(_code, [_at], [_args], [_messageId], [_opener])
+	/// @desc    Records a syntax error as __report does and stops: the parser does not recover.
+	/// @self    GMLC_Gen_2_Parser
+	#endregion
+	static __fail = function(_code, _at = currentToken, _args = undefined, _messageId = _code, _opener = undefined) {
+		__report(_code, _at, _args, _messageId, _opener);
+		__gmlc_throw_diagnostics(diagnostics, program[$ "sources"] ?? __fileTable());
+	};
+	
+	// a source table of this file alone, for the position of an error when the compile has none
+	static __fileTable = function() {
+		var _sources = new GMLC_SourceTable();
+		_sources.add(program.file);
+		return _sources;
 	};
 	#endregion
 
@@ -195,7 +287,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	
 	// a body that is not a block is wrapped in one with its span
 	static __asBlock = function(_statement) {
-		if (_statement == undefined) return new ASTBlock(__emptySpan(), []);
+		if (_statement == undefined) return new ASTBlock(__emptySpan());
 		if (_statement.kind == __GMLC_NodeKind_Block) return _statement;
 		return new ASTBlock(_statement.span, [_statement], _statement.origin);
 	};
@@ -217,7 +309,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	/// @returns {Struct.ASTNode}
 	#endregion
 	static parseStatement = function() {
-		if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+		if (++depth > maxDepth) __fail("GMLC1030");
 		var _first = currentToken;
 		var _statement;
 		
@@ -273,17 +365,17 @@ function GMLC_Gen_2_Parser(_env) constructor {
 						_statement = finish(new ASTExit(), _first);
 					break;}
 					case "case":
-					case "default":  __error("GMLC1026", $"`{currentToken.value}` outside a switch"); break;
-					case "else":     __error("GMLC1024", "`else` without an `if`"); break;
-					case "enum":     __error("GMLC1012", "an enum declaration the preprocessor did not read"); break;
+					case "default":  __fail("GMLC1026", currentToken, [currentToken.value]); break;
+					case "else":     __fail("GMLC1024"); break;
+					case "enum":     __fail("GMLC1012"); break;
 					default:         _statement = parseSimpleStatement(); break;
 				}
 			break;}
 			default: {
-				_statement = parseSimpleStatement();
+				_statement = __extensionStatement() ?? parseSimpleStatement();
 			break;}
 		}
-
+		
 		// the `;` that ends a statement belongs to it
 		if (optional(__GMLC_TokenType_Punctuation, ";")) {
 			finish(_statement, _first);
@@ -335,7 +427,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		while (currentToken != undefined) && !isPunctuation("}") {
 			array_push(_body, parseStatement());
 		}
-		if (currentToken == undefined) __error("GMLC1003", "a block is not closed", _first);
+		if (currentToken == undefined) __fail("GMLC1003", _first);
 		advance();
 		return finish(new ASTBlock(undefined, _body), _first);
 	};
@@ -347,7 +439,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	/// @returns {Struct.ASTBlock}
 	#endregion
 	static parseBody = function() {
-		if (currentToken == undefined) __error("GMLC1002", "expected a statement, found the end of the file");
+		if (currentToken == undefined) __fail("GMLC1002", currentToken, ["a statement", "the end of the file"]);
 		return __asBlock(parseStatement());
 	};
 	
@@ -388,7 +480,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				if (_target.origin != undefined) return;
 			break;}
 		}
-		__error("GMLC1004", "this cannot be assigned to", _first);
+		__fail("GMLC1004", _target.span);
 	};
 	
 	#region jsDoc
@@ -402,6 +494,11 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _isStatic = (currentToken.value == "static");
 		advance();
 		var _declarations = [];
+		// a keyword after `var` ends an empty list and starts the next statement, as in GameMaker: `var static x = 1`
+		// is a static (measured: the value lasts between calls) and `var if (a) b = 1;` is an if
+		if (!_isStatic) && (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Keyword) {
+			return finish(new ASTVarDeclList(undefined, _declarations), _first);
+		}
 		do {
 			var _declFirst = currentToken;
 			// GameMaker takes `then` as the name of a static, not of a var (measured)
@@ -412,7 +509,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				_init = parseExpression();
 			}
 			else if (_isStatic) {
-				__error("GMLC1023", "a static variable must be given a value");
+				__fail("GMLC1023");
 			}
 			array_push(_declarations, finish(new ASTVarDecl(undefined, _target, _init), _declFirst));
 		}
@@ -434,7 +531,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _names = [];
 		do {
 			array_push(_names, __parseName("a variable name"));
-			if (isOperator("=")) __error("GMLC1011", "a globalvar declaration cannot have a value");
+			if (isOperator("=")) __fail("GMLC1011");
 		}
 		until (!optional(__GMLC_TokenType_Punctuation, ","));
 		return finish(new ASTGlobalVarDecl(undefined, _names), _first);
@@ -444,10 +541,10 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	// _thenIsName says GameMaker takes it
 	static __parseName = function(_what, _thenIsName = false) {
 		var _first = currentToken;
-		if (_first == undefined) __error("GMLC1002", $"expected {_what}, found the end of the file");
+		if (_first == undefined) __fail("GMLC1002", currentToken, [_what, "the end of the file"]);
 		var _then = _thenIsName && (_first.type == __GMLC_TokenType_Keyword) && (_first.value == "then");
 		if (_first.type != __GMLC_TokenType_Identifier) && (!_then) {
-			__error("GMLC1002", $"expected {_what}, found {_first.name}");
+			__fail("GMLC1002", currentToken, [_what, _first.name]);
 		}
 		advance();
 		return finish(new ASTIdentifier(undefined, _first.name), _first);
@@ -485,10 +582,10 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _colon = currentToken;
 		if (optional(__GMLC_TokenType_Punctuation, ":")) {
 			_parent = parsePostfix();
-			if (_parent.kind != __GMLC_NodeKind_Call) __error("GMLC1001", "a parent constructor must be a call", _colon);
+			if (_parent.kind != __GMLC_NodeKind_Call) __fail("GMLC1001", _colon, undefined, "GMLC1001.parent-call");
 		}
 		var _isConstructor = optional(__GMLC_TokenType_Keyword, "constructor");
-		if (_parent != undefined) && (!_isConstructor) __error("GMLC1010", "a parent call needs `constructor`", _colon);
+		if (_parent != undefined) && (!_isConstructor) __fail("GMLC1010", _colon);
 		var _body = parseBlock();
 		return { params: _params, parent: _parent, isConstructor: _isConstructor, body: _body };
 	};
@@ -500,6 +597,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	/// @returns {Array<Struct.ASTParam>}
 	#endregion
 	static parseParams = function() {
+		var _open = currentToken;
 		expect(__GMLC_TokenType_Punctuation, "(");
 		var _params = [];
 		while (!isPunctuation(")")) {
@@ -513,7 +611,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			array_push(_params, finish(new ASTParam(undefined, _target, _default), _first));
 			if (!optional(__GMLC_TokenType_Punctuation, ",")) break;
 		}
-		expect(__GMLC_TokenType_Punctuation, ")");
+		expect(__GMLC_TokenType_Punctuation, ")", _open);
 		return _params;
 	};
 	
@@ -533,10 +631,11 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static parseFor = function() {
 		var _first = currentToken;
 		advance();
+		var _open = currentToken;
 		expect(__GMLC_TokenType_Punctuation, "(");
 		var _init = undefined;
 		if (!isPunctuation(";")) {
-			_init = isKeyword("var") ? parseDeclList() : parseSimpleStatement();
+			_init = isKeyword("var") ? parseDeclList() : (__extensionStatement() ?? parseSimpleStatement());
 		}
 		expect(__GMLC_TokenType_Punctuation, ";");
 		var _test = isPunctuation(";") ? undefined : parseExpression();
@@ -547,7 +646,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			_update = isPunctuation("{") ? parseBlock() : parseSimpleStatement();
 		}
 		while (optional(__GMLC_TokenType_Punctuation, ";")) {}
-		expect(__GMLC_TokenType_Punctuation, ")");
+		expect(__GMLC_TokenType_Punctuation, ")", _open);
 		var _body = parseBody();
 		return finish(new ASTFor(undefined, _init, _test, _update, _body), _first);
 	};
@@ -580,7 +679,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _first = currentToken;
 		advance();
 		var _body = parseBody();
-		if (!isKeyword("until")) __error("GMLC1025", "keyword until expected");
+		if (!isKeyword("until")) __fail("GMLC1025");
 		advance();
 		var _test = parseExpression();
 		return finish(new ASTDoUntil(undefined, _body, _test), _first);
@@ -590,6 +689,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _first = currentToken;
 		advance();
 		var _discriminant = parseExpression();
+		var _open = currentToken;
 		expect(__GMLC_TokenType_Punctuation, "{");
 		var _cases = [];
 		var _hasDefault = false;
@@ -602,18 +702,19 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				var _clause = new ASTCase(undefined, _test, __parseCaseBody());
 			}
 			else if (isKeyword("default")) {
-				if (_hasDefault) __error("GMLC1008", "default cannot be used multiple times");
+				// GameMaker uses the last `default` (measured)
+				if (_hasDefault) __report("GMLC1008", currentToken);
 				_hasDefault = true;
 				advance();
 				expect(__GMLC_TokenType_Punctuation, ":");
 				var _clause = new ASTDefault(undefined, __parseCaseBody());
 			}
 			else {
-				__error("GMLC1007", "a statement in a switch must come after case or default");
+				__fail("GMLC1007");
 			}
 			array_push(_cases, finish(_clause, _caseFirst));
 		}
-		if (currentToken == undefined) __error("GMLC1003", "a switch is not closed", _first);
+		if (currentToken == undefined) __fail("GMLC1003", _open);
 		advance();
 		return finish(new ASTSwitch(undefined, _discriminant, _cases), _first);
 	};
@@ -634,10 +735,11 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _catchBody = undefined;
 		var _finallyBody = undefined;
 		if (optional(__GMLC_TokenType_Keyword, "catch")) {
-			if (!isPunctuation("(")) __error("GMLC1020", "catch needs ( name )");
+			if (!isPunctuation("(")) __fail("GMLC1020");
+			var _open = currentToken;
 			advance();
 			_catchParam = __parseName("the name of the caught value");
-			expect(__GMLC_TokenType_Punctuation, ")");
+			expect(__GMLC_TokenType_Punctuation, ")", _open);
 			_catchBody = parseBody();
 		}
 		if (optional(__GMLC_TokenType_Keyword, "finally")) {
@@ -683,7 +785,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	// statement that started as an assignment target can continue as an expression.
 	
 	static parseExpression = function() {
-		if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+		if (++depth > maxDepth) __fail("GMLC1030");
 		var _expression = parseConditional();
 		depth--;
 		return _expression;
@@ -692,6 +794,13 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static parseConditional = function(_left = undefined, _first = currentToken) {
 		var _test = parseBinary(1, _left, _first);
 		if (!isOperator("?")) return _test;
+		// `?.` right after an operand is the nullish-chaining extension, here switched off
+		var _next = peek();
+		if (_next != undefined) && (_next.type == __GMLC_TokenType_Punctuation) && (_next.value == ".") && (_next.start == currentToken[$ "end"]) {
+			var _at = __site(currentToken);
+			var _dot = __site(_next);
+			__fail("GMLC1013", new GMLC_Span(_at.file, _at.start, _dot[$ "end"]));
+		}
 		advance();
 		// each branch counts toward the nesting limit, so a long chain of conditionals cannot exhaust the stack
 		var _consequent = parseExpression();
@@ -733,7 +842,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			var _first = currentToken;
 			switch (currentToken.value) {
 				case "!": case "-": case "+": case "~": {
-					if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+					if (++depth > maxDepth) __fail("GMLC1030");
 					var _op = currentToken.value;
 					advance();
 					var _argument = parseUnary();
@@ -741,7 +850,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 					return finish(new ASTUnary(undefined, _op, _argument), _first);
 				}
 				case "++": case "--": {
-					if (++depth > maxDepth) __error("GMLC1030", "the code is nested too deeply");
+					if (++depth > maxDepth) __fail("GMLC1030");
 					var _op = currentToken.value;
 					advance();
 					var _argument = parseUnary();
@@ -762,7 +871,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			case __GMLC_NodeKind_Literal:
 			return;
 		}
-		__error("GMLC1004", "this cannot be incremented or decremented", _first);
+		__fail("GMLC1004", _target.span, undefined, "GMLC1004.update");
 	};
 	
 	#region jsDoc
@@ -806,6 +915,15 @@ function GMLC_Gen_2_Parser(_env) constructor {
 					}
 				}
 			}
+			else if (currentToken.type == __GMLC_TokenType_Operator) && (__gmlc_struct_get(__postfixHooks, currentToken.value) != undefined) {
+				var _node = __postfixHooks[$ currentToken.value].parsePostfix(self, _expression, _first);
+				if (_node != undefined) {
+					_expression = _node;
+					_afterDot = false;
+					continue;
+				}
+				break;
+			}
 			else if (isOperator("++") || isOperator("--")) {
 				__checkUpdateTarget(_expression, _first);
 				var _op = currentToken.value;
@@ -819,7 +937,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	
 	// the word after `.`: any identifier, keyword or alias word, by its source text
 	static __parseMemberName = function() {
-		if (currentToken == undefined) __error("GMLC1002", "expected a name after ., found the end of the file");
+		if (currentToken == undefined) __fail("GMLC1002", currentToken, ["a name after .", "the end of the file"]);
 		switch (currentToken.type) {
 			case __GMLC_TokenType_Identifier:
 			case __GMLC_TokenType_Keyword: {
@@ -835,7 +953,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				}
 			break;}
 		}
-		__error("GMLC1002", $"expected a name after ., found {currentToken.name}");
+		__fail("GMLC1002", currentToken, ["a name after .", currentToken.name]);
 	};
 	
 	// alias words (`and`, `div`, ...) arrive as operators; their text starts with a letter
@@ -855,7 +973,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		expect(__GMLC_TokenType_Punctuation, "(");
 		var _args = [];
 		while (true) {
-			if (currentToken == undefined) __error("GMLC1002", "expected , or ), found the end of the file", _open);
+			if (currentToken == undefined) __fail("GMLC1002", undefined, [")", "the end of the file"], undefined, _open);
 			if (isPunctuation(")")) break;
 			if (isPunctuation(",")) {
 				// a hole: Empty, zero-width at the comma
@@ -866,7 +984,8 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			}
 			array_push(_args, parseExpression());
 			if (isPunctuation(")")) break;
-			if (!isPunctuation(",")) __error("GMLC1016", $"expected , or ), found {currentToken.name}");
+			if (currentToken == undefined) __fail("GMLC1002", undefined, [")", "the end of the file"], undefined, _open);
+			if (!isPunctuation(",")) __fail("GMLC1016", currentToken, [")", currentToken.name], undefined, _open);
 			advance();
 		}
 		advance();
@@ -881,13 +1000,14 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	/// @returns {Struct.ASTIndex}
 	#endregion
 	static parseIndex = function(_object, _first) {
-		var _open = currentToken.value;
+		var _openToken = currentToken;
+		var _open = _openToken.value;
 		advance();
 		var _keys = [parseExpression()];
 		if (optional(__GMLC_TokenType_Punctuation, ",")) {
 			array_push(_keys, parseExpression());
 		}
-		expect(__GMLC_TokenType_Punctuation, "]");
+		expect(__GMLC_TokenType_Punctuation, "]", _openToken);
 		var _two = (array_length(_keys) == 2);
 		var _accessor;
 		switch (_open) {
@@ -902,7 +1022,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _gridKeys = (_accessor == "Grid") && !_two;
 		var _oneKey = _two && ((_accessor == "List") || (_accessor == "Map") || (_accessor == "Struct"));
 		if (_gridKeys || _oneKey) {
-			__error("GMLC1001", $"the accessor {_open} takes {(_accessor == "Grid") ? 2 : 1} key(s)");
+			__fail("GMLC1001", previousToken, [_open, (_accessor == "Grid") ? "2" : "1"], "GMLC1001.accessor-keys");
 		}
 		return finish(new ASTIndex(undefined, _accessor, _object, _keys, undefined), _first);
 	};
@@ -915,7 +1035,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	/// @returns {Struct.ASTNode}
 	#endregion
 	static parsePrimary = function() {
-		if (currentToken == undefined) __error("GMLC1002", "expected an expression, found the end of the file");
+		if (currentToken == undefined) __fail("GMLC1002", currentToken, ["an expression", "the end of the file"]);
 		var _first = currentToken;
 		switch (currentToken.type) {
 			case __GMLC_TokenType_Number:
@@ -925,6 +1045,11 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			}
 			case __GMLC_TokenType_TemplateStringBegin: return parseTemplate();
 			case __GMLC_TokenType_Identifier: {
+				var _extension = __gmlc_struct_get(__primaryHooks, currentToken.value);
+				if (_extension != undefined) {
+					var _node = _extension.parsePrimary(self);
+					if (_node != undefined) return _node;
+				}
 				advance();
 				return finish(new ASTIdentifier(undefined, _first.name), _first);
 			}
@@ -938,9 +1063,10 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				switch (currentToken.value) {
 					case "(": {
 						// parentheses leave no node
+						var _open = currentToken;
 						advance();
 						var _inner = parseExpression();
-						expect(__GMLC_TokenType_Punctuation, ")");
+						expect(__GMLC_TokenType_Punctuation, ")", _open);
 						return _inner;
 					}
 					case "[": case "[@": return parseArrayLiteral();
@@ -948,7 +1074,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				}
 			break;}
 		}
-		__error("GMLC1001", $"unexpected {currentToken.name}");
+		__fail("GMLC1001", currentToken, [currentToken.name]);
 	};
 
 	// the Literal of a number or string token
@@ -980,12 +1106,15 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _exprs = [];
 		advance();
 		while (true) {
-			if (currentToken == undefined) __error("GMLC1002", "a template string is not closed", _first);
+			if (currentToken == undefined) __fail("GMLC1002", undefined, ["}", "the end of the file"], undefined, _first);
 			if (currentToken.type == __GMLC_TokenType_TemplateStringMiddle) || (currentToken.type == __GMLC_TokenType_TemplateStringEnd) {
-				__error("GMLC1014", "an empty {} in a template string");
+				// the `{}`: the last byte of the text before and the first of the text after
+				var _before = __site(tokens[tokenIndex - 1]);
+				var _after = __site(currentToken);
+				__fail("GMLC1014", new GMLC_Span(_after.file, _before[$ "end"] - 1, _after.start + 1));
 			}
 			array_push(_exprs, parseExpression());
-			if (currentToken == undefined) __error("GMLC1002", "a template string is not closed", _first);
+			if (currentToken == undefined) __fail("GMLC1002", undefined, ["}", "the end of the file"], undefined, _first);
 			if (currentToken.type == __GMLC_TokenType_TemplateStringMiddle) {
 				array_push(_strings, currentToken.value);
 				advance();
@@ -996,7 +1125,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				advance();
 				break;
 			}
-			__error("GMLC1002", $"expected }} in a template string, found {currentToken.name}");
+			__fail("GMLC1002", currentToken, ["}", currentToken.name]);
 		}
 		return finish(new ASTTemplateString(undefined, _strings, _exprs), _first);
 	};
@@ -1006,11 +1135,12 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		advance(); // `[` or `[@`
 		var _elements = [];
 		while (!isPunctuation("]")) {
-			if (currentToken == undefined) __error("GMLC1002", "an array literal is not closed", _first);
-			if (isPunctuation(",")) __error("GMLC1017", "an empty element in an array literal");
+			if (currentToken == undefined) __fail("GMLC1002", undefined, ["]", "the end of the file"], undefined, _first);
+			if (isPunctuation(",")) __fail("GMLC1017");
 			array_push(_elements, parseExpression());
 			if (isPunctuation("]")) break;
-			if (!isPunctuation(",")) __error("GMLC1016", $"expected , or ], found {(currentToken != undefined) ? currentToken.name : "the end of the file"}");
+			if (currentToken == undefined) __fail("GMLC1002", undefined, ["]", "the end of the file"], undefined, _first);
+			if (!isPunctuation(",")) __fail("GMLC1016", currentToken, ["]", currentToken.name], undefined, _first);
 			advance();
 		}
 		advance();
@@ -1029,7 +1159,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		advance(); // {
 		var _entries = [];
 		while (!isPunctuation("}")) {
-			if (currentToken == undefined) __error("GMLC1002", "a struct literal is not closed", _first);
+			if (currentToken == undefined) __fail("GMLC1002", undefined, ["}", "the end of the file"], undefined, _first);
 			var _keyToken = currentToken;
 			var _quoted = false;
 			var _key;
@@ -1044,11 +1174,11 @@ function GMLC_Gen_2_Parser(_env) constructor {
 					_key = _keyToken.name;
 				break;}
 				case __GMLC_TokenType_Operator: {
-					if (!__isAliasWord(_keyToken)) __error("GMLC1015", $"{_keyToken.name} cannot be a struct key");
+					if (!__isAliasWord(_keyToken)) __fail("GMLC1015", _keyToken, [_keyToken.name]);
 					_key = _keyToken.name;
 				break;}
 				default: {
-					__error("GMLC1015", $"{_keyToken.name} cannot be a struct key");
+					__fail("GMLC1015", _keyToken, [_keyToken.name]);
 				}
 			}
 			advance();
@@ -1067,12 +1197,13 @@ function GMLC_Gen_2_Parser(_env) constructor {
 					_value = finish(__literal(_keyToken), _keyToken);
 				}
 				else {
-					__error("GMLC1002", $"expected : after the struct key {_keyToken.name}");
+					__fail("GMLC1002", currentToken, [":", (currentToken != undefined) ? currentToken.name : "the end of the file"]);
 				}
 			}
 			array_push(_entries, finish(new ASTStructEntry(undefined, _key, _quoted, _shorthand, _value), _keyToken));
 			if (isPunctuation("}")) break;
-			if (!isPunctuation(",")) __error("GMLC1016", $"expected , or }}, found {(currentToken != undefined) ? currentToken.name : "the end of the file"}");
+			if (currentToken == undefined) __fail("GMLC1002", undefined, ["}", "the end of the file"], undefined, _first);
+			if (!isPunctuation(",")) __fail("GMLC1016", currentToken, ["}", currentToken.name], undefined, _first);
 			advance();
 		}
 		advance();
@@ -1110,9 +1241,10 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _calleeFirst = currentToken;
 		var _callee;
 		if (isPunctuation("(")) {
+			var _open = currentToken;
 			advance();
 			_callee = parseExpression();
-			expect(__GMLC_TokenType_Punctuation, ")");
+			expect(__GMLC_TokenType_Punctuation, ")", _open);
 		}
 		else {
 			_callee = __parseName("a constructor");
@@ -1143,3 +1275,39 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	#endregion
 }
 #endregion
+
+#region jsDoc
+/// @func    __GMLC_MacroDeclNodes(_program)
+/// @desc    The macro definitions of a preprocessed file as MacroDecl nodes.
+/// @param   {Struct} _program : The preprocessor's program record
+/// @returns {Array<Struct.ASTMacroDecl>}
+#endregion
+function __GMLC_MacroDeclNodes(_program) {
+	var _out = [];
+	var _i = 0; repeat (array_length(_program.macros)) {
+		var _def = _program.macros[_i];
+		array_push(_out, new ASTMacroDecl(_def.span, _def.name, _def.config, _def.text));
+	_i++}
+	return _out;
+}
+
+#region jsDoc
+/// @func    __GMLC_EnumDeclNodes(_program)
+/// @desc    The enum declarations of a preprocessed file as EnumDecl nodes; the parser adds each member's value as an
+///          expression and lowering its int64 value.
+/// @param   {Struct} _program : The preprocessor's program record
+/// @returns {Array<Struct.ASTEnumDecl>}
+#endregion
+function __GMLC_EnumDeclNodes(_program) {
+	var _out = [];
+	var _i = 0; repeat (array_length(_program.enums)) {
+		var _def = _program.enums[_i];
+		var _members = [];
+		var _m = 0; repeat (array_length(_def.members)) {
+			var _member = _def.members[_m];
+			array_push(_members, new ASTEnumMember(_member.span, _member.name, undefined, _member.init != undefined));
+		_m++}
+		array_push(_out, new ASTEnumDecl(_def.span, _def.name, _members));
+	_i++}
+	return _out;
+}

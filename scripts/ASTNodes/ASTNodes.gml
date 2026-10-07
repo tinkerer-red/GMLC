@@ -41,6 +41,7 @@ function GMLC_SourceFile(_id, _name, _source, _lineStarts = undefined, _project 
 	project = _project;
 	source = _source;
 	lineStarts = _lineStarts ?? __GMLC_lineStarts(_source);
+	invalidUtf8 = false; // set by the lexer when the text holds bytes that are not UTF-8 (GMLC0001)
 	__lineTexts = []; // text of each line, made on first use
 	
 	#region jsDoc
@@ -54,7 +55,7 @@ function GMLC_SourceFile(_id, _name, _source, _lineStarts = undefined, _project 
 		var _lo = 0;
 		var _hi = array_length(lineStarts) - 1;
 		while (_lo < _hi) {
-			var _mid = (_lo + _hi + 1) >> 1;
+			var _mid = floor((_lo + _hi + 1) / 2); // `>>` would make it an int64, and the line with it
 			if (lineStarts[_mid] <= _offset) {
 				_lo = _mid;
 			}
@@ -274,18 +275,72 @@ function GMLC_Pragma(_pragma, _span, _target) constructor {
 }
 
 #region jsDoc
-/// @func    GMLC_FunctionInfo(_fnId, _name, _locals)
-/// @desc    What the resolver found about one function, kept in the file's `functions` by fn_id (0 is the file's body):
-///          its number, its name and its locals in slot order (parameters first).
-/// @param   {Real}          _fnId   : The function's fn_id
-/// @param   {String}        _name   : Its name, undefined for the file's body
-/// @param   {Array<String>} _locals : The names of its locals, by slot
+/// @func    GMLC_FunctionInfo(_fnId, _name, _parentFn, _params, _locals, _statics)
+/// @desc    One function of a file, kept in the file's `functions` by fn_id (0 is the file's body). The resolver fills
+///          its number, name, enclosing function, parameters, locals (slots after the parameters) and statics (source
+///          order, which is initialisation order); lowering fills what it is, how it becomes reachable, which `self`
+///          it runs with, and its facts.
+/// @param   {Real}          _fnId     : The function's fn_id
+/// @param   {String}        _name     : Its name, undefined for the file's body
+/// @param   {Real}          _parentFn : fn_id of the function around it, undefined for the file's body
+/// @param   {Array<String>} _params   : Its parameters, slots 0 to n-1
+/// @param   {Array<String>} _locals   : Its `var` and catch names, slots n onwards
+/// @param   {Array<String>} _statics  : Its static names in source order
 /// @returns {Struct.GMLC_FunctionInfo}
 #endregion
-function GMLC_FunctionInfo(_fnId, _name, _locals) constructor {
+function GMLC_FunctionInfo(_fnId, _name, _parentFn, _params, _locals, _statics) constructor {
 	fn_id = _fnId;
 	name = _name;
+	fn_kind = undefined;      // "unit_body", "script_function", "method" or "constructor"
+	registration = undefined; // "none", "global", "instance" or "value"
+	binding = undefined;      // "none", "creator_self" or "new_struct"
+	parent_fn = _parentFn;
+	params = _params;
 	locals = _locals;
+	statics = _statics;
+	facts = undefined;        // GMLC_FunctionFacts
+}
+
+#region jsDoc
+/// @func    GMLC_PreprocessedUnit(_tokens, _macros, _enums, _regions, _pragmas)
+/// @desc    One file after preprocessing, as the `preprocessed` stage dump holds it: the expanded tokens (no trivia,
+///          ending with Eof) and the file's declaration tables.
+/// @param   {Array<Struct>}               _tokens  : The tokens
+/// @param   {Array<Struct.ASTMacroDecl>}  _macros  : The file's macro definitions
+/// @param   {Array<Struct.ASTEnumDecl>}   _enums   : The file's enum declarations
+/// @param   {Array<Struct.GMLC_Region>}   _regions : The file's regions
+/// @param   {Array<Struct.GMLC_Pragma>}   _pragmas : The file's pragmas
+/// @returns {Struct.GMLC_PreprocessedUnit}
+#endregion
+function GMLC_PreprocessedUnit(_tokens, _macros, _enums, _regions, _pragmas) constructor {
+	tokens = _tokens;
+	macros = _macros;
+	enums = _enums;
+	regions = _regions;
+	pragmas = _pragmas;
+}
+
+#region jsDoc
+/// @func    GMLC_FunctionFacts()
+/// @desc    What lowering counts and finds in one function's body (nested functions left out), for the optimizer and
+///          the backends. Every field starts at its value for an empty body.
+/// @returns {Struct.GMLC_FunctionFacts}
+#endregion
+function GMLC_FunctionFacts() constructor {
+	statement_count = 0;
+	node_count = 0;
+	uses_argument_array = false;
+	uses_argument_count = false;
+	max_argument_index = -1;
+	has_statics = false;
+	has_nested_functions = false;
+	contains_with = false;
+	contains_exit = false;
+	contains_try = false;
+	reads_other = false;
+	uses_compile_time_names = false;
+	direct_recursion = false;
+	single_trailing_return = false;
 }
 #endregion
 
@@ -339,17 +394,19 @@ function ASTNode(_span = undefined, _origin = undefined) constructor {
 	#endregion
 	static childSlots = function() {
 		var _out = [];
+		// inside a struct literal `self` is the new struct, so the node is kept in a local first
+		var _self = self;
 		var _fields = childFields;
 		var _i = 0; repeat (array_length(_fields)) {
 			var _key = _fields[_i];
 			var _value = self[$ _key];
 			if (is_array(_value)) {
 				var _j = 0; repeat (array_length(_value)) {
-					if (_value[_j] != undefined) array_push(_out, { node: _value[_j], parent: self, key: _key, index: _j });
+					if (_value[_j] != undefined) array_push(_out, { node: _value[_j], parent: _self, key: _key, index: _j });
 				_j++}
 			}
 			else if (_value != undefined) {
-				array_push(_out, { node: _value, parent: self, key: _key, index: undefined });
+				array_push(_out, { node: _value, parent: _self, key: _key, index: undefined });
 			}
 		_i++}
 		return _out;
@@ -443,14 +500,15 @@ function ASTEnumDecl(_span = undefined, _name = undefined, _members = [], _origi
 	name = _name;
 	members = _members;
 }
-function ASTEnumMember(_span = undefined, _name = undefined, _value = undefined, _explicit = false, _origin = undefined) : ASTNode(_span, _origin) constructor {
+function ASTEnumMember(_span = undefined, _name = undefined, _value = undefined, _explicit = false, _init = undefined, _origin = undefined) : ASTNode(_span, _origin) constructor {
 	static kind = __GMLC_NodeKind_EnumMember;
 	static kindName = "EnumMember";
-	static fields = ["name", "value", "explicit"];
-	static childFields = [];
+	static fields = ["name", "value", "explicit", "init"];
+	static childFields = ["init"];
 	name = _name;
-	value = _value;
+	value = _value;       // the int64 value, given in lowering
 	explicit = _explicit;
+	init = _init;         // the written value as an expression, undefined for a member without one
 }
 function ASTMacroDecl(_span = undefined, _name = undefined, _config = undefined, _body = "", _origin = undefined) : ASTNode(_span, _origin) constructor {
 	static kind = __GMLC_NodeKind_MacroDecl;
