@@ -15,28 +15,28 @@ return a;'); }), "number:5", "GMLC differs from GameMaker");
 		assert_equals(case_run(case_legacy_syntax_not_word), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("not is ! [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return not false;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return not false;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("and is && [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_and_word), "number:0", "GameMaker no longer gives the measured result");
 	});
 	addFact("and is && [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return true and false;'); }), "number:0", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return true and false;'); }), "bool:0", "GMLC differs from GameMaker");
 	});
 
 	addFact("or is || [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_or_word), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("or is || [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return false or true;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return false or true;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("xor is ^^ [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_xor_word), "number:0", "GameMaker no longer gives the measured result");
 	});
 	addFact("xor is ^^ [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return true xor true;'); }), "number:0", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return true xor true;'); }), "bool:0", "GMLC differs from GameMaker");
 	});
 
 	addFact("<> is != [GameMaker]", function() {
@@ -116,7 +116,7 @@ return b;'); }), "bool:1", "GMLC differs from GameMaker");
 		assert_equals(case_run(case_legacy_syntax_word_precedence), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("true or false and false [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return true or false and false;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return true or false and false;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("and short-circuits like && [GameMaker]", function() {
@@ -155,7 +155,7 @@ arr[1, 2] = 3;
 return string(arr[1][2]) + " " + string(array_length(arr));'); }), "string:3 2", "GMLC differs from GameMaker");
 	});
 
-	// var arr[10] = 0: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// var arr[10] = 0: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Cannot set a constant ("[") to a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("var arr[10] = 0 [GameMaker]", function() {
@@ -167,7 +167,7 @@ return string(arr[1][2]) + " " + string(array_length(arr));'); }), "string:3 2",
 return string(arr);'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// not as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// not as a variable name: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "=" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("not as a variable name [GameMaker]", function() {
@@ -179,7 +179,7 @@ return string(arr);'); }), "error", "GMLC accepts code GameMaker refuses");
 return not;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// then as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// then as a variable name: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("then as a variable name [GameMaker]", function() {
@@ -191,7 +191,7 @@ return not;'); }), "error", "GMLC accepts code GameMaker refuses");
 return then;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// begin as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// begin as a variable name: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "=" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("begin as a variable name [GameMaker]", function() {
@@ -203,7 +203,7 @@ return then;'); }), "error", "GMLC accepts code GameMaker refuses");
 return begin;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// xor as a variable name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// xor as a variable name: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "xor" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("xor as a variable name [GameMaker]", function() {
@@ -219,14 +219,14 @@ return xor;'); }), "error", "GMLC accepts code GameMaker refuses");
 		assert_equals(case_run(case_legacy_syntax_bang_constant), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("!false (constant operand) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return !false;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return !false;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("true && false (constant operands) [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_and_symbol_constant), "number:0", "GameMaker no longer gives the measured result");
 	});
 	addFact("true && false (constant operands) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return true && false;'); }), "number:0", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return true && false;'); }), "bool:0", "GMLC differs from GameMaker");
 	});
 
 	addFact("not t (variable operand) [GameMaker]", function() {
@@ -313,21 +313,21 @@ return string(a);'); }), "string:[ 0,[ 5 ] ]", "GMLC differs from GameMaker");
 		assert_equals(case_run(case_legacy_syntax_bang_comparison_constant), "number:0", "GameMaker no longer gives the measured result");
 	});
 	addFact("!(1 == 1) (constant operand) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return !(1 == 1);'); }), "number:0", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return !(1 == 1);'); }), "bool:0", "GMLC differs from GameMaker");
 	});
 
 	addFact("true ^^ false (constant operands) [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_xor_symbol_constant), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("true ^^ false (constant operands) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return true ^^ false;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return true ^^ false;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("false || true (constant operands) [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_or_symbol_constant), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("false || true (constant operands) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return false || true;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return false || true;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("t && true (one constant operand) [GameMaker]", function() {
@@ -342,7 +342,7 @@ return t && true;'); }), "bool:1", "GMLC differs from GameMaker");
 		assert_equals(case_run(case_legacy_syntax_bang_number_constant), "number:1", "GameMaker no longer gives the measured result");
 	});
 	addFact("!0 (constant number operand) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'return !0;'); }), "number:1", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'return !0;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 
 	addFact("!M with M a macro of true [GameMaker]", function() {
@@ -350,10 +350,10 @@ return t && true;'); }), "bool:1", "GMLC differs from GameMaker");
 	});
 	addFact("!M with M a macro of true [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'#macro CASE_LEGACY_TRUE true
-return !CASE_LEGACY_TRUE;'); }), "number:0", "GMLC differs from GameMaker");
+return !CASE_LEGACY_TRUE;'); }), "bool:0", "GMLC differs from GameMaker");
 	});
 
-	// then as a parameter name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// then as a parameter name: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("then as a parameter name [GameMaker]", function() {

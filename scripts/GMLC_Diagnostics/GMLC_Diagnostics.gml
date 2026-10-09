@@ -1,9 +1,7 @@
 #region Diagnostics
-// The problems the stages find: one record per problem (code, Feather code, severity, span, message id, arguments,
-// labels, fix), the order they are reported in, and their text and JSON forms. Each stage reports into its own list
-// and the environment gathers the lists of a compile, so warnings come back with a program and errors stop it.
-// The text of a message is its template in the diagnostic catalogue (__GmlcMessagesData, a generated
-// table) with the arguments filled in; only the code and the arguments are data.
+// The problems the stages find, one record per problem, with their order and their text and JSON forms. Each stage
+// reports into its own list and the environment gathers them: warnings come back with a program, errors stop it.
+// A message's text is its template in the generated catalogue (__GmlcMessagesData) with the arguments filled in.
 
 #region jsDoc
 /// @func    GMLC_Diagnostic(_code, _span, [_args], [_messageId])

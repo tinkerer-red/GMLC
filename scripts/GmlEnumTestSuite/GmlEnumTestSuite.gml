@@ -66,7 +66,7 @@ return typeof(CaseEnFloat.X) + ":" + string(CaseEnFloat.X);'); }), "string:int64
 return typeof(CaseEnBool.X) + ":" + string(CaseEnBool.X);'); }), "string:int64:1", "GMLC differs from GameMaker");
 	});
 
-	// a string: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a string: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a string [GameMaker]", function() {
@@ -78,7 +78,7 @@ return typeof(CaseEnBool.X) + ":" + string(CaseEnBool.X);'); }), "string:int64:1
 return typeof(CaseEnStr.X) + ":" + string(CaseEnStr.X);'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// a previous member of the same enum: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a previous member of the same enum: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a previous member of the same enum [GameMaker]", function() {
@@ -152,7 +152,7 @@ return typeof(CaseEnReal.X) + ":" + string(CaseEnReal.X);'); }), "string:int64:5
 return typeof(CaseEnAbs.X) + ":" + string(CaseEnAbs.X);'); }), "string:int64:6", "GMLC differs from GameMaker");
 	});
 
-	// a built-in GameMaker does not fold (string_pos): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a built-in GameMaker does not fold (string_pos): GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a built-in GameMaker does not fold (string_pos) [GameMaker]", function() {
@@ -160,7 +160,7 @@ return typeof(CaseEnAbs.X) + ":" + string(CaseEnAbs.X);'); }), "string:int64:6",
 	//   return typeof(CaseEnPos.X) + ":" + string(CaseEnPos.X);
 	// });
 
-	// irandom: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// irandom: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("irandom [GameMaker]", function() {
@@ -168,7 +168,7 @@ return typeof(CaseEnAbs.X) + ":" + string(CaseEnAbs.X);'); }), "string:int64:6",
 	//   return typeof(CaseEnRand.X) + ":" + string(CaseEnRand.X);
 	// });
 
-	// a user function: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a user function: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a user function [GameMaker]", function() {
@@ -176,7 +176,7 @@ return typeof(CaseEnAbs.X) + ":" + string(CaseEnAbs.X);'); }), "string:int64:6",
 	//   return typeof(CaseEnUser.X) + ":" + string(CaseEnUser.X);
 	// });
 
-	// a local variable: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a local variable: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a local variable [GameMaker]", function() {
@@ -185,7 +185,7 @@ return typeof(CaseEnAbs.X) + ":" + string(CaseEnAbs.X);'); }), "string:int64:6",
 	//   return typeof(CaseEnLocal.X) + ":" + string(CaseEnLocal.X);
 	// });
 
-	// a global variable: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a global variable: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a global variable [GameMaker]", function() {
@@ -244,7 +244,7 @@ return typeof(v) + ":" + string(v);'); }), "string:int64:6", "GMLC differs from 
 return typeof(CaseEnMax.Y) + ":" + string(CaseEnMax.Y);'); }), "string:int64:3", "GMLC differs from GameMaker");
 	});
 
-	// array_length of an array literal: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// array_length of an array literal: GameMaker 2024.14.4.268 refuses to compile this:
 	//   enum assignment must be an integer constant
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("array_length of an array literal [GameMaker]", function() {

@@ -1,11 +1,8 @@
 
 #region AST Module
-// The nodes of the syntax tree, one constructor per node kind. Each constructor holds the fields of its kind under the
-// names the JSON form uses, plus `span` (where the node is in the source) and `origin` (the macro or enum use it came
-// from, or undefined). The statics of each constructor say what it is: `kind` (its number), `kindName` (its name in
-// the JSON form), `fields` (its fields in order) and `childFields` (the fields that hold child nodes, in the order
-// `children()` returns them).
-// Every stage reads and writes these nodes, and a tree read from JSON is made of the same constructors.
+// The nodes of the syntax tree, one constructor per node kind, with the fields named as in the JSON form plus `span`
+// and `origin` (the macro or enum use it came from, or undefined). The statics `kind`, `kindName`, `fields` and
+// `childFields` (in `children()` order) describe each kind. Trees read from JSON use the same constructors.
 #endregion
 
 #region Source positions

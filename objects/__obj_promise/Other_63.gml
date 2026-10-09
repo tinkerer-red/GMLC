@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.DIALOG, async_load);

@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.IMAGE_LOADED, async_load);

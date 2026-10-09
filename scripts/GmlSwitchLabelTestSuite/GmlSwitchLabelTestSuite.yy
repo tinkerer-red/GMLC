@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLPromiseFunctions",
+  "%Name":"GmlSwitchLabelTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLPromiseFunctions",
+  "name":"GmlSwitchLabelTestSuite",
   "parent":{
-    "name":"Promise",
-    "path":"folders/_Libraries/Promise.yy",
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

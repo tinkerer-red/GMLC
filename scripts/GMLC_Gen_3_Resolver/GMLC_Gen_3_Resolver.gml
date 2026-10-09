@@ -1,21 +1,14 @@
 #region Resolver.gml
-// GMLC_Gen_3_Resolver: binds every name of a parsed file to what it means, the step between the parser and the
-// later stages. It changes no node; it fills the fields the parser leaves empty: `symbol` on every Identifier,
-// `fn_id` and the name of anonymous functions on function nodes, and the resolver's part of the file's `functions`
-// table (each function's parameters, locals, statics and enclosing function; lowering adds the rest).
-// It runs in two passes. The first records what is declared: the functions and `globalvar` names of the file's top
-// level (global names; in a batch, those of every file, see collectGlobals) and for each function its parameters and
-// `var` names (locals, numbered after the parameters by first declaration) and its `static` names. The second gives
-// each Identifier its symbol, first match wins, as GameMaker does (measured):
-//   a local or static of the function (of the file's body outside functions) > a global name of the batch
-//   > a function or constant the environment exposes > a variable it exposes > an instance variable (Self).
-// Locals belong to the whole function, wherever the `var` is; a nested function does not see the locals of the one
-// around it. A function declared inside a function is a method of `self` there, not a global. `E.M` of an enum of the
-// batch or one the environment exposes binds `E` to the enum; enum values read names as the file's body does. A write to a global function's or game script's name writes the instance
-// variable of that name, as in GameMaker.
-// Problems become diagnostics with GameMaker's verdicts (measured): what GameMaker
-// refuses is an error, what it compiles is a warning. Every problem of the file is reported, then the file stops when
-// one is an error.
+// GMLC_Gen_3_Resolver: binds every name of a parsed file, filling `symbol`, `fn_id` and the `functions` table without
+// changing nodes. Pass one records declarations: the file's global functions and `globalvar` names (every file's in a
+// batch) and each function's parameters, `var` locals (numbered after the parameters) and statics. Pass two binds each
+// Identifier, first match wins as in GameMaker:
+//   local or static of the function > global name of the batch > exposed function or constant > exposed variable
+//   > instance variable (Self).
+// Locals belong to the whole function wherever the `var` is, and a nested function does not see the locals around
+// it. A function declared inside a function is a method of `self`, not a global. A write to a global function's or
+// game script's name writes the instance variable of that name. What GameMaker refuses is an error, what it compiles
+// is a warning; every problem of the file is reported before an error stops it.
 
 function GMLC_Gen_3_Resolver(_env) constructor {
 	env = _env;
@@ -239,13 +232,19 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 					else if (__isBuiltinFunction(_name)) {
 						__report("GMLC2003", _target, [_name]);
 					}
-					if (__gmlc_struct_has(_frame.varAt, _name)) {
-						__report("GMLC2005", _target, [_name]);
+					if (array_get_index(_frame.params, _name) >= 0) {
+						// GameMaker refuses it: "cannot use argument name for a variable"
+						__report("GMLC2017", _target, [_name]);
 					}
 					else {
-						_frame.varAt[$ _name] = _target.span.start;
+						if (__gmlc_struct_has(_frame.varAt, _name)) {
+							__report("GMLC2005", _target, [_name]);
+						}
+						else {
+							_frame.varAt[$ _name] = _target.span.start;
+						}
+						__declareLocal(_frame, _name);
 					}
-					__declareLocal(_frame, _name);
 				_d++}
 			break;}
 			case __GMLC_NodeKind_StaticDecl: {
@@ -579,8 +578,8 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 	
 	#region jsDoc
 	/// @func    __checkWrite(_target, _isUpdate)
-	/// @desc    Reports an assignment (`=`, `+=`, ...) or a `++`/`--` of what cannot change, with GameMaker's verdicts
-	///          (measured); a write to a global function's name becomes a write to the instance variable.
+	/// @desc    Reports an assignment (`=`, `+=`, ...) or a `++`/`--` of what cannot change, with GameMaker's
+	///          verdicts; a write to a global function's name becomes a write to the instance variable.
 	/// @self    GMLC_Gen_3_Resolver
 	/// @param   {Struct.ASTNode} _target   : The target
 	/// @param   {Bool}           _isUpdate : Whether it is `++`/`--`

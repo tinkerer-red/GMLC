@@ -28,7 +28,7 @@ switch (5) {
 return r;'); }), "string:d1", "GMLC differs from GameMaker");
 	});
 
-	// a function expression called at the start of a statement: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a function expression called at the start of a statement: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol ")" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a function expression called at the start of a statement [GameMaker]", function() {
@@ -87,7 +87,7 @@ var b = 2;
 return a + b;'); }), "number:3", "GMLC differs from GameMaker");
 	});
 
-	// a static list ending in a comma: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a static list ending in a comma: GameMaker 2024.14.4.268 refuses to compile this:
 	//   static variables must be assigned a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a static list ending in a comma [GameMaker]", function() {
@@ -105,7 +105,7 @@ return a + b;'); }), "number:3", "GMLC differs from GameMaker");
 return stmt_static_comma();'); }), "number:5", "GMLC no longer gives its result");
 	});
 
-	// a static without a value: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a static without a value: GameMaker 2024.14.4.268 refuses to compile this:
 	//   static variables must be assigned a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a static without a value [GameMaker]", function() {
@@ -123,7 +123,7 @@ return stmt_static_comma();'); }), "number:5", "GMLC no longer gives its result"
 return stmt_static_bare();'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// the second static of a list without a value: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// the second static of a list without a value: GameMaker 2024.14.4.268 refuses to compile this:
 	//   static variables must be assigned a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("the second static of a list without a value [GameMaker]", function() {
@@ -196,7 +196,7 @@ return string(s[$ "5"]) + ":" + string(s[$ "7"]);'); }), "string:5:7", "GMLC dif
 return 1;'); }), "error", "GMLC differs from GameMaker");
 	});
 
-	// an alias word alone as a struct entry: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// an alias word alone as a struct entry: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Expected id
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("an alias word alone as a struct entry [GameMaker]", function() {
@@ -208,7 +208,7 @@ return 1;'); }), "error", "GMLC differs from GameMaker");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// ++ on a number: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// ++ on a number: GameMaker 2024.14.4.268 refuses to compile this:
 	//   malformed assignment
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("++ on a number [GameMaker]", function() {
@@ -220,7 +220,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// postfix ++ on a number: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// postfix ++ on a number: GameMaker 2024.14.4.268 refuses to compile this:
 	//   malformed assignment
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("postfix ++ on a number [GameMaker]", function() {
@@ -232,7 +232,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// ++ on a call: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// ++ on a call: GameMaker 2024.14.4.268 refuses to compile this:
 	//   malformed assignment
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("++ on a call [GameMaker]", function() {
@@ -287,7 +287,7 @@ var s = { a, b, c };
 return string(s.a) + string(s.b) + string(s.c);'); }), "string:123", "GMLC differs from GameMaker");
 	});
 
-	// a quoted key alone as a struct entry: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a quoted key alone as a struct entry: GameMaker 2024.14.4.268 refuses to compile this:
 	//   got string 'a' expected id
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a quoted key alone as a struct entry [GameMaker]", function() {
@@ -301,7 +301,7 @@ var s = { "a" };
 return s.a;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// gml_pragma("@NoOp") before a statement: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// gml_pragma("@NoOp") before a statement: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unknown pragma '@NoOp'
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("gml_pragma(\"@NoOp\") before a statement [GameMaker]", function() {

@@ -176,7 +176,6 @@ function __gmlc_is_instanceof(_struct, _constructor) {
 		var _should_parse = false;
 		
 		if (is_gmlc_method(_constructor)) {
-			//var _target = method_get_self(_struct).target
 			_constructor = method_get_self(_constructor).func;
 		}
 		
@@ -217,7 +216,6 @@ function __gmlc_static_get(_struct) {
 	
 	if (is_method(_struct)) {
 		if (is_gmlc_method(_struct)) {
-			//var _target = method_get_self(_struct).target
 			var _program = method_get_self(_struct).func;
 			var _program_data = method_get_self(_program);
 			var _statics = _program_data.statics;
@@ -346,7 +344,6 @@ function __gmlc_script_get_name(ind) {
 	
 	if (is_method(ind)) {
 		if (is_gmlc_method(ind)) {
-			//var _target = method_get_self(_struct).target
 			ind = method_get_self(ind).func;
 		}
 		

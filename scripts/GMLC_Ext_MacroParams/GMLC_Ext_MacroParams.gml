@@ -1,9 +1,7 @@
 #region Extension: macro-params
-// `#macro NAME(A, B) body`: when the name is directly followed by `(`, the parenthesised names are parameters. A use
-// `NAME(x, y)` becomes the body with each parameter name (not after a `.`) replaced by the tokens of its argument;
-// the arguments split at commas outside brackets and may span lines; macros in the arguments and the body expand
-// afterwards with the preprocessor's depth and cycle limits. A use without `(` stays a name. Without the extension,
-// GameMaker's meaning holds: the macro NAME whose body starts with `(A, B)`.
+// `#macro NAME(A, B) body`: a name directly followed by `(` takes parameters. A use `NAME(x, y)` becomes the body
+// with each parameter name (not after a `.`) replaced by its argument's tokens, then expands as usual; a use without
+// `(` stays a name. Without the extension, GameMaker's meaning holds: a body starting with `(A, B)`.
 
 #region jsDoc
 /// @func    GMLC_Ext_MacroParams()

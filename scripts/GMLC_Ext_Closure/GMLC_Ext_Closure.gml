@@ -1,12 +1,8 @@
 #region Extension: closure
-// `closure(function(...) { ... })`: the function keeps copies of the locals of the function around it that its body
-// names (not its own parameters and locals; the closures inside it count, as they copy from it, other functions
-// inside it do not), and runs with the `self` and `other` it was made with. A closure inside a closure finds the
-// outer one's copies as its locals, so only the function directly around a closure is looked at. A constructor
-// cannot be a closure, and a closure cannot be made in a parameter default or a parent call (GMLC1031). The plain GML
-// is the method of __GMLC_ExtWrapClosure. A `let` box the body names is such a local, so a closure inside a `let`
-// block shares the box. The program's calls of `method` and `method_get_self` go through __gmlc_closure_method and
-// __gmlc_closure_method_get_self, so `method(s, closure)` gives the closure the `self` s and keeps its copies.
+// `closure(function(...) { ... })`: the function keeps copies of the enclosing function's locals its body names and
+// runs with the `self` and `other` it was made with; the plain GML is the method of __GMLC_ExtWrapClosure.
+// Constructors cannot be closures, nor can closures be made in a parameter default or parent call (GMLC1031).
+// `method` and `method_get_self` go through __gmlc_closure_method*, so a rebound closure keeps its copies.
 
 #region jsDoc
 /// @func    GMLC_Ext_Closure()

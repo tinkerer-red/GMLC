@@ -1,23 +1,15 @@
-# GMLC v2
+# GMLC
 
-GMLC compiles and runs GML source at run time inside GameMaker. Branch `v2` is a full overhaul of the library in
-progress; `master` keeps v1. v2 starts from v1 commit `de25e48`. Only the `GMLC` IDE folder ships (the release
-workflow packages it); the rest of the project is tooling: the test framework (`_Libraries/xUnit`), the test
-suites (`Tests`), debug helpers (`print_progress`, `log`) and the web demo.
+GMLC is a GML compiler written in GML. It lets a GameMaker project compile and run GML source at runtime, for mod
+support, live scripting and in-game consoles.
 
-## Setup
+This is the `v2` branch, a rewrite of the library that is still in progress. The current release is on `master`.
 
-1. Copy `GmlSpec.xml` from your installed runtime into this project's `datafiles/` folder, for example
-   `C:/ProgramData/GameMakerStudio2/Cache/runtimes/runtime-2024.14.4.268/GmlSpec.xml` to `datafiles/GmlSpec.xml`.
-   The file belongs to YoYo Games, is git-ignored and must never be committed. This step goes away when the JSON
-   spec loader replaces the XML loader.
-2. Open `GMLC.yyp` in GameMaker, or compile it headlessly:
-   `npx --yes @gamemaker/gm-cli@2.4.1 compile --toolchain GMS2@2024.14.4 --errors-only`.
-3. The first room in the room order runs: `rmGMLCTestFramework` runs the test framework (the GMLC suites plus the
-   suites in `datafiles/__TESTS`, compiled through GMLC); `rmGMLCTestSingle`, `rmGMLCTestGithub` and
-   `rmGMLCWebDemo` are the other harnesses.
+## Requirements
 
-## Quickstart (current API)
+GameMaker 2024.14 (runtime 2024.14.4.268) or LTS 2026. No other libraries are needed.
+
+## Usage
 
 ```gml
 var env = new GMLC_Env();
@@ -33,19 +25,29 @@ var foo = env.get("foo");
 show_debug_message(foo());       // bar
 ```
 
-`execute_string(code)` compiles and runs a string without caching; use a `GMLC_Env` for anything that runs more
-than once. Exposure tiers (`GMLC_EXPOSURE`) decide which built-in functions compiled code may call; the `expose_*`
-methods of `GMLC_Env` add your own functions, constants and assets.
+A `GMLC_Env` holds everything compiled code can see. Compile once and call the result as often as needed;
+`execute_string` exists for one-off code, but compiles the string again on every call.
 
-## Known limitations of this branch
+- **Access:** the `GMLC_EXPOSURE` tiers limit which built-in functions compiled code may call. The `expose_*` methods
+  add your own functions, constants and assets.
+- **Multiple files:** `compile_batch` and `compile_project` compile files together, sharing macros, enums and global
+  functions.
+- **Extensions:** `enableExtension` turns on `let`, `const`, `closure`, `?.` and macro parameters.
+- **Errors:** problems are reported as diagnostics with a code (`GMLC0001` and up). Warnings are returned with the
+  result; errors stop the compile.
 
-- `compile_project` and `__compile_object_asset` find files with gumshoe and `parseAsync` uses the Promise library;
-  both are replaced by original code later in the overhaul.
-- Test framework run of 2026-10-04 (runtime 2024.14.4): 2,009 passed, 79 failed, 10 expired, 16 skipped, the same
-  as v1. 18 of the failures are in the GMLC suites (`DotChainPerformanceTestSuite` 8,
-  `BasicCompoundAssignmentAccessorsTestSuite` 8, `BasicConstructorTestSuit` 2): `new` on a constructor inside
-  compiled code stops with "static_set argument 1 cannot be an instance", and a bare `undefined` on the right of an
-  assignment is read as a variable.
-- The built-in table is still read from `GmlSpec.xml` at boot.
-- The overhaul replaces the single-pass design with separate lexer, preprocessor, parser, semantic analysis,
-  lowering, optimizer and backend stages; until then the code is v1's.
+## How it works
+
+Source passes through seven stages, each in its own script: lexer, preprocessor, parser, resolver, lowering,
+optimizer and compiler. The compiler turns the final tree into GML functions that run directly.
+
+## Project layout
+
+Only the `GMLC` folder is part of the library. The rest of the project is for development: the test framework
+(`_Libraries/xUnit`), the test suites (`Tests`) and a web demo. To run the tests, open `GMLC.yyp` and make
+`rmGMLCTestFramework` the first room.
+
+## Known limitations
+
+- Runtime errors in compiled code are thrown as plain GML exceptions and do not yet match GameMaker's error format.
+- `GM14Compatibility` is the only third-party script left in the library folder.

@@ -1,6 +1,7 @@
 #region jsDoc
 /// @func    __EnvironmentClass()
-/// @desc    Core symbol environment. Stores an indexed table of named symbols with value, type, getter, setter, and highlight metadata. Provides typed expose/remove/clear/get APIs for keywords, constants, enums, functions, variables, macros, and operators. Also supports cloning, importing, resolving in context, and bulk symbol population.
+/// @desc    Core symbol environment: a table of named symbols (value, type, getter, setter, highlight) with typed
+///          expose/remove/clear/get APIs per symbol kind, plus cloning, importing and resolving in context.
 /// @returns {Struct.__EnvironmentClass}
 #endregion
 function __EnvironmentClass() constructor {
@@ -12,7 +13,8 @@ function __EnvironmentClass() constructor {
 	#region Public
 	#region jsDoc
 	/// @func    importSymbolMap()
-	/// @desc    Bulk-imports a spec-shaped map of symbols into the environment, optionally overwriting existing entries. Each entry should include at minimum a string `type` and a `value`. Optional `getter`, `setter`, and `highlight` fields are respected; otherwise defaults are synthesized based on `type`. Optional `feather` metadata is preserved.
+	/// @desc    Bulk-imports a spec-shaped map of symbols, each with at least a string `type` and a `value`. Missing
+	///          getter, setter and highlight fields get the defaults of the type; `feather` metadata is kept.
 	/// @self    __EnvironmentClass
 	/// @param   {Struct} symbolMap  : Map of symbolName -> { value, type, getter?, setter?, highlight?, feather? }
 	/// @param   {Bool}   overwrite  : If true, replace existing entries with the same name (default: false)
@@ -70,7 +72,7 @@ function __EnvironmentClass() constructor {
 	};
 	#region jsDoc
 	/// @func    setHighlight()
-	/// @desc    Assigns a custom highlight tag per symbol name. Creates placeholders when the symbol does not yet exist, so highlighters can be configured before population.
+	/// @desc    Assigns a highlight tag per symbol name, creating placeholders for symbols that do not exist yet.
 	/// @self    __EnvironmentClass
 	/// @param   {Struct} conf : Map of symbolName -> highlightTag
 	/// @returns {Struct.__EnvironmentClass}
@@ -148,7 +150,7 @@ function __EnvironmentClass() constructor {
 	};
 	#region jsDoc
 	/// @func    resolve()
-	/// @desc    Looks up a symbol entry by name. If found, attaches the given context to the entry and returns it. Returns undefined if the symbol is not present.
+	/// @desc    Looks up a symbol entry by name and attaches the given context to it; undefined when not present.
 	/// @self    __EnvironmentClass
 	/// @param   {String} name    : Symbol name to resolve
 	/// @param   {Any}    context : Optional context object stored on the returned entry (default: undefined)
@@ -163,7 +165,8 @@ function __EnvironmentClass() constructor {
 	};
 	#region jsDoc
 	/// @func    addSymbol()
-	/// @desc    Adds all fields from the given struct into the environment as symbols of the provided type, using default getter, setter, and highlight rules for that type.
+	/// @desc    Adds every field of a struct as a symbol of the given type, with that type's default getter, setter
+	///          and highlight.
 	/// @self    __EnvironmentClass
 	/// @param   {Struct} sourceStruct : Struct whose fields will be added as symbols
 	/// @param   {String} symbolType   : Type tag to assign (e.g., "envConstants", "envFunctions", etc.)

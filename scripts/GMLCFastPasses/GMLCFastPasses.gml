@@ -121,12 +121,10 @@ function __GMLCexecuteSetPropertyUnique() {
 #region Accessor Getters/Setters
 
 #region Evaluation order
-// GameMaker's evaluation order, measured on 2024.14.4:
-// an accessor read or write runs like a call get(target, keys...) / set(target, keys..., value) whose arguments are
-// evaluated right to left: the value first, then the keys from last to first, then the target. Array accessors
-// whose chain starts at a variable or a `x.member` path ("rooted") are the exception: the path, then each index
-// from left to right. Compound assignment and ++/-- evaluate a dot target or a rooted array path once; every other
-// accessor is read and then written, evaluating its keys and target again for the write.
+// GameMaker evaluates an accessor like a call get(target, keys...) / set(target, keys..., value), right to left.
+// Arrays rooted at a variable or `x.member` path are the exception: the path, then each index left to right.
+// Compound assignment and ++/-- evaluate a dot target or rooted array path once; other accessors are read, then
+// written with their keys and target evaluated again.
 function __GMLCarrayTargetIsRooted(_target) {
 	_target = __GMLCdesugarIndex(_target);
 	while (_target.kind == __GMLC_NodeKind_Index)

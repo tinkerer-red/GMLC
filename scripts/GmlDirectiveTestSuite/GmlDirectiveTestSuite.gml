@@ -114,7 +114,7 @@ ds_grid_destroy(g);
 return _r;'); }), "number:12", "GMLC differs from GameMaker");
 	});
 
-	// [#ff0000] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// [#ff0000] (no space after [): GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "[#" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("[#ff0000] (no space after [) [GameMaker]", function() {
@@ -134,7 +134,7 @@ return a[0];'); }), "error", "GMLC accepts code GameMaker refuses");
 return a[0];'); }), "number:255", "GMLC differs from GameMaker");
 	});
 
-	// [$FF] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// [$FF] (no space after [): GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "[$" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("[$FF] (no space after [) [GameMaker]", function() {
@@ -162,7 +162,7 @@ return a[0];'); }), "number:255", "GMLC differs from GameMaker");
 return a[0];'); }), "string:s", "GMLC differs from GameMaker");
 	});
 
-	// [|1] (no space after [): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// [|1] (no space after [): GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "[|" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("[|1] (no space after [) [GameMaker]", function() {
@@ -183,7 +183,7 @@ s.end = 1;
 return s.end;'); }), "number:1", "GMLC differs from GameMaker");
 	});
 
-	// {end: 1}: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// {end: 1}: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol ":" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("{end: 1} [GameMaker]", function() {
@@ -265,7 +265,7 @@ return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0)
 return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0);'); }), "string:4:1", "GMLC differs from GameMaker");
 	});
 
-	// a[@"1"] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a[@"1"] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a[@\"1\"] = 456 on an array [GameMaker]", function() {
@@ -274,7 +274,7 @@ return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0)
 	//   return string(a);
 	// });
 
-	// a[@"1"] read on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a[@"1"] read on an array: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a[@\"1\"] read on an array [GameMaker]", function() {
@@ -282,7 +282,7 @@ return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0)
 	//   return a[@"1"];
 	// });
 
-	// a["1"] read on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a["1"] read on an array: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a[\"1\"] read on an array [GameMaker]", function() {
@@ -290,7 +290,7 @@ return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0)
 	//   return a["1"];
 	// });
 
-	// a["1"] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a["1"] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a[\"1\"] = 456 on an array [GameMaker]", function() {
@@ -299,7 +299,7 @@ return string(string_length(a[0])) + ":" + string(string_pos(chr(92), a[0]) > 0)
 	//   return string(a);
 	// });
 
-	// a[@ string with an escape] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a[@ string with an escape] = 456 on an array: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Only ds_map or struct can be looked up using a string.  Have you forgotten a '?' or '$' accessor?
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a[@ string with an escape] = 456 on an array [GameMaker]", function() {

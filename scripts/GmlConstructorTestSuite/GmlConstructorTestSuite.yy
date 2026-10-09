@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"__privPromise",
+  "%Name":"GmlConstructorTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"__privPromise",
+  "name":"GmlConstructorTestSuite",
   "parent":{
-    "name":"Private",
-    "path":"folders/_Libraries/Promise/Private.yy",
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

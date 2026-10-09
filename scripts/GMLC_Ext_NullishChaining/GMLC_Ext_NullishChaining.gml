@@ -1,12 +1,8 @@
 #region Extension: nullish-chaining
-// `a?.b?.c`: a struct read that stops at undefined. As in other languages' `?.`, only undefined (or a missing key) ends
-// the chain early, so `d = a?.b ?? c` does not throw for a missing value; any other value is read as `struct_get`
-// reads it: a number or a bool gives undefined, a string or an array throws (measured). Only names follow `?.`; a
-// plain `.name` after the chain reads its result as usual. Each value is read once: every hop is
-// `struct_get(v ?? <empty>, "k")`, where <empty> is the struct `static_get(global)`, which has no keys of its own but
-// `toString`, so a broken chain reads on through it and ends undefined. A name or a dot chain of names as the base is
-// tested first, `is_undefined(base) ? undefined : ...`, so an early break costs one test. A key `toString` would find
-// <empty>'s own method, so such a chain is read by __gmlc_nullish_get instead.
+// `a?.b?.c`: a struct read that stops at undefined or a missing key; other values read as `struct_get` reads them.
+// Each hop is `struct_get(v ?? <empty>, "k")` with <empty> = `static_get(global)`, which has no keys but `toString`,
+// so a broken chain ends undefined; a key `toString` goes through __gmlc_nullish_get instead. A plain name base is
+// tested first (`is_undefined(base) ? undefined : ...`).
 
 #region jsDoc
 /// @func    GMLC_Ext_NullishChaining()

@@ -337,7 +337,7 @@ return typeof(struct_get(static_get(global), "ext_lowering_probe"));'); }), "str
 		assert_equals(case_run(function() { return compile_and_execute(@'return struct_get([1, 2], "b");'); }), "error", "GMLC differs from GameMaker");
 	});
 
-	// a struct accessor after a parenthesised expression: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a struct accessor after a parenthesised expression: GameMaker 2024.14.4.268 refuses to compile this:
 	//   unexpected symbol "[$" in expression
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a struct accessor after a parenthesised expression [GameMaker]", function() {

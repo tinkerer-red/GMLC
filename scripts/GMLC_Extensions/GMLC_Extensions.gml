@@ -1,19 +1,13 @@
 #region Extensions
-// Language extensions: constructs GameMaker does not have (`?.`, function-like macros, `const`, `closure(...)`,
-// `let`), each off unless the environment switches it on (GMLC_Env.enableExtension). An extension is a struct made by
-// a constructor that inherits GMLC_Extension; the preprocessor and the parser call its hooks, and its rewrite turns
-// what it parsed into plain GML before the resolver runs, so no later stage knows extensions exist. Each extension
-// keeps all of its code in its own script (GMLC_Ext_<Name>); this script holds what they share: the base constructor,
-// the registry, AST builders and the closure wrapping that `closure` and `let` both use.
+// Language extensions: constructs GameMaker does not have, each off unless GMLC_Env.enableExtension switches it on.
+// The preprocessor and parser call an extension's hooks, and its rewrite turns the result into plain GML before the
+// resolver runs. Each lives in its own GMLC_Ext_<Name> script; this one holds the shared base, registry and helpers.
 
 #region jsDoc
 /// @func    GMLC_Extension(_name)
-/// @desc    The base of a language extension. A child constructor sets the hooks it uses as statics:
-///          `collectMacro(pre, tokens, i, nameToken)` and `expandMacro(pre, batch, tokens, i, def, depth, out, use)`
-///          in the preprocessor; `parseStatement(parser)` for the words in `statementWords`, `parsePrimary(parser)` for
-///          those in `primaryWords`, `parsePostfix(parser, expression, first)` for the operators in
-///          `postfixOperators`, and `rewrite(script, parser, state)` once the file is parsed. `functions` names the
-///          helpers its rewritten code calls.
+/// @desc    The base of a language extension; a child sets the hooks it uses as statics: collectMacro, expandMacro,
+///          parseStatement (statementWords), parsePrimary (primaryWords), parsePostfix (postfixOperators) and
+///          rewrite. `functions` names the helpers its rewritten code calls.
 /// @param   {String} _name : The name the environment switches it on by
 /// @returns {Struct.GMLC_Extension}
 #endregion
@@ -185,18 +179,10 @@ function __GMLC_ExtCollectLocals(_node, _out) {
 #region Closure wrapping
 #region jsDoc
 /// @func    __GMLC_ExtWrapClosure(_extension, _function, _captures, _id)
-/// @desc    The plain GML of a function that keeps copies of some locals of the code around it and the `self` (and,
-///          when its body names `other`, the `other`) it was made with:
-///          `method({ __gmlc__closure__self: s, __gmlc__closure__other: o, __gmlc__closure__<name>: <name>, ... },
-///              function() { var <name> = __gmlc__closure__<name>; ...; var __gmlc__closure__target = __gmlc__closure__self;
-///              with (__gmlc__closure__other) { with (__gmlc__closure__target) { <body> } } })`.
-///          `self` and `other` are read into the locals __gmlc__closure<id>__self and __gmlc__closure<id>__other by the
-///          statements returned as `prelude`, which go just before the statement that makes the function: inside a
-///          struct literal a `self` entry is the new struct. The bound values are copied into locals before the first
-///          `with`, because inside `with (other)` a name is read from the new `self`. Without `other` in the body there
-///          is one `with`, so an `other` that is no instance cannot skip the body. `method(s, f)` in the program goes
-///          through __gmlc_closure_method (__GMLC_ExtRouteMethods), which gives such a function the `self` s and keeps
-///          its copies.
+/// @desc    The plain GML of a function that keeps copies of some outer locals and the `self` (and `other`, when
+///          named) it was made with: a method over those copies whose body runs inside `with (other) with (self)`.
+///          The returned `prelude` reads `self` and `other` into locals just before the function is made; copies are
+///          taken before the first `with`, and without `other` there is a single `with`.
 /// @param   {String}                   _extension : The extension wrapping it, for the origin of `method`
 /// @param   {Struct.ASTFunctionExpr}   _function  : The function, whose body is changed in place
 /// @param   {Array<String>}            _captures  : The locals it keeps copies of

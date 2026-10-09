@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.SOCIAL, async_load);

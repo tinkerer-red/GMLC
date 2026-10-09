@@ -8,6 +8,11 @@
 function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	should_optimize = false;
+	// on: constants that fail when they run (`real("ab")`, `chr(65.5)`) are warnings and fail at run time, as test code
+	// that expects the failure needs; off: they are compile errors
+	test_mode = false;
+	// the static struct of every struct literal compiled in this environment, in place of GameMaker's shared one
+	__structLiteralStatics = {};
 	
 	#region Init
 	
@@ -598,56 +603,57 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#region jsDoc
 	/// @func    foldableFunctions
 	/// @desc    The built-in functions a compile-time fold may run when every argument is a constant (the optimizer's
-	///          constant folding and the values of enum members): name to [GameMaker's function, fewest, most arguments],
-	///          -1 for any number. A name folds only while the environment exposes GameMaker's own function under it, so
-	///          a function the host put in its place is never run while compiling. `sqrt` (it depends on math_set_epsilon) and `choose` (random) are not in it.
+	///          constant folding and the values of enum members): name to [GameMaker's function, fewest, most
+	///          arguments], -1 for any number. A name folds only while the environment exposes GameMaker's own function
+	///          under it, so a function the host put in its place is never run while compiling. Not in it: `sqrt` (it
+	///          depends on math_set_epsilon), `choose` (random), `is_callable`, `object_*` and `script_*` (they depend
+	///          on the running game), `string_last_pos_ext` (a start past the end reads past the string), and the C
+	///          runtime's sin, cos, tan, arctan2, their inverses and degree forms and exp, whose last bit differs from
+	///          a correctly rounded result for some arguments (measured), lengthdir_x
+	///          and lengthdir_y (a result close to a whole number is snapped to it by a rule not measured yet);
+	///          `power` folds only on whole numbers with an exact whole result
+	///          (__gmlc_power_folds); `max`, `min`, `mean` and `median` need an argument.
 	#endregion
 	static foldableFunctions = {
-		abs: [abs, 1, 1], angle_difference: [angle_difference, 2, 2], ansi_char: [ansi_char, 1, 1], arccos: [arccos, 1, 1],
-		arcsin: [arcsin, 1, 1], arctan: [arctan, 1, 1], arctan2: [arctan2, 2, 2], base64_decode: [base64_decode, 1, 1],
-		base64_encode: [base64_encode, 1, 1], buffer_sizeof: [buffer_sizeof, 1, 1], ceil: [ceil, 1, 1], chr: [chr, 1, 1],
-		clamp: [clamp, 3, 3], code_is_compiled: [code_is_compiled, 0, 0], color_get_blue: [color_get_blue, 1, 1],
+		abs: [abs, 1, 1], angle_difference: [angle_difference, 2, 2], ansi_char: [ansi_char, 1, 1],
+		base64_decode: [base64_decode, 1, 1], base64_encode: [base64_encode, 1, 1],
+		buffer_sizeof: [buffer_sizeof, 1, 1], ceil: [ceil, 1, 1], chr: [chr, 1, 1], clamp: [clamp, 3, 3],
+		code_is_compiled: [code_is_compiled, 0, 0], color_get_blue: [color_get_blue, 1, 1],
 		color_get_green: [color_get_green, 1, 1], color_get_hue: [color_get_hue, 1, 1],
 		color_get_red: [color_get_red, 1, 1], color_get_saturation: [color_get_saturation, 1, 1],
 		color_get_value: [color_get_value, 1, 1], colour_get_blue: [colour_get_blue, 1, 1],
 		colour_get_green: [colour_get_green, 1, 1], colour_get_hue: [colour_get_hue, 1, 1],
 		colour_get_red: [colour_get_red, 1, 1], colour_get_saturation: [colour_get_saturation, 1, 1],
-		colour_get_value: [colour_get_value, 1, 1], cos: [cos, 1, 1], darccos: [darccos, 1, 1], darcsin: [darcsin, 1, 1],
-		darctan: [darctan, 1, 1], darctan2: [darctan2, 2, 2], dcos: [dcos, 1, 1], degtorad: [degtorad, 1, 1],
-		dot_product: [dot_product, 4, 4], dot_product_3d: [dot_product_3d, 6, 6],
-		dot_product_3d_normalised: [dot_product_3d_normalised, 6, 6],
-		dot_product_normalised: [dot_product_normalised, 4, 4], dsin: [dsin, 1, 1], dtan: [dtan, 1, 1], exp: [exp, 1, 1],
-		floor: [floor, 1, 1], frac: [frac, 1, 1], int64: [int64, 1, 1], is_array: [is_array, 1, 1],
-		is_bool: [is_bool, 1, 1], is_callable: [is_callable, 1, 1], is_handle: [is_handle, 1, 1],
-		is_infinity: [is_infinity, 1, 1], is_int32: [is_int32, 1, 1], is_method: [is_method, 1, 1], is_nan: [is_nan, 1, 1],
-		is_numeric: [is_numeric, 1, 1], is_ptr: [is_ptr, 1, 1], is_string: [is_string, 1, 1], is_struct: [is_struct, 1, 1],
-		is_undefined: [is_undefined, 1, 1], lengthdir_x: [lengthdir_x, 2, 2], lengthdir_y: [lengthdir_y, 2, 2],
-		lerp: [lerp, 3, 3], ln: [ln, 1, 1], log10: [log10, 1, 1], log2: [log2, 1, 1], logn: [logn, 2, 2],
-		make_color_hsv: [make_color_hsv, 3, 3], make_color_rgb: [make_color_rgb, 3, 3],
-		make_colour_hsv: [make_colour_hsv, 3, 3], make_colour_rgb: [make_colour_rgb, 3, 3], max: [max, 0, -1],
-		md5_string_unicode: [md5_string_unicode, 1, 1], md5_string_utf8: [md5_string_utf8, 1, 1], mean: [mean, 0, -1],
-		median: [median, 0, -1], min: [min, 0, -1], object_exists: [object_exists, 1, 1],
-		object_get_name: [object_get_name, 1, 1], object_get_parent: [object_get_parent, 1, 1],
-		object_get_physics: [object_get_physics, 1, 1], object_is_ancestor: [object_is_ancestor, 2, 2], ord: [ord, 1, 1],
-		os_get_config: [os_get_config, 0, 0], point_direction: [point_direction, 4, 4],
+		colour_get_value: [colour_get_value, 1, 1], degtorad: [degtorad, 1, 1], dot_product: [dot_product, 4, 4],
+		dot_product_3d: [dot_product_3d, 6, 6], dot_product_3d_normalised: [dot_product_3d_normalised, 6, 6],
+		dot_product_normalised: [dot_product_normalised, 4, 4], floor: [floor, 1, 1], frac: [frac, 1, 1],
+		int64: [int64, 1, 1], is_array: [is_array, 1, 1], is_bool: [is_bool, 1, 1], is_handle: [is_handle, 1, 1],
+		is_infinity: [is_infinity, 1, 1], is_int32: [is_int32, 1, 1], is_method: [is_method, 1, 1],
+		is_nan: [is_nan, 1, 1], is_numeric: [is_numeric, 1, 1], is_ptr: [is_ptr, 1, 1], is_string: [is_string, 1, 1],
+		is_struct: [is_struct, 1, 1], is_undefined: [is_undefined, 1, 1], lerp: [lerp, 3, 3], ln: [ln, 1, 1],
+		log10: [log10, 1, 1], log2: [log2, 1, 1], logn: [logn, 2, 2], make_color_hsv: [make_color_hsv, 3, 3],
+		make_color_rgb: [make_color_rgb, 3, 3], make_colour_hsv: [make_colour_hsv, 3, 3],
+		make_colour_rgb: [make_colour_rgb, 3, 3], max: [max, 1, -1], md5_string_unicode: [md5_string_unicode, 1, 1],
+		md5_string_utf8: [md5_string_utf8, 1, 1], mean: [mean, 1, -1], median: [median, 1, -1], min: [min, 1, -1],
+		ord: [ord, 1, 1], os_get_config: [os_get_config, 0, 0], point_direction: [point_direction, 4, 4],
 		point_distance: [point_distance, 4, 4], point_distance_3d: [point_distance_3d, 6, 6], power: [power, 2, 2],
-		radtodeg: [radtodeg, 1, 1], real: [real, 1, 1], round: [round, 1, 1], script_exists: [script_exists, 1, 1],
-		script_get_name: [script_get_name, 1, 1], sha1_string_unicode: [sha1_string_unicode, 1, 1],
-		sha1_string_utf8: [sha1_string_utf8, 1, 1], sign: [sign, 1, 1], sin: [sin, 1, 1], sqr: [sqr, 1, 1],
-		string: [string, 0, -1], string_byte_length: [string_byte_length, 1, 1], string_char_at: [string_char_at, 2, 2],
-		string_concat: [string_concat, 1, -1], string_concat_ext: [string_concat_ext, 1, 3],
-		string_copy: [string_copy, 3, 3], string_count: [string_count, 2, 2], string_delete: [string_delete, 3, 3],
-		string_digits: [string_digits, 1, 1], string_ends_with: [string_ends_with, 2, 2], string_ext: [string_ext, 2, 2],
+		radtodeg: [radtodeg, 1, 1], real: [real, 1, 1], round: [round, 1, 1],
+		sha1_string_unicode: [sha1_string_unicode, 1, 1], sha1_string_utf8: [sha1_string_utf8, 1, 1],
+		sign: [sign, 1, 1], sqr: [sqr, 1, 1], string: [string, 0, -1], string_byte_length: [string_byte_length, 1, 1],
+		string_char_at: [string_char_at, 2, 2], string_concat: [string_concat, 1, -1],
+		string_concat_ext: [string_concat_ext, 1, 3], string_copy: [string_copy, 3, 3],
+		string_count: [string_count, 2, 2], string_delete: [string_delete, 3, 3], string_digits: [string_digits, 1, 1],
+		string_ends_with: [string_ends_with, 2, 2], string_ext: [string_ext, 2, 2],
 		string_format: [string_format, 3, 3], string_hash_to_newline: [string_hash_to_newline, 1, 1],
-		string_insert: [string_insert, 3, 3], string_join: [string_join, 1, -1], string_join_ext: [string_join_ext, 2, 4],
-		string_last_pos: [string_last_pos, 2, 2], string_last_pos_ext: [string_last_pos_ext, 3, 3],
-		string_length: [string_length, 1, 1], string_letters: [string_letters, 1, 1], string_lower: [string_lower, 1, 1],
-		string_ord_at: [string_ord_at, 2, 2], string_pos: [string_pos, 2, 2], string_pos_ext: [string_pos_ext, 3, 3],
-		string_repeat: [string_repeat, 2, 2], string_replace: [string_replace, 3, 3],
-		string_replace_all: [string_replace_all, 3, 3], string_set_byte_at: [string_set_byte_at, 3, 3],
-		string_starts_with: [string_starts_with, 2, 2], string_trim: [string_trim, 1, 2],
-		string_trim_end: [string_trim_end, 1, 2], string_trim_start: [string_trim_start, 1, 2],
-		string_upper: [string_upper, 1, 1], tan: [tan, 1, 1]
+		string_insert: [string_insert, 3, 3], string_join: [string_join, 1, -1],
+		string_join_ext: [string_join_ext, 2, 4], string_last_pos: [string_last_pos, 2, 2],
+		string_length: [string_length, 1, 1], string_letters: [string_letters, 1, 1],
+		string_lower: [string_lower, 1, 1], string_ord_at: [string_ord_at, 2, 2], string_pos: [string_pos, 2, 2],
+		string_pos_ext: [string_pos_ext, 3, 3], string_repeat: [string_repeat, 2, 2],
+		string_replace: [string_replace, 3, 3], string_replace_all: [string_replace_all, 3, 3],
+		string_set_byte_at: [string_set_byte_at, 3, 3], string_starts_with: [string_starts_with, 2, 2],
+		string_trim: [string_trim, 1, 2], string_trim_end: [string_trim_end, 1, 2],
+		string_trim_start: [string_trim_start, 1, 2], string_upper: [string_upper, 1, 1]
 	};
 	
 	#region jsDoc
@@ -690,6 +696,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			return [false];
 		}
 		if (!is_string(_value)) && (!is_numeric(_value)) && (!is_undefined(_value)) return [false];
+		if (_name == "power") && (!__gmlc_power_folds(_args[0], _args[1], _value)) return [false];
+		// a literal holds UTF-8 text: `ansi_char(167)` stays a call
+		if (is_string(_value)) && (__GMLC_lossyUtf8(_value) != _value) return [false];
 		return [true, _value];
 	};
 	
@@ -773,7 +782,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var tokens = lexer.parseAll();
 		__gather(diagnostics, lexer);
 		tokens.sources = _sources;
-		if (__log_tokenizer_results) json_save("tokenizer.json", tokens)
+		if (__log_tokenizer_results) __gmlc_json_save("tokenizer.json", tokens)
 		if (__log_step_times) {
 			show_debug_message($"Tokenizer Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
@@ -781,7 +790,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		__preprocess([tokens], _sources, diagnostics);
 		var preprocessedTokens = tokens;
-		if (__log_pre_processer_results) json_save("pre_processor.json", preprocessedTokens)
+		if (__log_pre_processer_results) __gmlc_json_save("pre_processor.json", preprocessedTokens)
 		if (__log_step_times) {
 			show_debug_message($"Pre Processor Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
@@ -792,7 +801,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		// the parser's warnings; its errors were thrown with every diagnostic of the file
 		__gather(diagnostics, parser);
 		ast.unitKind = _kind;
-		if (__log_parser_results) json_save("parser.json", ast)
+		if (__log_parser_results) __gmlc_json_save("parser.json", ast)
 		if (__log_step_times) {
 			show_debug_message($"Parser Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
@@ -810,24 +819,25 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var ast = lower.parseAll();
 		__gather(diagnostics, lower);
 		__resolveEnums([ast], _sources, [diagnostics]);
-		if (__log_lower_results) json_save("lowered.json", ast)
+		if (__log_lower_results) __gmlc_json_save("lowered.json", ast)
 		if (__log_step_times) {
-			show_debug_message($"Post Processor Time took : {(get_timer() - _step_time)/1000}ms")
+			show_debug_message($"Lower Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
 		}
 		if (!_compile) return undefined;
 		
-		if (should_optimize) {
-			optimizer.initialize(ast, _sources);
-			var ast = optimizer.parseAll();
-			if (__log_optimizer_results) json_save("optimizer.json", ast)
+		var ast = __optimize(ast, _sources, diagnostics);
+		if (__log_optimizer_results) __gmlc_json_save("optimizer.json", ast)
+		if (__log_step_times) {
+			show_debug_message($"{should_optimize ? "Optimizer" : "Constant folding"} Time took : {(get_timer() - _step_time)/1000}ms")
+			_step_time = get_timer();
 		}
 		
 		var _global = getConstant("global");
 		var _globals = (is_struct(_global)) ? _global.value : {};
 		compiler.initialize(ast, _globals, _sources);
 		var program = compiler.parseAll();
-		if (__log_compiler_results) json_save("compiled.json", ast)
+		if (__log_compiler_results) __gmlc_json_save("compiled.json", ast)
 		if (__log_step_times) {
 			show_debug_message($"Compile Time took : {(get_timer() - _step_time)/1000}ms")
 			_step_time = get_timer();
@@ -844,6 +854,22 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static __gather = function(_list, _stage) {
 		var _found = _stage.diagnostics;
+		array_copy(_list, array_length(_list), _found, 0, array_length(_found));
+	}
+	
+	// constant folding runs in every compile, the other optimizations only when should_optimize is on
+	static __optimize = function(_ast, _sources, _diagnostics) {
+		optimizer.mode = should_optimize ? GMLC_OPTIMIZE.ALL : GMLC_OPTIMIZE.FOLD;
+		optimizer.initialize(_ast, _sources);
+		_ast = optimizer.parseAll();
+		__gatherOrThrow(_diagnostics, optimizer, _sources);
+		return _ast;
+	}
+	
+	// a stage's diagnostics: thrown when one is an error, else added to the list
+	static __gatherOrThrow = function(_list, _stage, _sources) {
+		var _found = _stage.diagnostics;
+		if (__gmlc_has_errors(_found)) __gmlc_throw_diagnostics(_found, _sources);
 		array_copy(_list, array_length(_list), _found, 0, array_length(_found));
 	}
 	
@@ -894,10 +920,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		catch (_e) {
 			throw __withDiagnostics(_e, diagnostics);
 		}
-		if (should_optimize) {
-			optimizer.initialize(_ast, _sources);
-			_ast = optimizer.parseAll();
-		}
+		_ast = __optimize(_ast, _sources, diagnostics);
 		var _global = getConstant("global");
 		var _globals = (is_struct(_global)) ? _global.value : {};
 		compiler.initialize(_ast, _globals, _sources);
@@ -926,6 +949,18 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static enable_optimizer = function(_bool) {
 		should_optimize = _bool;
+		return self;
+	}
+	
+	#region jsDoc
+	/// @func    enable_test_mode()
+	/// @desc    Turns test mode on or off: on, constants that fail when they run are warnings instead of compile errors.
+	/// @self    GMLC_Env
+	/// @param   {Bool} shouldEnable : True to enable test mode, false to disable
+	/// @returns {Struct.GMLC_Env}
+	#endregion
+	static enable_test_mode = function(_bool) {
+		test_mode = _bool;
 		return self;
 	}
 	
@@ -1009,7 +1044,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	#region jsDoc
 	/// @func    expose_constants()
-	/// @desc    Exposes core engine constants from the spec and selected build metadata. When exposureLevel is FULL, also exposes the real global object as a constant named "global"; otherwise exposes an empty struct.
+	/// @desc    Exposes the spec's engine constants and build metadata, and `global`: the real global struct at FULL,
+	///          an empty struct otherwise.
 	/// @self    GMLC_Env
 	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier used
 	/// @returns {Struct.GMLC_Env}
@@ -1065,14 +1101,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _arr_anim = asset_get_ids(asset_animationcurve),
 		var _arr_sequ = asset_get_ids(asset_sequence),
 		var _arr_part = asset_get_ids(asset_particlesystem)
-		
-		//var _test_arr = [];
-		//var _i=0; repeat(array_length(_arr_shad)) {
-		//	var _asset = _arr_shad[_i];
-		//	var _name = shader_get_name(_asset);
-		//	_test_arr[_i] = _name;
-		//_i++};
-		
+
 		var _arr = array_concat(
 			_arr_obje,	_arr_spri,	_arr_soun,
 			_arr_room,	_arr_tile,	_arr_path,
@@ -1092,12 +1121,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	#region jsDoc
 	/// @func    expose_functions()
-	/// @desc    Exposes functions according to the selected exposure tier:
-	///          - NONE: no functions
-	///          - SAFE: pure built-ins that pass safety filter, plus overwrite shims
-	///          - MODERATE: currently same as SAFE (to be widened), plus overwrite shims
-	///          - ALL: all native built-ins, plus overwrite shims
-	///          - FULL: all native built-ins, user scripts, plus overwrite shims
+	/// @desc    Exposes functions for the exposure tier: NONE nothing; SAFE pure built-ins passing the safety filter;
+	///          MODERATE currently the same as SAFE (to be widened); ALL every native built-in; FULL native built-ins
+	///          and user scripts. Every tier but NONE adds the overwrite shims.
 	/// @self    GMLC_Env
 	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier controlling function availability
 	/// @returns {Struct.GMLC_Env}
@@ -1139,18 +1165,15 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				&& (_val[$ "feather"][$ "pure"])
 				&& __is_safe_function(_key, _val);
 		});
-		
-		//var _arr = struct_get_names(_map)
-		//array_sort(_arr, true)
-		//pprint(_arr)
-		
+
 		importSymbolMap(_map);
 		
 		return self;
 	}
 	#region jsDoc
 	/// @func    expose_safe_functions()
-	/// @desc    Exposes a vetted set of built-in functions for moderate trust contexts. As currently implemented, this filters to spec-marked pure functions that pass the safety filter.
+	/// @desc    Exposes built-in functions for moderate trust contexts; currently the pure ones that pass the safety
+	///          filter.
 	/// @self    GMLC_Env
 	/// @returns {Struct.GMLC_Env}
 	#endregion
@@ -1161,11 +1184,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			if (!__is_safe_function(_key, _val)) return false;
 			return _val[$ "feather"][$ "pure"]; // Only allow pure built-ins
 		});
-		
-		//var _arr = struct_get_names(_map)
-		//array_sort(_arr, true)
-		//pprint(_arr)
-		
+
 		importSymbolMap(_map);
 		
 		return self;
@@ -1241,20 +1260,22 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	//used to print the outputs for debugging
 	currentScriptName = "";
 
+	// debugging switches, off by default: each stage's tree saved as JSON after every compile, and each stage's time
 	__log_path = "log.json"
-	__log_tokenizer_results      = true;
-	__log_pre_processer_results  = true;
-	__log_parser_results         = true;
-	__log_lower_results = true;
-	__log_optimizer_results      = true;
+	__log_tokenizer_results      = false;
+	__log_pre_processer_results  = false;
+	__log_parser_results         = false;
+	__log_lower_results          = false;
+	__log_optimizer_results      = false;
 	__log_compiler_results       = false;
 	
-	__log_step_times = true;
+	__log_step_times = false;
+	__log_optimizations = 0; // what the optimizer reports: 0 nothing, 1 one line per compile counting its changes by kind, 2 each change
 	
 	
 	#region jsDoc
 	/// @func    __is_safe_function()
-	/// @desc    Internal predicate that returns true when a spec entry represents a built-in function permitted in SAFE-like tiers. Rejects disallowed names and names containing banned substrings.
+	/// @desc    Whether a spec entry is a built-in function allowed in SAFE-like tiers: no banned name or substring.
 	/// @self    GMLC_Env
 	/// @param   {String} funcName : Candidate function name
 	/// @param   {Struct} specEntry : Corresponding spec entry (must have type and feather fields as expected)
@@ -1320,8 +1341,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			else if (is_int64(_value)) {
 				_gml = string(_value);
 			}
-			else if (is_real(_value) || is_bool(_value)) {
-				_gml = (frac(_value) == 0) ? string(_value) : string_format(_value, 0, 17);
+			else if (is_bool(_value)) {
+				_gml = _value ? "true" : "false"; // a bool stays a bool (`string(true)` is "1")
+			}
+			else if (is_real(_value)) {
+				_gml = __gmlc_real_text(_value); // NaN and the infinities by their GML names
 			}
 			else {
 				__gmlc_throw_diagnostics([new GMLC_Diagnostic("GMLC5007", new GMLC_Span(array_length(__hostFiles), 0, 0), [_name, typeof(_value)])], undefined);
@@ -1413,7 +1437,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	static __finish_compile = function(_program, _log_name, _ast, _batchGlobals, _diagnostics) {
 		_ast = __lower_unit(_program, _log_name, _ast, _batchGlobals, _diagnostics);
 		__resolveEnums([_ast], _program[$ "sources"], [_diagnostics]);
-		__compile_unit(_program, _log_name, _ast);
+		__compile_unit(_program, _log_name, _ast, _diagnostics);
 	}
 	
 	// resolves and lowers one file of a batch
@@ -1427,20 +1451,17 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		lower.initialize(_ast, _sources);
 		_ast = lower.parseAll();
 		__gather(_diagnostics, lower);
-		if (_prefix != undefined && __log_lower_results) json_save(_prefix + "lowered.json", _ast);
+		if (_prefix != undefined && __log_lower_results) __gmlc_json_save(_prefix + "lowered.json", _ast);
 		return _ast;
 	}
 	
 	// optimizes and compiles one lowered file of a batch whose enums have their values
-	static __compile_unit = function(_program, _log_name, _ast) {
+	static __compile_unit = function(_program, _log_name, _ast, _diagnostics) {
 		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
 		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
 		var _sources = _program[$ "sources"];
-		if (should_optimize) {
-			optimizer.initialize(_ast, _sources);
-			_ast = optimizer.parseAll();
-			if (_prefix != undefined && __log_optimizer_results) json_save(_prefix + "optimizer.json", _ast);
-		}
+		_ast = __optimize(_ast, _sources, _diagnostics);
+		if (_prefix != undefined && __log_optimizer_results) __gmlc_json_save(_prefix + "optimizer.json", _ast);
 		var _global  = getConstant("global");
 		var _globals = is_struct(_global) ? _global.value : {};
 		compiler.initialize(_ast, _globals, _sources);
@@ -1504,7 +1525,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				_unit.program = lexer.parseAll();
 				__gather(_unit.diagnostics, lexer);
 				_unit.program.sources = _table;
-				if (__log_tokenizer_results) json_save(filename_name(_unit.name) + "_tokenizer.json", _unit.program);
+				if (__log_tokenizer_results) __gmlc_json_save(filename_name(_unit.name) + "_tokenizer.json", _unit.program);
 			}
 			catch (_e) {
 				_unit.error = __withDiagnostics(_e, _unit.diagnostics);
@@ -1562,7 +1583,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				__gather(_unit.diagnostics, parser);
 				// an object event's top-level functions are methods of the instance, not global functions
 				_unit.ast.unitKind = _unit.kind;
-				if (__log_parser_results) json_save(filename_name(_unit.name) + "_parser.json", _unit.ast);
+				if (__log_parser_results) __gmlc_json_save(filename_name(_unit.name) + "_parser.json", _unit.ast);
 				array_push(_parsed, _unit.ast);
 			}
 			catch (_e) {
@@ -1625,7 +1646,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			if (_unit.error == undefined) {
 				__unitFile = _unit.program.file.fileId;
 				try {
-					__compile_unit(_unit.program, _unit.name, _unit.ast);
+					__compile_unit(_unit.program, _unit.name, _unit.ast, _unit.diagnostics);
 				}
 				catch (_e) {
 					_unit.error = __withDiagnostics(_e, _unit.diagnostics);
@@ -1668,7 +1689,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	static __compile_script_asset = function(_yy, _asset_dir, _result) {
 		var _name     = _yy.name;
 		var _gml_path = _asset_dir + _name + ".gml";
-		var _source   = gmlc_file_read_all_text(_gml_path);
+		var _source   = __gmlc_file_read_text(_gml_path);
 		if (_source == undefined) {
 			_result.add(_name, false, { message: $"Could not read file: {_gml_path}" });
 			return;
@@ -1679,11 +1700,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @ignore
 	static __compile_object_asset = function(_yy, _asset_dir, _result) {
 		var _obj_name = _yy.name;
-		var _files    = gumshoe(_asset_dir, "gml", false);
+		var _files    = __gmlc_find_files(_asset_dir, "gml");
 		var _entries  = [];
 		var _i = 0; repeat(array_length(_files)) {
 			var _gml_path = _files[_i];
-			array_push(_entries, { name: _obj_name + "::" + filename_name(_gml_path), source: gmlc_file_read_all_text(_gml_path) });
+			array_push(_entries, { name: _obj_name + "::" + filename_name(_gml_path), source: __gmlc_file_read_text(_gml_path), kind: "event" });
 		_i++;}
 		__merge_result(_result, __compile_units(_entries, undefined));
 	}
@@ -1709,7 +1730,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static compile_asset = function(_yy_string, _asset_dir) {
 		if (string_char_at(_asset_dir, string_length(_asset_dir)) != "/") _asset_dir += "/";
-		var _yy     = snap_from_json(_yy_string);
+		var _yy     = __gmlc_json_parse_loose(_yy_string);
 		var _type   = _yy.resourceType;
 		var _result = new GMLC_BatchResult();
 		if (_type == "GMScript") {
@@ -1740,7 +1761,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#endregion
 	static compile_project = function(_yyp_string, _root_path) {
 		if (string_char_at(_root_path, string_length(_root_path)) != "/") _root_path += "/";
-		var _yyp       = snap_from_json(_yyp_string);
+		var _yyp       = __gmlc_json_parse_loose(_yyp_string);
 		var _resources = _yyp.resources;
 		var _count     = array_length(_resources);
 		var _entries   = []; // {source, name} for every code file in the project
@@ -1755,19 +1776,19 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				if (string_char_at(_rel_path, _c) == "/") { _slash = _c; break; }
 			_c--;}
 			var _asset_dir = _root_path + string_copy(_rel_path, 1, _slash);
-			var _yy_str    = gmlc_file_read_all_text(_root_path + _rel_path);
+			var _yy_str    = __gmlc_file_read_text(_root_path + _rel_path);
 			if (_yy_str == undefined) { _i++; continue; }
-			var _yy   = snap_from_json(_yy_str);
+			var _yy   = __gmlc_json_parse_loose(_yy_str);
 			var _type = _yy.resourceType;
 
 			if (_type == "GMScript") {
-				var _source = gmlc_file_read_all_text(_asset_dir + _yy.name + ".gml");
+				var _source = __gmlc_file_read_text(_asset_dir + _yy.name + ".gml");
 				if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name });
 			}
 			else if (_type == "GMObject") {
-				var _files = gumshoe(_asset_dir, "gml", false);
+				var _files = __gmlc_find_files(_asset_dir, "gml");
 				var _j = 0; repeat(array_length(_files)) {
-					var _source = gmlc_file_read_all_text(_files[_j]);
+					var _source = __gmlc_file_read_text(_files[_j]);
 					if (_source != undefined) array_push(_entries, { source: _source, name: _yy.name + "::" + filename_name(_files[_j]), kind: "event" });
 				_j++;}
 			}
@@ -1801,40 +1822,28 @@ enum GMLC_EXPOSURE {
 
     PURE,
     /*
-        Exposes native constants and built-in pure functions only.
-        Pure means: no side effects, no logging/UI, no access to engine state, time, or global RNG.
-        Examples: math helpers, deterministic string/array/struct transforms.
-        Excludes: show_debug_message, random/time, draw/UI, instance/asset/buffer/surface ops.
+        Exposes native constants and built-in pure functions only: no side effects, no logging/UI,
+        no engine state, time or global RNG (math helpers, deterministic string/array/struct transforms).
     */
 
     SAFE,
     /*
-        Extends PURE with tightly sandboxed side-effecting intrinsics.
-        Allowed: show_debug_message; data-structure and buffer operations on resources
-        created inside the sandbox; mutations of caller-provided arrays/structs.
-        Not allowed: filesystem, networking/web, OS/environment, external_*,
-        asset enumeration/reflection, and any instance/asset access outside the sandbox registry.
-        User-defined scripts are not included.
+        Extends PURE with sandboxed side effects: show_debug_message, data structures and buffers created
+        inside the sandbox, mutating caller-provided arrays/structs. No filesystem, networking, OS/environment,
+        external_*, asset enumeration/reflection or access outside the sandbox registry. No user scripts.
     */
 
     MODERATE,
     /*
-        Extends SAFE by allowing controlled access to engine assets and instances
-        strictly via allow-lists supplied by the host (no global enumeration).
-        Allowed: random/time; getters on sprites/fonts/tilesets/objects only when the id
-        comes from the allow-list; instance operations only on sandbox-registered instances;
-        buffer/surface/texture ops only on sandbox-created resources.
-        Still not allowed: filesystem, networking/web, OS/environment, external_*, global
-        reflection/enumeration (e.g., handle_parse, asset_* listings, texturegroup_get_* listings).
-        User-defined scripts are not included.
+        Extends SAFE with random/time and access to assets and instances only through host-supplied
+        allow-lists, sandbox-registered instances and sandbox-created resources. Still no filesystem,
+        networking, OS/environment, external_* or global reflection/enumeration. No user scripts.
     */
 
     ALL,
     /*
-        Exposes the entire native GML runtime, including all built-in functions for file access,
-        buffer manipulation, networking, and system-level operations.
-        However, user-defined scripts and functions are still excluded in this mode.
-        This is a trusted runtime with full engine access but without user script inclusion.
+        Exposes the entire native GML runtime, including file access, buffers, networking and system
+        operations. A trusted runtime with full engine access, but user scripts are still excluded.
     */
 
     FULL,
@@ -1846,10 +1855,8 @@ enum GMLC_EXPOSURE {
 
     NATIVE,
     /*
-        Grants access to the full native GML runtime, including all built-in functions and constants.
-        Unlike ALL or FULL, this level excludes all user-defined assets, constants, and scripts.
-        Primarily intended for emulating a fully trusted GML environment without sandbox restrictions,
-        while keeping the user runtime completely isolated from global where possible
+        The full native GML runtime with all built-in functions and constants, but no user assets,
+        constants or scripts: a fully trusted GML environment kept isolated from global where possible.
     */
 
     __SIZE__,

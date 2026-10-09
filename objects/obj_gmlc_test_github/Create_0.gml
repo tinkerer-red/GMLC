@@ -1,4 +1,4 @@
-gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE);
+gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.NATIVE).enable_test_mode(true);
 
 var _root_dir = "C:/Users/Red/Documents/GameMaker Studio 2/__compile_tests_from_github/__gms23";
 
@@ -28,11 +28,11 @@ var _i = 0; repeat(_length) {
 	var _repo_path = _root_dir + "/" + _repo_name;
 
 	// Collect all .gml files for this repo
-	var _gml_files = gumshoe(_repo_path, "gml", false);
+	var _gml_files = __gmlc_find_files(_repo_path, "gml", true);
 	var _sources = [];
 	var _j = 0; repeat(array_length(_gml_files)) {
 		var _path   = _gml_files[_j];
-		var _source = gmlc_file_read_all_text(_path);
+		var _source = __gmlc_file_read_text(_path);
 		if (_source != undefined) {
 			array_push(_sources, { source: _source, name: _path });
 		}
@@ -65,7 +65,7 @@ _report.success_count = _total_success;
 _report.file_count    = _total_files;
 _report.success_rate  = (_total_files > 0) ? (_total_success / _total_files) : 1;
 
-json_save("compile_report.json", _report);
+__gmlc_json_save("compile_report.json", _report);
 show_debug_message($"!!!compiling complete!!! {_total_success}/{_total_files} ({string(_report.success_rate * 100)}%)");
 
 gmlc = undefined;

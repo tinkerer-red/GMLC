@@ -112,7 +112,7 @@ return method_get_self(g) == s;'); }), "bool:1", "GMLC differs from GameMaker");
 return typeof(case_sum3);'); }), "string:ref", "GMLC differs from GameMaker");
 	});
 
-	// assigning to a built-in function's name: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to a built-in function's name: GameMaker 2024.14.4.268 refuses to compile this:
 	//   "abs" is read-only function
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to a built-in function's name [GameMaker]", function() {
@@ -124,7 +124,7 @@ return typeof(case_sum3);'); }), "string:ref", "GMLC differs from GameMaker");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// assigning to a built-in constant: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to a built-in constant: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Cannot set a constant ("c_red") to a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to a built-in constant [GameMaker]", function() {

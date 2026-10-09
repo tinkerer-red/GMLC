@@ -44,7 +44,7 @@ function GmlStringEscapeTestSuite() : TestSuite() constructor {
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\"\' + "'" + @'");'); }), "string:2:34,39", "GMLC differs from GameMaker");
 	});
 
-	// \x4: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// \x4: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Error parsing \x HEX value. 2 digits required.
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("\\x4 [GameMaker]", function() {
@@ -89,7 +89,7 @@ function GmlStringEscapeTestSuite() : TestSuite() constructor {
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u1F600");'); }), "string:1:128512", "GMLC differs from GameMaker");
 	});
 
-	// \u110000: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// \u110000: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Error parsing \u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("\\u110000 [GameMaker]", function() {
@@ -106,7 +106,7 @@ function GmlStringEscapeTestSuite() : TestSuite() constructor {
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\101");'); }), "string:1:65", "GMLC differs from GameMaker");
 	});
 
-	// \777: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// \777: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Error parsing \??? OCTAL value. Value must be less than 255.
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("\\777 [GameMaker]", function() {
@@ -145,7 +145,7 @@ function GmlStringEscapeTestSuite() : TestSuite() constructor {
 b");'); }), "string:2:97,98", "GMLC differs from GameMaker");
 	});
 
-	// line break inside a plain string: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// line break inside a plain string: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Error parsing string - found newline within string
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("line break inside a plain string [GameMaker]", function() {
@@ -157,7 +157,7 @@ b");'); }), "string:2:97,98", "GMLC differs from GameMaker");
 b");'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// single-quoted plain string: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// single-quoted plain string: GameMaker 2024.14.4.268 refuses to compile this:
 	//   invalid token '
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("single-quoted plain string [GameMaker]", function() {
@@ -189,7 +189,7 @@ b");'); }), "error", "GMLC accepts code GameMaker refuses");
 b");'); }), "string:3:97,10,98", "GMLC differs from GameMaker");
 	});
 
-	// @"a""b": GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// @"a""b": GameMaker 2024.14.4.268 refuses to compile this:
 	//   got 'b' expected ',' or ')'
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("@\"a\"\"b\" [GameMaker]", function() {
@@ -234,7 +234,7 @@ b");'); }), "string:3:97,10,98", "GMLC differs from GameMaker");
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords($"{ {a: 1}.a }");'); }), "string:1:49", "GMLC differs from GameMaker");
 	});
 
-	// @$"" (raw template): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// @$"" (raw template): GameMaker 2024.14.4.268 refuses to compile this:
 	//   invalid token @
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("@$\"\" (raw template) [GameMaker]", function() {
@@ -244,7 +244,7 @@ b");'); }), "string:3:97,10,98", "GMLC differs from GameMaker");
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords(@$"a{1}");'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// $@"" (template raw): GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// $@"" (template raw): GameMaker 2024.14.4.268 refuses to compile this:
 	//   Hex number $ has an illegal format
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("$@\"\" (template raw) [GameMaker]", function() {
@@ -298,7 +298,7 @@ return case_ords(s);'); }), "string:1:128512", "GMLC differs from GameMaker");
 		assert_equals(case_run(function() { return compile_and_execute(@'return case_ords("\u0041B");'); }), "string:1:1051", "GMLC differs from GameMaker");
 	});
 
-	// \u1234567: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-04):
+	// \u1234567: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Error parsing \u value. Unicode value invalid. between 0xd800-0xdfff OR 0x10FFFF max.
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("\\u1234567 [GameMaker]", function() {

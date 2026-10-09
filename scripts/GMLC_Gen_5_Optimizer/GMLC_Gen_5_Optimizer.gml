@@ -1,15 +1,18 @@
 #region Optimizer.gml
 	#region Optimizer Module
 	/*
-	Purpose: To refine the AST for better performance during interpretation.
-	
-	Methods:
-	
-	optimize(ast): Entry function that takes an AST and returns an optimized AST.
-	constantFolding(ast): Traverses the AST and evaluates expressions that can be determined at compile-time.
-	deadCodeElimination(ast): Removes parts of the AST that do not affect the program outcome, such as unreachable code.
+	Refines the AST for faster execution: constant folding in every compile, plus constant propagation, dead code
+	elimination and strength reduction when optimizing.
 	*/
 	#endregion
+	
+	// what a run of the optimizer does
+	enum GMLC_OPTIMIZE {
+		ALL,      // every optimization: a compile with should_optimize on
+		FOLD,     // constant folding only: every other compile
+		CONSTANT, // an enum member's value, which exists only while compiling: every fold is taken, and the caller reports what fails
+	}
+	
 	function GMLC_Gen_5_Optimizer(_env) constructor  {
 		env = _env;
 		
@@ -21,11 +24,14 @@
 		hasNoOpTargets = false; // whether noOpTargets has any entry
 		optimization_occured = false; //used so all optimizers can register if a change has occured and we should re attempt optimizers
 		foldSlot = undefined; // where the node constantFolding works on is held
-		foldAll = false; // foldExpression: a value that exists only while compiling, where every fold is taken
+		mode = GMLC_OPTIMIZE.ALL;
+		diagnostics = []; // GMLC_Diagnostic records of this file: constant operands that always fail
 
 		static initialize = function(_ast, _sources = undefined) {
 			ast = _ast;
 			sources = _sources;
+			diagnostics = [];
+			__failing = [];
 			noOpTargets = [];
 			var _i = 0; repeat (array_length(_ast.pragmas)) {
 				var _target = _ast.pragmas[_i].target;
@@ -39,14 +45,40 @@
 		}
 		
 		static parseAll = function() {
-			//keep optimizing the whole tree until no optimizer changes it
-			do {
-				optimization_occured = false;
-				ast = __visit(ast, undefined);
-			}
-			until (!optimization_occured);
+			__reported = {};
+			__foldGuarded(undefined);
+			__reportFailing();
+			if (env.__log_optimizations) __reportSummary();
 			return ast;
 		}
+		
+		// a change the optimizer made, for GMLC_Env.__log_optimizations: counted by its kind (level 1), each one
+		// printed too (level 2)
+		__reported = {};
+		static __report = function(_text) {
+			var _parts = string_split(_text, " :: ");
+			var _kind = (array_length(_parts) > 1) ? _parts[1] : "other";
+			__reported[$ _kind] = (__reported[$ _kind] ?? 0) + 1;
+			if (env.__log_optimizations >= 2) show_debug_message(_text);
+		};
+		
+		// one line per compile: how many changes of each kind
+		static __reportSummary = function() {
+			var _names = struct_get_names(__reported);
+			if (array_length(_names) == 0) return;
+			array_sort(_names, true);
+			var _text = "Optimizer ::";
+			var _i = 0; repeat (array_length(_names)) {
+				_text += " " + _names[_i] + " " + string(__reported[$ _names[_i]]);
+			_i++}
+			show_debug_message(_text + " (" + fileName() + ")");
+		};
+		
+		// the name of the file being optimized
+		static fileName = function() {
+			var _file = (sources != undefined) && (ast.span.file < array_length(sources.files)) ? sources.files[ast.span.file] : undefined;
+			return (_file != undefined) ? _file.name : "";
+		};
 		
 		#region jsDoc
 		/// @func    __visit(_node, _slot)
@@ -82,6 +114,57 @@
 			});
 		};
 		
+		// the node kinds constant folding may change, by kind number
+		static __foldKinds = (function() {
+			var _kinds = array_create(__GMLC_NodeKind_SIZE, false);
+			var _list = [
+				__GMLC_NodeKind_Binary, __GMLC_NodeKind_Logical, __GMLC_NodeKind_Nullish, __GMLC_NodeKind_Unary,
+				__GMLC_NodeKind_Conditional, __GMLC_NodeKind_Call,
+			];
+			var _i = 0; repeat (array_length(_list)) {
+				_kinds[_list[_i]] = true;
+			_i++}
+			return _kinds;
+		})();
+		
+		#region jsDoc
+		/// @func    __foldWalk(_node, _parent, _key, _index)
+		/// @desc    Constant folding alone (a compile without should_optimize): folds the children of a node, then the
+		///          node when its kind can fold. Returns the node to put in its place.
+		/// @self    GMLC_Gen_5_Optimizer
+		#endregion
+		static __foldWalk = function(_node, _parent, _key, _index) {
+			if (hasNoOpTargets) && (__isNoOp(_node)) return _node;
+			var _fields = _node.childFields;
+			var _f = 0; repeat (array_length(_fields)) {
+				var _field = _fields[_f];
+				var _value = _node[$ _field];
+				if (is_array(_value)) {
+					var _c = 0; repeat (array_length(_value)) {
+						var _child = _value[_c];
+						if (_child != undefined) {
+							var _new = __foldWalk(_child, _node, _field, _c);
+							if (_new != _child) _value[_c] = _new;
+						}
+					_c++}
+				}
+				else if (_value != undefined) {
+					var _new = __foldWalk(_value, _node, _field, undefined);
+					if (_new != _value) _node[$ _field] = _new;
+				}
+			_f++}
+			if (!__foldKinds[_node.kind]) return _node;
+			// a folded node may fold again (a collapsed ternary whose branch folds)
+			var _data = { node: _node, parent: _parent, key: _key, index: _index };
+			var _start = undefined;
+			while (_data.node != _start) {
+				_start = _data.node;
+				_data.node = constantFolding(_data);
+				if (array_length(__failing) > 0) __dropFailing(_start, _data.node);
+			}
+			return _data.node;
+		};
+		
 		// whether a node is inside a range a `// @NoOp` covers
 		static __isNoOp = function(_node) {
 			if (!hasNoOpTargets) || (_node.span == undefined) return false;
@@ -112,9 +195,12 @@
 				var _start_node = _node_data.node;
 				
 				_node_data.node = constantFolding(_node_data);
-				_node_data.node = constantPropagation(_node_data);
-				_node_data.node = eliminateDeadCode(_node_data);
-				_node_data.node = strengthReduction(_node_data);
+				if (array_length(__failing) > 0) __dropFailing(_start_node, _node_data.node);
+				if (mode == GMLC_OPTIMIZE.ALL) {
+					_node_data.node = constantPropagation(_node_data);
+					_node_data.node = eliminateDeadCode(_node_data);
+					_node_data.node = strengthReduction(_node_data);
+				}
 				//_node_data.node = optimizeAlternateFunctions(_node_data);
 				
 				if (_start_node != _node_data.node) {
@@ -153,7 +239,7 @@
 							var _declaration = _declarations[_j];
 							var _constant_data = __constantLocal(_declaration.target, _declaration.init);
 							if (_constant_data != undefined) {
-								show_debug_message($"Optimizer :: constantPropagation :: Has found Constant `{_declaration.target.name}` in line ({__line(_declaration)}) `{__lineString(_declaration)}`")
+								if (env.__log_optimizations) __report($"Optimizer :: constantPropagation :: Has found Constant `{_declaration.target.name}` in line ({__line(_declaration)}) `{__lineString(_declaration)}`")
 								if (!__propagateToList(_declarations, _j + 1, _constant_data)) {
 									__propagateToList(_body, _i + 1, _constant_data);
 								}
@@ -168,7 +254,7 @@
 						var _assign = _statement.expression;
 						var _constant_data = __constantLocal(_assign.target, _assign.value);
 						if (_constant_data != undefined) {
-							show_debug_message($"Optimizer :: constantPropagation :: Has found Constant `{_assign.target.name}` in line ({__line(_assign)}) `{__lineString(_assign)}`")
+							if (env.__log_optimizations) __report($"Optimizer :: constantPropagation :: Has found Constant `{_assign.target.name}` in line ({__line(_assign)}) `{__lineString(_assign)}`")
 							__propagateToList(_body, _i + 1, _constant_data);
 						}
 					}
@@ -231,7 +317,7 @@
 				case __GMLC_NodeKind_Identifier: {
 					if (__isConstantLocal(_node, _constant_data)) {
 						var _literal = _constant_data.literal;
-						show_debug_message($"Optimizer :: constantPropagation :: Could replace `{_node.name}` with `{_literal.lexeme}` in line ({__line(_node)}) `{__lineString(_node)}`")
+						if (env.__log_optimizations) __report($"Optimizer :: constantPropagation :: Could replace `{_node.name}` with `{_literal.lexeme}` in line ({__line(_node)}) `{__lineString(_node)}`")
 						optimization_occured = true;
 						return new ASTLiteral(_node.span, _literal.ty, _literal.lexeme, _literal.value);
 					}
@@ -398,8 +484,8 @@
 		#region jsDoc
 		/// @func    foldExpression(_node, [_sources])
 		/// @desc    An expression with every part known while compiling folded as constant folding folds it, for a value
-		///          that exists only while compiling (an enum member's): every fold is taken, as no run-time operator
-		///          will see the result. Returns the folded expression, a Literal when it all folded.
+		///          that exists only while compiling (an enum member's): every fold is taken. Returns the folded
+		///          expression. Call it between foldBegin and foldEnd, inside the caller's one try (see foldCaught).
 		/// @self    GMLC_Gen_5_Optimizer
 		/// @param   {Struct.ASTNode}          _node      : The expression
 		/// @param   {Struct.GMLC_SourceTable} [_sources] : The compile's files, for the positions of errors
@@ -410,24 +496,83 @@
 			var _noOp0 = hasNoOpTargets;
 			sources = _sources;
 			hasNoOpTargets = false;
-			foldAll = true;
+			var _mode0 = mode;
+			mode = GMLC_OPTIMIZE.CONSTANT;
 			var _holder = new ASTExprStmt(_node.span, _node);
-			var _error = undefined;
-			try {
+			__walk(_holder);
+			mode = _mode0;
+			sources = _sources0;
+			hasNoOpTargets = _noOp0;
+			return _holder.expression;
+		};
+		
+		// One try around a whole run of folding. A constant whose computation throws records its node first
+		// (global.__gmlc_fold); foldCaught keeps that node as failing and the caller runs again from where it is, with
+		// what is already folded staying folded, so the try is entered again only after such a throw. A try keeps
+		// everything written before the throw; only the unwound calls' locals are lost.
+		static foldBegin = function() {
+			var _fold = global.__gmlc_fold;
+			_fold.node = undefined;
+			_fold.failed = [];
+			_fold.messages = [];
+		};
+		static foldCaught = function(_e) {
+			var _fold = global.__gmlc_fold;
+			var _node = _fold.node;
+			_fold.node = undefined;
+			if (_node == undefined) || (__GMLCfoldFailure(_node) != undefined) throw _e;
+			array_push(_fold.failed, _node);
+			var _message = is_struct(_e) ? _e.message : string(_e);
+			// a built-in runs through script_execute_ext, whose name GameMaker puts in its error: the call names the
+			// function, as the same call in the program does
+			if (_node.kind == __GMLC_NodeKind_Call) && (_node.callee.kind == __GMLC_NodeKind_Identifier)
+			&& (string_starts_with(_message, "script_execute_ext")) {
+				_message = _node.callee.name + string_delete(_message, 1, string_length("script_execute_ext"));
+			}
+			// GameMaker cuts its message to 1023 bytes, which can end inside a character: kept as valid UTF-8
+			_message = __GMLC_lossyUtf8(_message);
+			array_push(_fold.messages, _message);
+		};
+		static foldEnd = function() {
+			var _fold = global.__gmlc_fold;
+			_fold.failed = [];
+			_fold.messages = [];
+		};
+		static __foldGuarded = function(_holder) {
+			foldBegin();
+			var _done = false;
+			while (!_done) {
+				try {
+					__walk(_holder);
+					_done = true;
+				}
+				catch (_e) {
+					foldCaught(_e);
+				}
+			}
+			foldEnd();
+		};
+		static __walk = function(_holder) {
+			if (_holder != undefined) {
+				// an enum member's value
 				do {
 					optimization_occured = false;
 					__foldTree(_holder, undefined);
 				}
 				until (!optimization_occured);
 			}
-			catch (_e) {
-				_error = _e;
+			else if (mode == GMLC_OPTIMIZE.FOLD) {
+				// constant folding alone: one walk, children before their parent, is enough
+				ast = __foldWalk(ast, undefined, undefined, undefined);
 			}
-			foldAll = false;
-			sources = _sources0;
-			hasNoOpTargets = _noOp0;
-			if (_error != undefined) throw _error;
-			return _holder.expression;
+			else {
+				// every optimization, until none changes the tree
+				do {
+					optimization_occured = false;
+					ast = __visit(ast, undefined);
+				}
+				until (!optimization_occured);
+			}
 		};
 		static __foldTree = function(_node, _slot) {
 			var _slots = _node.childSlots();
@@ -485,7 +630,7 @@
 							&& (!__containsNoOp(_node.right))
 							&& (__keepsValue(_node_data, _truthy))
 							{
-								show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_truthy}` in line ({__line(_node)}) `{__lineString(_node)}`")
+								if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use literal of `{_truthy}` in line ({__line(_node)}) `{__lineString(_node)}`")
 								return __literal(_truthy, _node.span);
 							}
 						}
@@ -496,13 +641,13 @@
 					if (_left[0]) {
 						if (_left[1] == undefined) {
 							var _right = __constantValue(_node.right);
-							if (!_right[0]) || (__keepsValue(_node_data, _right[1])) {
-								show_debug_message($"Optimizer :: constantFolding :: Could collapse nullish express to right side only in line ({__line(_node)}) `{__lineString(_node)}`")
+							if ((!_right[0]) || (__keepsValue(_node_data, _right[1]))) && (!__selfIntoStructEntry(_node_data, _node.right)) {
+								if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse nullish express to right side only in line ({__line(_node)}) `{__lineString(_node)}`")
 								return _node.right;
 							}
 						}
-						else if (!__containsNoOp(_node.right)) && (__keepsValue(_node_data, _left[1])) {
-							show_debug_message($"Optimizer :: constantFolding :: Could collapse nullish express to left side only in line ({__line(_node)}) `{__lineString(_node)}`")
+						else if (!__containsNoOp(_node.right)) && (__keepsValue(_node_data, _left[1])) && (!__selfIntoStructEntry(_node_data, _node.left)) {
+							if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse nullish express to left side only in line ({__line(_node)}) `{__lineString(_node)}`")
 							return _node.left;
 						}
 					}
@@ -512,7 +657,7 @@
 						// the compiler compiles `+x` as `x`
 						var _argument = __constantValue(_node[$ "argument"]);
 						if (_argument[0]) && (__keepsValue(_node_data, _argument[1])) {
-							show_debug_message($"Optimizer :: constantFolding :: Could remove unary `+` in line ({__line(_node)}) `{__lineString(_node)}`")
+							if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could remove unary `+` in line ({__line(_node)}) `{__lineString(_node)}`")
 							return _node[$ "argument"];
 						}
 					}
@@ -540,11 +685,8 @@
 								
 							break;}
 							case sqrt:{
-								/// ==================================================
-								/// NOTE:
-								/// This is the only math operation that is affected by `math_set_epsilon`
-								/// avoid optimizing this at compile time
-								/// ==================================================
+								/// NOTE: the only math operation affected by `math_set_epsilon`,
+								/// so it is never folded at compile time
 								return _node
 							break;}
 							case string:{
@@ -584,7 +726,7 @@
 								
 									if (_changed) {
 										array_insert(_new_arr, 0, __literal(script_execute_ext(string, _exec_arr), _node.span))
-										show_debug_message($"Optimizer :: constantFolding :: Could use optimize `string` first argument to `{_new_arr[0].value}` in line ({__line(_node)}) `{__lineString(_node)}`")
+										if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use optimize `string` first argument to `{_new_arr[0].value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 										return new ASTCall(_node.span, _node.callee, _new_arr);
 									}
 								}
@@ -607,7 +749,7 @@
 											_changed = true;
 											
 											var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
-											show_debug_message($"Optimizer :: constantFolding :: Could use optimize a `string_concat` argument to `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
+											if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use optimize a `string_concat` argument to `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 											var _struct = __literal(_value, _arr[_i].span)
 											
 											array_delete(_arr, _i, 2)
@@ -641,7 +783,7 @@
 											_changed = true;
 											
 											var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
-											show_debug_message($"Optimizer :: constantFolding :: Could use optimize a `string_join` argument to `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
+											if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use optimize a `string_join` argument to `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 											var _struct = __literal(_value, _arr[_i].span);
 											
 											array_delete(_arr, _i, 2)
@@ -656,6 +798,20 @@
 									}
 								}
 							
+							break;}
+							case chr:
+							case ansi_char:{
+								// a character code that is not a whole number the function can make is an error: GameMaker's
+								// compiler rounds `chr(65.5)` to "B" where its runtime cuts it to "A"
+								if (array_length(_node.args) != 1) return _node; // a wrong argument count is the resolver's error
+								var _code = __constantValue(_node.args[0]);
+								if (!_code[0]) || (!is_numeric(_code[1])) break;
+								var _most = (_callee == chr) ? 0x10FFFF : 255;
+								if (!__gmlc_is_whole(_code[1])) || (_code[1] < 0) || (_code[1] > _most) {
+									__alwaysFails(_node, "GMLC4103", [_node.callee.name, string(_most), is_real(_code[1]) ? __gmlc_real_text(_code[1]) : string(_code[1])]);
+									return _node;
+								}
+								return __build_literal_from_function_call_constant_folding(_callee, _node);
 							break;}
 							case string_join_ext:{
 								// GameMaker gives "" for fewer than two arguments
@@ -707,17 +863,17 @@
 					if (_test[0]) && (is_numeric(_test[1])) {
 						if (_test[1]) {
 							if (_node.alternate == undefined) || (!__containsNoOp(_node.alternate)) {
-								show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `true` block only in line ({__line(_node)}) `{__lineString(_node)}`")
+								if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `true` block only in line ({__line(_node)}) `{__lineString(_node)}`")
 								return _node.consequent;
 							}
 						}
 						else if (!__containsNoOp(_node.consequent)) {
 							if (_node.alternate != undefined) {
-								show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `else` block only in line ({__line(_node)}) `{__lineString(_node)}`")
+								if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `else` block only in line ({__line(_node)}) `{__lineString(_node)}`")
 								return _node.alternate;
 							}
 							else {
-								show_debug_message($"Optimizer :: eliminateDeadCode :: Could remove `if` statement in line ({__line(_node)}) `{__lineString(_node)}`")
+								if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could remove `if` statement in line ({__line(_node)}) `{__lineString(_node)}`")
 								return new ASTEmpty(_node.span);
 							}
 						}
@@ -730,7 +886,7 @@
 						&& (!__containsNoOp(_node.body)) && ((_node.update == undefined) || (!__containsNoOp(_node.update)))
 						{
 							// the init still runs once
-							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `for` by keeping only its init in line ({__line(_node)}) `{__lineString(_node)}`")
+							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `for` by keeping only its init in line ({__line(_node)}) `{__lineString(_node)}`")
 							return _node.init ?? new ASTEmpty(_node.span);
 						}
 					}
@@ -739,7 +895,7 @@
 					if (_node.test != undefined) {
 						var _test = __constantValue(_node.test);
 						if (_test[0]) && (is_numeric(_test[1])) && (!_test[1]) && (!__containsNoOp(_node.body)) {
-							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `while` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
+							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `while` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
 							return new ASTEmpty(_node.span);
 						}
 					}
@@ -748,75 +904,27 @@
 					if (_node.count != undefined) {
 						var _count = __constantValue(_node.count);
 						if (_count[0]) && (is_numeric(_count[1])) && (_count[1] <= 0) && (!__containsNoOp(_node.body)) {
-							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `repeat` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
+							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `repeat` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
 							return new ASTEmpty(_node.span);
 						}
 					}
 				break;}
 				case __GMLC_NodeKind_DoUntil:{
-					if (_node.test.kind == __GMLC_NodeKind_Literal) {
-						
-						/// There isnt really a way to optimizer this on the AST level, we can convert this into a breakable block statement on compile level, however if we want to re export as a string we dont want to mess with this on the AST optimization level.
-						
-						//if (_node.condition.value) {
-						//	show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `do` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
-						//	return new ASTEmpty(_node.span);
-						//}
-					}
+					// a constant test is not optimized on the AST level: it could become a breakable block when compiling,
+					// but the AST must stay as written for re-exporting the code
 				break;}
 				case __GMLC_NodeKind_With:{
 					var _target = __constantValue(_node.target);
 					if (_target[0]) && (is_numeric(_target[1])) && (!__containsNoOp(_node.body)) {
 						if (_target[1] == noone) {
-							show_debug_message($"Optimizer :: eliminateDeadCode :: Could optimize `with` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
+							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `with` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
 							return new ASTEmpty(_node.span);
 						}
 					}
 				break;}
 				case __GMLC_NodeKind_Switch:{
-					if (_node.discriminant.kind == __GMLC_NodeKind_Literal) {
-						
-						/// this was trash and doesnt account for inner statements breaking out, additionally it complicates break statements, and re exporting the code.
-						
-						//var _val = _node.switchExpression.value;
-						//var _found_case = false;
-						//var _found_break = false;
-						//var _return = _node;
-						
-						//var _i=0; repeat(array_length(_node.cases)) {
-						//	var _case = _node.cases[_i]
-							
-						//	if (_case.kind == "CaseExpression" && _case.label == _val)
-						//	|| (_case.kind == "CaseDefault")
-						//	{
-						//		_found_case = true;
-						//		_return = new ASTBlockStatement([], _node.sourceInfo);
-						//		break;
-						//	}
-							
-						//	if (_found_case) {
-						//		var _arr = _case.codeBlock.statements;
-						//		var _j=0; repeat(array_length(_arr)) {
-						//			var _statement = _arr[_j]
-						//			if (_statement.kind == "BreakStatement") {
-						//				_found_break = true;
-						//				break;
-						//			}
-									
-						//			array_push(_statements, _statement);
-									
-						//		_j+=1;}//end repeat loop
-								
-						//		if (_found_break) {
-						//			break;
-						//		}
-								
-						//	}
-							
-						//_i+=1;}//end repeat loop
-						
-						//return _return;
-					}
+					// folding a switch on a constant is left out: breaks inside nested statements and re-exporting the code
+					// make it unsafe
 				break;}
 				case __GMLC_NodeKind_Conditional:{
 					return __foldConditional(_node_data);
@@ -828,7 +936,8 @@
 		
 		#region JSDocs
 		/// @function    strengthReduction(_astNode)
-		/// @description Replaces existing functions with slightly optimized varients which prerform better for the specific task. IE: converting a value to a string is faster with `string_concat` then `string`, as `string` has several additional checks, and `string_concat` already converts a value to a string
+		/// @description Replaces functions with faster variants for the task, e.g. `string_concat` instead of `string`
+		///              to convert one value, as `string` makes several additional checks.
 		/// @param       {ASTNode}    _astNode    The AST node representing a small code block.
 		/// @return      {ASTNode}    _astNode    The optimized AST node after peephole optimizations.
 		#endregion
@@ -838,39 +947,9 @@
 			var _key    = _node_data.key;
 			var _index  = _node_data.index;
 			
-			// Convert struct access using literals to hashed access
-			//new ASTNode(Function, {value: currentToken.value, name: currentToken.name})
+			// GameMaker hashes a constant struct key itself, so `struct_get(s, "k")` is left as written
 			if (_node.kind == __GMLC_NodeKind_Call) {
 				switch (__calleeFunction(_node)) {
-					case struct_get:
-					case variable_struct_get:{
-						// Convert struct access using literals to hashed access
-						var _arg = _node.args[1];
-						if (_arg.kind == __GMLC_NodeKind_Literal)
-						&& (typeof(_arg.value) == "string")
-						&& (env.isFunction("struct_get_from_hash")) {
-							return new ASTCall(_node.span, __builtin("struct_get_from_hash", _node.span), [
-								_node.args[0],
-								__literal(variable_get_hash(_arg.value), _arg.span)
-							]);
-						}
-					break;}
-						
-					case struct_set:
-					case variable_struct_set:{
-						// Convert struct access using literals to hashed access
-						var _arg = _node.args[1];
-						if (_arg.kind == __GMLC_NodeKind_Literal)
-						&& (typeof(_arg.value) == "string")
-						&& (env.isFunction("struct_set_from_hash")) {
-							return new ASTCall(_node.span, __builtin("struct_set_from_hash", _node.span), [
-								_node.args[0],
-								__literal(variable_get_hash(_arg.value), _arg.span),
-								_node.args[2]
-							]);
-						}
-					break;}
-					
 					case string:{
 						// String with single argument is faster to use string_concat
 						if (array_length(_node.args) == 1) && (env.isFunction("string_concat")) {
@@ -1185,10 +1264,9 @@
 		// the text of a real that reads back to the same value
 		static __realLexeme = function(_value) {
 			if (!is_real(_value)) return string(_value);
-			if (is_nan(_value)) return "NaN";
-			if (is_infinity(_value)) return (_value > 0) ? "infinity" : "-infinity";
-			if (frac(_value) == 0) && (abs(_value) < 9007199254740992) return string(int64(_value));
-			return json_stringify(_value);
+			// NaN and the infinities are not whole: __gmlc_real_text names them
+			if (__gmlc_is_whole(_value)) && (abs(_value) < 9007199254740992) return string(int64(_value));
+			return __gmlc_real_text(_value);
 		};
 		
 		// an int64 as a hex literal, which the compiler reads as an int64
@@ -1219,64 +1297,76 @@
 		
 		// whether a constant can take the place of the node in _node_data without changing how its parent folds
 		static __keepsValue = function(_node_data, _value) {
-			if (foldAll) || (_node_data.parent == undefined) return true;
+			if (mode == GMLC_OPTIMIZE.CONSTANT) || (_node_data.parent == undefined) return true;
 			return __canReplaceIn(_node_data.parent, _node_data.key, _value);
 		};
 		
-		// The compiler folds operators on constants with other types than the same operators give at run time
-		// (`!false` folds to 1, `5 & 3` folds to a real). A value only known to the optimizer (a propagated local, a
-		// folded call) must not turn an operator the compiler would run into one it folds, unless both agree: strings
-		// never fold, and comparisons of bools and whole numbers give the same bool.
+		// whether a constant may take the place of an expression held there: every fold gives the runtime's value,
+		// so only the object of `a.b` and `a.b()` keeps its expression
 		static __canReplaceIn = function(_parent, _key, _value) {
 			switch (_parent.kind) {
 				case __GMLC_NodeKind_Index:
 				case __GMLC_NodeKind_MethodCall: {
 					return (_key != "object");
 				}
-				case __GMLC_NodeKind_Unary:
-				case __GMLC_NodeKind_Logical: {
-					return is_string(_value);
-				}
-				case __GMLC_NodeKind_Binary: {
-					if (is_string(_value)) return true;
-					switch (_parent.op) {
-						case "==": case "!=": case "<": case "<=": case ">": case ">=": {
-							return (is_bool(_value)) || ((is_real(_value)) && (frac(_value) == 0) && (abs(_value) < 9007199254740992));
-						}
-					}
-					return false;
-				}
 			}
 			return true;
 		};
+
+		// constants that fail when the code runs (`real("ab")`, `-3 * "ab"`): a compile error, or under
+		// GMLC_Env.test_mode a warning, the expression kept to fail when it runs. An enum's value reports its own.
+		static __alwaysFails = function(_node, _code, _args) {
+			if (mode == GMLC_OPTIMIZE.CONSTANT) return;
+			var _i = 0; repeat (array_length(__failing)) {
+				if (__failing[_i].node == _node) return;
+			_i++}
+			var _diagnostic = new GMLC_Diagnostic(_code, _node.span, _args);
+			if (env.test_mode) _diagnostic.severity = "warning";
+			// kept until the tree is done: a later fold may drop the expression (`false && real("ab")`)
+			array_push(__failing, { node: _node, diagnostic: _diagnostic, dropped: false });
+		};
+		__failing = [];
 		
-		// an operator on constants folded as the compiler folds it, undefined when it does not fold
+		// a fold put _new in the place of _old: the failures in what it left out are dropped, those it kept (an argument
+		// of a `string_concat` whose literals merged) stay. Code that dead code elimination removes keeps its failures,
+		// so a compile reports the same with or without should_optimize.
+		static __dropFailing = function(_old, _new) {
+			if (_old == _new) return;
+			var _i = 0; repeat (array_length(__failing)) {
+				var _failure = __failing[_i];
+				if (!_failure.dropped) && __holds(_old, _failure.node) && !__holds(_new, _failure.node) _failure.dropped = true;
+			_i++}
+		};
+		
+		// whether _node is _root or inside it
+		static __holds = function(_root, _node) {
+			if (_root == _node) return true;
+			var _children = _root.children();
+			var _c = 0; repeat (array_length(_children)) {
+				if (__holds(_children[_c], _node)) return true;
+			_c++}
+			return false;
+		};
+		
+		static __reportFailing = function() {
+			var _i = 0; repeat (array_length(__failing)) {
+				if (!__failing[_i].dropped) array_push(diagnostics, __failing[_i].diagnostic);
+			_i++}
+			__failing = [];
+		};
+		
+		// an operator on constants folded to what it gives at run time, undefined when it does not fold
 		static __foldOperator = function(_node) {
-			// two strings join the same way at compile time and at run time
-			if (_node.kind == __GMLC_NodeKind_Binary) && (_node.op == "+")
-			&& (_node.left.kind == __GMLC_NodeKind_Literal) && (is_string(_node.left.value))
-			&& (_node.right.kind == __GMLC_NodeKind_Literal) && (is_string(_node.right.value))
-			{
-				var _string = _node.left.value + _node.right.value;
-				show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_string}` in line ({__line(_node)}) `{__lineString(_node)}`")
-				return __literal(_string, _node.span);
-			}
-			
-			// an error leaves the node to the run time, which raises it where GameMaker does
-			try {
-				var _constant = __GMLCconstantValue(self, _node);
-				if (!_constant[0]) return undefined;
-				var _value = __GMLCconstantEmit(_constant);
-			}
-			catch (_err) {
+			var _constant = __GMLCconstantValue(self, _node);
+			if (!_constant[0]) {
+				// constant operands that fail: reported where the operator is, not again for the operators around it
+				if (array_length(_constant) > 2) && (_constant[2] != undefined) && (_constant[3] == _node) __alwaysFails(_node, _constant[4] ? "GMLC4101" : "GMLC4102", [_constant[2]]);
 				return undefined;
 			}
-			
-			// a whole number this large does not read back as the same number
-			if (!_constant[2]) && (is_int64(_value)) && (abs(_constant[1]) >= power(2, 63)) return undefined;
-			
-			show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
-			return __literal(_value, _node.span, _constant[2]);
+			var _value = _constant[1];
+
+			if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
+			return __literal(_value, _node.span);
 		};
 		
 		// a ternary with a constant condition becomes the branch it takes
@@ -1291,14 +1381,22 @@
 			
 			var _value = __constantValue(_taken);
 			if (_value[0]) && (!__keepsValue(_node_data, _value[1])) return _node;
+			if (__selfIntoStructEntry(_node_data, _taken)) return _node;
 			
 			if (_test[1]) {
-				show_debug_message($"Optimizer :: constantFolding :: Could collapse ternary expression to left side in line ({__line(_node)}) `{__lineString(_node)}`")
+				if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse ternary expression to left side in line ({__line(_node)}) `{__lineString(_node)}`")
 			}
 			else {
-				show_debug_message($"Optimizer :: constantFolding :: Could collapse ternary expression to right side in line ({__line(_node)}) `{__lineString(_node)}`")
+				if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse ternary expression to right side in line ({__line(_node)}) `{__lineString(_node)}`")
 			}
 			return _taken;
+		};
+		
+		// whether a node would become a struct literal's entry value that is `self` alone: there GameMaker's `self` is
+		// the new struct, while inside `c ? self : x` or `x ?? self` it is the creator
+		static __selfIntoStructEntry = function(_node_data, _node) {
+			return (_node_data.parent != undefined) && (_node_data.parent.kind == __GMLC_NodeKind_StructEntry)
+				&& (_node.kind == __GMLC_NodeKind_Identifier) && (_node.name == "self");
 		};
 		
 		// the function a call calls when its callee names a built-in function, else undefined
@@ -1334,20 +1432,45 @@
 			var _i=0; repeat(array_length(_arr)) {
 				_new_arr[_i] = _arr[_i].value;
 			_i+=1;}//end repeat loop
-			
-			try {
-				var _value = script_execute_ext(_script, _new_arr)
+
+			// a string_repeat whose length passes int32 fails whenever it runs
+			if (_script == string_repeat) {
+				var _repeatFails = __gmlc_string_repeat_failure(_new_arr);
+				if (_repeatFails != undefined) {
+					__alwaysFails(_node, _repeatFails[0] ? "GMLC4101" : "GMLC4102", [_repeatFails[1]]);
+					return _node;
+				}
 			}
-			catch (err) {
-				// an error leaves the call to the run time, which raises it where GameMaker does
+
+			// a string too long to become a literal is not built at all; a count outside int32 is read as its low 32 bits,
+			// which can be a count so large that it ends GameMaker's runner
+			if (_script == string_repeat) && (is_string(_new_arr[0])) && (is_numeric(_new_arr[1]))
+			&& ((string_byte_length(_new_arr[0]) * _new_arr[1] > __GMLC_FOLD_STRING_LIMIT)
+			|| (_new_arr[1] < -2147483648) || (_new_arr[1] >= 2147483648)) return _node;
+
+			// a text so long that it ends GameMaker's runner is not built at all
+			if (_script == string_format) && (!__gmlc_string_format_folds(_new_arr)) return _node;
+			
+			// a call that threw before fails whenever it runs (see __foldGuarded)
+			var _failed = __GMLCfoldFailure(_node);
+			if (_failed != undefined) {
+				__alwaysFails(_node, "GMLC4102", [_failed]);
 				return _node;
 			}
-			
+			var _fold = global.__gmlc_fold;
+			_fold.node = _node;
+			var _value = script_execute_ext(_script, _new_arr);
+			_fold.node = undefined;
+			if (_script == power) && (!__gmlc_power_folds(_new_arr[0], _new_arr[1], _value)) return _node;
+
 			// only values a literal can hold, where the parent does not fold them differently
 			if (!is_string(_value)) && (!is_numeric(_value)) && (!is_undefined(_value)) return _node;
+			if (is_string(_value)) && (string_byte_length(_value) > __GMLC_FOLD_STRING_LIMIT) return _node;
+			// a literal holds UTF-8 text: `ansi_char(167)` stays a call
+			if (is_string(_value)) && (__GMLC_lossyUtf8(_value) != _value) return _node;
 			if (foldSlot != undefined) && (foldSlot.node == _node) && (!__keepsValue(foldSlot, _value)) return _node;
 			
-			show_debug_message($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
+			if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 			return __literal(_value, _node.span);
 		}
 		
