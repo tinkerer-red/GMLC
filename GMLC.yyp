@@ -395,6 +395,7 @@
     {"id":{"name":"GMLC_AstJson","path":"scripts/GMLC_AstJson/GMLC_AstJson.yy",},},
     {"id":{"name":"GMLC_BatchResult","path":"scripts/GMLC_BatchResult/GMLC_BatchResult.yy",},},
     {"id":{"name":"GMLC_Diagnostics","path":"scripts/GMLC_Diagnostics/GMLC_Diagnostics.yy",},},
+    {"id":{"name":"GMLC_Emitter","path":"scripts/GMLC_Emitter/GMLC_Emitter.yy",},},
     {"id":{"name":"GMLC_Env","path":"scripts/GMLC_Env/GMLC_Env.yy",},},
     {"id":{"name":"GMLC_Ext_Closure","path":"scripts/GMLC_Ext_Closure/GMLC_Ext_Closure.yy",},},
     {"id":{"name":"GMLC_Ext_Const","path":"scripts/GMLC_Ext_Const/GMLC_Ext_Const.yy",},},

@@ -18,15 +18,16 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	#region jsDoc
 	/// @func    collect(_program)
 	/// @desc    Reads one file's lexer tokens: #macro definitions, enum declarations, regions and `@NoOp` pragmas go
-	///          to tables, comments and line breaks are dropped, everything else stays in the stream in order.
+	///          to tables, comments are kept by position only, line breaks are dropped, everything else stays in the
+	///          stream in order.
 	///          Problems go to `diagnostics`; the caller stops after every file of the batch is collected.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct} _program : The lexer's program record (`tokens`)
-	/// @returns {Struct} The file's definitions: {program, stream, macros, enums, regions, pragmas}
+	/// @returns {Struct} The file's definitions: {program, stream, macros, enums, regions, pragmas, comments}
 	#endregion
 	static collect = function(_program) {
 		diagnostics = [];
-		var _unit = { program: _program, stream: [], macros: [], enums: [], regions: [], pragmas: [] };
+		var _unit = { program: _program, stream: [], macros: [], enums: [], regions: [], pragmas: [], comments: [] };
 		var _tokens = _program.tokens;
 		var _n = array_length(_tokens);
 		var _i = 0;
@@ -39,6 +40,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				case __GMLC_TokenKind_Newline:
 					break;
 				case __GMLC_TokenKind_Comment:
+					array_push(_unit.comments, __span(_t)); // where the comment is, for the emitter
 					if (__isNoOpPragma(_t.name)) {
 						// the parser fills `target` with the span of the first statement after it
 						array_push(_unit.pragmas, new GMLC_Pragma("NoOp", __span(_t), undefined));
@@ -230,6 +232,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		_program.enums = _unit.enums;
 		_program.regions = _unit.regions;
 		_program.pragmas = _unit.pragmas;
+		_program.comments = _unit.comments;
 		return _program;
 	};
 

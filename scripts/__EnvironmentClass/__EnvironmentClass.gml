@@ -301,9 +301,9 @@ function __EnvironmentClass() constructor {
 			case "envFunctions":
 			case "envEnums":
 			case "envMacros":
-				return function() {
+				return method({key: key}, function() {
 					throw "Can't set read-only symbol :: " + string(key);
-				};
+				});
 			default:
 				return method({key: key}, function(v) {
 					other[$ key] = v;
@@ -313,9 +313,9 @@ function __EnvironmentClass() constructor {
 	static __defaultSymbolGetter = function(type, key, value) {
 		switch (type) {
 			case "envKeywords":
-				return function() {
+				return method({key: key}, function() {
 					throw "Symbol `" + key + "` is not readable (keyword)";
-				};
+				});
 			case "envConstants":
 			case "envEnums":
 			case "envFunctions":
