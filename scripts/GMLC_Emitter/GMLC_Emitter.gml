@@ -1123,6 +1123,13 @@
 			_text = string_replace_all(_text, "\n", "\\n");
 			_text = string_replace_all(_text, "\r", "\\r");
 			_text = string_replace_all(_text, "\t", "\\t");
+			// the other control characters as \x and two hex digits, so none is written raw
+			var _c = 1; repeat (127) {
+				if (_c < 32) || (_c == 127) {
+					var _char = chr(_c);
+					if (string_pos(_char, _text) > 0) _text = string_replace_all(_text, _char, "\\x" + string_copy("0123456789ABCDEF", (_c >> 4) + 1, 1) + string_copy("0123456789ABCDEF", (_c & 15) + 1, 1));
+				}
+			_c++}
 			if (_template) _text = string_replace_all(_text, "{", "\\{");
 			return _text;
 		};
