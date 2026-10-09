@@ -22,6 +22,7 @@
     {"name":"GmlAsiTestSuite","order":3,"path":"scripts/GmlAsiTestSuite/GmlAsiTestSuite.yy",},
     {"name":"GMLC_AstJson","order":3,"path":"scripts/GMLC_AstJson/GMLC_AstJson.yy",},
     {"name":"GMLC_Diagnostics","order":3,"path":"scripts/GMLC_Diagnostics/GMLC_Diagnostics.yy",},
+    {"name":"GMLC_Emitter","order":3,"path":"scripts/GMLC_Emitter/GMLC_Emitter.yy",},
     {"name":"GMLC_Env","order":4,"path":"scripts/GMLC_Env/GMLC_Env.yy",},
     {"name":"GMLC_Ext_Closure","order":3,"path":"scripts/GMLC_Ext_Closure/GMLC_Ext_Closure.yy",},
     {"name":"GMLC_Ext_Const","order":3,"path":"scripts/GMLC_Ext_Const/GMLC_Ext_Const.yy",},

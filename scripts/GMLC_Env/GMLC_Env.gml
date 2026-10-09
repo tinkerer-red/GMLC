@@ -579,6 +579,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	lower = new GMLC_Gen_4_Lower(self);
 	optimizer      = new GMLC_Gen_5_Optimizer(self);
 	compiler       = new GMLC_Gen_6_Compiler(self);
+	emitter        = new GMLC_Emitter(self);
 	
 	anonFunctionCount = 0; // anonymous functions are named GMLC@anon@N, N counted across this environment
 	extensions = [];       // the language extensions switched on, in the order their rewrites run
@@ -763,12 +764,39 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	
 	#region jsDoc
+	/// @func    emit()
+	/// @desc    The source as GML text written again by GMLC: comments, macros, enums and regions where they were,
+	///          every statement in one layout. With the optimizer on (enable_optimizer) the optimized code is
+	///          written. A source with an error comes back as it was; the problems are in `diagnostics`, and
+	///          nothing is thrown for a problem in the source.
+	/// @self    GMLC_Env
+	/// @param   {String} sourceCode : Source text
+	/// @param   {String} [name]     : Name of the file, for positions
+	/// @param   {String} [kind]     : "script" (default) or "event", as for compile
+	/// @returns {String}
+	#endregion
+	static emit = function(_sourceCode = "", _name = "", _kind = "script") {
+		diagnostics = [];
+		var _text = _sourceCode;
+		try {
+			var _emitted = __compile_source(_sourceCode, _name, true, _kind, true);
+			if (!__gmlc_has_errors(diagnostics)) _text = _emitted;
+		}
+		catch (_e) {
+			__withDiagnostics(_e, diagnostics);
+		}
+		diagnostics = GMLC_SortDiagnostics(diagnostics);
+		return _text;
+	}
+	
+	#region jsDoc
 	/// @func    __compile_source()
 	/// @desc    The pipeline of one source text, gathering each stage's diagnostics into `diagnostics`; stops after
-	///          lowering when _compile is false.
+	///          lowering when _compile is false, and gives the text of the emitter in place of a program when _emit
+	///          is true.
 	/// @ignore
 	#endregion
-	static __compile_source = function(_sourceCode, _name, _compile, _kind = "script") {
+	static __compile_source = function(_sourceCode, _name, _compile, _kind = "script", _emit = false) {
 		currentScriptName = __resolve_compile_source_name(_name);
 		
 		var _time = get_timer();
@@ -825,6 +853,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			_step_time = get_timer();
 		}
 		if (!_compile) return undefined;
+		if (_emit) {
+			// the lowered tree as it is, or the optimized one
+			if (should_optimize) ast = __optimize(ast, _sources, diagnostics);
+			return emitter.emit(ast, tokens);
+		}
 		
 		var ast = __optimize(ast, _sources, diagnostics);
 		if (__log_optimizer_results) __gmlc_json_save("optimizer.json", ast)

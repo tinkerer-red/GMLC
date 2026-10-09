@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Emitter",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Emitter",
+  "parent":{
+    "name":"Emit",
+    "path":"folders/GMLC/Backends/Emit.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
