@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.IN_APP_PURCHASE, async_load);

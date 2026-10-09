@@ -109,6 +109,35 @@ function gmlc_pipeline_info(_info) {
 function GmlcPipelineTestSuite() : TestSuite() constructor {
 	
 	#region Names in a file
+	addFact("A constant struct key is read and written by its hash when the program is built [GMLC]", function() {
+		var _result = compile_and_execute(@'
+			var s = { a: 5, b: 1 };
+			struct_set(s, "b", struct_get(s, "a") + 2);
+			variable_struct_set(s, "c", variable_struct_get(s, "b") * 10);
+			return [struct_get(s, "a"), s.b, s.c, struct_get(s, "missing")];
+		');
+		assert_equals(array_equals(_result, [5, 7, 70, undefined]), true, "the hashed reads and writes gave other values");
+	});
+
+	addFact("A struct_get with a constant key becomes struct_get_from_hash only while methods are built [GMLC]", function() {
+		var _env = new GMLC_Env();
+		var _callee = new ASTIdentifier(undefined, "struct_get");
+		_callee.symbol = new GMLC_Symbol("BuiltinFunction", "struct_get");
+		var _call = new ASTCall(undefined, _callee, [new ASTIdentifier(undefined, "s"), new ASTLiteral(undefined, "string", "\"a\"", "a")]);
+		var _hashed = __GMLChashStructKey({ env: _env }, _call);
+		assert_equals(_hashed.callee.name, "struct_get_from_hash", "the call was not hashed");
+		assert_equals(_hashed.args[1].value, variable_get_hash("a"), "the key's hash is not the game's");
+		assert_equals(_call.args[1].value, "a", "the original call was changed");
+	});
+
+	addFact("A struct_get with a key that is not a constant string stays as written [GMLC]", function() {
+		var _env = new GMLC_Env();
+		var _callee = new ASTIdentifier(undefined, "struct_get");
+		_callee.symbol = new GMLC_Symbol("BuiltinFunction", "struct_get");
+		var _call = new ASTCall(undefined, _callee, [new ASTIdentifier(undefined, "s"), new ASTLiteral(undefined, "real", "3", 3)]);
+		assert_equals(__GMLChashStructKey({ env: _env }, _call), _call, "a number key was hashed");
+	});
+
 	addFact("An argument named like a function of the file is the argument [GMLC]", function() {
 		assert_equals(compile_and_execute(@'
 			function rp_hp() { return "function"; }
@@ -370,6 +399,48 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		assert_equals(executeProgram(_env.compile("return _GMFUNCTION_;", "Script1.gml")), "gml_GlobalScript_Script1", "GameMaker gives another name");
 	});
 	
+	addFact("GameMaker's project JSON reads with its trailing commas, commas in strings kept [GMLC]", function() {
+		var _value = __gmlc_json_parse_loose(@'{"a":[1,2,],"b":{"c":"x, ]",},}');
+		assert_equals(json_stringify(_value), json_stringify({ a: [1, 2], b: { c: "x, ]" } }), "the project JSON was read wrong");
+	});
+	
+	addFact("Files of a folder are found without a library, in order [GMLC]", function() {
+		var _dir = game_save_id + "gmlc_find_files/";
+		directory_create(_dir + "inner");
+		var _paths = [_dir + "b.gml", _dir + "a.gml", _dir + "c.txt", _dir + "inner/d.gml"];
+		var _i = 0; repeat (array_length(_paths)) {
+			var _buffer = buffer_create(1, buffer_fixed, 1);
+			buffer_write(_buffer, buffer_u8, 32);
+			buffer_save(_buffer, _paths[_i]);
+			buffer_delete(_buffer);
+		_i++}
+		var _flat = __gmlc_find_files(_dir, "gml");
+		var _deep = __gmlc_find_files(_dir, "gml", true);
+		var _names = function(_list) {
+			var _out = [];
+			var _j = 0; repeat (array_length(_list)) { array_push(_out, filename_name(_list[_j])); _j++ }
+			return string_join_ext(",", _out);
+		};
+		assert_equals(_names(_flat) + "|" + _names(_deep), "a.gml,b.gml|a.gml,b.gml,d.gml", "the files found are wrong");
+	});
+	
+	addFact("__gmlc_json_save and __gmlc_json_load give back the value; a missing or broken file loads as undefined [GMLC]", function() {
+		var _path = game_save_id + "gmlc_json_load.json";
+		__gmlc_json_save(_path, { a: [1, 2], b: "x" });
+		var _value = __gmlc_json_load(_path);
+		__gmlc_file_write_text(_path, "{ not json");
+		var _broken = __gmlc_json_load(_path);
+		file_delete(_path);
+		assert_equals(json_stringify(_value), json_stringify({ a: [1, 2], b: "x" }), "the loaded value differs");
+		assert_equals(_broken, undefined, "a broken file should load as undefined");
+		assert_equals(__gmlc_json_load(_path), undefined, "a missing file should load as undefined");
+	});
+	
+	addFact("_GMFUNCTION_: an object event's own code is gml_Object_<object>_<event>, as GameMaker names it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		assert_equals(executeProgram(_env.compile("return _GMFUNCTION_;", "objects/Object1/Create_0.gml", "event")), "gml_Object_Object1_Create_0", "GameMaker gives another name");
+	});
+	
 	addFact("_GMFUNCTION_: a global function is gml_Script_<name>, as GameMaker names it [GMLC]", function() {
 		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 		assert_equals(executeProgram(_env.compile("function gml_gf_a() { return _GMFUNCTION_; }\nreturn gml_gf_a();", "scr_names.gml")), "gml_Script_gml_gf_a", "GameMaker gives another name");
@@ -445,6 +516,76 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		assert_equals(gmlc_pipeline_codes(_env.diagnostics), "GMLC2005", "the warning was not kept");
 	});
 	
+	addFact("Constants that fail when they run are compile errors, and warnings in test mode [GMLC]", function() {
+		// "error GMLC...", "warning GMLC..." or "" for each source
+		var _codes = function(_src, _optimize, _testMode = false) {
+			var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL).enable_test_mode(_testMode);
+			_env.should_optimize = _optimize;
+			try {
+				_env.compile(_src);
+			}
+			catch (_e) {
+				return "error " + gmlc_pipeline_codes(_e[$ "diagnostics"]);
+			}
+			var _found = gmlc_pipeline_codes(_env.diagnostics);
+			return (_found == "") ? "" : "warning " + _found;
+		};
+		assert_equals(_codes("return real(\"ab\");", false), "error GMLC4102", "real of a word throws when it runs");
+		assert_equals(_codes("return \"ab\" * 2;", true), "error GMLC4102", "a string times a number throws when it runs");
+		assert_equals(_codes("return -3 * \"ab\";", false), "error GMLC4101", "a negative string repeat ends the game");
+		assert_equals(_codes("return 1 + (int64(1) div 0);", false), "error GMLC4102", "only the failing operator is reported");
+		assert_equals(_codes("return chr(65.5);", false), "error GMLC4103", "a character code with a fraction");
+		assert_equals(_codes("return ansi_char(256);", false), "error GMLC4103", "a character code out of range");
+		assert_equals(_codes("return chr(66);", false), "", "a whole character code folds");
+		assert_equals(_codes("return false && real(\"ab\");", false), "", "&& does not run its right side here");
+		assert_equals(_codes("return true ? 1 : real(\"ab\");", true), "", "a branch the ternary does not take");
+		assert_equals(_codes("if (false) return real(\"ab\");", false), "error GMLC4102", "dead code, without the optimizer");
+		assert_equals(_codes("if (false) return real(\"ab\");", true), "error GMLC4102", "dead code, with the optimizer");
+		assert_equals(_codes("// @NoOp\nreturn real(\"ab\");", false), "", "a @NoOp line is left alone");
+		assert_equals(_codes("return real(\"ab\");", false, true), "warning GMLC4102", "test mode");
+		assert_equals(_codes("return -3 * \"ab\";", true, true), "warning GMLC4101", "test mode, with the optimizer");
+		assert_equals(_codes("return chr(65.5);", false, true), "warning GMLC4103", "test mode, a character code");
+	});
+	
+	addFact("A constructor called directly throws GameMaker's error; a parent call and script_execute still run [GMLC]", function() {
+		var _run = function(_src) {
+			try {
+				return executeProgram(new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL).compile(_src));
+			}
+			catch (_e) {
+				return "error:" + (is_struct(_e) ? _e.message : string(_e));
+			}
+		};
+		var _direct = "error:calling a constructor directly - constructors should only be called using new";
+		var _decl = "function CtorRuleC(_n) constructor { n = _n; }\n";
+		assert_equals(_run(_decl + "var h = {}; with (h) CtorRuleC(4); return 1;"), _direct, "a direct call");
+		assert_equals(_run(_decl + "var b = method({}, CtorRuleC); b(4); return 1;"), _direct, "a bound constructor called directly");
+		assert_equals(_run(_decl + "var s = { make: CtorRuleC }; s.make(4); return 1;"), _direct, "a constructor called as a method");
+		assert_equals(_run(_decl + "var h = {}; with (h) script_execute(CtorRuleC, 4); return h.n;"), 4, "script_execute runs the body on self");
+		assert_equals(_run("function CtorRuleP() constructor { a = 1; }\nfunction CtorRuleQ() : CtorRuleP() constructor { b = 2; }\nvar q = new CtorRuleQ(); return q.a + q.b;"), 3, "a parent constructor call");
+		// a caught error leaves the call able to run again
+		assert_equals(_run(_decl + "var r = 0; repeat (2) { try { CtorRuleC(1); } catch (_e) { r++; } } return r;"), 2, "the call after a caught error");
+	});
+
+	addFact("Test mode leaves a failing constant to fail when it runs [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL).enable_test_mode(true);
+		var _program = _env.compile("try { return real(\"ab\"); } catch (_e) { return \"caught\"; }");
+		assert_equals(executeProgram(_program), "caught", "the error was not thrown when the code ran");
+		var _program = _env.compile("return chr(65.9);");
+		assert_equals(executeProgram(_program), "A", "chr did not run as GameMaker's runtime runs it (it cuts the fraction)");
+	});
+
+	addFact("Constant folding runs in every compile and gives the runtime's result [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		_env.__log_optimizer_results = false;
+		var _program = _env.compile("return [!0, 5 & 3, \"ab\" + \"cd\", 3 * \"ab\", undefined ?? 4, 167 != NaN];");
+		var _r = executeProgram(_program);
+		assert_equals(typeof(_r[0]) + typeof(_r[1]), "boolint64", "the folded types are not the runtime's");
+		assert_equals(_r[2] + _r[3], "abcdababab", "strings did not fold");
+		assert_equals(_r[4], 4, "?? did not fold");
+		assert_equals(_r[5], true, "x != NaN is true at run time");
+	});
+
 	addFact("An error carries every diagnostic of the compile [GMLC]", function() {
 		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 		var _error = undefined;

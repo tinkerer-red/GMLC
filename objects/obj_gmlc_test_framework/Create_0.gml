@@ -1,4 +1,4 @@
-gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+gmlc = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL).enable_test_mode(true);
 
 //sprite refs which are not exported (they are intentionally not exported for test purposes)
 gmlc.exposeConstants({
@@ -164,6 +164,11 @@ testFramework.addSuite(BasicConstructorTestSuit);
 testFramework.addSuite(EmptyBlockAcceptanceTestSuite);
 testFramework.addSuite(BinaryConditionTestSuite);
 testFramework.addSuite(DotChainPerformanceTestSuite);
+testFramework.addSuite(GmlConstructorTestSuite);
+testFramework.addSuite(GmlNegateBoolTestSuite);
+testFramework.addSuite(GmlSwitchLabelTestSuite);
+testFramework.addSuite(GmlValuePrintingTestSuite);
+testFramework.addSuite(GmlAsiTestSuite);
 testFramework.addSuite(GmlFunctionDeclarationTestSuite);
 testFramework.addSuite(GmlExtensionLoweringTestSuite);
 testFramework.addSuite(GmlcExtensionsTestSuite);
@@ -190,13 +195,9 @@ var _added_tests = []
 
 //*
 // Add all of the official test suites from their .gml files in included folder \__TEST\*.gml
-var _file_names = file_find_all("__TESTS/*gml");
+var _file_names = __gmlc_find_files("__TESTS", "gml");
 for(var i=0; i<array_length(_file_names); i++) {
-	//log(_file_names[i]);
-	var _script_str = "\n\n\n"+gmlc_file_read_all_text("__TESTS/"+_file_names[i]);
-	//log(string_replace_all(string_replace_all(string_copy(_script_str, 0, 200), "\t", ""), "\n", ""));
-	var _program = gmlc.compile(_script_str);
-	//pprint(_program)
+	var _program = gmlc.compile(__gmlc_file_read_text(_file_names[i]), filename_name(_file_names[i]));
 	var _program_data = method_get_self(_program);
 	var _global_names = struct_get_names(_program_data.globals);
 	

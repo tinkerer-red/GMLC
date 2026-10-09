@@ -2,7 +2,7 @@
 // Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-05.
 function GmlMacroTestSuite() : TestSuite() constructor {
 
-	// the same macro defined twice in one file: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// the same macro defined twice in one file: GameMaker 2024.14.4.268 refuses to compile this:
 	//   macro CASE_MA_DUP is already defined
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("the same macro defined twice in one file [GameMaker]", function() {
@@ -16,7 +16,7 @@ function GmlMacroTestSuite() : TestSuite() constructor {
 return CASE_MA_DUP;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// two macros that expand to each other: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// two macros that expand to each other: GameMaker 2024.14.4.268 refuses to compile this:
 	//   "CASE_MA_CYB" and "CASE_MA_CYA" are part of a recursive macro expansion
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("two macros that expand to each other [GameMaker]", function() {
@@ -30,7 +30,7 @@ return CASE_MA_DUP;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// a macro that uses itself: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a macro that uses itself: GameMaker 2024.14.4.268 refuses to compile this:
 	//   "CASE_MA_SELF" and "CASE_MA_SELF" are part of a recursive macro expansion
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a macro that uses itself [GameMaker]", function() {
@@ -85,7 +85,7 @@ return CASE_MA_CFG3;'); }), "error", "GMLC differs from GameMaker");
 return CASE_MA_CC * 10;'); }), "number:21", "GMLC differs from GameMaker");
 	});
 
-	// a token between the backslash and the line break: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a token between the backslash and the line break: GameMaker 2024.14.4.268 refuses to compile this:
 	//   "CASE_MA_TAB" and "CASE_MA_TAB" are part of a recursive macro expansion
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a token between the backslash and the line break [GameMaker]", function() {
@@ -97,7 +97,7 @@ return CASE_MA_CC * 10;'); }), "number:21", "GMLC differs from GameMaker");
 return CASE_MA_TAB;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// a block comment over two lines inside a body: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a block comment over two lines inside a body: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a block comment over two lines inside a body [GameMaker]", function() {
@@ -120,7 +120,7 @@ var a = CASE_MA_SEMI
 return a;'); }), "number:5", "GMLC differs from GameMaker");
 	});
 
-	// a macro with an empty body: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a macro with an empty body: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a macro with an empty body [GameMaker]", function() {
@@ -180,7 +180,7 @@ return "CASE_MA_STR";'); }), "string:CASE_MA_STR", "GMLC differs from GameMaker"
 return CASE_MA_DBL * 10;'); }), "number:21", "GMLC differs from GameMaker");
 	});
 
-	// a backslash with text after it, then a backslash at the line end: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-05):
+	// a backslash with text after it, then a backslash at the line end: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a backslash with text after it, then a backslash at the line end [GameMaker]", function() {

@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.AUDIO_RECORDING, async_load);

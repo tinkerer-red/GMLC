@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.PUSH_NOTIFICATIONS, async_load);

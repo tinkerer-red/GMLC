@@ -1,13 +1,8 @@
 #region Compiler.gml
 	#region Compiler Module
 	/*
-	Purpose: To build the AST into a set of callable functions.
-	
-	Methods:
-	
-	optimize(ast): Entry function that takes an AST and returns an optimized AST.
-	constantFolding(ast): Traverses the AST and evaluates expressions that can be determined at compile-time.
-	deadCodeElimination(ast): Removes parts of the AST that do not affect the program outcome, such as unreachable code.
+	Builds the AST into a tree of callable methods: each node kind has a __GMLCcompile* function that returns a
+	method bound to its __GMLCexecute* executor.
 	*/
 	#endregion
 	function GMLC_Gen_6_Compiler(_env) constructor  {
@@ -92,10 +87,12 @@
 						        array_copy(localsWrittenTo, 0, backupLocalsWrittenTo, _local_offset, localCount);\
 						        array_resize(backupLocalsWrittenTo, _local_offset)
 
-#macro __GMLC_RESET_LOCALS	array_resize(locals, 0);\
-							array_resize(localsWrittenTo, 0);\
-							array_resize(locals, localCount);\
-							array_resize(localsWrittenTo, localCount)
+#macro __GMLC_RESET_LOCALS	if (localCount) {\
+								array_resize(locals, 0);\
+								array_resize(localsWrittenTo, 0);\
+								array_resize(locals, localCount);\
+								array_resize(localsWrittenTo, localCount);\
+							}
 #endregion
 
 #region Arguments
@@ -118,9 +115,7 @@
 									var _i=argument_count-1; repeat(argument_count) {\
 										arguments[_i] = argument[_i];\
 									_i--}\
-									if (struct_exists(self, "argumentsDefault")) {\
-										argumentsDefault();\
-									}
+									argumentsDefault();
 #endregion
 
 #region Constructors
@@ -133,7 +128,7 @@
 #endregion
 
 #region Statics
-#macro __GMLC_INIT_STATICS	if (struct_exists(self, "staticsExecuted") && !staticsExecuted) {\
+#macro __GMLC_INIT_STATICS	if (!staticsExecuted) {\
 								staticsExecuted = true;\
 								staticsBlock();\
 							}
@@ -236,10 +231,11 @@ function executeProgram(_program) {
 //    locals: {},
 //}
 #endregion
+function __GMLCexecuteNothing() {
+}
 function __GMLCexecuteProgram() {
 	static globals = function(){ return method_get_self(self).globals }
 	
-	__GMLC_DEFAULT_SELF_AND_OTHER
 	__GMLC_PRE_FUNC
 	
 	////////////////EXECUTE////////////////////////
@@ -277,6 +273,9 @@ function __GMLCcompileProgram(_node, _globalsStruct, _env=undefined, _sources=un
 	_output.arguments = [];
 	_output.backupArguments = [];
 	_output.argCountMemory = [];
+	// the file's body has no parameters and no statics of its own
+	_output.argumentsDefault = __GMLCexecuteNothing;
+	_output.staticsExecuted = true;
 	
 	return __vanilla_method(_output, __GMLCexecuteProgram)
 }
@@ -446,11 +445,10 @@ function __GMLCcompileExpression(_rootNode, _parentNode, _node) {
 };
 
 function __GMLCexecuteFunction() {
-	__GMLC_DEFAULT_SELF_AND_OTHER
 	__GMLC_PRE_FUNC
 	
 	////////////////EXECUTE////////////////////////
-	method_call(program, arguments);
+	program();
 	var _return = returnValue;
 	///////////////////////////////////////////////
 	
@@ -517,7 +515,6 @@ function __GMLCexecuteConstructor() constructor {
 	var _program_data = (_is_new_expression) ? other : self;
 	with _program_data {
 		var _program = program;
-		var _arguments = arguments;
 		var _statics = statics;
 		
 		__GMLC_DEFAULT_SELF_AND_OTHER
@@ -537,9 +534,7 @@ function __GMLCexecuteConstructor() constructor {
 		var _i=argument_count-1; repeat(argument_count) {
 			arguments[_i] = argument[_i];
 		_i--}
-		if (struct_exists(self, "argumentsDefault")) {
-			argumentsDefault();
-		}
+		argumentsDefault();
 										
 		if (_program_data[$ "hasParentConstructor"]) {
 			parentConstructorCall(arguments)
@@ -550,7 +545,7 @@ function __GMLCexecuteConstructor() constructor {
 	}
 	
 	static_set(global.gmlc_self_instance, _statics);
-	method_call(_program, _arguments);
+	_program();
 	
 	if (_is_new_expression) {
 		__GMLC_RESET_SELF_AND_OTHER
@@ -625,6 +620,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 		_output.hasParentConstructor = true;
 		_output.parentConstructorName = _parentName;
 		_output.parentConstructorCall = __GMLCcompileCallExpression(_rootNode, _output, _node.parent);
+		method_get_self(_output.parentConstructorCall).parentCall = true;
 		
 		//there is probably a better way to check if what we have is indeed a gmlc program or a real script
 		var _parent_constuct = (_parentName != undefined) ? _rootNode.globals[$ _parentName] : undefined;
@@ -646,8 +642,6 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 			array_push(_waiting, { statics: _output.statics, globals: _rootNode.globals });
 		}
 		
-		
-		//_output.parentConstructor = rootNode.globals[$ parentName];
 	}
 	else {
 		//no parent? just have an empty static
@@ -675,7 +669,6 @@ function __GMLCexecuteArgumentList() {
 	
 	var _i=0; repeat(size) {
 		var _arg = statements[_i]
-		if (_arg.index != _i) throw_gmlc_error("Why does our index not match our arguments index?")
 		
 		if (_i < _inputLength) {
 			if (_inputArguments[_i] == undefined) {
@@ -698,9 +691,6 @@ function __GMLCcompileArgumentList(_rootNode, _parentNode, _params, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileArgumentList", "<Missing Error Message>", _node.span);
 	_output.statements = [];
 	_output.size = undefined;
-	
-	//_output.varStatics = {};
-	//_output.locals = {};
 	
 	
 	var _arr = _params;
@@ -946,7 +936,7 @@ function __GMLCexecuteIf() {
 		trueBlock();
 }
 #region //{
-// used for gmlc compiled repeat blocks
+// used for gmlc compiled if/else statements
 //    condition: <expression>,
 //    trueBlock: <expression>,
 //    elseBlock: <expression>,
@@ -1264,9 +1254,6 @@ function __GMLCcompileWith(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileWith", "<Missing Error Message>", _node.span);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _node.target);
 	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.body);
-    //_output.mySelf  = _output;
-    //_output.myIndex = __GMLCexecuteWith;
-    //_output.myMethod = __vanilla_method(_output, __GMLCexecuteWith);
 	
 	return __vanilla_method(_output, __GMLCexecuteWith);
 }
@@ -1280,11 +1267,9 @@ function __GMLCcompileWith(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteTryCatchFinally() {
-	// one GML try per compiled try, so GameMaker's own rules apply: finally runs
-	// after the try and after a catch that handles the error, and before an error leaves a try that has no catch;
-	// it does not run when the catch block itself throws.
-	// An error unwinds the compiled functions it left and the `with` it left (self and other), before the catch or
-	// finally runs.
+	// one GML try per compiled try, so GameMaker's own rules for finally apply (it does not run when the catch
+	// block itself throws). An error unwinds the compiled functions and the `with` it left (self and other) before
+	// the catch or finally runs.
 	var _depth = array_length(global.__gmlc_active_functions);
 	var _self = global.gmlc_self_instance;
 	var _other = global.gmlc_other_instance;
@@ -1340,7 +1325,7 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
 #region Keyword Statements
 
 #region //{
-// used to inform gmlc that a break has occured
+// used for gmlc compiled `new` expressions
 //    callee
 //    calleeName
 //    argArr
@@ -1348,15 +1333,22 @@ function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
 //}
 #endregion
 function __GMLCexecuteNewExpression() {
-	var _func = callee()
-	
-	if (!is_method(_func)) {
-		if (!is_callable(_func)) {
-			throw $"Attempting to call new method on a non-callable value :: `{_func}`"
+	var _func = callee();
+	// the kind of constructor is checked once per callee: the checks cost more than the call itself
+	if (_func != lastFunc) {
+		var _callable = _func;
+		if (!is_method(_func)) {
+			if (!is_callable(_func)) {
+				throw $"Attempting to call new method on a non-callable value :: `{_func}`"
+			}
+			_callable = __GMLCcallableFromIndex(rootNode, _func);
 		}
-		_func = __GMLCcallableFromIndex(rootNode, _func);
+		lastIsGmlc = is_gmlc_constructor(_callable);
+		lastCallable = _callable;
+		lastFunc = _func;
 	}
-	
+	_func = lastCallable;
+
 	//mostly just used in recursion code
 	var _arg_count = max(argument_count, argumentCount)
 	
@@ -1380,7 +1372,18 @@ function __GMLCexecuteNewExpression() {
 	_i--}
 	
 	// GMLC constructors need the program data as `other` (constructor_call_ext); native constructors get a real `new`
-	var _struct = (is_gmlc_constructor(_func)) ? constructor_call_ext(_func, arguments) : __gmlc_new_native(_func, arguments);
+	var _struct;
+	if (lastIsGmlc) {
+		// as constructor_call_ext does: `other` is the constructor's program data, `self` the new struct
+		_struct = {};
+		var _args = arguments;
+		with (method_get_self(_func) ?? self) with (_struct) {
+			script_execute_ext(_func, _args);
+		}
+	}
+	else {
+		_struct = __gmlc_new_native(_func, arguments);
+	}
 	
 	if (--recursionCount) {
         // Un-stash the arguments
@@ -1401,6 +1404,9 @@ function __GMLCexecuteNewExpression() {
 }
 function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileNewExpression", "<Missing Error Message>", _node.span);
+	_output.lastFunc = undefined; // the last callee, the function new runs for it and whether it is a GMLC constructor
+	_output.lastCallable = undefined;
+	_output.lastIsGmlc = false;
 	
 	var _argArr = _node.args;
 	_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _node.callee);
@@ -1583,25 +1589,30 @@ function __GMLCexecuteCallMethodExpression() {
 		throw_gmlc_error($"Variable <{typeof(_scope_target)}>.{key} not set before reading it." + ((callstack != undefined) ? "\n" + json_stringify(callstack, true) : ""))
 	}
 
+	// a constructor called directly throws as in GameMaker, once the call's state is restored below;
+	// script_execute and method_call still run a constructor's body on self
+	var _directConstructor = false;
 	if (is_method(_func)) {
-		if (is_gmlc_constructor(_func)) {
-			var _program_data = method_get_self(_func);
-			var _program_func = method_get_index(_func);
-			var _arguments = arguments;
-			with (_program_data) {
-				_return = script_execute_ext(_program_func, _arguments);
-			}
+		// the kind of function is checked once per callee: the checks cost more than the call itself
+		if (_func != lastFunc) {
+			lastKind = __GMLCcallKind(_func);
+			lastFunc = _func;
 		}
-		else if (is_gmlc_program(_func))
-		|| (is_gmlc_method(_func)) {
-			_return = method_call(_func, arguments);
-		}
-		else {
-			var _self = method_get_self(_func);
-			var _args = arguments;
-			with (_prevSelf) {
-				_return = method_call(_func, _args);
-			}
+		switch (lastKind) {
+			case GMLC_CALL_KIND.GMLC: {
+				_return = method_call(_func, arguments);
+			break;}
+			case GMLC_CALL_KIND.CONSTRUCTOR:
+			case GMLC_CALL_KIND.BOUND_CONSTRUCTOR: {
+				_directConstructor = true;
+			break;}
+			default: {
+				// an unbound method runs on the struct before the dot, as in GameMaker
+				var _args = arguments;
+				with (_scope_target ?? _prevSelf) {
+					_return = method_call(_func, _args);
+				}
+			break;}
 		}
 	}
 	else {
@@ -1611,7 +1622,7 @@ function __GMLCexecuteCallMethodExpression() {
 			_return = method_call(_callable, _args);
 		}
 	}
-	
+
 	// Restore scope
 	global.gmlc_other_instance = _prevOther;
 	global.gmlc_self_instance  = _prevSelf;
@@ -1629,12 +1640,16 @@ function __GMLCexecuteCallMethodExpression() {
 		}
 	}
 
+	if (_directConstructor) throw_gmlc_error("calling a constructor directly - constructors should only be called using new");
 	return _return;
 }
 function __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCallMethodExpression", "<Missing Error Message>", _node.span);
 	_output.target = __GMLCcompileExpression(_rootNode, _parentNode, _node.object);
 	_output.key    = _node.member;
+	_output.lastFunc = undefined; // the last callee and what kind of function it is (__GMLCcallKind)
+	_output.lastCallable = undefined;
+	_output.lastKind = GMLC_CALL_KIND.NATIVE;
 	
 	_output.recursionCount  = 0;
 	_output.prevArgCount    = 0;
@@ -1752,51 +1767,67 @@ function __GMLCexecuteCallExpression() {
 	_i--}
 	if (callbackArgs != undefined) __GMLCcheckCallbackArgs(self);
 
-	var _func = callee()
-	
-	if (!is_method(_func)) {
-		if (!is_callable(_func)) {
-			throw $"Attempting to call method on a non-callable value :: `{_func}`"
+	var _func = callee();
+	// the kind of function is checked once per callee: the checks cost more than the call itself
+	if (_func != lastFunc) {
+		var _callable = _func;
+		if (!is_method(_func)) {
+			if (!is_callable(_func)) {
+				throw $"Attempting to call method on a non-callable value :: `{_func}`"
+			}
+			// a function held as a plain number (a variable set to `get_timer`, as in GameMaker): only an exposed one
+			_callable = __GMLCcallableFromIndex(rootNode, _func);
 		}
-		// a function held as a plain number (a variable set to `get_timer`, as in GameMaker): only an exposed one
-		_func = __GMLCcallableFromIndex(rootNode, _func);
+		lastKind = __GMLCcallKind(_callable);
+		lastCallable = _callable;
+		lastFunc = _func;
 	}
-	
-	if is_gmlc_constructor(_func) {
-		//this is just method_call, but it works on constructors
-		var _program_data = method_get_self(_func);
-		var _program_func = method_get_index(_func);
-		var _arguments = arguments
-		with (_program_data) {
-			_return = script_execute_ext(_program_func, _arguments);
-		}
+	_func = lastCallable;
+
+	// a constructor called directly throws as in GameMaker, once the call's state is restored below;
+	// script_execute and method_call still run a constructor's body on self
+	var _directConstructor = false;
+	switch (lastKind) {
+		case GMLC_CALL_KIND.GMLC: {
+			_return = method_call(_func, arguments);
+		break;}
+		case GMLC_CALL_KIND.CONSTRUCTOR: {
+			if (!parentCall) {
+				_directConstructor = true;
+				break;
+			}
+			// a parent constructor: its body runs on the new struct
+			var _program_data = method_get_self(_func);
+			var _program_func = method_get_index(_func);
+			var _arguments = arguments;
+			with (_program_data) {
+				_return = script_execute_ext(_program_func, _arguments);
+			}
+		break;}
+		case GMLC_CALL_KIND.BOUND_CONSTRUCTOR: {
+			_directConstructor = true;
+		break;}
+		default: {
+			var _self = method_get_self(_func);
+			var _args = arguments;
+			var _prevOther = global.gmlc_other_instance;
+			var _prevSelf  = global.gmlc_self_instance;
+
+			// a bound method runs on its own self; an unbound built-in keeps the caller's self, so a callback into
+			// compiled code (script_execute inside `with`) still sees the right instance
+			if (_self != undefined) {
+				global.gmlc_other_instance = _prevSelf;
+				global.gmlc_self_instance = _self;
+			}
+			with (_prevSelf) {
+				_return = method_call(_func, _args);
+			}
+
+			global.gmlc_other_instance = _prevOther;
+			global.gmlc_self_instance  = _prevSelf;
+		break;}
 	}
-	else if (is_gmlc_program(_func))
-	|| (is_gmlc_method(_func)) {
-		_return = method_call(_func, arguments);
-	}
-	else {
-		var _self = method_get_self(_func);
-		var _args = arguments;
-		var _prevOther = global.gmlc_other_instance;
-		var _prevSelf  = global.gmlc_self_instance;
-		
-		// a bound method runs on its own self; an unbound built-in keeps the caller's self, so a callback into
-		// compiled code (script_execute inside `with`) still sees the right instance
-		if (_self != undefined) {
-			global.gmlc_other_instance = _prevSelf;
-			global.gmlc_self_instance = _self;
-		}
-			
-		//why am i doing this?
-		with (_prevSelf) {
-			_return = method_call(_func, _args);
-		}
-		
-		global.gmlc_other_instance = _prevOther;
-		global.gmlc_self_instance  = _prevSelf;
-	}
-	
+
 	if (--recursionCount) {
         // Un-stash the arguments
 		var _prev_arg_count = array_pop(argCountMemory)
@@ -1811,6 +1842,7 @@ function __GMLCexecuteCallExpression() {
 		}
 	}
 	
+	if (_directConstructor) throw_gmlc_error("calling a constructor directly - constructors should only be called using new");
 	return _return;
 }
 #region jsDoc
@@ -1832,13 +1864,54 @@ function __GMLCcompileCallee(_rootNode, _parentNode, _callee) {
 	}
 	return __GMLCcompileExpression(_rootNode, _parentNode, _callee);
 }
+#region jsDoc
+/// @func    __GMLChashStructKey(_rootNode, _node)
+/// @desc    A call of `struct_get` or `variable_struct_get` (two arguments), or of `struct_set` or `variable_struct_set`
+///          (three), whose key is a constant string, as the matching `*_from_hash` call with the key's hash. Done only
+///          here, while the program's methods are built: a hash depends on the game that runs (and on the order its
+///          mods load), so no stage whose output is kept (the optimizer's) writes one. Any other call
+///          comes back as it is.
+/// @param   {Struct} _rootNode : The program node
+/// @param   {Struct} _node     : The Call node
+/// @returns {Struct}
+#endregion
+function __GMLChashStructKey(_rootNode, _node) {
+	var _callee = _node.callee;
+	if (_callee.kind != __GMLC_NodeKind_Identifier) || (_callee.symbol == undefined) || (_callee.symbol.kind != "BuiltinFunction") return _node;
+	var _args = _node.args;
+	var _count = array_length(_args);
+	if (_count < 2) || (_args[1].kind != __GMLC_NodeKind_Literal) || (!is_string(_args[1].value)) return _node;
+	var _function = __GMLCidentifierValue(_rootNode, _callee);
+	var _name = undefined;
+	if ((_function == struct_get) || (_function == variable_struct_get)) && (_count == 2) {
+		_name = "struct_get_from_hash";
+	}
+	else if ((_function == struct_set) || (_function == variable_struct_set)) && (_count == 3) {
+		_name = "struct_set_from_hash";
+	}
+	if (_name == undefined) || (!_rootNode.env.isFunction(_name)) return _node;
+
+	var _hash = variable_get_hash(_args[1].value);
+	var _hashed = array_create(_count);
+	array_copy(_hashed, 0, _args, 0, _count);
+	_hashed[1] = new ASTLiteral(_args[1].span, "real", string(_hash), _hash);
+	var _identifier = new ASTIdentifier(_callee.span, _name);
+	_identifier.symbol = new GMLC_Symbol("BuiltinFunction", _name);
+	return new ASTCall(_node.span, _identifier, _hashed, _node.origin);
+}
 function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
+	// a constant struct key is hashed while the methods are built (see __GMLChashStructKey)
+	_node = __GMLChashStructKey(_rootNode, _node);
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCallExpression", "<Missing Error Message>", _node.span);
 	_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _node.callee);
 	
 	var _isBuiltin = (_node.callee.kind == __GMLC_NodeKind_Identifier) && (_node.callee.symbol.kind == "BuiltinFunction");
 	_output.calleeName = (_node.callee.kind == __GMLC_NodeKind_Identifier) ? _node.callee.name : "<Call Expression>"
 	_output.callbackArgs = (_isBuiltin) ? __GMLCcallbackArgs(_output.calleeName) : undefined;
+	_output.parentCall = false; // the parent call of a constructor (`: P()`), which runs P's body on the new struct
+	_output.lastFunc = undefined; // the last callee and what kind of function it is (__GMLCcallKind)
+	_output.lastCallable = undefined;
+	_output.lastKind = GMLC_CALL_KIND.NATIVE;
 	
 	_output.recursionCount = 0; 
 	_output.prevArgCount = 0;
@@ -2074,9 +2147,6 @@ function __GMLCdesugarIndex(_node) {
 }
 
 function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
-	var _folded = __GMLCcompileConstantFold(_rootNode, _node);
-	if (_folded != undefined) return _folded;
-	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBinaryExpression", "<Missing Error Message>", _node.span);
 	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
@@ -2162,145 +2232,151 @@ function __GMLCexecuteOpBitwiseShiftRight() {
 #endregion
 
 #region Constant folding
-// GameMaker computes operators whose operands are all constants at compile time, and the folded value can have a
-// different type from the same operation at run time (measured on 2024.14.4):
-//   - `!`, `&&`, `||`, `^^` fold to a number (`!false` is 1, `true && false` is 0); at run time they give a bool.
-//   - arithmetic and bitwise operators fold to an int64 when an operand is a hex or binary literal of 2^31 or more
-//     (an int64 to the compiler); otherwise to a number, except that a whole result outside the 32-bit range is an
-//     int64. At run time bitwise operators always give an int64 (`5 & 3` folds to the number 1, `a & b` is int64).
-//     A shift by 64 or more folds to 0 (`11 << 64` is 0; at run time the count wraps, `a << 64` is 11).
-//   - comparisons give a bool either way.
-// GMLC folds the same expressions to the same values and types.
+// An operator on constant operands is computed while compiling with GameMaker's own operators, so it gives the
+// runtime's value even where GameMaker's compiler folds differently (`!0`, `~1.5`, `167 != NaN`). Operands that
+// throw or end the game are compile errors (GMLC4102, GMLC4101), or a failing operator in test mode.
+
+// A folded string becomes a literal in the compiled output, so `string_repeat("-", 5000)` would put a large literal
+// into emitted source; a fold that would make a longer string is left to run. A longer literal is still a constant.
+#macro __GMLC_FOLD_STRING_LIMIT 4096
+// the smallest int64, -2^63
+#macro __GMLC_INT64_MIN 0x8000000000000000
+
+// Where constant folding is: the node being computed, and the nodes whose computation threw. The optimizer runs its
+// folding inside one try; when a computation throws, it records the node here and starts its walk again, and from
+// then on that node reads as failing without being computed again.
+global.__gmlc_fold = { node: undefined, failed: [], messages: [] };
+
+// the message of a node whose computation threw, or undefined
+function __GMLCfoldFailure(_node) {
+	var _fold = global.__gmlc_fold;
+	var _i = 0; repeat (array_length(_fold.failed)) {
+		if (_fold.failed[_i] == _node) return _fold.messages[_i];
+	_i++}
+	return undefined;
+}
 
 #region jsDoc
 /// @func    __GMLCconstantValue(_rootNode, _node)
-/// @desc    Evaluates an expression whose operands are all constants (literals, built-in constants, enum members), as
-///          GameMaker's compiler does.
-/// @param   {Struct} _rootNode : The program node (its environment gives the values of built-in constants)
-/// @param   {Struct} _node     : AST node
-/// @returns {Array} [true, value, int64Typed] when _node is a compile-time constant number or bool, else [false]
+/// @desc    Evaluates an expression whose operands are all constants, as the runtime would; `&&` and `||` stop at a
+///          deciding left operand. Called inside the optimizer's try: an operator that throws records itself in
+///          global.__gmlc_fold first.
+/// @returns {Array} [true, value]; [false] when not constant; [false, undefined, message, node, fatal] when it fails
 #endregion
 function __GMLCconstantValue(_rootNode, _node) {
+	var _v;
 	switch (_node.kind) {
 		case __GMLC_NodeKind_Identifier: {
 			if (_node.symbol == undefined) || (_node.symbol.kind != "BuiltinConstant") return [false];
-			var _v = __GMLCidentifierValue(_rootNode, _node);
-			if (is_bool(_v)) return [true, _v, false];
-			if (is_int64(_v)) return [true, real(_v), false];
-			if (is_real(_v) || is_int32(_v)) return [true, real(_v), false];
-			return [false];
-		}
+			_v = __GMLCidentifierValue(_rootNode, _node);
+		break;}
 		case __GMLC_NodeKind_Index: {
 			if (_node.accessor != "Dot") || (_node.object.kind != __GMLC_NodeKind_Identifier) || (_node.object.symbol == undefined) || (_node.object.symbol.kind != "Enum") return [false];
-			var _v = __GMLCenumValue(_rootNode, _node);
-			if (is_real(_v) || is_int64(_v) || is_int32(_v)) return [true, real(_v), false];
-			return [false];
-		}
+			_v = __GMLCenumValue(_rootNode, _node);
+		break;}
 		case __GMLC_NodeKind_Literal: {
-			var _v = _node.value;
-			if (is_bool(_v)) return [true, _v, false];
-			if (is_int64(_v)) {
-				// a decimal literal of 2^31 or more is a double to the compiler; hex and binary ones are int64
-				var _raw = string_lower(_node.lexeme ?? "");
-				var _typed = string_starts_with(_raw, "$") || string_starts_with(_raw, "0x") || string_starts_with(_raw, "0b");
-				return [true, _typed ? _v : real(_v), _typed];
-			}
-			if (is_real(_v) || is_int32(_v)) return [true, real(_v), false];
-			return [false];
+			// a literal is a constant whatever its length
+			return [true, _node.value];
 		}
 		case __GMLC_NodeKind_Unary: {
 			var _e = __GMLCconstantValue(_rootNode, _node[$ "argument"]);
-			if (!_e[0]) return [false];
-			try {
-				switch (_node.op) {
-					case "!": return [true, real(!_e[1]), false];
-					case "-": return [true, -_e[1], _e[2]];
-					case "~": return [true, _e[2] ? ~_e[1] : real(~_e[1]), _e[2]];
-				}
+			if (!_e[0]) return _e;
+			// `-true` is a bool that holds -1 at run time (it writes "false", prints "1" and is -1 in arithmetic): no
+			// literal holds it, so it stays an expression
+			if (_node.op == "-") && (is_bool(_e[1])) return [false];
+			var _failed = __GMLCfoldFailure(_node);
+			if (_failed != undefined) return [false, undefined, _failed, _node, false];
+			var _fold = global.__gmlc_fold;
+			_fold.node = _node;
+			switch (_node.op) {
+				case "!": _v = !_e[1]; break;
+				case "-": _v = -_e[1]; break;
+				case "~": _v = ~_e[1]; break;
+				default: _fold.node = undefined; return [false];
 			}
-			catch (_err) {}
-			return [false];
-		}
+			_fold.node = undefined;
+		break;}
 		case __GMLC_NodeKind_Logical:
 		case __GMLC_NodeKind_Binary: {
 			var _l = __GMLCconstantValue(_rootNode, _node.left);
-			if (!_l[0]) return [false];
-			var _r = __GMLCconstantValue(_rootNode, _node.right);
-			if (!_r[0]) return [false];
+			if (!_l[0]) return _l;
 			var _a = _l[1];
+			var _failed = __GMLCfoldFailure(_node);
+			if (_failed != undefined) return [false, undefined, _failed, _node, false];
+			var _fold = global.__gmlc_fold;
+			// the right operand is not evaluated when the left decides
+			if (_node.op == "&&") || (_node.op == "||") {
+				_fold.node = _node;
+				if (_node.op == "&&") && (!_a) { _fold.node = undefined; return [true, false]; }
+				if (_node.op == "||") && (_a) { _fold.node = undefined; return [true, true]; }
+				_fold.node = undefined;
+			}
+			var _r = __GMLCconstantValue(_rootNode, _node.right);
+			if (!_r[0]) return _r;
 			var _b = _r[1];
-			var _typed = _l[2] || _r[2];
-			if (_typed) {
-				_a = int64(_a);
-				_b = int64(_b);
+			var _unsafe = __GMLCconstantFoldUnsafe(_node.op, _a, _b);
+			if (_unsafe != undefined) return [false, undefined, _unsafe, _node, true];
+			if (_node.op == "*") && (is_string(_b)) && (is_numeric(_a)) && (_a * string_byte_length(_b) > __GMLC_FOLD_STRING_LIMIT) return [false];
+			_fold.node = _node;
+			switch (_node.op) {
+				case "&&":  _v = _a && _b; break;
+				case "||":  _v = _a || _b; break;
+				case "^^":  _v = _a ^^ _b; break;
+				case "==":  _v = _a == _b; break;
+				case "!=":  _v = _a != _b; break;
+				case "<":   _v = _a < _b; break;
+				case "<=":  _v = _a <= _b; break;
+				case ">":   _v = _a > _b; break;
+				case ">=":  _v = _a >= _b; break;
+				case "+":   _v = _a + _b; break;
+				case "-":   _v = _a - _b; break;
+				case "*":   _v = _a * _b; break;
+				case "/":   _v = _a / _b; break;
+				case "div": _v = _a div _b; break;
+				case "mod": _v = _a mod _b; break;
+				case "%":   _v = _a % _b; break;
+				case "&":   _v = _a & _b; break;
+				case "|":   _v = _a | _b; break;
+				case "^":   _v = _a ^ _b; break;
+				case "<<":  _v = _a << _b; break;
+				case ">>":  _v = _a >> _b; break;
+				default: _fold.node = undefined; return [false];
 			}
-			try {
-				var _v;
-				switch (_node.op) {
-					case "&&":  return [true, real(_a && _b), false];
-					case "||":  return [true, real(_a || _b), false];
-					case "^^":  return [true, real(_a ^^ _b), false];
-					case "==":  return [true, _a == _b, false];
-					case "!=":  return [true, _a != _b, false];
-					case "<":   return [true, _a < _b, false];
-					case "<=":  return [true, _a <= _b, false];
-					case ">":   return [true, _a > _b, false];
-					case ">=":  return [true, _a >= _b, false];
-					case "+":   _v = _a + _b; break;
-					case "-":   _v = _a - _b; break;
-					case "*":   _v = _a * _b; break;
-					case "/":   if (_b == 0) return [false]; _v = _a / _b; break;
-					case "div": if (_b == 0) return [false]; _v = _a div _b; break;
-					case "mod":
-					case "%":   if (_b == 0) return [false]; _v = _a mod _b; break;
-					case "&":   _v = _a & _b; break;
-					case "|":   _v = _a | _b; break;
-					case "^":   _v = _a ^ _b; break;
-					// the compiler gives 0 for a shift by 64 or more (at run time the count wraps modulo 64)
-					case "<<":  _v = (_b >= 64) ? 0 : _a << _b; break;
-					case ">>":  _v = (_b >= 64) ? 0 : _a >> _b; break;
-					default: return [false];
-				}
-				return _typed ? [true, int64(_v), true] : [true, real(_v), false];
-			}
-			catch (_err) {}
-			return [false];
-		}
+			_fold.node = undefined;
+		break;}
+		default: return [false];
 	}
+	if (is_bool(_v) || is_real(_v) || is_int64(_v) || is_int32(_v) || is_undefined(_v)) return [true, _v];
+	if (is_string(_v)) && (string_byte_length(_v) <= __GMLC_FOLD_STRING_LIMIT) return [true, _v];
 	return [false];
 }
+
 #region jsDoc
-/// @func    __GMLCconstantEmit(_c)
-/// @desc    Returns the value GameMaker emits for a folded constant: int64-typed values stay int64, a whole double
-///          outside the 32-bit range becomes an int64, bools stay bools, everything else is a real.
-/// @param   {Array} _c : A result of __GMLCconstantValue
-/// @returns {Any}
+/// @func    __GMLCconstantFoldUnsafe(_op, _a, _b)
+/// @desc    Why computing _a _op _b while compiling is unsafe, or undefined when it is safe: an operation that ends
+///          GameMaker's runner outright (not a catchable error) is never run, and is an error while compiling.
 #endregion
-function __GMLCconstantEmit(_c) {
-	var _v = _c[1];
-	if (is_bool(_v)) return _v;
-	if (_c[2]) return int64(_v);
-	if (!is_nan(_v)) && (!is_infinity(_v)) && (frac(_v) == 0) && ((_v > 2147483647) || (_v < -2147483648)) return int64(_v);
-	return real(_v);
-}
-#region jsDoc
-/// @func    __GMLCcompileConstantFold(_rootNode, _node)
-/// @desc    Compiles an operator whose operands are all constants into its folded value.
-/// @param   {Struct} _rootNode : The program node
-/// @param   {Struct} _node     : AST node of the operator
-/// @returns {Function|Undefined} the compiled literal, or undefined when _node does not fold
-#endregion
-function __GMLCcompileConstantFold(_rootNode, _node) {
-	var _c = __GMLCconstantValue(_rootNode, _node);
-	if (!_c[0]) return undefined;
-	return method({ value: __GMLCconstantEmit(_c) }, __GMLCexecuteLiteralExpression);
+function __GMLCconstantFoldUnsafe(_op, _a, _b) {
+	// only a count that cuts to an int32 from -1 down to above -2^31 ends the runner: -0.5 cuts to 0 (""), and NaN,
+	// the infinities and -2^31 fail with a catchable error (measured)
+	if (_op == "*") && is_string(_b) && is_numeric(_a) && (_a < 0) && (int64(_a) != 0) && (_a > -2147483648) {
+		return "a string repeated a negative number of times";
+	}
+	// an int64 remainder by an int64 zero, and the smallest int64 divided by -1 in int64, trap the runner
+	// (measured)
+	if ((_op == "mod") || (_op == "%")) && is_int64(_b) && (_b == 0) return "an int64 remainder by zero";
+	if ((_op == "div") || (_op == "mod") || (_op == "%") || (_op == "/")) && is_int64(_b) && (_b == -1)
+	&& (is_int64(_a) || is_real(_a)) && (int64(_a) == __GMLC_INT64_MIN) {
+		return "the smallest int64 divided by -1";
+	}
+	if (_op == "div") && is_int64(_a) && (_a == __GMLC_INT64_MIN) && is_real(_b) && (_b == -1) {
+		return "the smallest int64 divided by -1";
+	}
+	return undefined;
 }
 #endregion
 
 function __GMLCcompileLogicalExpression(_rootNode, _parentNode, _node) {
-	var _folded = __GMLCcompileConstantFold(_rootNode, _node);
-	if (_folded != undefined) return _folded;
-	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileLogicalExpression", "<Missing Error Message>", _node.span);
 	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
@@ -2338,11 +2414,6 @@ function __GMLCexecuteOpNullish() {
 #endregion
 
 function __GMLCcompileUnaryExpression(_rootNode, _parentNode, _node) {
-	if (_node.op == "!") || (_node.op == "~") || (_node.op == "-") {
-		var _folded = __GMLCcompileConstantFold(_rootNode, _node);
-		if (_folded != undefined) return _folded;
-	}
-	
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileUnaryExpression", "<Missing Error Message>", _node.span);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node[$ "argument"]);
 	
@@ -2504,8 +2575,57 @@ function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightEx
 		_output.globals = _rootNode.globals;
 	}
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _rightExpression);
-	
+
+	if (_scope == "Static") && (_key == "toString") return __vanilla_method(_output, __GMLCexecuteSetStaticToString);
 	return __vanilla_method(_output, __GMLCGetScopeSetter(_scope))
+}
+#endregion
+
+#region Call kinds
+// what a call reaches, kept on the call node for its last callee
+enum GMLC_CALL_KIND {
+	GMLC,              // a compiled function or a GMLC method: it runs through its own executor
+	CONSTRUCTOR,       // a compiled constructor called without new
+	BOUND_CONSTRUCTOR, // a compiled constructor bound with method(), called without new
+	NATIVE,            // a GameMaker function or method
+}
+
+function __GMLCcallKind(_func) {
+	if (is_gmlc_constructor(_func)) return GMLC_CALL_KIND.CONSTRUCTOR;
+	if (is_gmlc_method(_func)) return is_gmlc_constructor(method_get_self(_func).func) ? GMLC_CALL_KIND.BOUND_CONSTRUCTOR : GMLC_CALL_KIND.GMLC;
+	if (is_gmlc_program(_func)) return GMLC_CALL_KIND.GMLC;
+	return GMLC_CALL_KIND.NATIVE;
+}
+#endregion
+
+#region Static toString
+// GameMaker calls a struct's toString itself (string(), $"{}") with self and other set to the struct, which GMLC's
+// own self does not follow. A static toString is kept under a hidden key and GameMaker gets an unbound function
+// that runs it with GMLC's self and other set to the struct it was called on.
+#macro __GMLC_STATIC_TO_STRING "__@@gmlc_static_toString@@__"
+function __GMLCexecuteSetStaticToString() {
+	var _value = expression();
+	if (is_gmlc_method(_value)) {
+		parentNode.statics[$ __GMLC_STATIC_TO_STRING] = _value;
+		parentNode.statics[$ key] = __vanilla_method(undefined, __GMLCexecuteStaticToString);
+	}
+	else {
+		parentNode.statics[$ key] = _value;
+	}
+}
+function __GMLCexecuteStaticToString() {
+	var _prevOther = global.gmlc_other_instance;
+	var _prevSelf  = global.gmlc_self_instance;
+	global.gmlc_other_instance = self;
+	global.gmlc_self_instance  = self;
+	var _args = array_create(argument_count);
+	var _i = 0; repeat (argument_count) {
+		_args[_i] = argument[_i];
+	_i++}
+	var _return = method_call(self[$ __GMLC_STATIC_TO_STRING], _args);
+	global.gmlc_other_instance = _prevOther;
+	global.gmlc_self_instance  = _prevSelf;
+	return _return;
 }
 #endregion
 
@@ -2666,8 +2786,8 @@ function __GMLCexecuteStructLiteral() {
 		_struct[$ selfKeys[_k]] = _struct;
 	_k++}
 	
-	//set the statics so they are unique
-	static_set(_struct, {});
+	// the environment's own static struct, in place of GameMaker's shared one that would reach outside the sandbox
+	static_set(_struct, literalStatics);
 	
 	return _struct;
 }
@@ -2689,8 +2809,8 @@ function __GMLCexecuteStructLiteralRepeatedKeys() {
 		_struct[$ selfKeys[_k]] = _struct;
 	_k++}
 	
-	//set the statics so they are unique
-	static_set(_struct, {});
+	// the environment's own static struct, in place of GameMaker's shared one that would reach outside the sandbox
+	static_set(_struct, literalStatics);
 	
 	return _struct;
 }
@@ -2701,6 +2821,7 @@ function __GMLCcompileStructLiteral(_rootNode, _parentNode, _node) {
 	_output.values = array_create(_output.size);
 	_output.bound = [];
 	_output.selfKeys = [];
+	_output.literalStatics = _rootNode.env.__structLiteralStatics;
 	var _seen = {};
 	var _repeated = false;
 	// function expressions in the values are bound to `self`; a function literal that is a value itself is bound to
@@ -2722,7 +2843,7 @@ function __GMLCcompileStructLiteral(_rootNode, _parentNode, _node) {
 		}
 		else if (_entry.value.kind == __GMLC_NodeKind_Identifier) && (_entry.value.name == "self") {
 			// `{ me: self }` stores the new struct in GameMaker, though `self` anywhere else in the value (`self.x`,
-			// `[self]`, `f(self)`) is the creator (measured)
+			// `[self]`, `f(self)`) is the creator
 			_output.values[_i] = __vanilla_method({ value: undefined }, __GMLCexecuteLiteralExpression);
 			array_push(_output.selfKeys, _entry.key);
 		}

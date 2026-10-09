@@ -1,17 +1,10 @@
 #region Lower.gml
 	#region Lower Module
 	/*
-	Purpose: lowering, the stage after the resolver. One walk over the resolved tree:
-	- completes the file's `functions` table: what each function is (`fn_kind`), how it becomes reachable
-	  (`registration`), which `self` a call runs with (`binding`), decided by where it is declared, and the facts the
-	  optimizer and the backends read instead of walking bodies again;
-	- replaces the names whose value is known when compiling (`_GMLINE_`, `_GMFILE_`, `_GMFUNCTION_` and the other
-	  compile-time variables the environment exposes) by their value; writes to them are refused by the resolver;
-	- reports a static whose initialiser reads a local of its own function (GMLC2301): statics initialise when the
-	  function is entered, before the body has set any local.
-	Once every file of a batch is lowered, resolveEnums gives each enum member its value and puts the values in place
-	of every `E.M` (enums exist only while compiling).
-	The tree keeps every statement where the user wrote it: lowering never moves, adds or removes one.
+	Lowering, one walk over the resolved tree: completes the `functions` table (fn_kind, registration, binding),
+	replaces compile-time names (`_GMLINE_`, `_GMFILE_`, `_GMFUNCTION_`, ...) with their values and reports statics
+	that read their own function's locals. resolveEnums then gives every enum member its value.
+	Lowering never moves, adds or removes a statement.
 	*/
 	#endregion
 	function GMLC_Gen_4_Lower(_env) constructor {
@@ -22,11 +15,11 @@
 		fileName = "";
 		diagnostics = []; // GMLC_Diagnostic records of this file
 		__fnNodes = [];   // the function nodes by fn_id, for the context of a compile-time name
-		__gmNames = [];   // GameMaker's name of each function by fn_id, the value of `_GMFUNCTION_`
-		__gmChains = [];  // what each function adds to the names of the functions inside it
+		__gmParts = [];   // what GameMaker's name of each function is made of, by fn_id (__nameFunction, __gmName)
+		__returns = [];   // the return statements of each function by fn_id, nested functions left out
 		__structs = [];   // the numbers of the struct literals being visited, innermost last
 		__structCount = 0;
-		__scriptName = "";
+		__scriptName = undefined; // the file name without folders or extension, made when first read (__scriptNameOf)
 		__enumDecls = {}; // resolveEnums: the batch's enum declarations by name
 
 		#region jsDoc
@@ -43,15 +36,21 @@
 			__fnNodes = array_create(array_length(_ast.functions), undefined);
 			var _file = (sources != undefined) && (ast.span.file < array_length(sources.files)) ? sources.files[ast.span.file] : undefined;
 			fileName = (_file != undefined) ? _file.name : "";
-			__gmNames = array_create(array_length(_ast.functions), undefined);
-			__gmChains = array_create(array_length(_ast.functions), undefined);
+			__gmParts = array_create(array_length(_ast.functions), undefined);
+			__returns = array_create(array_length(_ast.functions), 0);
 			__structs = [];
 			__structCount = 0;
-			// the script's name: the file name without folders or extension
-			__scriptName = filename_name(string_replace_all(fileName, "\\", "/"));
-			var _dot = string_last_pos(".", __scriptName);
-			if (_dot > 0) __scriptName = string_copy(__scriptName, 1, _dot - 1);
-			__gmChains[0] = __scriptName;
+			__scriptName = undefined;
+		};
+
+		// the script's name: the file name without folders or extension
+		static __scriptNameOf = function() {
+			if (__scriptName == undefined) {
+				__scriptName = filename_name(string_replace_all(fileName, "\\", "/"));
+				var _dot = string_last_pos(".", __scriptName);
+				if (_dot > 0) __scriptName = string_copy(__scriptName, 1, _dot - 1);
+			}
+			return __scriptName;
 		};
 		
 		static cleanup = function() {
@@ -59,6 +58,8 @@
 		}
 		
 		static parseAll = function() {
+			ast.enumRefs = []; // the `E.M` of the file and where each is held, for resolveEnums
+			ast.switches = []; // the file's switches, whose labels resolveEnums checks once enum values are known
 			var _body = ast.functions[0];
 			__classify(_body, ast, undefined, "none");
 			_body.facts = new GMLC_FunctionFacts();
@@ -84,7 +85,8 @@
 		static __visit = function(_node, _parent, _key, _index, _info, _role, _static) {
 			var _facts = _info.facts;
 			_facts.node_count++;
-			if (__isStatement(_node, _key)) _facts.statement_count++;
+			// an Empty is a statement only in a statement list, not as an argument hole
+			if (__statementKinds[_node.kind]) || ((_node.kind == __GMLC_NodeKind_Empty) && (_key == "body")) _facts.statement_count++;
 			
 			switch (_node.kind) {
 				case __GMLC_NodeKind_FunctionDecl:
@@ -128,9 +130,18 @@
 					_d++}
 				return;}
 				case __GMLC_NodeKind_StructLiteral: array_push(__structs, __structCount++); break;
+				case __GMLC_NodeKind_Switch: array_push(ast.switches, _node); break;
+				case __GMLC_NodeKind_Index: {
+					// an `E.M`, which resolveEnums later gives its value
+					if (_node.accessor == "Dot") && (_node.object.kind == __GMLC_NodeKind_Identifier)
+					&& (_node.object.symbol != undefined) && (_node.object.symbol.kind == "Enum") {
+						array_push(ast.enumRefs, { parent: _parent, key: _key, index: _index, node: _node });
+					}
+				break;}
 				case __GMLC_NodeKind_With: _facts.contains_with = true; break;
 				case __GMLC_NodeKind_Exit: _facts.contains_exit = true; break;
 				case __GMLC_NodeKind_Try: _facts.contains_try = true; break;
+				case __GMLC_NodeKind_Return: __returns[_info.fn_id]++; break;
 				case __GMLC_NodeKind_Call: {
 					var _callee = _node.callee;
 					// only a global function is reached by its own name
@@ -160,26 +171,40 @@
 		
 		#region jsDoc
 		/// @func    __nameFunction(_inner, _node, _outer, _role, _static)
-		/// @desc    GameMaker's name of a function, the value of `_GMFUNCTION_` in it (measured):
-		///          `gml_Script_<name>` for a global function; otherwise
-		///          `gml_Script_<own part>@<the parts of the functions around it>@<script>`, where a named function's part
-		///          is its name, a function expression's is `anon@<byte offset of function>`, followed by
-		///          `@___struct___<n>` (the n-th struct literal of the file) for a struct literal's method, and preceded by
-		///          `<name>@` for a static's function. The parts of a global function around it are its name.
+		/// @desc    GameMaker's name of a function, the value of `_GMFUNCTION_` in it: `gml_Script_<name>` for a
+		///          global function, else `gml_Script_<own part>@<outer parts>@<script>`. A part is the name, or
+		///          `anon@<byte offset>` for a function expression, plus `@___struct___<n>` for a struct literal's
+		///          method and a `<name>@` prefix for a static's function.
 		/// @self    GMLC_Gen_4_Lower
 		#endregion
 		static __nameFunction = function(_inner, _node, _outer, _role, _static) {
+			// only the parts are kept: the name is written when `_GMFUNCTION_` reads it (__gmName)
 			if (_inner.registration == "global") {
-				__gmNames[_inner.fn_id] = "gml_Script_" + _node.name;
-				__gmChains[_inner.fn_id] = _node.name + "@" + __scriptName;
+				__gmParts[_inner.fn_id] = [true, _node.name]; // GMLC_GM_PART.GLOBAL, NAME
 				return;
 			}
-			var _own = (_node.kind == __GMLC_NodeKind_FunctionExpr) ? "anon@" + string(_node.span.start) : _node.name;
-			if (_role == "struct_value") && (array_length(__structs) > 0) _own += "@___struct___" + string(__structs[array_length(__structs) - 1]);
-			if (_role == "static_value") && (_static != undefined) _own = _static + "@" + _own;
-			var _chain = _own + "@" + (__gmChains[_outer.fn_id] ?? __scriptName);
-			__gmNames[_inner.fn_id] = "gml_Script_" + _chain;
-			__gmChains[_inner.fn_id] = _chain;
+			var _anon = (_node.kind == __GMLC_NodeKind_FunctionExpr);
+			var _struct = ((_role == "struct_value") && (array_length(__structs) > 0)) ? __structs[array_length(__structs) - 1] : undefined;
+			var _stat = (_role == "static_value") ? _static : undefined;
+			__gmParts[_inner.fn_id] = [false, _anon ? _node.span.start : _node.name, _anon, _struct, _stat, _outer.fn_id];
+		};
+
+		// GameMaker's name of a function by fn_id (__nameFunction), undefined before its node is visited
+		static __gmName = function(_id) {
+			var _parts = __gmParts[_id];
+			if (_parts == undefined) return undefined;
+			return "gml_Script_" + (_parts[GMLC_GM_PART.GLOBAL] ? _parts[GMLC_GM_PART.NAME] : __gmChain(_id));
+		};
+
+		// what a function adds to the names of the functions inside it; the script's name for the file's body
+		static __gmChain = function(_id) {
+			var _parts = __gmParts[_id];
+			if (_parts == undefined) return __scriptNameOf();
+			if (_parts[GMLC_GM_PART.GLOBAL]) return _parts[GMLC_GM_PART.NAME] + "@" + __scriptNameOf();
+			var _own = _parts[GMLC_GM_PART.ANON] ? "anon@" + string(_parts[GMLC_GM_PART.NAME]) : _parts[GMLC_GM_PART.NAME];
+			if (_parts[GMLC_GM_PART.STRUCT] != undefined) _own += "@___struct___" + string(_parts[GMLC_GM_PART.STRUCT]);
+			if (_parts[GMLC_GM_PART.STATIC] != undefined) _own = _parts[GMLC_GM_PART.STATIC] + "@" + _own;
+			return _own + "@" + __gmChain(_parts[GMLC_GM_PART.OUTER]);
 		};
 		
 		// the facts of what an expression uses, without its counts, added to a function's
@@ -192,20 +217,22 @@
 			_to.uses_compile_time_names = _to.uses_compile_time_names || _from.uses_compile_time_names;
 		};
 		
-		// whether a node is a statement of a body (an Empty is one only in a statement list, not as an argument hole)
-		static __isStatement = function(_node, _key) {
-			switch (_node.kind) {
-				case __GMLC_NodeKind_FunctionDecl: case __GMLC_NodeKind_ConstructorDecl: case __GMLC_NodeKind_StaticDecl:
-				case __GMLC_NodeKind_VarDeclList: case __GMLC_NodeKind_GlobalVarDecl: case __GMLC_NodeKind_If:
-				case __GMLC_NodeKind_For: case __GMLC_NodeKind_While: case __GMLC_NodeKind_Repeat: case __GMLC_NodeKind_DoUntil:
-				case __GMLC_NodeKind_With: case __GMLC_NodeKind_Switch: case __GMLC_NodeKind_Try: case __GMLC_NodeKind_Break:
-				case __GMLC_NodeKind_Continue: case __GMLC_NodeKind_Exit: case __GMLC_NodeKind_Return: case __GMLC_NodeKind_Throw:
-				case __GMLC_NodeKind_Delete: case __GMLC_NodeKind_ExprStmt:
-				return true;
-				case __GMLC_NodeKind_Empty: return (_key == "body");
-			}
-			return false;
-		};
+		// the node kinds that are statements, by kind number
+		static __statementKinds = (function() {
+			var _kinds = array_create(__GMLC_NodeKind_SIZE, false);
+			var _list = [
+				__GMLC_NodeKind_FunctionDecl, __GMLC_NodeKind_ConstructorDecl, __GMLC_NodeKind_StaticDecl,
+				__GMLC_NodeKind_VarDeclList, __GMLC_NodeKind_GlobalVarDecl, __GMLC_NodeKind_If,
+				__GMLC_NodeKind_For, __GMLC_NodeKind_While, __GMLC_NodeKind_Repeat, __GMLC_NodeKind_DoUntil,
+				__GMLC_NodeKind_With, __GMLC_NodeKind_Switch, __GMLC_NodeKind_Try, __GMLC_NodeKind_Break,
+				__GMLC_NodeKind_Continue, __GMLC_NodeKind_Exit, __GMLC_NodeKind_Return, __GMLC_NodeKind_Throw,
+				__GMLC_NodeKind_Delete, __GMLC_NodeKind_ExprStmt,
+			];
+			var _i = 0; repeat (array_length(_list)) {
+				_kinds[_list[_i]] = true;
+			_i++}
+			return _kinds;
+		})();
 		
 		#region jsDoc
 		/// @func    __identifier(_node, _parent, _key, _index, _info, _static)
@@ -307,37 +334,28 @@
 			_facts.has_statics = (array_length(_info.statics) > 0);
 			var _count = array_length(_body);
 			if (_count > 0) && (_body[_count - 1].kind == __GMLC_NodeKind_Return) {
-				_facts.single_trailing_return = (__countReturns(_body) == 1);
+				_facts.single_trailing_return = (__returns[_info.fn_id] == 1);
 			}
 		};
 		
-		// the return statements of a body, nested functions left out
-		static __countReturns = function(_nodes) {
-			var _count = 0;
-			var _i = 0; repeat (array_length(_nodes)) {
-				var _node = _nodes[_i];
-				switch (_node.kind) {
-					case __GMLC_NodeKind_FunctionDecl:
-					case __GMLC_NodeKind_ConstructorDecl:
-					case __GMLC_NodeKind_FunctionExpr: break;
-					case __GMLC_NodeKind_Return: _count += 1 + __countReturns(_node.children()); break;
-					default: _count += __countReturns(_node.children()); break;
-				}
-			_i++}
-			return _count;
+		// an object event's file as GameMaker names it: `<object>_<event>`, the object being the folder the file is in
+		// (`objects/Object1/Create_0.gml`) or the part before `::` (`Object1::Create_0.gml`, as compile_project names it)
+		static __eventName = function() {
+			var _parts = string_split(string_replace_all(string_replace_all(fileName, "\\", "/"), "::", "/"), "/", true);
+			var _count = array_length(_parts);
+			var _event = _parts[_count - 1];
+			var _dot = string_last_pos(".", _event);
+			if (_dot > 0) _event = string_copy(_event, 1, _dot - 1);
+			return (_count >= 2) ? _parts[_count - 2] + "_" + _event : _event;
 		};
 		
 		#region Enums
 		#region jsDoc
 		/// @func    resolveEnums(_asts, [_sources])
-		/// @desc    Gives every enum member of a batch its int64 value and puts the values in place of every `E.M` of
-		///          those enums, once every stage before has seen them (a macro, a `const` or a `let` setting in a value
-		///          is already a literal). Each value is folded as the optimizer folds constants, with the members known
-		///          so far, exposed enums and built-in constants put in first, and this repeats until nothing changes,
-		///          so a member may use one declared after it or in another file. A member without a value is the one
-		///          before it plus one (0 for the first). A fractional value is truncated toward zero, as in GameMaker.
-		///          A value that is still not known is GMLC0316, one of another type GMLC0313, members that need each
-		///          other GMLC0315; such a member counts as 0.
+		/// @desc    Gives every enum member of a batch its int64 value and puts it in place of every `E.M`. Values are
+		///          folded repeatedly until nothing changes, so a member may use one declared later or in another file;
+		///          a missing value is the previous plus one, a fraction truncates toward zero. Unknown (GMLC0316),
+		///          wrongly typed (GMLC0313) and cyclic (GMLC0315) members count as 0.
 		/// @self    GMLC_Gen_4_Lower
 		/// @param   {Array<Struct.ASTScript>} _asts      : The lowered files of the batch
 		/// @param   {Struct.GMLC_SourceTable} [_sources] : The compile's files, for the positions of errors
@@ -369,52 +387,91 @@
 			_a++}
 			
 			var _left = array_length(_entries);
-			while (_left > 0) {
-				// every member whose value can be found now, again until none can
-				var _changed = true;
-				while (_changed) {
-					_changed = false;
-					var _i = 0; repeat (array_length(_entries)) {
-						var _entry = _entries[_i];
-						if (!_entry.done) && __enumValue(_entry, _values, _sources) {
-							_entry.done = true;
-							_left--;
-							_changed = true;
+			// one try for every member's folding: a member whose value throws is kept as failing and the loop goes on
+			// from where it was (its state lives in this function's locals), so the try is entered again only then
+			env.optimizer.foldBegin();
+			var _resolved = false;
+			while (!_resolved) {
+				try {
+					while (_left > 0) {
+						// every member whose value can be found now, again until none can
+						var _changed = true;
+						while (_changed) {
+							_changed = false;
+							var _i = 0; repeat (array_length(_entries)) {
+								var _entry = _entries[_i];
+								if (!_entry.done) && __enumValue(_entry, _values, _sources) {
+									_entry.done = true;
+									_left--;
+									_changed = true;
+								}
+							_i++}
 						}
-					_i++}
-				}
-				if (_left == 0) break;
-				
-				// the first member that does not wait for another one has a value that is not known; when every one
-				// left waits for another, they need each other
-				var _pick = undefined;
-				var _cycle = true;
-				var _i = 0; repeat (array_length(_entries)) {
-					var _entry = _entries[_i];
-					if (!_entry.done) {
-						var _waits = (_entry.member.init == undefined) || __waitsForMember(_entry.member.init, _values);
-						if (!_waits) {
-							_pick = _entry;
-							_cycle = false;
-							break;
-						}
-						_pick ??= _entry;
+						if (_left == 0) break;
+						
+						// the first member that does not wait for another one has a value that is not known; when every one
+						// left waits for another, they need each other
+						var _pick = undefined;
+						var _cycle = true;
+						var _i = 0; repeat (array_length(_entries)) {
+							var _entry = _entries[_i];
+							if (!_entry.done) {
+								var _waits = (_entry.member.init == undefined) || __waitsForMember(_entry.member.init, _values);
+								if (!_waits) {
+									_pick = _entry;
+									_cycle = false;
+									break;
+								}
+								_pick ??= _entry;
+							}
+						_i++}
+						var _code = _cycle ? "GMLC0315" : ((_pick[$ "notInteger"] == true) ? "GMLC0313" : "GMLC0316");
+						var _args = (_code == "GMLC0313") ? undefined : [_pick.decl.name, _pick.member.name];
+						// said at the member's name
+						var _span = _pick.member.span;
+						array_push(_diagnostics[_pick.file], new GMLC_Diagnostic(_code, new GMLC_Span(_span.file, _span.start, _span.start + string_byte_length(_pick.member.name)), _args));
+						_values[$ _pick.decl.name][$ _pick.member.name] = int64(0);
+						_pick.member.value = int64(0);
+						_pick.done = true;
+						_left--;
 					}
-				_i++}
-				var _code = _cycle ? "GMLC0315" : ((_pick[$ "notInteger"] == true) ? "GMLC0313" : "GMLC0316");
-				var _args = (_code == "GMLC0313") ? undefined : [_pick.decl.name, _pick.member.name];
-				// said at the member's name
-				var _span = _pick.member.span;
-				array_push(_diagnostics[_pick.file], new GMLC_Diagnostic(_code, new GMLC_Span(_span.file, _span.start, _span.start + string_byte_length(_pick.member.name)), _args));
-				_values[$ _pick.decl.name][$ _pick.member.name] = int64(0);
-				_pick.member.value = int64(0);
-				_pick.done = true;
-				_left--;
+					_resolved = true;
+				}
+				catch (_e) {
+					env.optimizer.foldCaught(_e);
+				}
 			}
+			env.optimizer.foldEnd();
 			
-			// the values in place of the references, in every file
+			// the values in place of the references lowering recorded, in every file (a tree lowered elsewhere is walked)
 			var _a = 0; repeat (_count) {
-				__placeEnumValues(_asts[_a], _values);
+				var _refs = _asts[_a][$ "enumRefs"];
+				if (_refs == undefined) {
+					__placeEnumValues(_asts[_a], _values);
+				}
+				else {
+					var _r = 0; repeat (array_length(_refs)) {
+						var _ref = _refs[_r];
+						var _literal = __enumLiteral(_ref.node, _values);
+						if (_literal != undefined) {
+							if (_ref.index != undefined) {
+								_ref.parent[$ _ref.key][_ref.index] = _literal;
+							}
+							else {
+								_ref.parent[$ _ref.key] = _literal;
+							}
+						}
+					_r++}
+					__checkCaseLabels(_asts[_a], _diagnostics[_a]);
+					// and in the file's enum values themselves
+					var _enums = _asts[_a].enums;
+					var _e = 0; repeat (array_length(_enums)) {
+						var _members = _enums[_e].members;
+						var _m = 0; repeat (array_length(_members)) {
+							if (_members[_m].init != undefined) _members[_m].init = __placeEnumValues(_members[_m].init, _values);
+						_m++}
+					_e++}
+				}
 			_a++}
 			return _diagnostics;
 		};
@@ -436,12 +493,7 @@
 			else {
 				if (__waitsForMember(_member.init, _values)) return false;
 				_member.init = __placeEnumValues(_member.init, _values);
-				try {
-					_member.init = env.optimizer.foldExpression(_member.init, _sources);
-				}
-				catch (_e) {
-					// a call that cannot run (a wrong number of arguments) leaves the value unknown
-				}
+				_member.init = env.optimizer.foldExpression(_member.init, _sources);
 				var _constant = __constantOf(_member.init);
 				if (!_constant[0]) return false;
 				_value = __enumInteger(_constant[1]);
@@ -539,6 +591,29 @@
 			return new ASTLiteral(_node.span, "int64", _text, _value, new GMLC_Origin("enum", _name, _node.member, undefined, __memberSpan(_name, _node.member), _node.span));
 		};
 		
+		// two constant labels of one switch with the same value are GMLC2302, as in GameMaker; a label that is not a
+		// constant (a variable) is not compared
+		static __checkCaseLabels = function(_ast, _list) {
+			var _switches = _ast[$ "switches"] ?? [];
+			var _s = 0; repeat (array_length(_switches)) {
+				var _seen = {};
+				var _cases = _switches[_s].cases;
+				var _c = 0; repeat (array_length(_cases)) {
+					var _test = _cases[_c][$ "test"]; // a default has none
+					if (_test != undefined) && (_test.kind == __GMLC_NodeKind_Literal) {
+						var _value = _test.value;
+						var _key = is_string(_value) ? "s:" + _value : (is_numeric(_value) ? "n:" + string_format(real(_value), 0, 17) : undefined);
+						if (_key != undefined) {
+							if (struct_exists(_seen, _key)) {
+								array_push(_list, new GMLC_Diagnostic("GMLC2302", _test.span, [_test.lexeme]));
+							}
+							_seen[$ _key] = true;
+						}
+					}
+				_c++}
+			_s++}
+		};
+		
 		// where a member of the batch is declared, undefined for an exposed enum
 		static __memberSpan = function(_name, _member) {
 			var _decl = __gmlc_struct_get(__enumDecls, _name);
@@ -572,9 +647,10 @@
 			var _at = __position(_node);
 			var _span = _node.span;
 			var _function = __fnNodes[_info.fn_id];
-			// a script's own code outside functions is `gml_GlobalScript_<script>`, as in GameMaker (measured)
-			var _functionName = (_function != undefined) ? (__gmNames[_info.fn_id] ?? _function.name)
-				: ((ast[$ "unitKind"] != "event") ? "gml_GlobalScript_" + __scriptName : _at.fileName);
+			// a script's own code outside functions is `gml_GlobalScript_<script>`, an object event's
+			// `gml_Object_<object>_<event>`
+			var _functionName = (_function != undefined) ? (__gmName(_info.fn_id) ?? _function.name)
+				: ((ast[$ "unitKind"] != "event") ? "gml_GlobalScript_" + __scriptNameOf() : "gml_Object_" + __eventName());
 			var _sourceInfo = {
 				fileName: _at.fileName,
 				functionName: _functionName,
@@ -623,3 +699,7 @@
 		#endregion
 	}
 #endregion
+
+// the parts of a function's GameMaker name, as GMLC_Gen_4_Lower.__nameFunction keeps them (an array, by these places;
+// a global function has only GLOBAL and NAME): NAME is the name, or the byte offset of a function expression (ANON)
+enum GMLC_GM_PART { GLOBAL, NAME, ANON, STRUCT, STATIC, OUTER }

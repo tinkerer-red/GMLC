@@ -1345,8 +1345,6 @@ var _handles = [
 ];
 array_sort(_handles, true);
 
-log("\n\n\n\n\n")
-
 array_foreach(_handles, function(_elem, _ind) {
 	
 	var _spec = __GmlSpec();
@@ -1431,8 +1429,6 @@ array_foreach(_handles, function(_elem, _ind) {
 	
 	show_debug_message(_str);
 })
-
-log("\n\n\n\n\n")
 
 var _struct = __GmlSpec();
 struct_foreach(_struct, function(_key, _value) {

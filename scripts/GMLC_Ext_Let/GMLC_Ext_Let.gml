@@ -1,23 +1,12 @@
 #region Extension: let
-// `let x = 1, y;`: locals seen only from the declaration's block on, including nested blocks. Each is renamed to a
-// local of its own (`__gmlc__let0__x`; a leading `_` of the name is kept: `__gmlc__let0___x`), so two blocks may both have an `x`. A `let` that a function inside its block reads is
-// kept in a box struct made at the start of the block (`var __gmlc__letbox1 = {};`, read as `__gmlc__letbox1.x`), so the block and those
-// functions share it; a block in a loop body makes a fresh box each iteration. Each function between the block and
-// the read is wrapped like a `closure` that captures only the boxes it needs, so a `var` of the enclosing function is
-// not passed on; a function inside `closure(...)` is left to that extension, which captures the box with the other
-// locals. A `let` declared again in its block is the same variable (GMLC2016, a warning, as for `var`): its value
-// becomes a write. A `var` of its name declared where the `let` is seen is GMLC2013. A named function, a constructor,
-// a struct literal's function, a static's function or a function in a parameter default or parent call cannot capture
-// (its `self` would change, or no statement can take the reads of `self`). The top of a script is a block too, the
-// file's: a `let` there is seen by every function of the file, global ones included, and by no other file. One that
-// is never written after its declaration and whose value is a literal is a setting: its reads become the literal. The
-// others that such a function reads are kept in the file's box, `global.__gmlc__filebox__<file path>`, made when the
-// script runs (a global variable is the only place a global function reaches without a capture; the name is the
-// file's own). Any other `let` such a function reads is GMLC2014. A caught name and a
-// static hide a `let` of their name. A captured `let` in a `for` header gets a fresh copy each iteration, as in
-// JavaScript: the loop becomes `for (var next = 0; ; next = 1) { if (next) { box = { i: box.i }; <update> }
-// if (!(<test>)) break; <body> }`, so a function made in one iteration keeps that iteration's value, the update
-// changes the next iteration's copy, and `continue` still runs the update.
+// `let x = 1, y;`: locals seen from the declaration's block on, each renamed to its own local (`__gmlc__let0__x`).
+// A `let` read by a function inside its block lives in a box struct made at the block's start (fresh each loop
+// iteration) that the function captures like a `closure`; in a `for` header each iteration gets its own copy, as in
+// JavaScript. At the top of a script the box is `global.__gmlc__filebox__<file path>`; a `let` there that is never
+// written and holds a literal is a setting whose reads become the literal.
+// Diagnostics: a `let` declared again in its block is the same variable (GMLC2016, warning); a `var` of the same
+// name where the `let` is seen is GMLC2013. A named function, a constructor, a struct literal's or static's function,
+// and a function in a parameter default or parent call cannot capture a `let` (its `self` would change): GMLC2014.
 
 #region jsDoc
 /// @func    GMLC_Ext_Let()

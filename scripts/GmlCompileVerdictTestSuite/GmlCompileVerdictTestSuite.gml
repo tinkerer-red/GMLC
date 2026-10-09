@@ -2,7 +2,7 @@
 // Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-06.
 function GmlCompileVerdictTestSuite() : TestSuite() constructor {
 
-	// a parameter name used twice: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a parameter name used twice: GameMaker 2024.14.4.268 refuses to compile this:
 	//   argument name a already used in function declaration
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a parameter name used twice [GameMaker]", function() {
@@ -14,7 +14,7 @@ function GmlCompileVerdictTestSuite() : TestSuite() constructor {
 return f(1, 2);'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// assigning to pi: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to pi: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Cannot set a constant ("pi") to a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to pi [GameMaker]", function() {
@@ -26,7 +26,7 @@ return f(1, 2);'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// assigning to noone: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to noone: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Cannot set a constant ("noone") to a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to noone [GameMaker]", function() {
@@ -46,7 +46,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC differs from GameMaker");
 	});
 
-	// assigning to instance_count: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to instance_count: GameMaker 2024.14.4.268 refuses to compile this:
 	//   "instance_count" is read-only
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to instance_count [GameMaker]", function() {
@@ -58,7 +58,7 @@ return 1;'); }), "error", "GMLC differs from GameMaker");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// assigning to _GMLINE_: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to _GMLINE_: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Cannot set a constant ("_GMLINE_") to a value
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to _GMLINE_ [GameMaker]", function() {
@@ -70,7 +70,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// writing through an index of _GMFILE_: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// writing through an index of _GMFILE_: GameMaker 2024.14.4.268 refuses to compile this:
 	//   Assignment operator expected
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("writing through an index of _GMFILE_ [GameMaker]", function() {
@@ -82,7 +82,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// a built-in called with too few arguments: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a built-in called with too few arguments: GameMaker 2024.14.4.268 refuses to compile this:
 	//   wrong number of arguments for function string_length
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a built-in called with too few arguments [GameMaker]", function() {
@@ -92,7 +92,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 		assert_equals(case_run(function() { return compile_and_execute(@'return string_length();'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// a built-in called with too many arguments: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a built-in called with too many arguments: GameMaker 2024.14.4.268 refuses to compile this:
 	//   wrong number of arguments for function string_length
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a built-in called with too many arguments [GameMaker]", function() {
@@ -110,7 +110,7 @@ return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 return 1;'); }), "error", "GMLC differs from GameMaker");
 	});
 
-	// a var named like a built-in function: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a var named like a built-in function: GameMaker 2024.14.4.268 refuses to compile this:
 	//   cannot use function / script name for a variable, using "sprite_get_width"
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("a var named like a built-in function [GameMaker]", function() {
@@ -173,7 +173,7 @@ var c = C();
 return 1;'); }), "error", "GMLC differs from GameMaker");
 	});
 
-	// an argument to a built-in that takes none: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// an argument to a built-in that takes none: GameMaker 2024.14.4.268 refuses to compile this:
 	//   wrong number of arguments for function video_get_duration
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("an argument to a built-in that takes none [GameMaker]", function() {
@@ -185,7 +185,7 @@ return 1;'); }), "error", "GMLC differs from GameMaker");
 return video_get_duration(v);'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// a var named like a built-in variable: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// a var named like a built-in variable: GameMaker 2024.14.4.268 refuses to compile this:
 	//   cannot redeclare a builtin variable
 	// The GameMaker fact stays commented out so this case is not written again; GMLC may accept it.
 	// addFact("a var named like a built-in variable [GameMaker]", function() {
@@ -193,7 +193,7 @@ return video_get_duration(v);'); }), "error", "GMLC accepts code GameMaker refus
 	//   return x;
 	// });
 
-	// assigning to a built-in function: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// assigning to a built-in function: GameMaker 2024.14.4.268 refuses to compile this:
 	//   "abs" is read-only function
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("assigning to a built-in function [GameMaker]", function() {
@@ -205,7 +205,7 @@ return video_get_duration(v);'); }), "error", "GMLC accepts code GameMaker refus
 return 1;'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
-	// incrementing a built-in constant: GameMaker 2024.14.4.268 refuses to compile this (measured 2026-10-06):
+	// incrementing a built-in constant: GameMaker 2024.14.4.268 refuses to compile this:
 	//   malformed assignment
 	// The GameMaker fact stays commented out so this case is not written again; GMLC must refuse it too.
 	// addFact("incrementing a built-in constant [GameMaker]", function() {

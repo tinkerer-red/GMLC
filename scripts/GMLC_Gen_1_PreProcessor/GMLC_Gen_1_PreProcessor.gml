@@ -1,11 +1,8 @@
 #region PreProcessor.gml
-// For a batch of files: `collect` reads each file's #macro and enum definitions, regions and @NoOp pragmas (the comment
-// or the statement `gml_pragma("@NoOp")`) and keeps the other significant tokens; one `merge` builds the batch's
-// definitions (the configuration chain picks each macro, duplicates and cycles are errors, enum names are
-// batch-wide); `expand` then writes each file's tokens with every macro use replaced by fresh tokens and gives each
-// enum member's value its macros. Enum references stay as written; lowering gives them their values. It reads no environment, except
-// whether `nameof` is exposed and which language extensions are switched on (a macro definition an extension takes,
-// such as one with parameters, is expanded by that extension).
+// For a batch of files: `collect` reads each file's #macro and enum definitions, regions and @NoOp pragmas; one
+// `merge` builds the batch's definitions (the configuration chain picks each macro); `expand` replaces every macro
+// use with fresh tokens. Enum references stay as written for lowering. The only environment it reads is whether
+// `nameof` is exposed and which language extensions are on.
 
 function GMLC_Gen_1_PreProcessor(_env) constructor {
 	#region Config
@@ -128,7 +125,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				var _def = _macros[_m];
 				var _key = (_def.config ?? "Default") + ":" + _def.name;
 				if (struct_exists(_batch.keys, _key)) {
-					// GameMaker checks only the configuration it builds (measured)
+					// GameMaker checks only the configuration it builds
 					if (array_contains(_configChain, _def.config ?? "Default")) __report("GMLC0303", _def.token, [_def.name]);
 				}
 				else {
@@ -173,11 +170,9 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	
 	#region jsDoc
 	/// @func    expand(_unit, _batch)
-	/// @desc    Writes the unit's tokens with every use of an active macro replaced by copies of its body (nested uses
-	///          too); `Enum.Member` references stay, checked against the batch's enums. `nameof(...)` becomes the written name
-	///          when the environment exposes `nameof`, and nothing inside it is expanded. Sets the program's tokens
-	///          and tables and returns the program. Problems go to `diagnostics`; the caller stops after every file
-	///          of the batch is expanded.
+	/// @desc    Writes the unit's tokens with every active macro use replaced by copies of its body (nested uses too);
+	///          `Enum.Member` references stay, checked against the batch's enums. `nameof(...)` becomes the written
+	///          name when the environment exposes `nameof`. Problems go to `diagnostics`.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct} _unit  : A result of collect
 	/// @param   {Struct} _batch : The result of merge
@@ -190,32 +185,34 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _nameof = env.isFunction("nameof");
 		var _n = array_length(_stream);
 		var _i = 0;
+		var _run = 0; // the plain tokens from here up to _i move together (__moveRun)
 		while (_i < _n) {
 			var _t = _stream[_i];
 			if (_t.kind == __GMLC_TokenKind_Identifier) {
-				// a macro named nameof replaces the operator, as in GameMaker (measured)
-				if (_nameof) && (_t.value == "nameof") && !__gmlc_struct_has(_batch.active, "nameof") && (_i + 1 < _n) && (_stream[_i + 1].value == "(") {
+				// a macro named nameof replaces the operator, as in GameMaker
+				if (_nameof) && (_t.value == "nameof") && !__gmlc_struct_has(_batch.active, "nameof") && (_i + 1 < _n) && (_stream[_i + 1].kind == __GMLC_TokenKind_Op) && (_stream[_i + 1].value == "(") {
+					if (!__moveRun(_withMacros, _stream, _run, _i)) break;
 					_i = __nameof(_stream, _i, _withMacros);
+					_run = _i;
 					continue;
 				}
 				if (__isExpandable(_batch, _t.value)) {
+					if (!__moveRun(_withMacros, _stream, _run, _i)) break;
 					var _def = _batch.active[$ _t.value];
 					if (_def[$ "extension"] != undefined) {
 						_i = _def.extension.expandMacro(self, _batch, _stream, _i, _def, 1, _withMacros, _t);
+						_run = _i;
 						continue;
 					}
 					__emitExpansion(_batch, _t, _def, 1, _withMacros);
 					_i++;
+					_run = _i;
 					continue;
 				}
 			}
-			array_push(_withMacros, _t);
-			if (array_length(_withMacros) > maxExpandedTokens) {
-				__report("GMLC0306", _t);
-				break;
-			}
 			_i++;
 		}
+		if (_i >= _n) __moveRun(_withMacros, _stream, _run, _n);
 		
 		var _program = _unit.program;
 		__checkEnumRefs(_batch, _withMacros);
@@ -234,6 +231,20 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		_program.regions = _unit.regions;
 		_program.pragmas = _unit.pragmas;
 		return _program;
+	};
+
+	// the plain tokens _stream[_from.._to) appended to _out in one copy; false when that passes the most tokens a file
+	// may grow to, reported at the first token past it (each plain token counts as it is written)
+	static __moveRun = function(_out, _stream, _from, _to) {
+		if (_to <= _from) return true;
+		var _before = array_length(_out);
+		array_copy(_out, _before, _stream, _from, _to - _from);
+		if (array_length(_out) > maxExpandedTokens) {
+			array_resize(_out, max(_before, maxExpandedTokens) + 1);
+			__report("GMLC0306", _out[array_length(_out) - 1]);
+			return false;
+		}
+		return true;
 	};
 	#endregion
 	
@@ -260,7 +271,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _nameToken = _tokens[_i];
 		var _config = undefined;
 		// `Config:NAME`, written without spaces
-		if (_i + 2 < _n) && (_tokens[_i + 1].value == ":") && (_tokens[_i + 1].start == _nameToken.end)
+		if (_i + 2 < _n) && (_tokens[_i + 1].kind == __GMLC_TokenKind_Op) && (_tokens[_i + 1].value == ":") && (_tokens[_i + 1].start == _nameToken.end)
 		&& (_tokens[_i + 2].start == _tokens[_i + 1].end) && __isWordText(_tokens[_i + 2].name) {
 			_config = _nameToken.name;
 			_nameToken = _tokens[_i + 2];
@@ -318,7 +329,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			_i++;
 		}
 		var _last = array_length(_body) - 1;
-		if (_last >= 0) && (_body[_last].value == ";") {
+		if (_last >= 0) && (_body[_last].kind == __GMLC_TokenKind_Op) && (_body[_last].value == ";") {
 			__report("GMLC0304", _body[_last], [_nameToken.name]);
 		}
 		array_push(_unit.macros, {
@@ -343,7 +354,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _j = __nextSignificant(_tokens, _i + 1);
 		if (_j < 0) || (_tokens[_j].kind != __GMLC_TokenKind_Identifier) return false;
 		var _k = __nextSignificant(_tokens, _j + 1);
-		return (_k >= 0) && (_tokens[_k].value == "{");
+		return (_k >= 0) && (_tokens[_k].kind == __GMLC_TokenKind_Op) && (_tokens[_k].value == "{");
 	};
 	
 	#region jsDoc
@@ -372,7 +383,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				return _n;
 			}
 			var _t = _tokens[_i];
-			if (_t.value == "}") break;
+			if (_t.kind == __GMLC_TokenKind_Op) && (_t.value == "}") break;
 			
 			var _member = _t;
 			var _good = __isWordText(_member.name);
@@ -382,7 +393,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			// the value: every token up to the comma or closing brace at depth 0
 			var _init = undefined;
 			var _k = __nextSignificant(_tokens, _i);
-			if (_good) && (_k >= 0) && (_tokens[_k].value == "=") {
+			if (_good) && (_k >= 0) && (_tokens[_k].kind == __GMLC_TokenKind_Op) && (_tokens[_k].value == "=") {
 				_init = [];
 				_i = _k + 1;
 			}
@@ -391,9 +402,10 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			while (_i < _n) {
 				var _v = _tokens[_i];
 				if (_v.kind == __GMLC_TokenKind_Newline) || (_v.kind == __GMLC_TokenKind_Comment) { _i++; continue; }
-				if (_depth == 0) && ((_v.value == ",") || (_v.value == "}")) break;
-				if (_v.value == "(") || (_v.value == "[") || (_v.value == "{") _depth++;
-				if (_v.value == ")") || (_v.value == "]") || (_v.value == "}") _depth--;
+				var _op = (_v.kind == __GMLC_TokenKind_Op) ? _v.value : ""; // a string's text is not a bracket
+				if (_depth == 0) && ((_op == ",") || (_op == "}")) break;
+				if (_op == "(") || (_op == "{") || (string_char_at(_op, 1) == "[") _depth++;
+				if (_op == ")") || (_op == "]") || (_op == "}") _depth--;
 				if (_init != undefined) {
 					array_push(_init, _v);
 					_memberEnd = _v[$ "end"];
@@ -416,7 +428,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 					});
 				}
 			}
-			if (_i < _n) && (_tokens[_i].value == ",") _i++;
+			if (_i < _n) && (_tokens[_i].kind == __GMLC_TokenKind_Op) && (_tokens[_i].value == ",") _i++;
 		}
 		_enum.span = new GMLC_Span(_nameToken.file, _enumStart, _tokens[_i][$ "end"]);
 		_i++; // past `}`
@@ -424,7 +436,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		// frequently people put ; after the closing brace
 		while (true) {
 			var _k = __nextSignificant(_tokens, _i);
-			if (_k < 0) || (_tokens[_k].value != ";") break;
+			if (_k < 0) || (_tokens[_k].kind != __GMLC_TokenKind_Op) || (_tokens[_k].value != ";") break;
 			_i = _k + 1;
 		}
 		array_push(_unit.enums, _enum);
@@ -464,7 +476,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _count = array_length(_stream);
 		if (_count > 0) {
 			var _prev = _stream[_count - 1];
-			var _v = _prev.value;
+			var _v = ((_prev.kind == __GMLC_TokenKind_Op) || (_prev.kind == __GMLC_TokenKind_Keyword)) ? _prev.value : "";
 			var _closes = (_v == ";") || (_v == "{") || (_v == "}");
 			if (!_closes) {
 				var _broken = false;
@@ -477,13 +489,13 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			}
 		}
 		var _open = __nextSignificant(_tokens, _i + 1);
-		if (_open < 0) || (_tokens[_open].value != "(") return -1;
+		if (_open < 0) || (_tokens[_open].kind != __GMLC_TokenKind_Op) || (_tokens[_open].value != "(") return -1;
 		var _text = __nextSignificant(_tokens, _open + 1);
 		if (_text < 0) || (_tokens[_text].kind != __GMLC_TokenKind_String) || (_tokens[_text].value != "@NoOp") return -1;
 		var _close = __nextSignificant(_tokens, _text + 1);
-		if (_close < 0) || (_tokens[_close].value != ")") return -1;
+		if (_close < 0) || (_tokens[_close].kind != __GMLC_TokenKind_Op) || (_tokens[_close].value != ")") return -1;
 		var _after = __nextSignificant(_tokens, _close + 1);
-		if (_after >= 0) && (_tokens[_after].value == ";") return _after + 1;
+		if (_after >= 0) && (_tokens[_after].kind == __GMLC_TokenKind_Op) && (_tokens[_after].value == ";") return _after + 1;
 		return _close + 1;
 	};
 	
@@ -630,8 +642,8 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _i = 0; repeat (_n) {
 			var _t = _tokens[_i];
 			if (_t.kind == __GMLC_TokenKind_Identifier) && __gmlc_struct_has(_batch.enums, _t.value)
-			&& (_i + 2 < _n) && (_tokens[_i + 1].value == ".") && __isWordText(_tokens[_i + 2].name)
-			&& ((_i == 0) || (_tokens[_i - 1].value != ".")) {
+			&& (_i + 2 < _n) && (_tokens[_i + 1].kind == __GMLC_TokenKind_Op) && (_tokens[_i + 1].value == ".") && __isWordText(_tokens[_i + 2].name)
+			&& ((_i == 0) || (_tokens[_i - 1].kind != __GMLC_TokenKind_Op) || (_tokens[_i - 1].value != ".")) {
 				if (!__gmlc_struct_has(_batch.enums[$ _t.value].memberIndex, _tokens[_i + 2].name)) {
 					__report("GMLC0314", _tokens[_i + 2], [_t.value, _tokens[_i + 2].name]);
 				}
@@ -680,8 +692,9 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _j = _i + 2;
 		while (_j < _n) {
 			var _t = _stream[_j];
-			if (_t.value == "(") _depth++;
-			if (_t.value == ")") {
+			var _op = (_t.kind == __GMLC_TokenKind_Op) ? _t.value : "";
+			if (_op == "(") _depth++;
+			if (_op == ")") {
 				if (_depth == 0) break;
 				_depth--;
 			}

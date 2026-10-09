@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.SAVE_LOAD, async_load);

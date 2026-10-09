@@ -514,7 +514,7 @@ function __ExistingConstants() {
 	"os_android": os_android,
 	"os_ps4": os_ps4,
 	"os_ps5": os_ps5,
-	// not listed in GmlSpec.xml, but GameMaker knows them on every target (measured)
+	// not listed in GmlSpec.xml, but GameMaker knows them on every target
 	"ps5_gamepad_trigger_effect_state_off": ps5_gamepad_trigger_effect_state_off,
 	"ps5_gamepad_trigger_effect_state_feedback_standby": ps5_gamepad_trigger_effect_state_feedback_standby,
 	"ps5_gamepad_trigger_effect_state_feedback_active": ps5_gamepad_trigger_effect_state_feedback_active,

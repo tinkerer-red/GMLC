@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.AUDIO_PLAYBACK, async_load);

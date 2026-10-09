@@ -1,16 +1,13 @@
 #region AST JSON
 // The JSON form of a syntax tree, for dumps and for trees made outside GMLC. A dump is an envelope:
 //   {"stage": "parsed", "contract_version": 1, "files": [{"id", "name", "project", "text"}...], "root": <node>}
-// Every node is an object with its kind's name under "kind", then "span", the kind's fields in order, then "origin".
-// Records (Span, Symbol, Origin, Region, Pragma, FunctionInfo, FunctionFacts, Diagnostic, Label) are objects with
-// their fields in order.
-// Values are written by their contract type, readable: integers and int64 values as JSON numbers (GameMaker reads one
-// above 2^53 back as an int64), reals with the digits that read back to the same double, and the reals JSON has no
-// number for as strings: "nan", "inf", "-inf". The files carry their text, so a program compiled from a dump still
-// gives the line of an error.
-// Reading is one json_parse: its filter sees every value innermost first, turns each node object into the constructor
-// of its kind and each record into its constructor (by the field that holds it), and converts values to their
-// contract type. Anything the contract does not have is an error.
+// Every node is an object with "kind", "span", its kind's fields in order, then "origin"; records (Span, Symbol,
+// Origin, Diagnostic, ...) are objects with their fields in order. Integers and int64 values are JSON numbers
+// (GameMaker reads one above 2^53 back as an int64), reals keep the digits that read back to the same double, and the
+// reals JSON has no number for are the strings "nan", "inf", "-inf". The files carry their text, so a program compiled
+// from a dump still gives the line of an error.
+// Reading is one json_parse whose filter turns each object into its constructor and each value into its contract
+// type; anything the contract does not have is an error.
 
 #region jsDoc
 /// @func    GMLC_AstContractVersion()
@@ -226,8 +223,8 @@ function __GMLC_jsonNumber(_value) {
 	if (is_int64(_value)) return string(_value);
 	if (is_nan(_value)) return "\"nan\"";
 	if (is_infinity(_value)) return (_value > 0) ? "\"inf\"" : "\"-inf\"";
-	if (_value == 0) return (1 / _value < 0) ? "-0.0" : "0";
-	if (frac(_value) == 0) && (abs(_value) < 9007199254740992) return string(int64(_value));
+	if (__gmlc_is_zero(_value)) return (1 / _value < 0) ? "-0.0" : "0";
+	if (__gmlc_is_whole(_value)) && (abs(_value) < 9007199254740992) return string(int64(_value));
 	return json_stringify(_value);
 }
 

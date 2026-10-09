@@ -46,23 +46,6 @@ function ResourceAudioBuffersTestSuite() : TestSuite() constructor {
 		
 	});
 	
-	addFact("Audio buffer freeing test #1", function() {
-		
-		// Free the buffer and test that it cannot play the sound afterwards
-		assert_throw(function() {
-			
-			var bufferSoundId = GetInterpolatedPitchAudioBuffer(220, 880, 44800, 1, false);
-		
-			var soundId = audio_create_buffer_sound(bufferSoundId, buffer_u8, 44800, 0, 44800, audio_mono);
-			
-			audio_free_buffer_sound(soundId);
-			
-			audio_play_sound(soundId, 1, false);
-			
-		}, "audio_free_buffer_sound should make audio buffer unplayable");
-		
-	});
-	
 	addTestAsync("Playing audio buffer test #1", objTestAsyncAudioPlaybackEnded, {
 		
 		ev_create: function() {

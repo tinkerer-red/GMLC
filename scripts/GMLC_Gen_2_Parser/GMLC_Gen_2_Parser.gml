@@ -1,16 +1,8 @@
 #region Parser.gml
-// GMLC_Gen_2_Parser: the preprocessed tokens of one file to a syntax tree.
-// One node kind per construct, every body a Block, names left unresolved (the resolver binds them), nothing lowered.
-// It reads only the file's tokens and declaration tables, and from the environment only which language extensions
-// are switched on: their hooks parse their constructs, and their rewrites turn them into plain GML once the file is
-// parsed, so the tree it returns has only the node kinds of the AST contract. Binary operators are parsed by
-// precedence climbing over these tiers, loosest first, in the order GameMaker uses (measured):
+// GMLC_Gen_2_Parser: the preprocessed tokens of one file to a syntax tree with names left unresolved. From the
+// environment it reads only which language extensions are on; their rewrites leave only AST contract node kinds.
+// Binary operators use precedence climbing over these tiers, loosest first, in GameMaker's order:
 //   ?:   ??   ||   &&   ^^   == != < <= > >= (and `=` as equality)   | & ^   << >>   + -   * / div mod   prefix   postfix
-// `=` assigns only at the start of a statement, in declarations and in parameter defaults; anywhere else it compares.
-// Every node gets the span of its tokens (a token from a macro or an enum reference counts at its use) and, when its
-// first and last tokens came from the same macro use or enum reference, that origin. Each `@NoOp` pragma gets as
-// its target the first statement that starts after it and every other statement that starts on that statement's
-// line: the whole next line, and with it the bodies of the statements on it (a function, an if, a loop).
 
 function GMLC_Gen_2_Parser(_env) constructor {
 	#region Config
@@ -153,7 +145,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	
 	// a statement an extension parses, at a word one claims; undefined when none does
 	static __extensionStatement = function() {
-		if (currentToken.type != __GMLC_TokenType_Identifier) return undefined;
+		if (currentToken == undefined) || (currentToken.type != __GMLC_TokenType_Identifier) return undefined;
 		var _extension = __gmlc_struct_get(__statementHooks, currentToken.value);
 		return (_extension != undefined) ? _extension.parseStatement(self) : undefined;
 	};
@@ -465,8 +457,18 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				}
 			}
 		}
-		// not an assignment: the rest of an expression that starts with what was parsed
+		// not an assignment: the rest of an expression that starts with what was parsed, which must be a call, `new` or
+		// `++`/`--`, as in GameMaker ("Assignment operator expected"): `x;` is refused, and so is `if (c) ++x;`, which
+		// reads as `if ((c)++) x;`
 		var _expression = parseConditional(_target, _first);
+		switch (_expression.kind) {
+			case __GMLC_NodeKind_Call:
+			case __GMLC_NodeKind_MethodCall:
+			case __GMLC_NodeKind_New:
+			case __GMLC_NodeKind_Update:
+			break;
+			default: __fail("GMLC1006", _first);
+		}
 		return finish(new ASTExprStmt(undefined, _expression), _first);
 	};
 	
@@ -495,13 +497,13 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		advance();
 		var _declarations = [];
 		// a keyword after `var` ends an empty list and starts the next statement, as in GameMaker: `var static x = 1`
-		// is a static (measured: the value lasts between calls) and `var if (a) b = 1;` is an if
+		// is a static (the value lasts between calls) and `var if (a) b = 1;` is an if
 		if (!_isStatic) && (currentToken != undefined) && (currentToken.type == __GMLC_TokenType_Keyword) {
 			return finish(new ASTVarDeclList(undefined, _declarations), _first);
 		}
 		do {
 			var _declFirst = currentToken;
-			// GameMaker takes `then` as the name of a static, not of a var (measured)
+			// GameMaker takes `then` as the name of a static, not of a var
 			var _target = __parseName("a variable name", _isStatic);
 			var _init = undefined;
 			if (isOperator("=")) {
@@ -618,7 +620,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static parseIf = function() {
 		var _first = currentToken;
 		advance();
-		var _test = parseExpression();
+		var _test = parseHeader("if");
 		optional(__GMLC_TokenType_Keyword, "then");
 		var _consequent = parseBody();
 		var _alternate = undefined;
@@ -651,10 +653,31 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		return finish(new ASTFor(undefined, _init, _test, _update, _body), _first);
 	};
 	
+	#region jsDoc
+	/// @func    parseHeader(_keyword)
+	/// @desc    Parses the expression after `if`, `while`, `repeat` or `with`. GameMaker reads `if (c) ++x;` as
+	///          `if ((c)++) x;`, and so does this; a `++` or `--` right after the `)` gets the warning
+	///          GMLC1033, since braces (`if (c) { ++x; }`) are almost always what was meant.
+	/// @self    GMLC_Gen_2_Parser
+	/// @param   {String} _keyword : The statement's keyword, for the message
+	/// @returns {Struct.ASTNode}
+	#endregion
+	static parseHeader = function(_keyword) {
+		var _open = currentToken;
+		var _expression = parseExpression();
+		if (_expression.kind == __GMLC_NodeKind_Update) && !_expression.prefix
+		&& (_open.type == __GMLC_TokenType_Punctuation) && (_open.value == "(")
+		&& (previousToken != undefined) && (previousToken.type == __GMLC_TokenType_Operator)
+		&& ((previousToken.value == "++") || (previousToken.value == "--")) {
+			__report("GMLC1033", previousToken, [previousToken.value, _keyword]);
+		}
+		return _expression;
+	};
+	
 	static parseWhile = function() {
 		var _first = currentToken;
 		advance();
-		var _test = parseExpression();
+		var _test = parseHeader("while");
 		var _body = parseBody();
 		return finish(new ASTWhile(undefined, _test, _body), _first);
 	};
@@ -662,7 +685,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static parseRepeat = function() {
 		var _first = currentToken;
 		advance();
-		var _count = parseExpression();
+		var _count = parseHeader("repeat");
 		var _body = parseBody();
 		return finish(new ASTRepeat(undefined, _count, _body), _first);
 	};
@@ -670,7 +693,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static parseWith = function() {
 		var _first = currentToken;
 		advance();
-		var _target = parseExpression();
+		var _target = parseHeader("with");
 		var _body = parseBody();
 		return finish(new ASTWith(undefined, _target, _body), _first);
 	};
@@ -702,7 +725,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 				var _clause = new ASTCase(undefined, _test, __parseCaseBody());
 			}
 			else if (isKeyword("default")) {
-				// GameMaker uses the last `default` (measured)
+				// GameMaker uses the last `default`
 				if (_hasDefault) __report("GMLC1008", currentToken);
 				_hasDefault = true;
 				advance();

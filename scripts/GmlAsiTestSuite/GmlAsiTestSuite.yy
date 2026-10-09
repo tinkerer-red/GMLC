@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"GMLPromise",
+  "%Name":"GmlAsiTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"GMLPromise",
+  "name":"GmlAsiTestSuite",
   "parent":{
-    "name":"Promise",
-    "path":"folders/_Libraries/Promise.yy",
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

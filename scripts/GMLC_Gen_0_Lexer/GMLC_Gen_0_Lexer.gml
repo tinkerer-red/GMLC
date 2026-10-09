@@ -1,14 +1,8 @@
 #region Lexer
-// GMLC_Gen_0_Lexer: GML source text to tokens.
-// A pure function of the source bytes and a fixed keyword table: it never reads the environment, so the tokens are
-// the same under every exposure level. One `nextToken` switches on the current byte over a UTF-8 buffer of
-// the normalised source; template strings use a mode stack; `#region` lines are one token.
-// Bad input never throws while lexing: it becomes an Illegal token plus a diagnostic, and the first error
-// is thrown once the whole file is lexed.
-//
-// Every token carries its kind, file, byte range and type (kind, file, start, end, ty) and the fields the
-// preprocessor and parser read (type, name, value). Lines and columns come from the file's GMLC_SourceFile when an
-// error needs them.
+// GMLC_Gen_0_Lexer: GML source text to tokens, a pure function of the source bytes that never reads the environment.
+// Bad input becomes an Illegal token plus a diagnostic; the first error is thrown once the whole file is lexed.
+// Tokens carry kind, file, byte range and ty, plus the type, name and value the later stages read; lines and
+// columns come from the file's GMLC_SourceFile when needed.
 
 #macro __GMLC_TokenKind_Eof            0
 #macro __GMLC_TokenKind_Illegal        1
@@ -87,57 +81,58 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		modes = [];
 		pos = 0;
 		
-		var _raw = buffer_create(string_byte_length(_source) + 1, buffer_fixed, 1);
-		buffer_write(_raw, buffer_text, _source);
 		var _rawLen = string_byte_length(_source);
 		
 		if (buf != undefined) buffer_delete(buf);
 		buf = buffer_create(_rawLen + 1, buffer_fixed, 1);
 		
-		var _i = 0;
 		hadBom = (_rawLen >= 3)
-			&& (buffer_peek(_raw, 0, buffer_u8) == 0xEF)
-			&& (buffer_peek(_raw, 1, buffer_u8) == 0xBB)
-			&& (buffer_peek(_raw, 2, buffer_u8) == 0xBF);
-		if (hadBom) _i = 3;
+			&& (string_byte_at(_source, 1) == 0xEF)
+			&& (string_byte_at(_source, 2) == 0xBB)
+			&& (string_byte_at(_source, 3) == 0xBF);
 		
-		var _out = 0;
+		// line by line: each line's bytes are written whole, not byte by byte. A run of CR right before a LF is part of
+		// that one line break; any other CR is a line break of its own.
 		var _crlf = 0;
 		var _lf = 0;
 		lineStarts = [0];
-		while (_i < _rawLen) {
-			var _b = buffer_peek(_raw, _i, buffer_u8);
-			if (_b == 13) {
-				// a run of CR: followed by LF it is one line break, otherwise one line break per CR
-				var _j = _i;
-				while (_j < _rawLen) && (buffer_peek(_raw, _j, buffer_u8) == 13) _j++;
-				if (_j < _rawLen) && (buffer_peek(_raw, _j, buffer_u8) == 10) {
-					buffer_poke(buf, _out, buffer_u8, 10);
-					_out++;
-					array_push(lineStarts, _out);
-					_crlf++;
-					_i = _j + 1;
-				}
-				else {
-					repeat (_j - _i) {
-						buffer_poke(buf, _out, buffer_u8, 10);
-						_out++;
-						array_push(lineStarts, _out);
+		var _lines = string_split(_source, "\n");
+		if (hadBom) _lines[0] = string_delete(_lines[0], 1, 1);
+		var _hasCr = (string_pos("\r", _source) > 0); // most files have none: their lines skip the CR checks
+		var _count = array_length(_lines);
+		var _l = 0; repeat (_count) {
+			var _line = _lines[_l];
+			var _broken = (_l < _count - 1); // a LF follows
+			var _crs = _hasCr ? string_count("\r", _line) : 0;
+			// the run of CR right before the LF, written as that one line break: the line's bytes are written whole
+			// and the buffer steps back over them
+			var _k = 0;
+			if (_crs > 0) && (_broken) {
+				var _bytes = string_byte_length(_line);
+				while (_k < _bytes) && (string_byte_at(_line, _bytes - _k) == 13) _k++;
+			}
+			if (_crs > _k) {
+				// a CR elsewhere in the line is a line break of its own
+				var _parts = string_split(_line, "\r");
+				var _p = 0; repeat (array_length(_parts) - _k) {
+					if (_p > 0) {
+						buffer_write(buf, buffer_u8, 10);
+						array_push(lineStarts, buffer_tell(buf));
 					}
-					_i = _j;
-				}
-				continue;
+					buffer_write(buf, buffer_text, _parts[_p]);
+				_p++}
 			}
-			buffer_poke(buf, _out, buffer_u8, _b);
-			_out++;
-			if (_b == 10) {
-				array_push(lineStarts, _out);
-				_lf++;
+			else {
+				buffer_write(buf, buffer_text, _line);
+				if (_k > 0) buffer_seek(buf, buffer_seek_relative, -_k);
 			}
-			_i++;
-		}
-		buffer_delete(_raw);
-		len = _out;
+			if (_broken) {
+				buffer_write(buf, buffer_u8, 10);
+				array_push(lineStarts, buffer_tell(buf));
+				if (_k > 0) _crlf++; else _lf++;
+			}
+		_l++}
+		len = buffer_tell(buf);
 		crlfDominant = (_crlf > _lf);
 		
 		program = new __GMLC_ProgramTokens(tokens, new GMLC_SourceFile(fileId, fileName, __text(0, len), lineStarts));
@@ -257,8 +252,13 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			case ord("'"): {
 				// a single-quoted string is not GML: Illegal to the closing quote on this line
 				pos++;
-				while (pos < len) && (__byte(pos) != 10) && (__byte(pos) != ord("'")) pos++;
+				__high = false;
+				while (pos < len) && (__byte(pos) != 10) && (__byte(pos) != ord("'")) {
+					if (__byte(pos) >= 0x80) __high = true;
+					pos++;
+				}
 				if (pos < len) && (__byte(pos) == ord("'")) pos++;
+				__utf8Value(_start, ""); // marks the file when its bytes are not UTF-8
 				return __illegal(17, _start);
 			}
 			case ord("\\"): {
@@ -309,11 +309,28 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 	/// @returns {Real} The kind of the token
 	#endregion
 	static lexWord = function(_start) {
-		while (pos < len) && (__isWordByte(__byte(pos))) pos++;
+		// the word's bytes are read in place: this runs for every byte of every name (__isWordByte, __byte)
+		var _p = pos;
+		while (_p < len) {
+			var _b = buffer_peek(buf, _p, buffer_u8);
+			if (!(((_b >= 97) && (_b <= 122)) || ((_b >= 65) && (_b <= 90)) || (_b == 95) || ((_b >= 48) && (_b <= 57)))) break;
+			_p++;
+		}
+		pos = _p;
 		var _word = __text(_start, pos);
 		
-		var _prev = __previousSignificant();
-		var _afterDot = (_prev != undefined) && (_prev.kind == __GMLC_TokenKind_Op) && (_prev.value == ".");
+		// the last token that is not a line break, comment or region
+		var _afterDot = false;
+		var _i = array_length(tokens) - 1;
+		while (_i >= 0) {
+			var _prev = tokens[_i];
+			var _k = _prev.kind;
+			if (_k != __GMLC_TokenKind_Newline) && (_k != __GMLC_TokenKind_Comment) && (_k != __GMLC_TokenKind_Region) {
+				_afterDot = (_k == __GMLC_TokenKind_Op) && (_prev.value == ".");
+				break;
+			}
+			_i--;
+		}
 		if (!_afterDot) {
 			if (__gmlc_struct_has(__keywords, _word)) {
 				return __push(__GMLC_TokenKind_Keyword, __GMLC_TokenType_Keyword, _start, _word);
@@ -711,8 +728,9 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			}
 			return __escapeChar(_v);
 		}
-		// any other character stands for itself (one code point)
-		var _l = __utf8Length(_c);
+		// any other character stands for itself (one code point); a byte that is not UTF-8 is marked like any other
+		if (_c >= 0x80) __high = true;
+		var _l = min(__utf8Length(_c), len - pos);
 		var _piece = __text(pos, pos + _l);
 		pos += _l;
 		return _piece;
@@ -797,6 +815,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 	static __isWordStart = function(_b) {
 		return ((_b >= 65) && (_b <= 90)) || ((_b >= 97) && (_b <= 122)) || (_b == 95);
 	};
+	// the same byte ranges are read in place in lexWord, where they are tested for every byte of every name
 	static __isWordByte = function(_b) { return __isWordStart(_b) || __isDigit(_b); };
 	static __utf8Length = function(_b) {
 		if (_b < 0x80) return 1;
@@ -922,15 +941,6 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		if (_code == 1) program.file.invalidUtf8 = true; // its dumps then replace those bytes
 		var _name = "GMLC" + string_replace_all(string_format(_code, 4, 0), " ", "0");
 		array_push(diagnostics, new GMLC_Diagnostic(_name, new GMLC_Span(fileId, _start, _end), _args));
-	};
-	static __previousSignificant = function() {
-		var _i = array_length(tokens) - 1;
-		while (_i >= 0) {
-			var _k = tokens[_i].kind;
-			if (_k != __GMLC_TokenKind_Newline) && (_k != __GMLC_TokenKind_Comment) && (_k != __GMLC_TokenKind_Region) return tokens[_i];
-			_i--;
-		}
-		return undefined;
 	};
 	#endregion
 }

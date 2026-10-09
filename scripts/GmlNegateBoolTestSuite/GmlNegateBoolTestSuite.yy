@@ -1,12 +1,12 @@
 {
   "$GMScript":"v1",
-  "%Name":"FlexiParseBase",
+  "%Name":"GmlNegateBoolTestSuite",
   "isCompatibility":false,
   "isDnD":false,
-  "name":"FlexiParseBase",
+  "name":"GmlNegateBoolTestSuite",
   "parent":{
-    "name":"Parser",
-    "path":"folders/GMLC/Parser.yy",
+    "name":"Behaviour",
+    "path":"folders/Tests/Behaviour.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -1,1 +1,0 @@
-__handleAsyncEvent(ASYNC_EVENT.NETWORKING, async_load);
