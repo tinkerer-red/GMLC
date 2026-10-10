@@ -8,6 +8,10 @@
 function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	should_optimize = false;
+	// code keeps its line numbers: a pass that cannot keep them is skipped, and no pass moves code to an earlier line
+	preserve_lines = false;
+	// a file of the batch being compiled calls math_set_epsilon
+	__batchEpsilon = false;
 	// on: constants that fail when they run (`real("ab")`, `chr(65.5)`) are warnings and fail at run time, as test code
 	// that expects the failure needs; off: they are compile errors
 	test_mode = false;
@@ -1476,7 +1480,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	// resolves and lowers one file of a batch
 	static __lower_unit = function(_program, _log_name, _ast, _batchGlobals, _diagnostics) {
 		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
-		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
 		var _sources = _program[$ "sources"];
 		resolver.initialize(_ast, _sources, _batchGlobals);
 		_ast = resolver.parseAll();
@@ -1484,23 +1487,30 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		lower.initialize(_ast, _sources);
 		_ast = lower.parseAll();
 		__gather(_diagnostics, lower);
-		if (_prefix != undefined && __log_lower_results) __gmlc_json_save(_prefix + "lowered.json", _ast);
 		return _ast;
 	}
 	
-	// optimizes and compiles one lowered file of a batch whose enums have their values
+	// optimizes and compiles one lowered file of a batch whose enums have their values; returns the optimized tree
 	static __compile_unit = function(_program, _log_name, _ast, _diagnostics) {
 		currentScriptName = __resolve_compile_source_name(_log_name, _program.fileName);
-		var _prefix = (_log_name != undefined) ? (filename_name(_log_name) + "_") : undefined;
 		var _sources = _program[$ "sources"];
 		_ast = __optimize(_ast, _sources, _diagnostics);
-		if (_prefix != undefined && __log_optimizer_results) __gmlc_json_save(_prefix + "optimizer.json", _ast);
 		var _global  = getConstant("global");
 		var _globals = is_struct(_global) ? _global.value : {};
 		compiler.initialize(_ast, _globals, _sources);
 		compiler.parseAll();
+		return _ast;
 	}
 
+	// the debugging dumps of a batch, one file per unit that got that far without an error: `<name><suffix>` holding
+	// the unit's `_field`
+	static __logUnits = function(_units, _field, _suffix) {
+		var _i = 0; repeat (array_length(_units)) {
+			var _value = _units[_i][$ _field];
+			if (_value != undefined) && (_units[_i].error == undefined) __gmlc_json_save(filename_name(_units[_i].name) + _suffix, _value);
+		_i++}
+	}
+	
 	#region jsDoc
 	/// @func    __resolveEnums(_asts, _sources, _lists)
 	/// @desc    Gives the enums of lowered files their values (GMLC_Gen_4_Lower.resolveEnums); each file's diagnostics
@@ -1558,13 +1568,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				_unit.program = lexer.parseAll();
 				__gather(_unit.diagnostics, lexer);
 				_unit.program.sources = _table;
-				if (__log_tokenizer_results) __gmlc_json_save(filename_name(_unit.name) + "_tokenizer.json", _unit.program);
 			}
 			catch (_e) {
 				_unit.error = __withDiagnostics(_e, _unit.diagnostics);
 			}
 			array_push(_units, _unit);
 		_i++}
+		if (__log_tokenizer_results) __logUnits(_units, "program", "_tokenizer.json");
 		
 		// Phase 2: macros and enums of the whole batch, then the expansion of every file
 		var _programs = [];
@@ -1616,13 +1626,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				__gather(_unit.diagnostics, parser);
 				// an object event's top-level functions are methods of the instance, not global functions
 				_unit.ast.unitKind = _unit.kind;
-				if (__log_parser_results) __gmlc_json_save(filename_name(_unit.name) + "_parser.json", _unit.ast);
 				array_push(_parsed, _unit.ast);
 			}
 			catch (_e) {
 				_unit.error = __withDiagnostics(_e, _unit.diagnostics);
 			}
 		_i++}
+		if (__log_parser_results) __logUnits(_live, "ast", "_parser.json");
 		var _globals = undefined;
 		__unitFile = array_length(_table.files);
 		try {
@@ -1646,6 +1656,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 				}
 			}
 		_i++}
+		if (__log_lower_results) __logUnits(_live, "ast", "_lowered.json");
 		
 		// the enums of every file get their values together: a file may use the enum of another
 		var _lowered = [];
@@ -1658,6 +1669,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			}
 		_i++}
 		var _found = lower.resolveEnums(_lowered, _table);
+		// math_set_epsilon anywhere in the batch keeps every file's comparisons of reals unfolded
+		var _epsilon = [];
+		_i = 0; repeat (array_length(_lowered)) {
+			optimizer.__epsilonCalls(_lowered[_i], _epsilon);
+		_i++}
+		__batchEpsilon = (array_length(_epsilon) > 0);
 		_i = 0; repeat (array_length(_owners)) {
 			var _unit = _owners[_i];
 			var _list = _found[_i];
@@ -1679,13 +1696,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			if (_unit.error == undefined) {
 				__unitFile = _unit.program.file.fileId;
 				try {
-					__compile_unit(_unit.program, _unit.name, _unit.ast, _unit.diagnostics);
+					_unit.ast = __compile_unit(_unit.program, _unit.name, _unit.ast, _unit.diagnostics);
 				}
 				catch (_e) {
 					_unit.error = __withDiagnostics(_e, _unit.diagnostics);
 				}
 			}
 		_i++}
+		if (__log_optimizer_results) __logUnits(_live, "ast", "_optimizer.json");
 		
 		_i = 0; repeat (_count) {
 			var _unit = _units[_i];
@@ -1695,6 +1713,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		_i++}
 		array_copy(diagnostics, array_length(diagnostics), _unrouted, 0, array_length(_unrouted));
 		diagnostics = GMLC_SortDiagnostics(diagnostics);
+		__batchEpsilon = false;
 		return _result;
 	}
 	

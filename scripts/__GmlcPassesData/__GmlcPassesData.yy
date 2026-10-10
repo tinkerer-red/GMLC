@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__GmlcPassesData",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__GmlcPassesData",
+  "parent":{
+    "name":"Spec",
+    "path":"folders/GMLC/Spec.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

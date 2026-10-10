@@ -2245,7 +2245,7 @@ function __GMLCexecuteOpBitwiseShiftRight() {
 // Where constant folding is: the node being computed, and the nodes whose computation threw. The optimizer runs its
 // folding inside one try; when a computation throws, it records the node here and starts its walk again, and from
 // then on that node reads as failing without being computed again.
-global.__gmlc_fold = { node: undefined, failed: [], messages: [] };
+global.__gmlc_fold = { node: undefined, failed: [], messages: [], epsilon: false };
 
 // the message of a node whose computation threw, or undefined
 function __GMLCfoldFailure(_node) {
@@ -2284,17 +2284,15 @@ function __GMLCconstantValue(_rootNode, _node) {
 			// `-true` is a bool that holds -1 at run time (it writes "false", prints "1" and is -1 in arithmetic): no
 			// literal holds it, so it stays an expression
 			if (_node.op == "-") && (is_bool(_e[1])) return [false];
+			// the project's Game Options decide how a string converts to an int64
+			if (__GMLCconvertsStringToInt64(_node.op, _e[1], undefined)) return [false];
 			var _failed = __GMLCfoldFailure(_node);
 			if (_failed != undefined) return [false, undefined, _failed, _node, false];
 			var _fold = global.__gmlc_fold;
 			_fold.node = _node;
-			switch (_node.op) {
-				case "!": _v = !_e[1]; break;
-				case "-": _v = -_e[1]; break;
-				case "~": _v = ~_e[1]; break;
-				default: _fold.node = undefined; return [false];
-			}
+			_v = __GMLCunaryValue(_node.op, _e[1]);
 			_fold.node = undefined;
+			if (is_undefined(_v)) return [false];
 		break;}
 		case __GMLC_NodeKind_Logical:
 		case __GMLC_NodeKind_Binary: {
@@ -2314,41 +2312,157 @@ function __GMLCconstantValue(_rootNode, _node) {
 			var _r = __GMLCconstantValue(_rootNode, _node.right);
 			if (!_r[0]) return _r;
 			var _b = _r[1];
+			// a whole-number constant next to an int64 is an integer at run time
+			var _whole_a = __GMLCintegerConstant(_node.op, _a, _b, false);
+			_b = __GMLCintegerConstant(_node.op, _b, _a, true);
+			_a = _whole_a;
+			// the project's Game Options decide how a string converts to an int64
+			if (__GMLCconvertsStringToInt64(_node.op, _a, _b)) return [false];
+			// math_set_epsilon is called somewhere in the compile: a comparison of reals depends on it
+			if (_fold.epsilon) && (__GMLCcomparesReal(_node.op, _a, _b)) return [false];
 			var _unsafe = __GMLCconstantFoldUnsafe(_node.op, _a, _b);
 			if (_unsafe != undefined) return [false, undefined, _unsafe, _node, true];
 			if (_node.op == "*") && (is_string(_b)) && (is_numeric(_a)) && (_a * string_byte_length(_b) > __GMLC_FOLD_STRING_LIMIT) return [false];
 			_fold.node = _node;
-			switch (_node.op) {
-				case "&&":  _v = _a && _b; break;
-				case "||":  _v = _a || _b; break;
-				case "^^":  _v = _a ^^ _b; break;
-				case "==":  _v = _a == _b; break;
-				case "!=":  _v = _a != _b; break;
-				case "<":   _v = _a < _b; break;
-				case "<=":  _v = _a <= _b; break;
-				case ">":   _v = _a > _b; break;
-				case ">=":  _v = _a >= _b; break;
-				case "+":   _v = _a + _b; break;
-				case "-":   _v = _a - _b; break;
-				case "*":   _v = _a * _b; break;
-				case "/":   _v = _a / _b; break;
-				case "div": _v = _a div _b; break;
-				case "mod": _v = _a mod _b; break;
-				case "%":   _v = _a % _b; break;
-				case "&":   _v = _a & _b; break;
-				case "|":   _v = _a | _b; break;
-				case "^":   _v = _a ^ _b; break;
-				case "<<":  _v = _a << _b; break;
-				case ">>":  _v = _a >> _b; break;
-				default: _fold.node = undefined; return [false];
-			}
+			_v = __GMLCbinaryValue(_node.op, _a, _b);
 			_fold.node = undefined;
+			// an operator constant folding does not compute
+			if (is_undefined(_v)) return [false];
 		break;}
 		default: return [false];
 	}
 	if (is_bool(_v) || is_real(_v) || is_int64(_v) || is_int32(_v) || is_undefined(_v)) return [true, _v];
 	if (is_string(_v)) && (string_byte_length(_v) <= __GMLC_FOLD_STRING_LIMIT) return [true, _v];
 	return [false];
+}
+
+#region jsDoc
+/// @func    __GMLCbinaryValue(_op, _a, _b)
+/// @desc    `_a _op _b` computed by GameMaker's own operator: the value model of GMLC for the binary operators
+///          It throws what the operator throws; operations that end the runner are
+///          refused before (__GMLCconstantFoldUnsafe).
+/// @param   {String} _op : The operator (undefined is returned for one constant folding does not compute)
+/// @param   {Any} _a : The left operand
+/// @param   {Any} _b : The right operand
+/// @returns {Any}
+#endregion
+function __GMLCbinaryValue(_op, _a, _b) {
+	switch (_op) {
+		case "&&":  return _a && _b;
+		case "||":  return _a || _b;
+		case "^^":  return _a ^^ _b;
+		case "==":  return _a == _b;
+		case "!=":  return _a != _b;
+		case "<":   return _a < _b;
+		case "<=":  return _a <= _b;
+		case ">":   return _a > _b;
+		case ">=":  return _a >= _b;
+		case "+":   return _a + _b;
+		case "-":   return _a - _b;
+		case "*":   return _a * _b;
+		case "/":   return _a / _b;
+		case "div": return _a div _b;
+		case "mod": return _a mod _b;
+		case "%":   return _a % _b;
+		case "&":   return _a & _b;
+		case "|":   return _a | _b;
+		case "^":   return _a ^ _b;
+		case "<<":  return _a << _b;
+		case ">>":  return _a >> _b;
+	}
+	return undefined;
+}
+
+#region jsDoc
+/// @func    __GMLCunaryValue(_op, _a)
+/// @desc    `_op _a` for `!`, `-` and `~` computed by GameMaker's own operator.
+/// @param   {String} _op : The operator
+/// @param   {Any} _a : The operand
+/// @returns {Any}
+#endregion
+function __GMLCunaryValue(_op, _a) {
+	switch (_op) {
+		case "!": return !_a;
+		case "-": return -_a;
+		case "~": return ~_a;
+	}
+	return undefined;
+}
+
+#region jsDoc
+/// @func    __GMLCintegerConstant(_op, _v, _other, _right)
+/// @desc    The constant operand _v of `_op` as GameMaker's runtime takes it next to the other operand _other: a
+///          whole-number constant or a bool next to an int64 is an integer there (GameMaker compiles it as one), so
+///          +, -, *, div, mod, % and the comparisons compute in int64 (`int64(5) + 1` is an int64, `int64 min < 1`
+///          is false); `/` and the logical operators take it as it is, and so does a zero divisor of div, mod and %
+///          (an int32 zero throws "Divide by zero", an int64 zero would end the runner). A variable holding the same
+///          number is a real.
+/// @param   {String} _op : The operator
+/// @param   {Any} _v : The operand
+/// @param   {Any} _other : The other operand
+/// @param   {Bool} _right : Whether _v is the right operand
+/// @returns {Any}
+#endregion
+function __GMLCintegerConstant(_op, _v, _other, _right) {
+	if (!is_int64(_other)) return _v;
+	switch (_op) {
+		case "+": case "-": case "*": case "div": case "mod": case "%":
+		case "==": case "!=": case "<": case "<=": case ">": case ">=": break;
+		default: return _v;
+	}
+	if (_right) && ((_op == "div") || (_op == "mod") || (_op == "%")) && (is_numeric(_v)) && (_v == 0) return _v;
+	if (is_bool(_v)) return int64(_v);
+	if (is_real(_v)) && (__gmlc_is_whole(_v)) && (abs(_v) < 0x7FFFFFFFFFFFFFFF) return int64(_v);
+	return _v;
+}
+
+#region jsDoc
+/// @func    __GMLCcomparesReal(_op, _a, _b)
+/// @desc    Whether `_a _op _b` is a comparison with a real operand, which uses the epsilon the game sets with
+///          math_set_epsilon (two int64 values compare exactly).
+/// @param   {String} _op : The operator
+/// @param   {Any}    _a  : The left operand
+/// @param   {Any}    _b  : The right operand
+/// @returns {Bool}
+#endregion
+function __GMLCcomparesReal(_op, _a, _b) {
+	switch (_op) {
+		case "==": case "!=": case "<": case "<=": case ">": case ">=": break;
+		default: return false;
+	}
+	return is_real(_a) || is_real(_b);
+}
+
+#region jsDoc
+/// @func    __GMLCconvertsStringToInt64(_op, _a, _b)
+/// @desc    Whether `_a _op _b` (or `_op _a`) converts a string operand to an int64: the bitwise operators do, and the
+///          "Legacy Number Conversion" Game Option decides how ("0.5" is 0 with it and an error without, measured),
+///          so such an operation is never folded.
+/// @param   {String} _op : The operator
+/// @param   {Any} _a : The left (or only) operand
+/// @param   {Any} _b : The right operand, or undefined
+/// @returns {Bool}
+#endregion
+function __GMLCconvertsStringToInt64(_op, _a, _b) {
+	switch (_op) {
+		case "&": case "|": case "^": case "<<": case ">>": case "~":
+			return is_string(_a) || is_string(_b);
+	}
+	return false;
+}
+
+#region jsDoc
+/// @func    __GMLCcutsToSmallestInt64(_a)
+/// @desc    Whether an operand of `div`, `mod`, `%` or `/` is the smallest int64 once cut to an int64 as those operators
+///          cut it: an int64 that is the smallest, or a real that is NaN, an infinity or out of the int64 range
+///          (unlike int64(), which makes NaN 0 and infinity the largest int64; measured).
+/// @param   {Any} _a : The operand
+/// @returns {Bool}
+#endregion
+function __GMLCcutsToSmallestInt64(_a) {
+	if (is_int64(_a)) return (_a == __GMLC_INT64_MIN);
+	if (!is_real(_a)) return false;
+	return is_nan(_a) || is_infinity(_a) || (_a < -9223372036854775807) || (_a > 9223372036854775807) || (int64(_a) == __GMLC_INT64_MIN);
 }
 
 #region jsDoc
@@ -2366,7 +2480,7 @@ function __GMLCconstantFoldUnsafe(_op, _a, _b) {
 	// (measured)
 	if ((_op == "mod") || (_op == "%")) && is_int64(_b) && (_b == 0) return "an int64 remainder by zero";
 	if ((_op == "div") || (_op == "mod") || (_op == "%") || (_op == "/")) && is_int64(_b) && (_b == -1)
-	&& (is_int64(_a) || is_real(_a)) && (int64(_a) == __GMLC_INT64_MIN) {
+	&& __GMLCcutsToSmallestInt64(_a) {
 		return "the smallest int64 divided by -1";
 	}
 	if (_op == "div") && is_int64(_a) && (_a == __GMLC_INT64_MIN) && is_real(_b) && (_b == -1) {

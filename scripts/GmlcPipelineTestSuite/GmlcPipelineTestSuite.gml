@@ -586,6 +586,18 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		assert_equals(_r[5], true, "x != NaN is true at run time");
 	});
 
+	addFact("The optimizer's report finds what changed and changes nothing [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL).enable_optimizer(true);
+		_env.__log_optimizations = 2;
+		assert_equals(executeProgram(_env.compile("var a = 1 + 2; if (false) { a = 9; } return a * 2;")), 6, "logging changed the result");
+		var _changes = [];
+		var _before = { kind: "Binary", span: { file: 0, start: 0 }, op: "+", left: { kind: "Literal", lexeme: "1" }, right: { kind: "Literal", lexeme: "2" } };
+		var _after  = { kind: "Literal", span: { file: 0, start: 0 }, lexeme: "3" };
+		_env.optimizer.__changesBetween([_before, { kind: "Exit" }], [_after, { kind: "Exit" }], _before, _changes);
+		assert_equals(array_length(_changes), 1, "an unchanged node was reported, or the change was missed");
+		assert_equals(_changes[0][1].lexeme, "3", "the change is not the folded literal");
+	});
+
 	addFact("An error carries every diagnostic of the compile [GMLC]", function() {
 		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 		var _error = undefined;

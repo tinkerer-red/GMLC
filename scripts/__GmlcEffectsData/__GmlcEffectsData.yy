@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__GmlcEffectsData",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__GmlcEffectsData",
+  "parent":{
+    "name":"Spec",
+    "path":"folders/GMLC/Spec.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

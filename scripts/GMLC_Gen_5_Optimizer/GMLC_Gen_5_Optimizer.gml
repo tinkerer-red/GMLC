@@ -1,8 +1,9 @@
 #region Optimizer.gml
 	#region Optimizer Module
 	/*
-	Refines the AST for faster execution: constant folding in every compile, plus constant propagation, dead code
-	elimination and strength reduction when optimizing.
+	Refines the AST for faster execution. A pass manager runs the passes of __GmlcPassesData this optimizer implements
+	(constant-fold in every compile; constant-propagate, dead-code and library-call-rewrite too when optimizing), in the
+	order of the schedule's fixed-point step; with no pass registered the tree is left as lowered.
 	*/
 	#endregion
 	
@@ -26,6 +27,18 @@
 		foldSlot = undefined; // where the node constantFolding works on is held
 		mode = GMLC_OPTIMIZE.ALL;
 		diagnostics = []; // GMLC_Diagnostic records of this file: constant operands that always fail
+		passes = []; // the node passes of the fixed-point step running now, in schedule order: {name, run}
+		fixpointCap = 8; // how many times the fixed-point step may sweep the tree (fixpoint_cap of __GmlcPassesData)
+		foldsConstants = false; // whether constant-fold is among them
+		registry = {}; // name to {run, granularity}: the passes the manager applies one function at a time
+		steps = []; // the schedule of this run: {kind, names, legacy, passes}
+		statistics = undefined; // after a run: {unit, rounds, fixpoint_reached, passes: [{name, applications, changed_functions, stats}]}
+		preserveLines = false; // GMLC_Env.preserve_lines: a pass whose mode is disabled is skipped, others keep lines
+		epsilonSet = false; // a unit of the compile calls math_set_epsilon: comparisons of reals are not folded
+		__records = []; // the statistics of each scheduled pass, in schedule order
+		__undo = []; // the slot writes of the application running: [holder, key, index, old]
+		__notes = []; // the manager's diagnostics of the run, added when it completes
+		__tempNext = {}; // fn_id to the next provisional temporary number of that function
 
 		static initialize = function(_ast, _sources = undefined) {
 			ast = _ast;
@@ -38,6 +51,524 @@
 				if (_target != undefined) array_push(noOpTargets, _target);
 			_i++}
 			hasNoOpTargets = (array_length(noOpTargets) > 0);
+			preserveLines = env.preserve_lines;
+			statistics = undefined;
+			__tempNext = {};
+			// math_set_epsilon in this file, or in another file of the batch (GMLC_Env.__batchEpsilon)
+			var _calls = [];
+			__epsilonCalls(_ast, _calls);
+			_i = 0; repeat (array_length(_calls)) {
+				array_push(diagnostics, new GMLC_Diagnostic("GMLC4004", _calls[_i].span));
+			_i++}
+			epsilonSet = (array_length(_calls) > 0) || env.__batchEpsilon;
+			__schedulePasses();
+		};
+		
+		#region jsDoc
+		/// @func    __passImplementation(_name)
+		/// @desc    The function that implements a pass of the pass list in this optimizer, or undefined when it has
+		///          none.
+		/// @self    GMLC_Gen_5_Optimizer
+		/// @param   {String} _name : The pass name
+		/// @returns {Function}
+		#endregion
+		static __passImplementation = function(_name) {
+			switch (_name) {
+				case "constant-fold":        return method(self, constantFolding);
+				case "constant-propagate":   return method(self, constantPropagation);
+				case "dead-code":            return method(self, eliminateDeadCode);
+				case "library-call-rewrite": return method(self, strengthReduction);
+			}
+			return undefined;
+		};
+		
+		#region jsDoc
+		/// @func    __schedulePasses()
+		/// @desc    The pass manager's choice for this run: the passes of the fixed-point step of the pass list
+		///          (__GmlcPassesData) that this optimizer implements, in schedule order; constant folding alone in a
+		///          compile without should_optimize.
+		/// @self    GMLC_Gen_5_Optimizer
+		#endregion
+		static __schedulePasses = function() {
+			var _data = __GmlcPassesData();
+			fixpointCap = _data.fixpoint_cap;
+			passes = [];
+			steps = [];
+			__records = [];
+			foldsConstants = false;
+			var _entries = {};
+			var _i = 0; repeat (array_length(_data.passes)) {
+				_entries[$ _data.passes[_i].name] = _data.passes[_i];
+			_i++}
+			var _recorded = {};
+			var _schedule = _data.schedule;
+			var _s = 0; repeat (array_length(_schedule)) {
+				var _names = _schedule[_s].passes;
+				var _step = { kind: _schedule[_s].step, names: string_join_ext(",", _names), legacy: [], passes: [] };
+				_i = 0; repeat (array_length(_names)) {
+					var _name = _names[_i];
+					var _entry = _entries[$ _name];
+					if (_entry != undefined) && ((mode == GMLC_OPTIMIZE.ALL) || (_name == "constant-fold"))
+					&& ((!preserveLines) || (_entry.preserve_lines != "disabled")) {
+						var _run = __passImplementation(_name);
+						var _managed = registry[$ _name];
+						if (_run != undefined) || (_managed != undefined) {
+							var _record = _recorded[$ _name];
+							if (_record == undefined) {
+								var _stats = {};
+								var _k = 0; repeat (array_length(_entry.stats)) {
+									_stats[$ _entry.stats[_k]] = 0;
+								_k++}
+								_record = { name: _name, applications: 0, changed_functions: 0, stats: _stats, keys: _entry.stats };
+								_recorded[$ _name] = _record;
+								array_push(__records, _record);
+							}
+							if (_run != undefined) {
+								array_push(_step.legacy, { name: _name, run: _run, record: _record });
+								if (_name == "constant-fold") foldsConstants = true;
+							}
+							else {
+								array_push(_step.passes, { name: _name, run: _managed.run, granularity: _entry.granularity, record: _record });
+							}
+						}
+					}
+				_i++}
+				if (array_length(_step.legacy) + array_length(_step.passes) > 0) array_push(steps, _step);
+			_s++}
+		};
+
+		#region jsDoc
+		/// @func    __runSchedule()
+		/// @desc    The pass manager: runs the scheduled steps in order. A `fixpoint` step repeats until no pass
+		///          changes anything or fixpoint_cap rounds have run (GMLC4002); it is skipped when the same group
+		///          reached its fixed point and nothing changed since. `once` and `each` steps apply each pass once.
+		///          The passes this optimizer had before the manager run over the whole tree as one sweep per round.
+		/// @self    GMLC_Gen_5_Optimizer
+		#endregion
+		static __runSchedule = function() {
+			__notes = [];
+			var _r = 0; repeat (array_length(__records)) {
+				var _record = __records[_r];
+				_record.applications = 0;
+				_record.changed_functions = 0;
+				var _k = 0; repeat (array_length(_record.keys)) {
+					_record.stats[$ _record.keys[_k]] = 0;
+				_k++}
+			_r++}
+			var _rounds = 0;
+			var _reached = true;
+			var _converged = undefined; // the group whose fixed point holds, while nothing changed since
+			var _s = 0; repeat (array_length(steps)) {
+				var _step = steps[_s];
+				if (_step.kind == "fixpoint") {
+					if (_converged != _step.names) {
+						var _n = 0;
+						var _changed = false;
+						do {
+							_changed = __round(_step);
+							_n++;
+						}
+						until (!_changed) || (_n >= fixpointCap);
+						_rounds += _n;
+						if (_changed) {
+							_reached = false;
+							_converged = undefined;
+							array_push(__notes, new GMLC_Diagnostic("GMLC4002", ast.span, [fileName(), string(_n)]));
+						}
+						else {
+							_converged = _step.names;
+						}
+					}
+				}
+				else {
+					var _p = 0; repeat (array_length(_step.passes)) {
+						if (__apply(_step.passes[_p])) _converged = undefined;
+					_p++}
+				}
+			_s++}
+			__renumberTemporaries();
+			var _passes = array_create(array_length(__records));
+			_r = 0; repeat (array_length(__records)) {
+				var _record = __records[_r];
+				_passes[_r] = { name: _record.name, applications: _record.applications, changed_functions: _record.changed_functions, stats: variable_clone(_record.stats, 0) };
+			_r++}
+			statistics = { unit: fileName(), rounds: _rounds, fixpoint_reached: _reached, passes: _passes };
+			array_copy(diagnostics, array_length(diagnostics), __notes, 0, array_length(__notes));
+			__notes = [];
+		};
+
+		// one round of a fixed-point step: the older passes in one sweep of the tree, then each managed pass
+		static __round = function(_step) {
+			var _changed = false;
+			if (array_length(_step.legacy) > 0) {
+				passes = _step.legacy;
+				optimization_occured = false;
+				ast = __visit(ast, undefined);
+				var _l = 0; repeat (array_length(passes)) {
+					passes[_l].record.applications++;
+				_l++}
+				if (optimization_occured) _changed = true;
+			}
+			var _p = 0; repeat (array_length(_step.passes)) {
+				if (__apply(_step.passes[_p])) _changed = true;
+			_p++}
+			return _changed;
+		};
+
+		#region jsDoc
+		/// @func    __apply(_pass)
+		/// @desc    Applies a managed pass to every function of the file, each on its own: a pass that throws leaves
+		///          that function as it was (GMLC4001), and with lines preserved a result that prints code above its
+		///          line is undone (GMLC4003). A constant that fails while computed still restarts the run.
+		/// @self    GMLC_Gen_5_Optimizer
+		/// @param   {Struct} _pass : {name, run, granularity, record}
+		/// @returns {Bool} Whether any function changed
+		#endregion
+		static __apply = function(_pass) {
+			var _changed = false;
+			var _record = _pass.record;
+			var _done = -1;
+			while (true) {
+				// the functions are found again after each one, in fn_id order: a change may move or drop them
+				var _units = __units();
+				var _unit = undefined;
+				var _u = 0; repeat (array_length(_units)) {
+					if (_units[_u].fn_id > _done) {
+						_unit = _units[_u];
+						break;
+					}
+				_u++}
+				if (_unit == undefined) break;
+				_done = _unit.fn_id;
+				_record.applications++;
+				__undo = [];
+				var _root = _unit.root;
+				var _cx = __context(_pass, _unit);
+				var _did = false;
+				try {
+					_did = __applyTo(_pass, _unit, _cx);
+				}
+				catch (_e) {
+					if (global.__gmlc_fold.node != undefined) throw _e;
+					__rollback();
+					_unit.root = _root;
+					_did = false;
+					array_push(__notes, new GMLC_Diagnostic("GMLC4001", _root.span, [_pass.name, _unit.name]));
+				}
+				if (_did) && (preserveLines) && (!__keepsLines(_unit.root)) {
+					__rollback();
+					_unit.root = _root;
+					_did = false;
+					array_push(__notes, new GMLC_Diagnostic("GMLC4003", _root.span, [_pass.name, _unit.name]));
+				}
+				if (_did) {
+					__tidy(_unit.root);
+					_record.changed_functions++;
+					_changed = true;
+					// the temporaries the pass made become locals of the function only when its result is kept
+					if (_unit.fn_id < array_length(ast.functions)) && (ast.functions[_unit.fn_id] != undefined) {
+						var _locals = ast.functions[_unit.fn_id].locals;
+						var _l = 0; repeat (array_length(_cx.newLocals)) {
+							if (!array_contains(_locals, _cx.newLocals[_l])) array_push(_locals, _cx.newLocals[_l]);
+						_l++}
+					}
+				}
+			}
+			__undo = [];
+			return _changed;
+		};
+		
+		// the context a managed pass gets: its statistics, the function, the temporaries and the optimizer
+		static __context = function(_pass, _unit) {
+			// inside a struct literal `self` is the new struct
+			var _optimizer = self;
+			return { stats: _pass.record.stats, unit: _unit, optimizer: _optimizer, script: ast, sources: sources, env: env, newLocals: [] };
+		};
+
+		// one application of a pass to one function, by the pass's granularity; whether it changed anything
+		static __applyTo = function(_pass, _unit, _cx) {
+			switch (_pass.granularity) {
+				case "function": {
+					var _new = _pass.run(_unit.root, _cx);
+					if (_new == undefined) return false;
+					__replaceUnit(_unit, _new);
+					return true;
+				}
+				case "block": return __eachBlock(_unit.root, undefined, undefined, undefined, _pass, _cx, true);
+				default:      return __eachExpression(_unit.root, _pass, _cx, true);
+			}
+		};
+
+		// puts a function's new root in place of the old one
+		static __replaceUnit = function(_unit, _new) {
+			if (_unit.holder == undefined) {
+				array_push(__undo, [self, "ast", undefined, ast]);
+				ast = _new;
+			}
+			else {
+				__set(_unit.holder, _unit.key, _unit.index, _new);
+			}
+			_unit.root = _new;
+		};
+
+		// a slot write the manager can undo
+		static __set = function(_holder, _key, _index, _new) {
+			if (_index == undefined) {
+				array_push(__undo, [_holder, _key, undefined, _holder[$ _key]]);
+				_holder[$ _key] = _new;
+			}
+			else {
+				array_push(__undo, [_holder, _key, _index, _holder[$ _key][_index]]);
+				_holder[$ _key][_index] = _new;
+			}
+		};
+
+		// puts back every slot the application running wrote, last first
+		static __rollback = function() {
+			var _i = array_length(__undo) - 1;
+			repeat (array_length(__undo)) {
+				var _entry = __undo[_i];
+				if (_entry[2] == undefined) _entry[0][$ _entry[1]] = _entry[3];
+				else _entry[0][$ _entry[1]][_entry[2]] = _entry[3];
+			_i--}
+			__undo = [];
+		};
+
+		#region jsDoc
+		/// @func    __units()
+		/// @desc    The functions of the file, in fn_id order: the file's body (fn_id 0) and every function node, each
+		///          as {fn_id, name, root, holder, key, index} with the slot that holds its node.
+		/// @self    GMLC_Gen_5_Optimizer
+		/// @returns {Array<Struct>}
+		#endregion
+		static __units = function() {
+			var _out = [{ fn_id: 0, name: fileName(), root: ast, holder: undefined, key: undefined, index: undefined }];
+			__collectUnits(ast, _out);
+			array_sort(_out, function(_a, _b) { return _a.fn_id - _b.fn_id; });
+			return _out;
+		};
+		static __collectUnits = function(_node, _out) {
+			var _slots = _node.childSlots();
+			var _i = 0; repeat (array_length(_slots)) {
+				var _slot = _slots[_i];
+				var _child = _slot.node;
+				if (__isFunctionNode(_child)) {
+					var _info = (_child[$ "fn_id"] != undefined) && (_child.fn_id < array_length(ast.functions)) ? ast.functions[_child.fn_id] : undefined;
+					var _name = (_info != undefined) && (_info.name != undefined) ? _info.name : "a function";
+					array_push(_out, { fn_id: _child[$ "fn_id"] ?? array_length(_out), name: _name, root: _child, holder: _slot.parent, key: _slot.key, index: _slot.index });
+				}
+				__collectUnits(_child, _out);
+			_i++}
+		};
+		static __isFunctionNode = function(_node) {
+			var _kind = _node.kind;
+			return (_kind == __GMLC_NodeKind_FunctionDecl) || (_kind == __GMLC_NodeKind_ConstructorDecl) || (_kind == __GMLC_NodeKind_FunctionExpr);
+		};
+		static __isExpression = function(_node) {
+			var _kind = _node.kind;
+			return (_kind >= __GMLC_NodeKind_Assign) && (_kind <= __GMLC_NodeKind_Nameof) && (_kind != __GMLC_NodeKind_StructEntry);
+		};
+		static __isStatementList = function(_node) {
+			var _kind = _node.kind;
+			return (_kind == __GMLC_NodeKind_Script) || (_kind == __GMLC_NodeKind_Block) || (_kind == __GMLC_NodeKind_Case) || (_kind == __GMLC_NodeKind_Default);
+		};
+
+		// an expression pass on every expression of a function, children first; a nested function is not entered
+		static __eachExpression = function(_node, _pass, _cx, _isRoot) {
+			if (!_isRoot) && (__isFunctionNode(_node)) return false;
+			var _changed = false;
+			var _slots = _node.childSlots();
+			var _i = 0; repeat (array_length(_slots)) {
+				var _slot = _slots[_i];
+				var _child = _slot.node;
+				if (__eachExpression(_child, _pass, _cx, false)) _changed = true;
+				// the child may have been replaced inside: read it again from its slot
+				_child = (_slot.index == undefined) ? _node[$ _slot.key] : _node[$ _slot.key][_slot.index];
+				if (__isExpression(_child)) && ((!hasNoOpTargets) || (!__isNoOp(_child))) {
+					var _new = _pass.run(_child, _cx);
+					if (_new != undefined) {
+						__set(_node, _slot.key, _slot.index, _new);
+						_changed = true;
+					}
+				}
+			_i++}
+			return _changed;
+		};
+
+		// a block pass on every statement list of a function, outermost first; a nested function is not entered
+		static __eachBlock = function(_node, _holder, _key, _index, _pass, _cx, _isRoot) {
+			if (!_isRoot) && (__isFunctionNode(_node)) return false;
+			var _changed = false;
+			if (__isStatementList(_node)) && ((!hasNoOpTargets) || (!__isNoOp(_node))) {
+				var _new = _pass.run(_node, _cx);
+				if (_new != undefined) {
+					if (_holder == undefined) {
+						__replaceUnit(_cx.unit, _new);
+					}
+					else {
+						__set(_holder, _key, _index, _new);
+					}
+					_node = _new;
+					_changed = true;
+				}
+			}
+			var _slots = _node.childSlots();
+			var _i = 0; repeat (array_length(_slots)) {
+				var _slot = _slots[_i];
+				if (__eachBlock(_slot.node, _node, _slot.key, _slot.index, _pass, _cx, false)) _changed = true;
+			_i++}
+			return _changed;
+		};
+
+		// with lines preserved, whether every node of a function starts on or after the line of the node before it
+		static __keepsLines = function(_root) {
+			var _state = { line: 0, kept: true };
+			__linesFrom(_root, _state, true);
+			return _state.kept;
+		};
+		static __linesFrom = function(_node, _state, _isRoot) {
+			if (!_state.kept) return;
+			if (!_isRoot) && (__isFunctionNode(_node)) return;
+			if (_node.span != undefined) && (sources != undefined) {
+				var _line = sources.position(_node.span).line;
+				if (_line < _state.line) {
+					_state.kept = false;
+					return;
+				}
+				_state.line = _line;
+			}
+			var _children = _node.children();
+			var _i = 0; repeat (array_length(_children)) {
+				__linesFrom(_children[_i], _state, false);
+			_i++}
+		};
+
+		// the invariants after a pass changed a function: no block directly inside a block, no empty statement
+		static __tidy = function(_node) {
+			var _slots = _node.childSlots();
+			var _i = 0; repeat (array_length(_slots)) {
+				var _child = _slots[_i].node;
+				if (!__isFunctionNode(_child)) __tidy(_child);
+			_i++}
+			if (!__isStatementList(_node)) return;
+			var _body = _node.body;
+			var _flat = undefined;
+			var _b = 0; repeat (array_length(_body)) {
+				var _statement = _body[_b];
+				var _kind = _statement.kind;
+				if (_kind == __GMLC_NodeKind_Empty) || (_kind == __GMLC_NodeKind_Block) {
+					if (_flat == undefined) {
+						_flat = array_create(_b);
+						array_copy(_flat, 0, _body, 0, _b);
+					}
+					if (_kind == __GMLC_NodeKind_Block) array_copy(_flat, array_length(_flat), _statement.body, 0, array_length(_statement.body));
+				}
+				else if (_flat != undefined) {
+					array_push(_flat, _statement);
+				}
+			_b++}
+			if (_flat != undefined) _node.body = _flat;
+		};
+
+		#region jsDoc
+		/// @func    newTemporary(_cx)
+		/// @desc    A new temporary of the function a pass runs on: `__gmlc_t<N>` with the next provisional number of
+		///          that function, added to its locals. After the schedule they are numbered again from 0 in source
+		///          order (__renumberTemporaries).
+		/// @self    GMLC_Gen_5_Optimizer
+		/// @param   {Struct} _cx : The pass context
+		/// @returns {String} The name
+		#endregion
+		static newTemporary = function(_cx) {
+			var _fn = _cx.unit.fn_id;
+			var _key = string(_fn);
+			var _n = __tempNext[$ _key] ?? 0;
+			__tempNext[$ _key] = _n + 1;
+			var _name = "__gmlc_t" + string(_n);
+			array_push(_cx.newLocals, _name);
+			return _name;
+		};
+
+		#region jsDoc
+		/// @func    __renumberTemporaries()
+		/// @desc    Gives every function's surviving temporaries the numbers 0, 1, ... in source order (the order the
+		///          emitter prints them), skipping a number whose name already appears in a file of the compile or is
+		///          a name the environment knows, so both implementations pick the same gap-free names.
+		/// @self    GMLC_Gen_5_Optimizer
+		#endregion
+		static __renumberTemporaries = function() {
+			if (struct_names_count(__tempNext) == 0) return;
+			var _units = __units();
+			var _u = 0; repeat (array_length(_units)) {
+				var _unit = _units[_u];
+				var _order = [];
+				__temporariesIn(_unit.root, _order, true);
+				if (array_length(_order) > 0) {
+					var _map = {};
+					var _n = 0;
+					var _i = 0; repeat (array_length(_order)) {
+						while (__nameTaken("__gmlc_t" + string(_n))) _n++;
+						_map[$ _order[_i]] = "__gmlc_t" + string(_n);
+						_n++;
+					_i++}
+					__renameTemporaries(_unit.root, _map, true);
+					if (_unit.fn_id < array_length(ast.functions)) {
+						var _info = ast.functions[_unit.fn_id];
+						if (_info != undefined) {
+							var _l = 0; repeat (array_length(_info.locals)) {
+								var _new = _map[$ _info.locals[_l]];
+								if (_new != undefined) _info.locals[_l] = _new;
+							_l++}
+						}
+					}
+				}
+			_u++}
+		};
+		static __isTemporary = function(_name) {
+			return is_string(_name) && string_starts_with(_name, "__gmlc_t");
+		};
+		static __temporariesIn = function(_node, _order, _isRoot) {
+			if (!_isRoot) && (__isFunctionNode(_node)) return;
+			if (_node.kind == __GMLC_NodeKind_Identifier) && (__isTemporary(_node.name)) && (!array_contains(_order, _node.name)) {
+				array_push(_order, _node.name);
+			}
+			var _children = _node.children();
+			var _i = 0; repeat (array_length(_children)) {
+				__temporariesIn(_children[_i], _order, false);
+			_i++}
+		};
+		static __renameTemporaries = function(_node, _map, _isRoot) {
+			// a node may be held in two places: each is renamed once, from the name it had
+			var _found = [];
+			__temporaryNodes(_node, _found, _isRoot);
+			var _i = 0; repeat (array_length(_found)) {
+				var _id = _found[_i];
+				var _new = _map[$ _id.name];
+				if (_new != undefined) {
+					_id.name = _new;
+					if (_id.symbol != undefined) _id.symbol.name = _new;
+				}
+			_i++}
+		};
+		static __temporaryNodes = function(_node, _found, _isRoot) {
+			if (!_isRoot) && (__isFunctionNode(_node)) return;
+			if (_node.kind == __GMLC_NodeKind_Identifier) && (__isTemporary(_node.name)) && (!array_contains(_found, _node)) {
+				array_push(_found, _node);
+			}
+			var _children = _node.children();
+			var _i = 0; repeat (array_length(_children)) {
+				__temporaryNodes(_children[_i], _found, false);
+			_i++}
+		};
+		// a name that appears in a file of the compile, or that the environment knows
+		static __nameTaken = function(_name) {
+			if (struct_exists(env.envSymbols, _name)) return true;
+			if (sources == undefined) return false;
+			var _files = sources.files;
+			var _i = 0; repeat (array_length(_files)) {
+				if (_files[_i] != undefined) && (string_pos(_name, _files[_i].source) > 0) return true;
+			_i++}
+			return false;
 		};
 		
 		static cleanup = function() {
@@ -45,33 +576,106 @@
 		}
 		
 		static parseAll = function() {
-			__reported = {};
+			if (env.__log_optimizations) return __parseAllLogged();
 			__foldGuarded(undefined);
 			__reportFailing();
-			if (env.__log_optimizations) __reportSummary();
 			return ast;
 		}
 		
-		// a change the optimizer made, for GMLC_Env.__log_optimizations: counted by its kind (level 1), each one
-		// printed too (level 2)
-		__reported = {};
-		static __report = function(_text) {
-			var _parts = string_split(_text, " :: ");
-			var _kind = (array_length(_parts) > 1) ? _parts[1] : "other";
-			__reported[$ _kind] = (__reported[$ _kind] ?? 0) + 1;
-			if (env.__log_optimizations >= 2) show_debug_message(_text);
-		};
-		
-		// one line per compile: how many changes of each kind
-		static __reportSummary = function() {
-			var _names = struct_get_names(__reported);
-			if (array_length(_names) == 0) return;
+		// parseAll with GMLC_Env.__log_optimizations on: the tree is written out before and after, and what changed
+		// is printed, one line per compile counting the changed nodes by kind (1), and each change as well (2); the
+		// passes themselves never check for logging
+		static __parseAllLogged = function() {
+			var _before = json_parse(GMLC_AstToJson(ast, sources, "lowered")).root;
+			__foldGuarded(undefined);
+			__reportFailing();
+			var _after = json_parse(GMLC_AstToJson(ast, sources, "optimized")).root;
+			var _changes = [];
+			__changesBetween(_before, _after, _before, _changes);
+			if (array_length(_changes) == 0) return ast;
+			var _counts = {};
+			var _i = 0; repeat (array_length(_changes)) {
+				var _from = _changes[_i][0];
+				var _kind = (is_struct(_from)) && (_from[$ "kind"] != undefined) ? _from.kind : _changes[_i][2].kind;
+				_changes[_i][3] = _kind;
+				_counts[$ _kind] = (_counts[$ _kind] ?? 0) + 1;
+			_i++}
+			if (env.__log_optimizations >= 2) {
+				_i = 0; repeat (array_length(_changes)) {
+					var _change = _changes[_i];
+					var _at = (is_struct(_change[0])) && (_change[0][$ "span"] != undefined) ? _change[0] : _change[2];
+					show_debug_message($"Optimizer :: line {__line(_at)} :: {_change[3]} `{__spanText(_change[0])}` -> `{__spanText(_change[1])}`");
+				_i++}
+			}
+			var _names = struct_get_names(_counts);
 			array_sort(_names, true);
 			var _text = "Optimizer ::";
-			var _i = 0; repeat (array_length(_names)) {
-				_text += " " + _names[_i] + " " + string(__reported[$ _names[_i]]);
+			_i = 0; repeat (array_length(_names)) {
+				_text += " " + _names[_i] + " " + string(_counts[$ _names[_i]]);
 			_i++}
 			show_debug_message(_text + " (" + fileName() + ")");
+			return ast;
+		};
+		
+		// the differences of two trees in their JSON form, as [before, after, the node around them], each as deep as
+		// the trees agree
+		static __changesBetween = function(_a, _b, _around, _out) {
+			if (json_stringify(_a) == json_stringify(_b)) return;
+			if (is_array(_a)) && (is_array(_b)) && (array_length(_a) == array_length(_b)) {
+				var _i = 0; repeat (array_length(_a)) {
+					__changesBetween(_a[_i], _b[_i], _around, _out);
+				_i++}
+				return;
+			}
+			if (is_struct(_a)) && (is_struct(_b)) && (_a[$ "kind"] != undefined) && (_a[$ "kind"] == _b[$ "kind"]) {
+				// the same node: when none of its own values changed, the change is further in
+				var _names = struct_get_names(_a);
+				var _inside = true;
+				var _i = 0; repeat (array_length(_names)) {
+					var _x = _a[$ _names[_i]];
+					if (_names[_i] != "span") && (_names[_i] != "origin") && (!is_struct(_x)) && (!is_array(_x))
+					&& (json_stringify(_x) != json_stringify(_b[$ _names[_i]])) {
+						_inside = false;
+					}
+				_i++}
+				if (_inside) {
+					_i = 0; repeat (array_length(_names)) {
+						if (_names[_i] != "span") && (_names[_i] != "origin") {
+							__changesBetween(_a[$ _names[_i]], _b[$ _names[_i]], _a, _out);
+						}
+					_i++}
+					return;
+				}
+			}
+			array_push(_out, [_a, _b, _around]);
+		};
+		
+		// the source text of a node in JSON form; a literal the optimizer made has its lexeme
+		static __spanText = function(_node) {
+			if (!is_struct(_node)) return (_node == undefined) ? "(nothing)" : json_stringify(_node);
+			if (_node[$ "kind"] == "Literal") && (_node[$ "lexeme"] != undefined) return _node.lexeme;
+			var _span = _node[$ "span"];
+			if (sources == undefined) || (!is_struct(_span)) || (_span.file >= array_length(sources.files)) return _node[$ "kind"] ?? "";
+			var _file = sources.files[_span.file];
+			return (_file != undefined) ? _file.text(_span.start, _span[$ "end"]) : "";
+		};
+		
+		#region jsDoc
+		/// @func    __epsilonCalls(_node, _out)
+		/// @desc    Every reference to math_set_epsilon in a tree, in source order.
+		/// @self    GMLC_Gen_5_Optimizer
+		/// @param   {Struct.ASTNode} _node : The tree
+		/// @param   {Array}          _out  : Where the Identifier nodes go
+		#endregion
+		static __epsilonCalls = function(_node, _out) {
+			if (_node.kind == __GMLC_NodeKind_Identifier) && (_node.name == "math_set_epsilon") {
+				array_push(_out, _node);
+				return;
+			}
+			var _children = _node.children();
+			var _i = 0; repeat (array_length(_children)) {
+				__epsilonCalls(_children[_i], _out);
+			_i++}
 		};
 		
 		// the name of the file being optimized
@@ -194,14 +798,12 @@
 			while (_node_data.node != _start_node) {
 				var _start_node = _node_data.node;
 				
-				_node_data.node = constantFolding(_node_data);
-				if (array_length(__failing) > 0) __dropFailing(_start_node, _node_data.node);
-				if (mode == GMLC_OPTIMIZE.ALL) {
-					_node_data.node = constantPropagation(_node_data);
-					_node_data.node = eliminateDeadCode(_node_data);
-					_node_data.node = strengthReduction(_node_data);
-				}
-				//_node_data.node = optimizeAlternateFunctions(_node_data);
+				// the passes of the fixed-point step, in schedule order
+				var _p = 0; repeat (array_length(passes)) {
+					var _pass = passes[_p];
+					_node_data.node = _pass.run(_node_data);
+					if (_pass.name == "constant-fold") && (array_length(__failing) > 0) __dropFailing(_start_node, _node_data.node);
+				_p++}
 				
 				if (_start_node != _node_data.node) {
 					optimization_occured = true
@@ -239,7 +841,6 @@
 							var _declaration = _declarations[_j];
 							var _constant_data = __constantLocal(_declaration.target, _declaration.init);
 							if (_constant_data != undefined) {
-								if (env.__log_optimizations) __report($"Optimizer :: constantPropagation :: Has found Constant `{_declaration.target.name}` in line ({__line(_declaration)}) `{__lineString(_declaration)}`")
 								if (!__propagateToList(_declarations, _j + 1, _constant_data)) {
 									__propagateToList(_body, _i + 1, _constant_data);
 								}
@@ -254,7 +855,6 @@
 						var _assign = _statement.expression;
 						var _constant_data = __constantLocal(_assign.target, _assign.value);
 						if (_constant_data != undefined) {
-							if (env.__log_optimizations) __report($"Optimizer :: constantPropagation :: Has found Constant `{_assign.target.name}` in line ({__line(_assign)}) `{__lineString(_assign)}`")
 							__propagateToList(_body, _i + 1, _constant_data);
 						}
 					}
@@ -317,7 +917,6 @@
 				case __GMLC_NodeKind_Identifier: {
 					if (__isConstantLocal(_node, _constant_data)) {
 						var _literal = _constant_data.literal;
-						if (env.__log_optimizations) __report($"Optimizer :: constantPropagation :: Could replace `{_node.name}` with `{_literal.lexeme}` in line ({__line(_node)}) `{__lineString(_node)}`")
 						optimization_occured = true;
 						return new ASTLiteral(_node.span, _literal.ty, _literal.lexeme, _literal.value);
 					}
@@ -513,6 +1112,7 @@
 		static foldBegin = function() {
 			var _fold = global.__gmlc_fold;
 			_fold.node = undefined;
+			_fold.epsilon = false;
 			_fold.failed = [];
 			_fold.messages = [];
 		};
@@ -540,6 +1140,7 @@
 		};
 		static __foldGuarded = function(_holder) {
 			foldBegin();
+			global.__gmlc_fold.epsilon = epsilonSet;
 			var _done = false;
 			while (!_done) {
 				try {
@@ -563,15 +1164,10 @@
 			}
 			else if (mode == GMLC_OPTIMIZE.FOLD) {
 				// constant folding alone: one walk, children before their parent, is enough
-				ast = __foldWalk(ast, undefined, undefined, undefined);
+				if (foldsConstants) ast = __foldWalk(ast, undefined, undefined, undefined);
 			}
-			else {
-				// every optimization, until none changes the tree
-				do {
-					optimization_occured = false;
-					ast = __visit(ast, undefined);
-				}
-				until (!optimization_occured);
+			else if (array_length(steps) > 0) {
+				__runSchedule();
 			}
 		};
 		static __foldTree = function(_node, _slot) {
@@ -630,7 +1226,6 @@
 							&& (!__containsNoOp(_node.right))
 							&& (__keepsValue(_node_data, _truthy))
 							{
-								if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use literal of `{_truthy}` in line ({__line(_node)}) `{__lineString(_node)}`")
 								return __literal(_truthy, _node.span);
 							}
 						}
@@ -642,12 +1237,10 @@
 						if (_left[1] == undefined) {
 							var _right = __constantValue(_node.right);
 							if ((!_right[0]) || (__keepsValue(_node_data, _right[1]))) && (!__selfIntoStructEntry(_node_data, _node.right)) {
-								if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse nullish express to right side only in line ({__line(_node)}) `{__lineString(_node)}`")
 								return _node.right;
 							}
 						}
 						else if (!__containsNoOp(_node.right)) && (__keepsValue(_node_data, _left[1])) && (!__selfIntoStructEntry(_node_data, _node.left)) {
-							if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse nullish express to left side only in line ({__line(_node)}) `{__lineString(_node)}`")
 							return _node.left;
 						}
 					}
@@ -657,7 +1250,6 @@
 						// the compiler compiles `+x` as `x`
 						var _argument = __constantValue(_node[$ "argument"]);
 						if (_argument[0]) && (__keepsValue(_node_data, _argument[1])) {
-							if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could remove unary `+` in line ({__line(_node)}) `{__lineString(_node)}`")
 							return _node[$ "argument"];
 						}
 					}
@@ -726,7 +1318,6 @@
 								
 									if (_changed) {
 										array_insert(_new_arr, 0, __literal(script_execute_ext(string, _exec_arr), _node.span))
-										if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use optimize `string` first argument to `{_new_arr[0].value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 										return new ASTCall(_node.span, _node.callee, _new_arr);
 									}
 								}
@@ -749,7 +1340,6 @@
 											_changed = true;
 											
 											var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
-											if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use optimize a `string_concat` argument to `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 											var _struct = __literal(_value, _arr[_i].span)
 											
 											array_delete(_arr, _i, 2)
@@ -783,7 +1373,6 @@
 											_changed = true;
 											
 											var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
-											if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use optimize a `string_join` argument to `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
 											var _struct = __literal(_value, _arr[_i].span);
 											
 											array_delete(_arr, _i, 2)
@@ -863,17 +1452,14 @@
 					if (_test[0]) && (is_numeric(_test[1])) {
 						if (_test[1]) {
 							if (_node.alternate == undefined) || (!__containsNoOp(_node.alternate)) {
-								if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `true` block only in line ({__line(_node)}) `{__lineString(_node)}`")
 								return _node.consequent;
 							}
 						}
 						else if (!__containsNoOp(_node.consequent)) {
 							if (_node.alternate != undefined) {
-								if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `if` statement to `else` block only in line ({__line(_node)}) `{__lineString(_node)}`")
 								return _node.alternate;
 							}
 							else {
-								if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could remove `if` statement in line ({__line(_node)}) `{__lineString(_node)}`")
 								return new ASTEmpty(_node.span);
 							}
 						}
@@ -886,7 +1472,6 @@
 						&& (!__containsNoOp(_node.body)) && ((_node.update == undefined) || (!__containsNoOp(_node.update)))
 						{
 							// the init still runs once
-							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `for` by keeping only its init in line ({__line(_node)}) `{__lineString(_node)}`")
 							return _node.init ?? new ASTEmpty(_node.span);
 						}
 					}
@@ -895,7 +1480,6 @@
 					if (_node.test != undefined) {
 						var _test = __constantValue(_node.test);
 						if (_test[0]) && (is_numeric(_test[1])) && (!_test[1]) && (!__containsNoOp(_node.body)) {
-							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `while` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
 							return new ASTEmpty(_node.span);
 						}
 					}
@@ -904,7 +1488,6 @@
 					if (_node.count != undefined) {
 						var _count = __constantValue(_node.count);
 						if (_count[0]) && (is_numeric(_count[1])) && (_count[1] <= 0) && (!__containsNoOp(_node.body)) {
-							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `repeat` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
 							return new ASTEmpty(_node.span);
 						}
 					}
@@ -917,7 +1500,6 @@
 					var _target = __constantValue(_node.target);
 					if (_target[0]) && (is_numeric(_target[1])) && (!__containsNoOp(_node.body)) {
 						if (_target[1] == noone) {
-							if (env.__log_optimizations) __report($"Optimizer :: eliminateDeadCode :: Could optimize `with` by removing it entirely in line ({__line(_node)}) `{__lineString(_node)}`")
 							return new ASTEmpty(_node.span);
 						}
 					}
@@ -1256,7 +1838,10 @@
 				_lexeme = "undefined";
 			}
 			else {
+				// no literal spells -0, and an exponent form is not known to compile: such a value is not folded
+				if (_value == 0) && (1 / _value < 0) return undefined;
 				_lexeme = __realLexeme(_value);
+				if (string_pos("e", _lexeme) > 0) return undefined;
 			}
 			return new ASTLiteral(_span, _ty, _lexeme, _value);
 		};
@@ -1265,7 +1850,8 @@
 		static __realLexeme = function(_value) {
 			if (!is_real(_value)) return string(_value);
 			// NaN and the infinities are not whole: __gmlc_real_text names them
-			if (__gmlc_is_whole(_value)) && (abs(_value) < 9007199254740992) return string(int64(_value));
+			// a whole number of 2^31 or more is written with .0, which GameMaker reads as a real, not an int64
+			if (__gmlc_is_whole(_value)) && (abs(_value) < 9007199254740992) return string(int64(_value)) + ((abs(_value) >= 2147483648) ? ".0" : "");
 			return __gmlc_real_text(_value);
 		};
 		
@@ -1365,8 +1951,7 @@
 			}
 			var _value = _constant[1];
 
-			if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
-			return __literal(_value, _node.span);
+			return __literal(_value, _node.span) ?? _node;
 		};
 		
 		// a ternary with a constant condition becomes the branch it takes
@@ -1384,10 +1969,8 @@
 			if (__selfIntoStructEntry(_node_data, _taken)) return _node;
 			
 			if (_test[1]) {
-				if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse ternary expression to left side in line ({__line(_node)}) `{__lineString(_node)}`")
 			}
 			else {
-				if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could collapse ternary expression to right side in line ({__line(_node)}) `{__lineString(_node)}`")
 			}
 			return _taken;
 		};
@@ -1433,6 +2016,9 @@
 				_new_arr[_i] = _arr[_i].value;
 			_i+=1;}//end repeat loop
 
+			// the project's Game Options decide how int64() converts a string
+			if (_script == int64) && (is_string(_new_arr[0])) return _node;
+
 			// a string_repeat whose length passes int32 fails whenever it runs
 			if (_script == string_repeat) {
 				var _repeatFails = __gmlc_string_repeat_failure(_new_arr);
@@ -1470,8 +2056,7 @@
 			if (is_string(_value)) && (__GMLC_lossyUtf8(_value) != _value) return _node;
 			if (foldSlot != undefined) && (foldSlot.node == _node) && (!__keepsValue(foldSlot, _value)) return _node;
 			
-			if (env.__log_optimizations) __report($"Optimizer :: constantFolding :: Could use literal of `{_value}` in line ({__line(_node)}) `{__lineString(_node)}`")
-			return __literal(_value, _node.span);
+			return __literal(_value, _node.span) ?? _node;
 		}
 		
 		#endregion
