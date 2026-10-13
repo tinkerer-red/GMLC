@@ -337,8 +337,8 @@ function __GMLC_jsonNewline(_w) {
 #region Reader
 #region jsDoc
 /// @func    GMLC_AstFromJson(_text)
-/// @desc    Reads a dump written with GMLC_AstToJson: the envelope with the tree made of node constructors and the
-///          files as a source table. Throws when the contract version differs or the dump has anything the contract
+/// @desc    Reads a dump written with GMLC_AstToJson: the envelope with the tree (an array of trees for a batch of
+///          files) made of node constructors and the files as a source table. Throws when the contract version differs or the dump has anything the contract
 ///          does not.
 /// @param   {String} _text : The JSON
 /// @returns {Struct} {stage, sources, root}
@@ -350,9 +350,14 @@ function GMLC_AstFromJson(_text) {
 	if (_envelope[$ "contract_version"] != GMLC_AstContractVersion()) {
 		__gmlc_internal_error($"the AST dump has contract version {_envelope[$ "contract_version"]}, GMLC reads {GMLC_AstContractVersion()}");
 	}
-	if (!is_instanceof(_envelope[$ "root"], ASTNode)) {
-		__gmlc_internal_error("the AST dump has no tree under \"root\"");
-	}
+	// one tree, or one per file of a batch
+	var _root = _envelope[$ "root"];
+	var _trees = is_array(_root) ? _root : [_root];
+	var _t = 0; repeat (array_length(_trees)) {
+		if (!is_instanceof(_trees[_t], ASTNode)) {
+			__gmlc_internal_error("the AST dump has no tree under \"root\"");
+		}
+	_t++}
 	var _sources = new GMLC_SourceTable();
 	var _files = _envelope[$ "files"] ?? [];
 	var _i = 0; repeat (array_length(_files)) {

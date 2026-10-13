@@ -74,7 +74,8 @@ function GMLC_SourceFile(_id, _name, _source, _lineStarts = undefined, _project 
 		var _count = array_length(lineStarts);
 		if (_line < 1) || (_line > _count) return "";
 		var _text = (_line <= array_length(__lineTexts)) ? __lineTexts[_line - 1] : undefined;
-		if (_text == undefined) {
+		// a line past the cached ones leaves the places before it holding 0, not text
+		if (!is_string(_text)) {
 			var _start = lineStarts[_line - 1];
 			var _end = (_line < _count) ? lineStarts[_line] - 1 : byteLength();
 			_text = __GMLC_byteCopy(source, _start, _end);

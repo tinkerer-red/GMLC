@@ -1281,7 +1281,7 @@ function __GMLCexecuteTryCatchFinally() {
 			__GMLCunwindTo(_depth);
 			global.gmlc_self_instance = _self;
 			global.gmlc_other_instance = _other;
-			if (finallyBlock != undefined) finallyBlock();
+			if (finallyBlock != undefined) __GMLCrunFinally(parentNode, finallyBlock);
 		}
 		return;
 	}
@@ -1298,8 +1298,17 @@ function __GMLCexecuteTryCatchFinally() {
 		catchBlock()
 	}
 	finally {
-		if (finallyBlock != undefined) finallyBlock();
+		if (finallyBlock != undefined) __GMLCrunFinally(parentNode, finallyBlock);
 	}
+}
+
+// a finally block runs to its end after a return, break or continue left the try (the pending jump is set aside
+// while it runs, then goes on unless the finally made its own)
+function __GMLCrunFinally(_parentNode, _finallyBlock) {
+	var _mask = _parentNode.flowMask;
+	_parentNode.flowMask = FLOW_MASK.EMPTY;
+	_finallyBlock();
+	if (_parentNode.flowMask == FLOW_MASK.EMPTY) _parentNode.flowMask = _mask;
 }
 function __GMLCcompileTryCatchFinally(_rootNode, _parentNode, _node) {
     var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileTryCatchFinally", "<Missing Error Message>", _node.span);
@@ -1964,83 +1973,38 @@ function __GMLCcompileAssignmentExpression(_rootNode, _parentNode, _node) {
 		}
 		else {
 			
-			// A dot target or a rooted array path is evaluated once (GameMaker evaluation order, see
-			// __GMLCarrayTargetIsRooted); every other accessor is read and then written, evaluating keys and
-			// target again for the write.
-			var _isDot = (_accessor == "Dot");
-			if (_isDot)
-			|| ((_accessor == "Array") && __GMLCarrayTargetIsRooted(_target.object)) {
-				var _apply = undefined; // ??= is handled by the executor
-				switch (_node.op) {
-					case "+=": _apply = __GMLCcompoundPlus;       break;
-					case "-=": _apply = __GMLCcompoundMinus;      break;
-					case "*=": _apply = __GMLCcompoundMultiply;   break;
-					case "/=": _apply = __GMLCcompoundDivide;     break;
-					case "^=": _apply = __GMLCcompoundBitwiseXOR; break;
-					case "&=": _apply = __GMLCcompoundBitwiseAND; break;
-					case "|=": _apply = __GMLCcompoundBitwiseOR;  break;
-					case "%=": _apply = __GMLCcompoundMod;        break;
-				}
-				var _once = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Compound", "<Missing Error Message>", _node.span);
-				_once.target = __GMLCcompileExpression(_rootNode, _parentNode, _target.object);
-				_once.key    = (_isDot) ? _target.member : __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
-				_once.right  = __GMLCcompileExpression(_rootNode, _parentNode, _node.value);
-				_once.apply  = _apply;
-				return __vanilla_method(_once, (_isDot) ? __GMLCexecuteCompoundDot : __GMLCexecuteCompoundArrayRooted);
+			// the target and the keys are evaluated once, then the value is read, combined and written back
+			var _apply = undefined; // ??= is handled by the executor
+			switch (_node.op) {
+				case "+=": _apply = __GMLCcompoundPlus;       break;
+				case "-=": _apply = __GMLCcompoundMinus;      break;
+				case "*=": _apply = __GMLCcompoundMultiply;   break;
+				case "/=": _apply = __GMLCcompoundDivide;     break;
+				case "^=": _apply = __GMLCcompoundBitwiseXOR; break;
+				case "&=": _apply = __GMLCcompoundBitwiseAND; break;
+				case "|=": _apply = __GMLCcompoundBitwiseOR;  break;
+				case "%=": _apply = __GMLCcompoundMod;        break;
 			}
-			
-			//get the accurate opperator function
-			var _func = __GMLCcompoundExecutor(_node.op);
-			
-			var _getter = undefined;
-			var _setter = undefined;
+			var _once = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Compound", "<Missing Error Message>", _node.span);
+			_once.target = __GMLCcompileExpression(_rootNode, _parentNode, _target.object);
+			_once.right  = __GMLCcompileExpression(_rootNode, _parentNode, _node.value);
+			_once.apply  = _apply;
 			switch (_accessor) {
-				case "Array":  _getter = __GMLCexecuteArrayGet       ; _setter = __GMLCexecuteArraySet       ; break;
-				case "Grid":   _getter = __GMLCexecuteGridGet        ; _setter = __GMLCexecuteGridSet        ; break;
-				case "List":   _getter = __GMLCexecuteListGet		 ; _setter = __GMLCexecuteListSet		 ; break;
-				case "Map":    _getter = __GMLCexecuteMapGet		 ; _setter = __GMLCexecuteMapSet		 ; break;
-				case "Struct": _getter = __GMLCexecuteStructGet      ; _setter = __GMLCexecuteStructSet      ; break;
+				case "Dot":
+					_once.key = _target.member;
+					return __vanilla_method(_once, __GMLCexecuteCompoundDot);
+				case "Grid":
+					_once.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
+					_once.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _keys[1]);
+					return __vanilla_method(_once, __GMLCexecuteCompoundGrid);
 			}
-			
-			
-			//compile the getter
-			var _output0 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Getter", "<Missing Error Message>", _node.span);
-			_output0.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target.object);
-			_output0.rooted     = false;
-			if (_accessor == "Grid") {
-				_output0.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
-				_output0.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _keys[1]);
+			_once.key = __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
+			switch (_accessor) {
+				case "List":   return __vanilla_method(_once, __GMLCexecuteCompoundList);
+				case "Map":    return __vanilla_method(_once, __GMLCexecuteCompoundMap);
+				case "Struct": return __vanilla_method(_once, __GMLCexecuteCompoundStruct);
 			}
-			else {
-				_output0.key = __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
-			}
-			var _getter_expression = __vanilla_method(_output0, _getter);
-			
-			
-			
-			//compile the additive method
-			var _output1 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Operator", "<Missing Error Message>", _node.span);
-			_output1.left  = _getter_expression;
-			_output1.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.value);
-			var _expression = __vanilla_method(_output1, _func);
-			
-			
-			//compile the actual method we will be calling
-			//compile the setter
-			var _output2 = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileAssignmentExpression::Setter", "<Missing Error Message>", _node.span);
-			_output2.target     = __GMLCcompileExpression(_rootNode, _parentNode, _target.object);
-			_output2.expression = _expression;
-			_output2.rooted     = false;
-			if (_accessor == "Grid") {
-				_output2.keyX = __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
-				_output2.keyY = __GMLCcompileExpression(_rootNode, _parentNode, _keys[1]);
-			}
-			else {
-				_output2.key = __GMLCcompileExpression(_rootNode, _parentNode, _keys[0]);
-			}
-			
-			return __vanilla_method(_output2, _setter);
-			
+			return __vanilla_method(_once, __GMLCexecuteCompoundArrayRooted);
 		}
 	}
 	

@@ -82,6 +82,101 @@ function case_try(_fn, _a = undefined, _b = undefined) {
 	}
 }
 
+/// Calls _fn(_a, _b) and returns "message:" and the text of the error it throws, or "none".
+function case_error(_fn, _a = undefined, _b = undefined) {
+	try {
+		_fn(_a, _b);
+	}
+	catch (_e) {
+		return "message:" + (is_struct(_e) ? string(_e[$ "message"]) : string(_e));
+	}
+	return "none";
+}
+
+/// The real whose f64 bits are the 16 hexadecimal digits _hex (high word first): an exact operand.
+function case_f64(_hex) {
+	var _b = buffer_create(8, buffer_fixed, 1);
+	buffer_poke(_b, 4, buffer_u32, case_hex_u32(string_copy(_hex, 1, 8)));
+	buffer_poke(_b, 0, buffer_u32, case_hex_u32(string_copy(_hex, 9, 8)));
+	var _x = buffer_peek(_b, 0, buffer_f64);
+	buffer_delete(_b);
+	return _x;
+}
+
+/// The int64 whose two's-complement bits are the 16 hexadecimal digits _hex (high word first).
+function case_i64(_hex) {
+	var _b = buffer_create(8, buffer_fixed, 1);
+	buffer_poke(_b, 4, buffer_u32, case_hex_u32(string_copy(_hex, 1, 8)));
+	buffer_poke(_b, 0, buffer_u32, case_hex_u32(string_copy(_hex, 9, 8)));
+	var _x = buffer_peek(_b, 0, buffer_u64);
+	buffer_delete(_b);
+	return _x;
+}
+
+/// The value of 8 hexadecimal digits (upper case).
+function case_hex_u32(_h) {
+	var _n = 0;
+	for (var _i = 1; _i <= 8; _i++) {
+		_n = _n * 16 + string_pos(string_char_at(_h, _i), "0123456789ABCDEF") - 1;
+	}
+	return _n;
+}
+
+/// A method value for the value-model operands.
+function case_method() {
+	return method(undefined, case_id);
+}
+
+/// Exact text of a value-model result: "<typeof>:<payload>", references as "a", "b" or "c" when they are that
+/// operand and "new" otherwise.
+function case_vm_cap(_r, _a, _b, _c) {
+	var _t = typeof(_r);
+	switch (_t) {
+		case "number": return "number:" + case_f64_hex(_r);
+		case "int64":
+		case "int32": return _t + ":" + string(_r);
+		case "bool":
+			// a bool can hold another number (`-true` holds -1): then its number is recorded too
+			var _n = _r + 0;
+			if (_n != 0) && (_n != 1) return "boolnum:" + (_r ? "1" : "0") + ":" + case_f64_hex(_n);
+			return "bool:" + (_r ? "1" : "0");
+		case "string":
+			// a long result is kept as its length and digest
+			var _len = string_byte_length(_r);
+			if (_len > 4096) return "stringlong:" + string(_len) + ":" + sha1_string_utf8(_r);
+			if (_len == 0) return "string64:";
+			// every byte through a buffer (base64_encode of a string stops at a NUL byte)
+			var _buf = buffer_create(_len, buffer_fixed, 1);
+			buffer_write(_buf, buffer_text, _r);
+			var _out = buffer_base64_encode(_buf, 0, _len);
+			buffer_delete(_buf);
+			return "string64:" + _out;
+		case "undefined": return "undefined:";
+		case "ptr": return "ptr:" + ((_r == pointer_null) ? "null" : "other");
+	}
+	if (typeof(_a) == _t && _r == _a) return _t + ":a";
+	if (typeof(_b) == _t && _r == _b) return _t + ":b";
+	if (typeof(_c) == _t && _r == _c) return _t + ":c";
+	return _t + ":new";
+}
+
+/// Calls _fn(_a, _b, _c) and returns case_vm_cap of its result, or "error64:" and the base64 of the message of what
+/// it throws (the first line of a runtime error's message; the typeof of a thrown non-struct).
+function case_vm(_fn, _a = undefined, _b = undefined, _c = undefined) {
+	var _r;
+	try {
+		_r = _fn(_a, _b, _c);
+	}
+	catch (_e) {
+		var _m = is_struct(_e) ? string(_e[$ "message"]) : ("thrown " + typeof(_e));
+		var _nl = string_pos(chr(10), _m);
+		if (_nl > 0) _m = string_copy(_m, 1, _nl - 1);
+		return "error64:" + base64_encode(_m);
+	}
+	// captured outside the try: a failure of the capture is never reported as the operation's error
+	return case_vm_cap(_r, _a, _b, _c);
+}
+
 /// Eight hexadecimal digits of the low 32 bits of _n.
 function case_hex32(_n) {
 	var _h = "";

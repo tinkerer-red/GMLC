@@ -164,8 +164,8 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			set: method(undefined, function(value){ parentNode.arguments[1] = value; }),
 		},
 		"argument2":{
-			get: method(undefined, function(){ return parentNode.arguments[0]; }),
-			set: method(undefined, function(value){ parentNode.arguments[0] = value; }),
+			get: method(undefined, function(){ return parentNode.arguments[2]; }),
+			set: method(undefined, function(value){ parentNode.arguments[2] = value; }),
 		},
 		"argument3":{
 			get: method(undefined, function(){ return parentNode.arguments[3]; }),
@@ -734,12 +734,12 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		diagnostics = [];
 		try {
 			var _program = __compile_source(_sourceCode, _name, true, _kind);
-			diagnostics = GMLC_SortDiagnostics(diagnostics);
+			diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(diagnostics, sources));
 			return _program;
 		}
 		catch (_e) {
 			var _error = __withDiagnostics(_e, diagnostics);
-			diagnostics = GMLC_SortDiagnostics(diagnostics);
+			diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(diagnostics, sources));
 			throw _error;
 		}
 	}
@@ -763,7 +763,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		catch (_e) {
 			__withDiagnostics(_e, diagnostics);
 		}
-		diagnostics = GMLC_SortDiagnostics(diagnostics);
+		diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(diagnostics, sources));
 		return diagnostics;
 	}
 	
@@ -789,7 +789,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		catch (_e) {
 			__withDiagnostics(_e, diagnostics);
 		}
-		diagnostics = GMLC_SortDiagnostics(diagnostics);
+		diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(diagnostics, sources));
 		return _text;
 	}
 	
@@ -929,9 +929,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	#region jsDoc
 	/// @func    compile_ast(_json)
-	/// @desc    Compiles a syntax tree given in its JSON form (as GMLC_AstToJson writes it):
-	///          the tree is read back into nodes, its names are bound when the dump was taken before that, and the
-	///          rest of the pipeline runs as for source text.
+	/// @desc    Compiles a syntax tree given in its JSON form (as GMLC_AstToJson writes it, from either implementation):
+	///          the tree is read back into nodes and the pipeline continues at the stage after the dump's
+	///          (parsed, resolved, lowered or optimized), as for source text.
 	/// @self    GMLC_Env
 	/// @param   {String} json : The dump
 	/// @returns {Any} Compiled program artifact produced by GMLC_Gen_6_Compiler
@@ -943,21 +943,25 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		var _sources = _dump.sources;
 		sources = _sources;
 		__unitFile = _ast.span.file;
+		// a dump of stage S continues at the stage after S
+		var _stage = _dump.stage;
 		try {
-			if (_dump.stage == "parsed") {
+			if (_stage == "parsed") {
 				resolver.initialize(_ast, _sources);
 				_ast = resolver.parseAll();
 				__gather(diagnostics, resolver);
 			}
-			lower.initialize(_ast, _sources);
-			_ast = lower.parseAll();
-			__gather(diagnostics, lower);
-			__resolveEnums([_ast], _sources, [diagnostics]);
+			if (_stage == "parsed") || (_stage == "resolved") {
+				lower.initialize(_ast, _sources);
+				_ast = lower.parseAll();
+				__gather(diagnostics, lower);
+				__resolveEnums([_ast], _sources, [diagnostics]);
+			}
 		}
 		catch (_e) {
 			throw __withDiagnostics(_e, diagnostics);
 		}
-		_ast = __optimize(_ast, _sources, diagnostics);
+		if (_stage != "optimized") _ast = __optimize(_ast, _sources, diagnostics);
 		var _global = getConstant("global");
 		var _globals = (is_struct(_global)) ? _global.value : {};
 		compiler.initialize(_ast, _globals, _sources);
@@ -1064,12 +1068,18 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	
 	#region jsDoc
 	/// @func    set_exposure()
-	/// @desc    Convenience method that applies the selected exposure tier by invoking expose_constants(), expose_user_assets(), and expose_functions() accordingly.
+	/// @desc    Applies an exposure tier: the functions, constants and enums exposed before are removed, then the tier's
+	///          own are exposed by expose_constants(), expose_user_assets() and expose_functions(), so the exposed
+	///          set depends only on the tier, never on the tiers set before. Call it before exposing the host's
+	///          own functions and constants, which it would remove too.
 	/// @self    GMLC_Env
 	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier (NONE, SAFE, MODERATE, ALL, FULL, NATIVE)
 	/// @returns {Struct.GMLC_Env}
 	#endregion
 	static set_exposure = function(_expose_level=GMLC_EXPOSURE.SAFE) {
+		clearFunctions();
+		clearConstants();
+		clearEnums();
 		expose_constants(_expose_level);
 		expose_user_assets(_expose_level);
 		expose_functions(_expose_level);
@@ -1082,12 +1092,13 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	#region jsDoc
 	/// @func    expose_constants()
 	/// @desc    Exposes the spec's engine constants and build metadata, and `global`: the real global struct at FULL,
-	///          an empty struct otherwise.
+	///          an empty struct otherwise. NONE exposes nothing; the project's enums are exposed where its assets are.
 	/// @self    GMLC_Env
 	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier used
 	/// @returns {Struct.GMLC_Env}
 	#endregion
 	static expose_constants = function(_expose_level=GMLC_EXPOSURE.SAFE) {
+		if (_expose_level == GMLC_EXPOSURE.NONE) return self;
 		var _spec = __GmlSpec();
 		var _map = struct_filter(_spec, function(_key, _val) {
 			return _val[$ "type"] == "envConstants";
@@ -1108,8 +1119,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		exposeConstants({
 			"global": (_expose_level == GMLC_EXPOSURE.FULL) ? global : {},
 		});
-		//expose enums
-		exposeEnums(__ExistingEnums());
+		if (__exposesUser(_expose_level)) exposeEnums(__ExistingEnums());
 		
 		return self;
 	}
@@ -1121,10 +1131,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @returns {Struct.GMLC_Env}
 	#endregion
 	static expose_user_assets = function(_expose_level=GMLC_EXPOSURE.SAFE) {
-		if (_expose_level < GMLC_EXPOSURE.SAFE) 
-		|| (_expose_level == GMLC_EXPOSURE.NATIVE) {
-			return;
-		}
+		if (!__exposesUser(_expose_level)) return self;
 		
 		var _arr_obje = asset_get_ids(asset_object),        
 		var _arr_spri = asset_get_ids(asset_sprite),
@@ -1158,9 +1165,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	#region jsDoc
 	/// @func    expose_functions()
-	/// @desc    Exposes functions for the exposure tier: NONE nothing; SAFE pure built-ins passing the safety filter;
-	///          MODERATE currently the same as SAFE (to be widened); ALL every native built-in; FULL native built-ins
-	///          and user scripts. Every tier but NONE adds the overwrite shims.
+	/// @desc    Exposes functions for the exposure tier: NONE nothing; PURE, SAFE and MODERATE the pure built-ins
+	///          passing the safety filter (SAFE and MODERATE to be widened); ALL and NATIVE every native built-in;
+	///          FULL native built-ins and user scripts. Every tier but NONE adds the overwrite shims.
 	/// @self    GMLC_Env
 	/// @param   {GMLC_EXPOSURE} exposureLevel : Exposure tier controlling function availability
 	/// @returns {Struct.GMLC_Env}
@@ -1168,15 +1175,14 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	static expose_functions = function(_expose_level = GMLC_EXPOSURE.SAFE) {
 		switch (_expose_level) {
 			case GMLC_EXPOSURE.NONE: break;
+			case GMLC_EXPOSURE.PURE:
 			case GMLC_EXPOSURE.SAFE:
+			case GMLC_EXPOSURE.MODERATE:
 				expose_pure_functions();
 				expose_overwrite_functions();
 			break;
-			case GMLC_EXPOSURE.MODERATE:
-				expose_safe_functions();
-				expose_overwrite_functions();
-			break;
 			case GMLC_EXPOSURE.ALL:
+			case GMLC_EXPOSURE.NATIVE:
 				expose_native_functions();
 				expose_overwrite_functions();
 			break;
@@ -1207,25 +1213,6 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		return self;
 	}
-	#region jsDoc
-	/// @func    expose_safe_functions()
-	/// @desc    Exposes built-in functions for moderate trust contexts; currently the pure ones that pass the safety
-	///          filter.
-	/// @self    GMLC_Env
-	/// @returns {Struct.GMLC_Env}
-	#endregion
-	static expose_safe_functions = function() {
-		var _spec = __GmlSpec();
-		
-		var _map = struct_filter(_spec, function(_key, _val) {
-			if (!__is_safe_function(_key, _val)) return false;
-			return _val[$ "feather"][$ "pure"]; // Only allow pure built-ins
-		});
-
-		importSymbolMap(_map);
-		
-		return self;
-	};
 	#region jsDoc
 	/// @func    expose_overwrite_functions()
 	/// @desc    Installs GMLC shims that replace native behaviors for reflection and script dispatch:
@@ -1309,6 +1296,11 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	__log_step_times = false;
 	__log_optimizations = 0; // what the optimizer reports: 0 nothing, 1 one line per compile counting its changes by kind, 2 each change
 	
+	
+	// whether a tier exposes the project's assets and enums: SAFE, MODERATE, ALL and FULL
+	static __exposesUser = function(_expose_level) {
+		return (_expose_level >= GMLC_EXPOSURE.SAFE) && (_expose_level <= GMLC_EXPOSURE.FULL);
+	}
 	
 	#region jsDoc
 	/// @func    __is_safe_function()
@@ -1546,7 +1538,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		catch (_e) {
 			// the exposed macros do not lex: no file of the batch can be compiled
 			var _error = __withDiagnostics(_e, diagnostics);
-			diagnostics = GMLC_SortDiagnostics(diagnostics);
+			diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(diagnostics, sources));
 			var _f = 0; repeat (_count) {
 				_result.add(_entries[_f].name, false, _error, diagnostics);
 			_f++}
@@ -1557,9 +1549,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		// Phase 1: lex every file
 		var _i = 0; repeat (_count) {
-			var _unit = { name: _entries[_i].name, kind: _entries[_i][$ "kind"] ?? "script", program: undefined, ast: undefined, diagnostics: [], error: undefined };
+			var _unit = { name: _entries[_i].name, kind: _entries[_i][$ "kind"] ?? "script", program: undefined, ast: undefined, diagnostics: [], error: undefined, file: array_length(_table.files) };
 			currentScriptName = _unit.name;
-			__unitFile = array_length(_table.files);
+			__unitFile = _unit.file;
 			try {
 				lexer.initialize(_entries[_i].source, currentScriptName, __unitFile);
 				// added before lexing: a file that does not lex keeps its number, so the other files' spans stay right
@@ -1707,7 +1699,7 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 		
 		_i = 0; repeat (_count) {
 			var _unit = _units[_i];
-			_unit.diagnostics = GMLC_SortDiagnostics(_unit.diagnostics);
+			_unit.diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(_unit.diagnostics, sources, _unit.file));
 			array_copy(diagnostics, array_length(diagnostics), _unit.diagnostics, 0, array_length(_unit.diagnostics));
 			_result.add(_unit.name, _unit.error == undefined, _unit.error, _unit.diagnostics);
 		_i++}

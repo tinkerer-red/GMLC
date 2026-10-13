@@ -478,6 +478,17 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		}
 		var _text = string_replace_all(__text(_start, pos), "_", "");
 		var _token;
+		// a whole number past 32 bits is an int64 even when written with a dot (2147483648.0)
+		if (_dot) {
+			var _point = string_pos(".", _text);
+			var _whole = string_copy(_text, 1, _point - 1);
+			var _fraction = string_delete(_text, 1, _point);
+			while (string_length(_whole) > 1) && (string_char_at(_whole, 1) == "0") _whole = string_delete(_whole, 1, 1);
+			if (string_count("0", _fraction) == string_length(_fraction)) && (!__decimalAtMost(_whole, "2147483647")) && (__decimalAtMost(_whole, "9223372036854775807")) {
+				_text = _whole;
+				_dot = false;
+			}
+		}
 		if (_dot) {
 			_token = __makeToken(__GMLC_TokenKind_Number, __GMLC_TokenType_Number, _start, pos, real(_text));
 			_token.ty = "real";

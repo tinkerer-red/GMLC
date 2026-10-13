@@ -570,6 +570,45 @@ function __GMLCexecuteCompoundArrayRooted(){
 	}
 	_target[_key] = apply(_target[_key], right());
 }
+// compound assignments on a list, map, struct key or grid cell: target and keys evaluated once, like
+// __GMLCexecuteCompoundArrayRooted
+function __GMLCexecuteCompoundList(){
+	var _target = target();
+	var _key = key();
+	if (apply == undefined) {
+		_target[| _key] ??= right();
+		return;
+	}
+	_target[| _key] = apply(_target[| _key], right());
+}
+function __GMLCexecuteCompoundMap(){
+	var _target = target();
+	var _key = key();
+	if (apply == undefined) {
+		_target[? _key] ??= right();
+		return;
+	}
+	_target[? _key] = apply(_target[? _key], right());
+}
+function __GMLCexecuteCompoundStruct(){
+	var _target = target();
+	var _key = key();
+	if (apply == undefined) {
+		_target[$ _key] ??= right();
+		return;
+	}
+	_target[$ _key] = apply(_target[$ _key], right());
+}
+function __GMLCexecuteCompoundGrid(){
+	var _target = target();
+	var _x = keyX();
+	var _y = keyY();
+	if (apply == undefined) {
+		_target[# _x, _y] ??= right();
+		return;
+	}
+	_target[# _x, _y] = apply(_target[# _x, _y], right());
+}
 #region jsDoc
 /// @func    __GMLCdotOwner(_target, _key, _node)
 /// @desc    Returns the struct that holds `_key` for a dot access on `_target`: the target itself or the first static

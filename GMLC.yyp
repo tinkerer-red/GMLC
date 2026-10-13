@@ -414,6 +414,7 @@
     {"id":{"name":"GMLC_Gen_5_Optimizer","path":"scripts/GMLC_Gen_5_Optimizer/GMLC_Gen_5_Optimizer.yy",},},
     {"id":{"name":"GMLC_Gen_6_Compiler","path":"scripts/GMLC_Gen_6_Compiler/GMLC_Gen_6_Compiler.yy",},},
     {"id":{"name":"GMLC_GM14_Converter","path":"scripts/GMLC_GM14_Converter/GMLC_GM14_Converter.yy",},},
+    {"id":{"name":"GMLC_Types","path":"scripts/GMLC_Types/GMLC_Types.yy",},},
     {"id":{"name":"GmlcExtensionsTestSuite","path":"scripts/GmlcExtensionsTestSuite/GmlcExtensionsTestSuite.yy",},},
     {"id":{"name":"GMLCFastPasses","path":"scripts/GMLCFastPasses/GMLCFastPasses.yy",},},
     {"id":{"name":"GmlCompileVerdictTestSuite","path":"scripts/GmlCompileVerdictTestSuite/GmlCompileVerdictTestSuite.yy",},},

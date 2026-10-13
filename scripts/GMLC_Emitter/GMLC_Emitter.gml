@@ -1091,29 +1091,8 @@
 						return;
 					}
 					break;
-				case "real":
-					// a whole number of 2^31 or more would be read as an int64
-					if (abs(_node.value) >= 2147483648) && __isDigits(_lexeme) {
-						__write(_lexeme + ".0");
-						return;
-					}
-					break;
 			}
 			__write(_lexeme);
-		};
-
-		// whether a text is digits, with a minus sign in front or not
-		static __isDigits = function(_text) {
-			var _n = string_length(_text);
-			if (_n == 0) return false;
-			var _i = (string_char_at(_text, 1) == "-") ? 2 : 1;
-			if (_i > _n) return false;
-			repeat (_n - _i + 1) {
-				var _c = ord(string_char_at(_text, _i));
-				if (_c < ord("0")) || (_c > ord("9")) return false;
-				_i++;
-			}
-			return true;
 		};
 
 		// a string's text as it is written between double quotes (of a template string when _template is true)

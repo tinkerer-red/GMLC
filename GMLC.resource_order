@@ -38,6 +38,7 @@
     {"name":"GMLC_Gen_4_Lower","order":3,"path":"scripts/GMLC_Gen_4_Lower/GMLC_Gen_4_Lower.yy",},
     {"name":"GMLC_Gen_5_Optimizer","order":3,"path":"scripts/GMLC_Gen_5_Optimizer/GMLC_Gen_5_Optimizer.yy",},
     {"name":"GMLC_Gen_6_Compiler","order":3,"path":"scripts/GMLC_Gen_6_Compiler/GMLC_Gen_6_Compiler.yy",},
+    {"name":"GMLC_Types","order":3,"path":"scripts/GMLC_Types/GMLC_Types.yy",},
     {"name":"GmlcExtensionsTestSuite","order":3,"path":"scripts/GmlcExtensionsTestSuite/GmlcExtensionsTestSuite.yy",},
     {"name":"GMLCFastPasses","order":1,"path":"scripts/GMLCFastPasses/GMLCFastPasses.yy",},
     {"name":"GmlCompileVerdictTestSuite","order":3,"path":"scripts/GmlCompileVerdictTestSuite/GmlCompileVerdictTestSuite.yy",},

@@ -791,6 +791,25 @@
 			return false;
 		};
 		
+		// whether code a fold would drop has to stay: the target of a `// @NoOp`, or a reference to an asset, which
+		// GameMaker's unused-asset stripping would otherwise delete (a lookup by name such as asset_get_index needs it)
+		static __keepsCode = function(_node) {
+			return __containsNoOp(_node) || __referencesAsset(_node);
+		};
+		
+		// whether a node is or holds the name of an asset (a built-in constant whose value is a reference)
+		static __referencesAsset = function(_node) {
+			if (_node.kind == __GMLC_NodeKind_Identifier) && (_node.symbol != undefined) && (_node.symbol.kind == "BuiltinConstant") {
+				var _data = env.getConstant(_node.name);
+				if (_data != undefined) && (typeof(_data.value) == "ref") return true;
+			}
+			var _children = _node.children();
+			var _i = 0; repeat (array_length(_children)) {
+				if (__referencesAsset(_children[_i])) return true;
+			_i++}
+			return false;
+		};
+		
 		static optimize = function(_node_data) {
 			var _start_node = undefined;
 			
@@ -1098,7 +1117,10 @@
 			var _mode0 = mode;
 			mode = GMLC_OPTIMIZE.CONSTANT;
 			var _holder = new ASTExprStmt(_node.span, _node);
+			var _enumValues0 = __enumValues;
+			__enumValues = true;
 			__walk(_holder);
+			__enumValues = _enumValues0;
 			mode = _mode0;
 			sources = _sources0;
 			hasNoOpTargets = _noOp0;
@@ -1134,6 +1156,7 @@
 			array_push(_fold.messages, _message);
 		};
 		static foldEnd = function() {
+			__enumValues = false;
 			var _fold = global.__gmlc_fold;
 			_fold.failed = [];
 			_fold.messages = [];
@@ -1223,7 +1246,7 @@
 						if (_left[0]) && (is_numeric(_left[1])) {
 							var _truthy = (_left[1]) ? true : false;
 							if (_truthy == (_node.op == "||"))
-							&& (!__containsNoOp(_node.right))
+							&& (!__keepsCode(_node.right))
 							&& (__keepsValue(_node_data, _truthy))
 							{
 								return __literal(_truthy, _node.span);
@@ -1240,7 +1263,7 @@
 								return _node.right;
 							}
 						}
-						else if (!__containsNoOp(_node.right)) && (__keepsValue(_node_data, _left[1])) && (!__selfIntoStructEntry(_node_data, _node.left)) {
+						else if (!__keepsCode(_node.right)) && (__keepsValue(_node_data, _left[1])) && (!__selfIntoStructEntry(_node_data, _node.left)) {
 							return _node.left;
 						}
 					}
@@ -1451,11 +1474,11 @@
 					var _test = __constantValue(_node.test);
 					if (_test[0]) && (is_numeric(_test[1])) {
 						if (_test[1]) {
-							if (_node.alternate == undefined) || (!__containsNoOp(_node.alternate)) {
+							if (_node.alternate == undefined) || (!__keepsCode(_node.alternate)) {
 								return _node.consequent;
 							}
 						}
-						else if (!__containsNoOp(_node.consequent)) {
+						else if (!__keepsCode(_node.consequent)) {
 							if (_node.alternate != undefined) {
 								return _node.alternate;
 							}
@@ -1469,7 +1492,7 @@
 					if (_node.test != undefined) {
 						var _test = __constantValue(_node.test);
 						if (_test[0]) && (is_numeric(_test[1])) && (!_test[1])
-						&& (!__containsNoOp(_node.body)) && ((_node.update == undefined) || (!__containsNoOp(_node.update)))
+						&& (!__keepsCode(_node.body)) && ((_node.update == undefined) || (!__keepsCode(_node.update)))
 						{
 							// the init still runs once
 							return _node.init ?? new ASTEmpty(_node.span);
@@ -1479,7 +1502,7 @@
 				case __GMLC_NodeKind_While:{
 					if (_node.test != undefined) {
 						var _test = __constantValue(_node.test);
-						if (_test[0]) && (is_numeric(_test[1])) && (!_test[1]) && (!__containsNoOp(_node.body)) {
+						if (_test[0]) && (is_numeric(_test[1])) && (!_test[1]) && (!__keepsCode(_node.body)) {
 							return new ASTEmpty(_node.span);
 						}
 					}
@@ -1487,7 +1510,7 @@
 				case __GMLC_NodeKind_Repeat:{
 					if (_node.count != undefined) {
 						var _count = __constantValue(_node.count);
-						if (_count[0]) && (is_numeric(_count[1])) && (_count[1] <= 0) && (!__containsNoOp(_node.body)) {
+						if (_count[0]) && (is_numeric(_count[1])) && (_count[1] <= 0) && (!__keepsCode(_node.body)) {
 							return new ASTEmpty(_node.span);
 						}
 					}
@@ -1498,7 +1521,7 @@
 				break;}
 				case __GMLC_NodeKind_With:{
 					var _target = __constantValue(_node.target);
-					if (_target[0]) && (is_numeric(_target[1])) && (!__containsNoOp(_node.body)) {
+					if (_target[0]) && (is_numeric(_target[1])) && (!__keepsCode(_node.body)) {
 						if (_target[1] == noone) {
 							return new ASTEmpty(_node.span);
 						}
@@ -1817,8 +1840,13 @@
 			return (sources != undefined) ? sources.position(_node.span).lineString : "";
 		};
 		
-		// a Literal of a value the optimizer computed; an int64 that the compiler must keep as int64 is written in hex
-		static __literal = function(_value, _span, _int64Typed = true) {
+		// set while folding an enum member's value, which is never printed: any real is kept
+		__enumValues = false;
+		
+		// a Literal of a value the optimizer computed, or undefined when nothing reads back with the same type and value: a
+		// number literal is an int64 exactly when it does not fit 32 bits, so a small int64 is written int64(n) and a whole
+		// real past 32 bits is not folded (outside an enum's value); neither is -0, nor a real whose text needs an exponent
+		static __literal = function(_value, _span) {
 			var _ty = "real";
 			var _lexeme;
 			if (is_string(_value)) {
@@ -1831,15 +1859,17 @@
 			}
 			else if (is_int64(_value)) {
 				_ty = "int64";
-				_lexeme = (_int64Typed) ? __hexLexeme(_value) : string(_value);
+				_lexeme = string(_value);
+				if (_value >= -2147483648) && (_value <= 2147483647) _lexeme = "int64(" + _lexeme + ")";
+				else if (_value == -9223372036854775807 - 1) _lexeme = "0x8000000000000000";
 			}
 			else if (is_undefined(_value)) {
 				_ty = "undefined";
 				_lexeme = "undefined";
 			}
 			else {
-				// no literal spells -0, and an exponent form is not known to compile: such a value is not folded
 				if (_value == 0) && (1 / _value < 0) return undefined;
+				if (!__enumValues) && (__gmlc_is_whole(_value)) && (abs(_value) >= 2147483648) return undefined;
 				_lexeme = __realLexeme(_value);
 				if (string_pos("e", _lexeme) > 0) return undefined;
 			}
@@ -1850,18 +1880,8 @@
 		static __realLexeme = function(_value) {
 			if (!is_real(_value)) return string(_value);
 			// NaN and the infinities are not whole: __gmlc_real_text names them
-			// a whole number of 2^31 or more is written with .0, which GameMaker reads as a real, not an int64
-			if (__gmlc_is_whole(_value)) && (abs(_value) < 9007199254740992) return string(int64(_value)) + ((abs(_value) >= 2147483648) ? ".0" : "");
+			if (__gmlc_is_whole(_value)) && (abs(_value) < 9007199254740992) return string(int64(_value));
 			return __gmlc_real_text(_value);
-		};
-		
-		// an int64 as a hex literal, which the compiler reads as an int64
-		static __hexLexeme = function(_value) {
-			var _digits = "";
-			var _i = 0; repeat (16) {
-				_digits = string_char_at("0123456789ABCDEF", real((_value >> (_i * 4)) & 0xF) + 1) + _digits;
-			_i++}
-			return "0x" + _digits;
 		};
 		
 		// [true, value] when a node is a compile-time constant (a literal or a built-in constant), else [false]
@@ -1950,6 +1970,8 @@
 				return undefined;
 			}
 			var _value = _constant[1];
+			// `true || spr_x`: the operand the left decides is dropped, and with it the asset reference
+			if (__referencesAsset(_node)) return _node;
 
 			return __literal(_value, _node.span) ?? _node;
 		};
@@ -1962,7 +1984,7 @@
 			
 			var _taken   = (_test[1]) ? _node.consequent : _node.alternate;
 			var _dropped = (_test[1]) ? _node.alternate : _node.consequent;
-			if (__containsNoOp(_dropped)) return _node;
+			if (__keepsCode(_dropped)) return _node;
 			
 			var _value = __constantValue(_taken);
 			if (_value[0]) && (!__keepsValue(_node_data, _value[1])) return _node;
@@ -2061,4 +2083,555 @@
 		
 		#endregion
 	}
+#endregion
+
+#region Analyses
+#region jsDoc
+/// @func    GMLC_Analyses(_ast)
+/// @desc    The shared analyses of every function of a lowered script, in fn_id order: the statement control-flow
+///          graph with exception edges (every statement inside a try body may throw to its catch, or its finally when
+///          there is no catch), reaching definitions of locals, liveness of locals and alias classes of the
+///          references locals hold. Node 0 is the entry and node 1 the exit; the other nodes are statements in source
+///          order, a compound statement's node standing for its test (`For` its test, `Switch` its discriminant),
+///          with `catch` and `finally` nodes of their own.
+/// @param   {Struct.ASTScript} _ast : A lowered script
+/// @returns {Struct} {functions: [{fn_id, name, nodes: [{id, kind, start, succ, exc}], defs: [{id, node, name}],
+///          reaching: [[def id]], live: [[name]], alias: [{name, sites}]}]}
+#endregion
+function GMLC_Analyses(_ast) {
+	var _units = [{ fn_id: 0, params: [], body: _ast.body, node: undefined }];
+	__gmlc_analysis_units(_ast, _units);
+	array_sort(_units, function(_a, _b) { return _a.fn_id - _b.fn_id; });
+	var _out = [];
+	var _u = 0; repeat (array_length(_units)) {
+		var _unit = _units[_u];
+		var _info = (_unit.fn_id < array_length(_ast.functions)) ? _ast.functions[_unit.fn_id] : undefined;
+		var _name = ((_info != undefined) && (_info.name != undefined)) ? _info.name : "";
+		array_push(_out, __gmlc_analyse(_unit, _name));
+	_u++}
+	return { functions: _out };
+}
+
+// the functions of a script: {fn_id, params, body}; the script itself is fn_id 0
+function __gmlc_analysis_units(_node, _out) {
+	var _children = _node.children();
+	var _i = 0; repeat (array_length(_children)) {
+		var _child = _children[_i];
+		var _kind = _child.kind;
+		if (_kind == __GMLC_NodeKind_FunctionDecl) || (_kind == __GMLC_NodeKind_ConstructorDecl) || (_kind == __GMLC_NodeKind_FunctionExpr) {
+			var _params = [];
+			var _p = 0; repeat (array_length(_child.params)) {
+				array_push(_params, _child.params[_p].target);
+			_p++}
+			array_push(_out, { fn_id: _child[$ "fn_id"] ?? (1000000 + array_length(_out)), params: _params, body: _child.body.body, node: _child });
+		}
+		__gmlc_analysis_units(_child, _out);
+	_i++}
+}
+
+// one function's analyses
+// the control-flow graph of a function: node 0 the entry, node 1 the exit, succ and exc sorted
+function __gmlc_cfg_build(_unit) {
+	var _g = { nodes: [], frames: [], tries: [], finals: [], events: [], pairs: [] };
+	var _entry = __gmlc_cfg_node(_g, "entry", -1, undefined);
+	var _exit = __gmlc_cfg_node(_g, "exit", -1, undefined);
+	var _body = __gmlc_cfg_list(_g, _unit.body);
+	__gmlc_cfg_link(_g, [_entry], (_body.entry >= 0) ? _body.entry : _exit);
+	__gmlc_cfg_link(_g, (_body.entry >= 0) ? _body.exits : [], _exit);
+	var _i = 0; repeat (array_length(_g.nodes)) {
+		var _node = _g.nodes[_i];
+		_node.succ = __gmlc_sorted_ids(_node.succ);
+		_node.exc = __gmlc_sorted_ids(_node.exc);
+	_i++}
+	return _g;
+}
+
+function __gmlc_analyse(_unit, _name) {
+	var _g = __gmlc_cfg_build(_unit);
+	var _n = array_length(_g.nodes);
+	// the reads and writes of locals of each node, in evaluation order
+	var _i = 0; repeat (_n) {
+		_g.events[_i] = [];
+	_i++}
+	var _p = 0; repeat (array_length(_unit.params)) {
+		__gmlc_event_def(_g, 0, _unit.params[_p]);
+		__gmlc_alias_pair(_g, _unit.params[_p], undefined);
+	_p++}
+	_i = 2; repeat (_n - 2) {
+		__gmlc_node_events(_g, _i);
+	_i++}
+	var _nodes = [];
+	var _preds = array_create(_n);
+	var _excPreds = array_create(_n);
+	_i = 0; repeat (_n) {
+		_preds[_i] = [];
+		_excPreds[_i] = [];
+	_i++}
+	_i = 0; repeat (_n) {
+		var _node = _g.nodes[_i];
+		var _s = 0; repeat (array_length(_node.succ)) { array_push(_preds[_node.succ[_s]], _i); _s++ }
+		_s = 0; repeat (array_length(_node.exc)) { array_push(_excPreds[_node.exc[_s]], _i); _s++ }
+		array_push(_nodes, { id: _i, kind: _node.kind, start: _node.start, succ: _node.succ, exc: _node.exc });
+	_i++}
+	// reaching definitions
+	var _defs = [];
+	var _gen = array_create(_n);
+	var _killed = array_create(_n); // the names a node writes
+	_i = 0; repeat (_n) {
+		var _events = _g.events[_i];
+		var _list = []; // the definitions of the node that no later certain one of the same name replaces
+		var _names = []; // the names the node certainly writes
+		var _e = 0; repeat (array_length(_events)) {
+			var _ev = _events[_e];
+			if (_ev.def) {
+				var _id = array_length(_defs);
+				array_push(_defs, { id: _id, node: _i, name: _ev.name });
+				if (!_ev.maybe) {
+					var _kept = [];
+					var _k = 0; repeat (array_length(_list)) {
+						if (_defs[_list[_k]].name != _ev.name) array_push(_kept, _list[_k]);
+					_k++}
+					_list = _kept;
+					if (!array_contains(_names, _ev.name)) array_push(_names, _ev.name);
+				}
+				array_push(_list, _id);
+			}
+		_e++}
+		_gen[_i] = __gmlc_sorted_ids(_list);
+		_killed[_i] = _names;
+	_i++}
+	var _in = array_create(_n);
+	var _outs = array_create(_n);
+	_i = 0; repeat (_n) {
+		_in[_i] = [];
+		_outs[_i] = _gen[_i];
+	_i++}
+	var _changed = true;
+	while (_changed) {
+		_changed = false;
+		_i = 0; repeat (_n) {
+			var _set = [];
+			var _q = 0; repeat (array_length(_preds[_i])) {
+				_set = __gmlc_union_ids(_set, _outs[_preds[_i][_q]]);
+			_q++}
+			// a statement that throws may have run any part of itself: what reaches it and what leaves it
+			_q = 0; repeat (array_length(_excPreds[_i])) {
+				var _from = _excPreds[_i][_q];
+				_set = __gmlc_union_ids(_set, __gmlc_union_ids(_in[_from], _outs[_from]));
+			_q++}
+			var _kept = [];
+			var _d = 0; repeat (array_length(_set)) {
+				if (!array_contains(_killed[_i], _defs[_set[_d]].name)) array_push(_kept, _set[_d]);
+			_d++}
+			var _o = __gmlc_union_ids(_gen[_i], _kept);
+			if (!array_equals(_set, _in[_i])) || (!array_equals(_o, _outs[_i])) {
+				_in[_i] = _set;
+				_outs[_i] = _o;
+				_changed = true;
+			}
+		_i++}
+	}
+	// liveness
+	var _use = array_create(_n);
+	_i = 0; repeat (_n) {
+		var _events = _g.events[_i];
+		var _written = [];
+		var _read = [];
+		var _e = 0; repeat (array_length(_events)) {
+			var _ev = _events[_e];
+			if (_ev.def) {
+				if (!_ev.maybe) && (!array_contains(_written, _ev.name)) array_push(_written, _ev.name);
+			}
+			else if (!array_contains(_written, _ev.name)) && (!array_contains(_read, _ev.name)) {
+				array_push(_read, _ev.name);
+			}
+		_e++}
+		_use[_i] = _read;
+	_i++}
+	var _live = array_create(_n);
+	_i = 0; repeat (_n) {
+		_live[_i] = [];
+	_i++}
+	_changed = true;
+	while (_changed) {
+		_changed = false;
+		_i = _n - 1; repeat (_n) {
+			var _node = _g.nodes[_i];
+			var _outSet = [];
+			var _s = 0; repeat (array_length(_node.succ)) { _outSet = __gmlc_union_names(_outSet, _live[_node.succ[_s]]); _s++ }
+			// what a handler reads is live before the statement that may throw to it, whatever that statement writes
+			var _set = __gmlc_union_names([], _use[_i]);
+			_s = 0; repeat (array_length(_node.exc)) { _set = __gmlc_union_names(_set, _live[_node.exc[_s]]); _s++ }
+			var _k = 0; repeat (array_length(_outSet)) {
+				if (!array_contains(_killed[_i], _outSet[_k])) _set = __gmlc_union_names(_set, [_outSet[_k]]);
+			_k++}
+			if (!array_equals(_set, _live[_i])) {
+				_live[_i] = _set;
+				_changed = true;
+			}
+		_i--}
+	}
+	// alias classes: the allocation sites each local may hold, over the whole function
+	var _sites = {};
+	_changed = true;
+	while (_changed) {
+		_changed = false;
+		var _q = 0; repeat (array_length(_g.pairs)) {
+			var _pair = _g.pairs[_q];
+			var _now = _sites[$ _pair.name] ?? [];
+			var _add = __gmlc_union_names(_now, __gmlc_alias_sites(_pair.value, _sites));
+			if (!array_equals(_add, _now)) {
+				_sites[$ _pair.name] = _add;
+				_changed = true;
+			}
+		_q++}
+	}
+	var _alias = [];
+	var _names = struct_get_names(_sites);
+	array_sort(_names, true);
+	var _k = 0; repeat (array_length(_names)) {
+		if (array_length(_sites[$ _names[_k]]) > 0) array_push(_alias, { name: _names[_k], sites: _sites[$ _names[_k]] });
+	_k++}
+	return { fn_id: _unit.fn_id, name: _name, nodes: _nodes, defs: _defs, reaching: _in, live: _live, alias: _alias };
+}
+
+// a new node; inside a try body it may throw to that try's handler, added when the handler's node exists
+function __gmlc_cfg_node(_g, _kind, _start, _stmt) {
+	var _id = array_length(_g.nodes);
+	array_push(_g.nodes, { kind: _kind, start: _start, stmt: _stmt, succ: [], exc: [] });
+	var _t = array_length(_g.tries);
+	if (_t > 0) array_push(_g.tries[_t - 1], _id);
+	return _id;
+}
+
+function __gmlc_cfg_link(_g, _from, _to) {
+	var _i = 0; repeat (array_length(_from)) {
+		array_push(_g.nodes[_from[_i]].succ, _to);
+	_i++}
+}
+
+// nodes that leave the function: through the innermost finally around them, else to the exit
+function __gmlc_cfg_leave(_g, _from) {
+	var _f = array_length(_g.finals);
+	if (_f > 0) _g.finals[_f - 1].jumps = array_concat(_g.finals[_f - 1].jumps, _from);
+	else __gmlc_cfg_link(_g, _from, 1);
+}
+
+// a statement list: {entry, exits}, entry -1 when it has no statement (control passes through)
+function __gmlc_cfg_list(_g, _stmts) {
+	var _entry = -1;
+	var _exits = [];
+	var _i = 0; repeat (array_length(_stmts)) {
+		var _part = __gmlc_cfg_stmt(_g, _stmts[_i]);
+		if (_part.entry >= 0) {
+			if (_entry < 0) _entry = _part.entry;
+			else __gmlc_cfg_link(_g, _exits, _part.entry);
+			_exits = _part.exits;
+		}
+	_i++}
+	return { entry: _entry, exits: _exits };
+}
+
+// where a list leads: its entry, or _otherwise when it is empty
+function __gmlc_cfg_into(_part, _otherwise) {
+	return (_part.entry >= 0) ? _part.entry : _otherwise;
+}
+
+function __gmlc_cfg_loop(_g, _kind) {
+	var _frame = { loop: _kind, breaks: [], continues: [] };
+	array_push(_g.frames, _frame);
+	return _frame;
+}
+
+function __gmlc_cfg_stmt(_g, _stmt) {
+	switch (_stmt.kind) {
+		case __GMLC_NodeKind_Block:
+			return __gmlc_cfg_list(_g, _stmt.body);
+		case __GMLC_NodeKind_If: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _then = __gmlc_cfg_list(_g, _stmt.consequent.body);
+			var _else = (_stmt.alternate != undefined) ? __gmlc_cfg_list(_g, _stmt.alternate.body) : { entry: -1, exits: [] };
+			var _exits = [];
+			if (_then.entry >= 0) {
+				__gmlc_cfg_link(_g, [_n], _then.entry);
+				_exits = _then.exits;
+			}
+			else array_push(_exits, _n);
+			if (_else.entry >= 0) {
+				__gmlc_cfg_link(_g, [_n], _else.entry);
+				_exits = array_concat(_exits, _else.exits);
+			}
+			else if (!array_contains(_exits, _n)) array_push(_exits, _n);
+			return { entry: _n, exits: _exits };
+		}
+		case __GMLC_NodeKind_While:
+		case __GMLC_NodeKind_Repeat:
+		case __GMLC_NodeKind_With: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _frame = __gmlc_cfg_loop(_g, true);
+			var _b = __gmlc_cfg_list(_g, _stmt.body.body);
+			array_pop(_g.frames);
+			__gmlc_cfg_link(_g, [_n], __gmlc_cfg_into(_b, _n));
+			__gmlc_cfg_link(_g, _b.exits, _n);
+			__gmlc_cfg_link(_g, _frame.continues, _n);
+			return { entry: _n, exits: array_concat([_n], _frame.breaks) };
+		}
+		case __GMLC_NodeKind_DoUntil: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _frame = __gmlc_cfg_loop(_g, true);
+			var _b = __gmlc_cfg_list(_g, _stmt.body.body);
+			array_pop(_g.frames);
+			__gmlc_cfg_link(_g, [_n], __gmlc_cfg_into(_b, _n));
+			__gmlc_cfg_link(_g, _b.exits, _n);
+			__gmlc_cfg_link(_g, _frame.continues, _n);
+			return { entry: __gmlc_cfg_into(_b, _n), exits: array_concat([_n], _frame.breaks) };
+		}
+		case __GMLC_NodeKind_For: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _init = (_stmt.init != undefined) ? __gmlc_cfg_stmt(_g, _stmt.init) : { entry: -1, exits: [] };
+			var _frame = __gmlc_cfg_loop(_g, true);
+			var _b = __gmlc_cfg_list(_g, _stmt.body.body);
+			array_pop(_g.frames);
+			var _update = (_stmt.update != undefined) ? __gmlc_cfg_stmt(_g, _stmt.update) : { entry: -1, exits: [] };
+			var _step = __gmlc_cfg_into(_update, _n);
+			__gmlc_cfg_link(_g, _init.exits, _n);
+			__gmlc_cfg_link(_g, [_n], __gmlc_cfg_into(_b, _step));
+			__gmlc_cfg_link(_g, _b.exits, _step);
+			__gmlc_cfg_link(_g, _frame.continues, _step);
+			__gmlc_cfg_link(_g, _update.exits, _n);
+			return { entry: __gmlc_cfg_into(_init, _n), exits: array_concat([_n], _frame.breaks) };
+		}
+		case __GMLC_NodeKind_Switch: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _frame = __gmlc_cfg_loop(_g, false);
+			var _tail = [];
+			var _default = false;
+			var _c = 0; repeat (array_length(_stmt.cases)) {
+				var _case = _stmt.cases[_c];
+				if (_case.kind == __GMLC_NodeKind_Default) _default = true;
+				var _label = __gmlc_cfg_node(_g, _case.kindName, _case.span.start, _case);
+				__gmlc_cfg_link(_g, [_n], _label);
+				__gmlc_cfg_link(_g, _tail, _label);
+				var _b = __gmlc_cfg_list(_g, _case.body);
+				if (_b.entry >= 0) {
+					__gmlc_cfg_link(_g, [_label], _b.entry);
+					_tail = _b.exits;
+				}
+				else _tail = [_label];
+			_c++}
+			array_pop(_g.frames);
+			var _exits = array_concat(_tail, _frame.breaks);
+			if (!_default) array_push(_exits, _n);
+			// continue inside a switch belongs to the loop around it
+			var _f = array_length(_g.frames) - 1;
+			while (_f >= 0) && (!_g.frames[_f].loop) _f--;
+			if (_f >= 0) _g.frames[_f].continues = array_concat(_g.frames[_f].continues, _frame.continues);
+			return { entry: _n, exits: _exits };
+		}
+		case __GMLC_NodeKind_Try: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _final = (_stmt.finally_body != undefined) ? { jumps: [] } : undefined;
+			if (_final != undefined) array_push(_g.finals, _final);
+			array_push(_g.tries, []);
+			var _b = __gmlc_cfg_list(_g, _stmt.block.body);
+			var _throwing = array_pop(_g.tries);
+			if (_b.entry >= 0) __gmlc_cfg_link(_g, [_n], _b.entry);
+			var _exits = (_b.entry >= 0) ? _b.exits : [_n];
+			var _handler = -1;
+			var _catchThrowing = [];
+			if (_stmt.catch_body != undefined) {
+				var _k = __gmlc_cfg_node(_g, "catch", _stmt.catch_body.span.start, _stmt);
+				_handler = _k;
+				// with a finally, what the catch body throws goes there first
+				if (_final != undefined) array_push(_g.tries, []);
+				var _kb = __gmlc_cfg_list(_g, _stmt.catch_body.body);
+				if (_final != undefined) _catchThrowing = array_pop(_g.tries);
+				if (_kb.entry >= 0) __gmlc_cfg_link(_g, [_k], _kb.entry);
+				_exits = array_concat(_exits, (_kb.entry >= 0) ? _kb.exits : [_k]);
+			}
+			if (_final != undefined) {
+				array_pop(_g.finals);
+				var _f = __gmlc_cfg_node(_g, "finally", _stmt.finally_body.span.start, _stmt);
+				if (_handler < 0) _handler = _f;
+				__gmlc_cfg_link(_g, _exits, _f);
+				__gmlc_cfg_link(_g, _final.jumps, _f);
+				var _c = 0; repeat (array_length(_catchThrowing)) {
+					array_push(_g.nodes[_catchThrowing[_c]].exc, _f);
+				_c++}
+				var _fb = __gmlc_cfg_list(_g, _stmt.finally_body.body);
+				if (_fb.entry >= 0) __gmlc_cfg_link(_g, [_f], _fb.entry);
+				_exits = (_fb.entry >= 0) ? _fb.exits : [_f];
+				// a return through the finally leaves the function after it
+				if (array_length(_final.jumps) > 0) __gmlc_cfg_leave(_g, _exits);
+			}
+			if (_handler >= 0) {
+				var _t = 0; repeat (array_length(_throwing)) {
+					array_push(_g.nodes[_throwing[_t]].exc, _handler);
+				_t++}
+			}
+			return { entry: _n, exits: _exits };
+		}
+		case __GMLC_NodeKind_Break:
+		case __GMLC_NodeKind_Continue: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			var _f = array_length(_g.frames) - 1;
+			if (_stmt.kind == __GMLC_NodeKind_Continue) {
+				if (_f >= 0) array_push(_g.frames[_f].continues, _n);
+			}
+			else if (_f >= 0) array_push(_g.frames[_f].breaks, _n);
+			return { entry: _n, exits: [] };
+		}
+		case __GMLC_NodeKind_Return:
+		case __GMLC_NodeKind_Exit:
+		case __GMLC_NodeKind_Throw: {
+			var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+			// a throw inside a try goes to its handler only
+			if (_stmt.kind != __GMLC_NodeKind_Throw) || (array_length(_g.tries) == 0) __gmlc_cfg_leave(_g, [_n]);
+			return { entry: _n, exits: [] };
+		}
+	}
+	var _n = __gmlc_cfg_node(_g, _stmt.kindName, _stmt.span.start, _stmt);
+	return { entry: _n, exits: [_n] };
+}
+
+// the expressions a node evaluates itself (a compound statement's test, never the statements inside it)
+function __gmlc_node_events(_g, _id) {
+	var _node = _g.nodes[_id];
+	var _stmt = _node.stmt;
+	if (_stmt == undefined) return;
+	switch (_node.kind) {
+		case "catch":
+			if (_stmt.catch_param != undefined) {
+				__gmlc_event_def(_g, _id, _stmt.catch_param);
+				__gmlc_alias_pair(_g, _stmt.catch_param, undefined);
+			}
+			return;
+		case "finally": return;
+	}
+	switch (_stmt.kind) {
+		case __GMLC_NodeKind_If: case __GMLC_NodeKind_While: case __GMLC_NodeKind_DoUntil: case __GMLC_NodeKind_Case:
+			__gmlc_walk_events(_g, _id, _stmt.test); return;
+		case __GMLC_NodeKind_For:
+			if (_stmt.test != undefined) __gmlc_walk_events(_g, _id, _stmt.test);
+			return;
+		case __GMLC_NodeKind_Repeat: __gmlc_walk_events(_g, _id, _stmt.count); return;
+		case __GMLC_NodeKind_With: __gmlc_walk_events(_g, _id, _stmt.target); return;
+		case __GMLC_NodeKind_Switch: __gmlc_walk_events(_g, _id, _stmt.discriminant); return;
+		case __GMLC_NodeKind_Try: case __GMLC_NodeKind_Default: return;
+		case __GMLC_NodeKind_FunctionDecl: case __GMLC_NodeKind_ConstructorDecl: return;
+	}
+	__gmlc_walk_events(_g, _id, _stmt);
+}
+
+function __gmlc_is_local(_node) {
+	return (_node != undefined) && (_node.kind == __GMLC_NodeKind_Identifier) && (_node.symbol != undefined) && (_node.symbol.kind == "Local");
+}
+
+// a write of a local; _maybe when it may not happen (the right of && and ||, a branch of ?:, ??=)
+function __gmlc_event_def(_g, _id, _target, _maybe = false) {
+	if (__gmlc_is_local(_target)) array_push(_g.events[_id], { def: true, name: _target.name, maybe: _maybe });
+}
+
+function __gmlc_alias_pair(_g, _target, _value) {
+	if (__gmlc_is_local(_target)) array_push(_g.pairs, { name: _target.name, value: _value });
+}
+
+// the reads and writes of locals in an expression or a simple statement, in evaluation order; a nested function is
+// not entered
+function __gmlc_walk_events(_g, _id, _node, _maybe = false) {
+	if (_node == undefined) return;
+	switch (_node.kind) {
+		case __GMLC_NodeKind_FunctionExpr: case __GMLC_NodeKind_FunctionDecl: case __GMLC_NodeKind_ConstructorDecl:
+			return;
+		case __GMLC_NodeKind_Identifier:
+			if (__gmlc_is_local(_node)) array_push(_g.events[_id], { def: false, name: _node.name, maybe: _maybe });
+			return;
+		case __GMLC_NodeKind_VarDecl:
+			__gmlc_walk_events(_g, _id, _node.init, _maybe);
+			__gmlc_event_def(_g, _id, _node.target, _maybe);
+			__gmlc_alias_pair(_g, _node.target, _node.init);
+			return;
+		case __GMLC_NodeKind_Assign:
+			if (__gmlc_is_local(_node.target)) {
+				if (_node.op != "=") __gmlc_walk_events(_g, _id, _node.target, _maybe);
+				__gmlc_walk_events(_g, _id, _node.value, _maybe || (_node.op == "??="));
+				__gmlc_event_def(_g, _id, _node.target, _maybe || (_node.op == "??="));
+				if (_node.op == "=") || (_node.op == "??=") __gmlc_alias_pair(_g, _node.target, _node.value);
+				return;
+			}
+			__gmlc_walk_events(_g, _id, _node.target, _maybe);
+			__gmlc_walk_events(_g, _id, _node.value, _maybe);
+			return;
+		case __GMLC_NodeKind_Update:
+			__gmlc_walk_events(_g, _id, _node.argument, _maybe);
+			__gmlc_event_def(_g, _id, _node.argument, _maybe);
+			return;
+		case __GMLC_NodeKind_Logical:
+			__gmlc_walk_events(_g, _id, _node.left, _maybe);
+			__gmlc_walk_events(_g, _id, _node.right, _maybe || (_node.op != "^^"));
+			return;
+		case __GMLC_NodeKind_Nullish:
+			__gmlc_walk_events(_g, _id, _node.left, _maybe);
+			__gmlc_walk_events(_g, _id, _node.right, true);
+			return;
+		case __GMLC_NodeKind_Conditional:
+			__gmlc_walk_events(_g, _id, _node.test, _maybe);
+			__gmlc_walk_events(_g, _id, _node.consequent, true);
+			__gmlc_walk_events(_g, _id, _node.alternate, true);
+			return;
+	}
+	var _children = _node.children();
+	var _i = 0; repeat (array_length(_children)) {
+		__gmlc_walk_events(_g, _id, _children[_i], _maybe);
+	_i++}
+}
+
+// the allocation sites a value may be: `unknown` for parameters, calls and reads of anything but a local
+function __gmlc_alias_sites(_node, _sites) {
+	if (_node == undefined) return ["unknown"];
+	switch (_node.kind) {
+		case __GMLC_NodeKind_ArrayLiteral: return ["array@" + string(_node.span.start)];
+		case __GMLC_NodeKind_StructLiteral: return ["struct@" + string(_node.span.start)];
+		case __GMLC_NodeKind_New: return ["new@" + string(_node.span.start)];
+		case __GMLC_NodeKind_Call:
+			if (_node.callee.kind == __GMLC_NodeKind_Identifier) && ((_node.callee.name == "array_create") || (_node.callee.name == "json_parse")) {
+				return [_node.callee.name + "@" + string(_node.span.start)];
+			}
+			return ["unknown"];
+		case __GMLC_NodeKind_Identifier:
+			if (__gmlc_is_local(_node)) return _sites[$ _node.name] ?? [];
+			return ["unknown"];
+		case __GMLC_NodeKind_Conditional:
+			return __gmlc_union_names(__gmlc_alias_sites(_node.consequent, _sites), __gmlc_alias_sites(_node.alternate, _sites));
+		case __GMLC_NodeKind_Nullish:
+			return __gmlc_union_names(__gmlc_alias_sites(_node.left, _sites), __gmlc_alias_sites(_node.right, _sites));
+		case __GMLC_NodeKind_Literal: case __GMLC_NodeKind_Binary: case __GMLC_NodeKind_Unary: case __GMLC_NodeKind_Update:
+		case __GMLC_NodeKind_Logical: case __GMLC_NodeKind_TemplateString: case __GMLC_NodeKind_FunctionExpr:
+			return [];
+	}
+	return ["unknown"];
+}
+
+function __gmlc_sorted_ids(_ids) {
+	var _out = [];
+	var _i = 0; repeat (array_length(_ids)) {
+		if (!array_contains(_out, _ids[_i])) array_push(_out, _ids[_i]);
+	_i++}
+	array_sort(_out, true);
+	return _out;
+}
+
+function __gmlc_union_ids(_a, _b) {
+	return __gmlc_sorted_ids(array_concat(_a, _b));
+}
+
+function __gmlc_union_names(_a, _b) {
+	var _out = [];
+	var _all = array_concat(_a, _b);
+	var _i = 0; repeat (array_length(_all)) {
+		if (!array_contains(_out, _all[_i])) array_push(_out, _all[_i]);
+	_i++}
+	array_sort(_out, true);
+	return _out;
+}
 #endregion

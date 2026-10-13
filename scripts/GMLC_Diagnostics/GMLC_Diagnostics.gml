@@ -215,3 +215,154 @@ function __gmlc_throw_diagnostics(_diagnostics, _sources) {
 	};
 }
 #endregion
+
+#region Suppressions
+#region jsDoc
+/// @func    GMLC_SuppressDiagnostics(_diagnostics, _sources)
+/// @desc    The diagnostics left by the `// gmlc-ignore CODE[, CODE]: reason` comments of their files: a comment on
+///          its own line covers the next line with code, one after code covers its own line, and a code may be a
+///          prefix (GMLC31). Errors are never suppressed. A comment without a reason adds GMLC5401 (it still applies),
+///          a code that no diagnostic has GMLC5403.
+/// @param   {Array<Struct.GMLC_Diagnostic>} _diagnostics : The diagnostics of a compile
+/// @param   {Struct.GMLC_SourceTable}       _sources     : Its files
+/// @param   {Real}                          [_file]      : Only this file's comments (one unit of a batch)
+/// @returns {Array<Struct.GMLC_Diagnostic>}
+#endregion
+function GMLC_SuppressDiagnostics(_diagnostics, _sources, _file = undefined) {
+	if (_sources == undefined) return _diagnostics;
+	var _rules = []; // {file, line, codes}
+	var _added = [];
+	var _f = 0; repeat (array_length(_sources.files)) {
+		var _source = _sources.files[_f];
+		if (_source != undefined) && ((_file == undefined) || (_file == _f)) && (string_pos("gmlc-ignore", _source.source) > 0) __gmlc_suppressions(_source, _rules, _added);
+	_f++}
+	if (array_length(_rules) == 0) && (array_length(_added) == 0) return _diagnostics;
+	var _kept = [];
+	var _d = 0; repeat (array_length(_diagnostics)) {
+		if (!__gmlc_suppressed(_diagnostics[_d], _rules, _sources)) array_push(_kept, _diagnostics[_d]);
+	_d++}
+	array_copy(_kept, array_length(_kept), _added, 0, array_length(_added));
+	return _kept;
+}
+
+// whether a diagnostic is on a line a suppression covers, with a code it names
+function __gmlc_suppressed(_diagnostic, _rules, _sources) {
+	if (_diagnostic.severity == "error") return false;
+	var _file = _diagnostic.span.file;
+	if (_file >= array_length(_sources.files)) || (_sources.files[_file] == undefined) return false;
+	var _line = _sources.files[_file].lineOf(_diagnostic.span.start);
+	var _r = 0; repeat (array_length(_rules)) {
+		var _rule = _rules[_r];
+		if (_rule.file == _file) && (_rule.line == _line) {
+			var _c = 0; repeat (array_length(_rule.codes)) {
+				if (string_pos(_rule.codes[_c], _diagnostic.code) == 1) return true;
+			_c++}
+		}
+	_r++}
+	return false;
+}
+
+// the suppressions of one file: its line comments, found outside strings and block comments
+function __gmlc_suppressions(_file, _rules, _added) {
+	var _text = _file.source;
+	var _n = string_byte_length(_text);
+	var _b = buffer_create(_n + 1, buffer_fixed, 1);
+	buffer_write(_b, buffer_text, _text);
+	var _pending = []; // the codes of comments on their own lines, for the next line with code
+	var _line = 1;
+	var _hasCode = false;
+	var _i = 0;
+	while (_i < _n) {
+		var _c = buffer_peek(_b, _i, buffer_u8);
+		var _next = (_i + 1 < _n) ? buffer_peek(_b, _i + 1, buffer_u8) : 0;
+		if (_c == 10) {
+			_line++;
+			_hasCode = false;
+			_i++;
+			continue;
+		}
+		if (_c == 32) || (_c == 9) || (_c == 13) {
+			_i++;
+			continue;
+		}
+		if (_c == 47) && (_next == 47) {
+			var _end = _i;
+			while (_end < _n) && (buffer_peek(_b, _end, buffer_u8) != 10) _end++;
+			__gmlc_suppression(__GMLC_byteCopy(_text, _i + 2, _end), new GMLC_Span(_file.fileId, _i, _end), _line, _hasCode, _rules, _pending, _added);
+			_i = _end;
+			continue;
+		}
+		if (_c == 47) && (_next == 42) {
+			_i += 2;
+			while (_i < _n) && !((buffer_peek(_b, _i, buffer_u8) == 42) && (_i + 1 < _n) && (buffer_peek(_b, _i + 1, buffer_u8) == 47)) {
+				if (buffer_peek(_b, _i, buffer_u8) == 10) {
+					_line++;
+					_hasCode = false;
+				}
+				_i++;
+			}
+			_i += 2;
+			continue;
+		}
+		if (!_hasCode) {
+			_hasCode = true;
+			var _p = 0; repeat (array_length(_pending)) {
+				array_push(_rules, { file: _file.fileId, line: _line, codes: _pending[_p] });
+			_p++}
+			_pending = [];
+		}
+		if (_c == 64) && ((_next == 34) || (_next == 39)) {
+			// a verbatim string, which may span lines
+			_i += 2;
+			while (_i < _n) && (buffer_peek(_b, _i, buffer_u8) != _next) {
+				if (buffer_peek(_b, _i, buffer_u8) == 10) _line++;
+				_i++;
+			}
+			_i++;
+			continue;
+		}
+		if (_c == 34) {
+			_i++;
+			while (_i < _n) {
+				var _s = buffer_peek(_b, _i, buffer_u8);
+				if (_s == 34) || (_s == 10) break;
+				_i += (_s == 92) ? 2 : 1;
+			}
+			if (_i < _n) && (buffer_peek(_b, _i, buffer_u8) == 34) _i++;
+			continue;
+		}
+		_i++;
+	}
+	buffer_delete(_b);
+}
+
+// one line comment: a suppression when it starts with gmlc-ignore
+function __gmlc_suppression(_comment, _span, _line, _hasCode, _rules, _pending, _added) {
+	var _t = string_trim(_comment);
+	if (string_pos("gmlc-ignore", _t) != 1) return;
+	_t = string_delete(_t, 1, 11);
+	if (_t != "") && (string_char_at(_t, 1) != " ") && (string_char_at(_t, 1) != "	") return;
+	var _colon = string_pos(":", _t);
+	var _reason = (_colon > 0) ? string_trim(string_delete(_t, 1, _colon)) : "";
+	var _parts = string_split((_colon > 0) ? string_copy(_t, 1, _colon - 1) : _t, ",", true);
+	var _codes = [];
+	var _names = struct_get_names(__GmlcMessagesData());
+	var _p = 0; repeat (array_length(_parts)) {
+		var _code = string_trim(_parts[_p]);
+		if (_code != "") {
+			array_push(_codes, _code);
+			var _known = false;
+			var _k = 0; repeat (array_length(_names)) {
+				if (string_pos(_code, _names[_k]) == 1) {
+					_known = true;
+					break;
+				}
+			_k++}
+			if (!_known) array_push(_added, new GMLC_Diagnostic("GMLC5403", _span, [_code]));
+		}
+	_p++}
+	if (_reason == "") array_push(_added, new GMLC_Diagnostic("GMLC5401", _span, [string_join_ext(", ", _codes)]));
+	if (_hasCode) array_push(_rules, { file: _span.file, line: _line, codes: _codes });
+	else array_push(_pending, _codes);
+}
+#endregion
