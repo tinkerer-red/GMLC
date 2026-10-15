@@ -122,6 +122,20 @@ function __gmlc_is_zero(_x) {
 }
 
 #region jsDoc
+/// @func    __gmlc_same_real(_a, _b)
+/// @desc    Whether two numbers have the same bits (see __gmlc_is_zero).
+/// @param   {Real} _a : A number
+/// @param   {Real} _b : A number
+/// @returns {Bool}
+#endregion
+function __gmlc_same_real(_a, _b) {
+	static __buffer = buffer_create(16, buffer_fixed, 1);
+	buffer_poke(__buffer, 0, buffer_f64, _a);
+	buffer_poke(__buffer, 8, buffer_f64, _b);
+	return (buffer_peek(__buffer, 0, buffer_u32) == buffer_peek(__buffer, 8, buffer_u32)) && (buffer_peek(__buffer, 4, buffer_u32) == buffer_peek(__buffer, 12, buffer_u32));
+}
+
+#region jsDoc
 /// @func    __gmlc_is_whole(_x)
 /// @desc    Whether a number is exactly a whole number (see __gmlc_is_zero); NaN and the infinities are not.
 /// @param   {Real} _x : The number
@@ -201,9 +215,9 @@ function __gmlc_string_repeat_failure(_args) {
 
 #region jsDoc
 /// @func    __gmlc_real_text(_x)
-/// @desc    A real as decimal text that reads back to the same value, without an exponent (GML has no exponent
-///          literals): json_stringify's 17 significant digits with the point moved; NaN and the infinities by their
-///          GML names. `string` rounds for display.
+/// @desc    A real as the shortest decimal text that reads back to the same value, without an exponent (GML has no
+///          exponent literals): json_stringify's 17 significant digits rounded to the fewest that read back, with the
+///          point moved; NaN and the infinities by their GML names. `string` rounds for display.
 /// @param   {Real} _x : The number
 /// @returns {String}
 #endregion
@@ -212,13 +226,8 @@ function __gmlc_real_text(_x) {
 	if (is_infinity(_x)) return (_x > 0) ? "infinity" : "-infinity";
 	var _text = json_stringify(_x);
 	var _e = string_pos("e", _text);
-	if (_e == 0) {
-		// a whole number is written without its ".0"
-		if (string_ends_with(_text, ".0")) return string_copy(_text, 1, string_length(_text) - 2);
-		return _text;
-	}
-	var _exponent = real(string_delete(_text, 1, _e));
-	var _mantissa = string_copy(_text, 1, _e - 1);
+	var _mantissa = (_e == 0) ? _text : string_copy(_text, 1, _e - 1);
+	var _exponent = (_e == 0) ? 0 : real(string_delete(_text, 1, _e));
 	var _sign = "";
 	if (string_char_at(_mantissa, 1) == "-") {
 		_sign = "-";
@@ -226,9 +235,71 @@ function __gmlc_real_text(_x) {
 	}
 	var _dot = string_pos(".", _mantissa);
 	var _digits = (_dot == 0) ? _mantissa : string_delete(_mantissa, _dot, 1);
-	var _count = string_length(_digits);
 	// the number of digits before the point
 	var _point = ((_dot == 0) ? string_length(_mantissa) : _dot - 1) + _exponent;
+	while (string_length(_digits) > 1) && (string_char_at(_digits, 1) == "0") {
+		_digits = string_delete(_digits, 1, 1);
+		_point -= 1;
+	}
+	while (string_length(_digits) > 1) && (string_char_at(_digits, string_length(_digits)) == "0") {
+		_digits = string_copy(_digits, 1, string_length(_digits) - 1);
+	}
+	if (_digits == "0") return _sign + "0";
+	var _count = 1; repeat (string_length(_digits) - 1) {
+		var _rounded = __gmlc_real_round_digits(_digits, _count, _point);
+		var _candidate = __gmlc_real_place_point(_sign, _rounded[0], _rounded[1]);
+		if (__gmlc_same_real(real(_candidate), _x)) return _candidate;
+	_count++}
+	return __gmlc_real_place_point(_sign, _digits, _point);
+}
+
+#region jsDoc
+/// @func    __gmlc_real_round_digits(_digits, _count, _point)
+/// @desc    The first `_count` of `_digits`, rounded half up on the next digit, without trailing zeros, and the
+///          point position (one more when the rounding carries past the first digit).
+/// @param   {String} _digits : Significant digits
+/// @param   {Real} _count : How many to keep (fewer than there are)
+/// @param   {Real} _point : The number of digits before the decimal point
+/// @returns {Array} [digits, point]
+#endregion
+function __gmlc_real_round_digits(_digits, _count, _point) {
+	var _out = string_copy(_digits, 1, _count);
+	var _at = _point;
+	if (ord(string_char_at(_digits, _count + 1)) >= ord("5")) {
+		var _k = _count;
+		while (true) {
+			if (_k == 0) {
+				_out = "1" + string_copy(_out, 1, string_length(_out) - 1);
+				_at += 1;
+				break;
+			}
+			var _c = string_char_at(_out, _k);
+			if (_c == "9") {
+				_out = string_set_byte_at(_out, _k, ord("0"));
+			}
+			else {
+				_out = string_set_byte_at(_out, _k, ord(_c) + 1);
+				break;
+			}
+			_k -= 1;
+		}
+	}
+	while (string_length(_out) > 1) && (string_char_at(_out, string_length(_out)) == "0") {
+		_out = string_copy(_out, 1, string_length(_out) - 1);
+	}
+	return [_out, _at];
+}
+
+#region jsDoc
+/// @func    __gmlc_real_place_point(_sign, _digits, _point)
+/// @desc    Significant digits with `_point` digits before the decimal point, written without an exponent.
+/// @param   {String} _sign : "" or "-"
+/// @param   {String} _digits : Significant digits
+/// @param   {Real} _point : The number of digits before the decimal point
+/// @returns {String}
+#endregion
+function __gmlc_real_place_point(_sign, _digits, _point) {
+	var _count = string_length(_digits);
 	if (_point <= 0) return _sign + "0." + string_repeat("0", -_point) + _digits;
 	if (_point >= _count) return _sign + _digits + string_repeat("0", _point - _count);
 	return _sign + string_copy(_digits, 1, _point) + "." + string_delete(_digits, 1, _point);
@@ -421,13 +492,18 @@ function throw_gmlc_error(_err, _line=undefined, _lineString=undefined, _column=
 		_script = (_env != undefined) ? (struct_get(_env, "currentScriptName") ?? "") : "";
 	}
 
+	// GameMaker's fields; the stack trace holds the compiled frames when debug executors run, else this line
+	var _stack = __GMLCdebugStacktrace();
+	if (array_length(_stack) == 0) _stack = [string(_script) + " (line " + string(_line) + ")"];
+	var _message = string(_err);
 	var _error = {
-		message:    string(_err),
-		script:     _script,
-		line:       _line,
-		column:     _column,
-		lineString: _lineString,
-		stacktrace: debug_get_callstack(),
+		message:     _message,
+		longMessage: $"{_message}\n at {_script} (line {_line}) - {_lineString}",
+		script:      _script,
+		line:        _line,
+		column:      _column,
+		lineString:  _lineString,
+		stacktrace:  _stack,
 	};
 	throw _error;
 }

@@ -111,14 +111,14 @@ function GmlConstantFoldingTestSuite() : TestSuite() constructor {
 		assert_equals(case_run(case_constant_folding_const_2147483648_plus_1), "string:int64:2147483649", "GameMaker no longer gives the measured result");
 	});
 	addFact("2147483648 + 1 (constants) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'var r = 2147483648 + 1; return typeof(r) + ":" + string(r);'); }), "string:number:2147483649", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'var r = 2147483648 + 1; return typeof(r) + ":" + string(r);'); }), "string:int64:2147483649", "GMLC differs from GameMaker");
 	});
 
 	addFact("$FFFFFFFFFF + 1 (constants) [GameMaker]", function() {
 		assert_equals(case_run(case_constant_folding_const_hexffffffffff_plus_1), "string:int64:1099511627776", "GameMaker no longer gives the measured result");
 	});
 	addFact("$FFFFFFFFFF + 1 (constants) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'var r = $FFFFFFFFFF + 1; return typeof(r) + ":" + string(r);'); }), "string:number:1099511627776", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'var r = $FFFFFFFFFF + 1; return typeof(r) + ":" + string(r);'); }), "string:int64:1099511627776", "GMLC differs from GameMaker");
 	});
 
 	addFact("$FFFFFFFFFF & 1 (constants) [GameMaker]", function() {
@@ -167,21 +167,21 @@ function GmlConstantFoldingTestSuite() : TestSuite() constructor {
 		assert_equals(case_run(case_constant_folding_const_hex80000000_times_2), "string:int64:4294967296", "GameMaker no longer gives the measured result");
 	});
 	addFact("$80000000 * 2 (constants) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'var r = $80000000 * 2; return typeof(r) + ":" + string(r);'); }), "string:number:4294967296", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'var r = $80000000 * 2; return typeof(r) + ":" + string(r);'); }), "string:int64:4294967296", "GMLC differs from GameMaker");
 	});
 
 	addFact("2147483648 * 2 (constants) [GameMaker]", function() {
 		assert_equals(case_run(case_constant_folding_const_2147483648_times_2), "string:int64:4294967296", "GameMaker no longer gives the measured result");
 	});
 	addFact("2147483648 * 2 (constants) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'var r = 2147483648 * 2; return typeof(r) + ":" + string(r);'); }), "string:number:4294967296", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'var r = 2147483648 * 2; return typeof(r) + ":" + string(r);'); }), "string:int64:4294967296", "GMLC differs from GameMaker");
 	});
 
 	addFact("$80000000 div 2 (constants) [GameMaker]", function() {
 		assert_equals(case_run(case_constant_folding_const_hex80000000_div_2), "string:int64:1073741824", "GameMaker no longer gives the measured result");
 	});
 	addFact("$80000000 div 2 (constants) [GMLC]", function() {
-		assert_equals(case_run(function() { return compile_and_execute(@'var r = $80000000 div 2; return typeof(r) + ":" + string(r);'); }), "string:number:1073741824", "GMLC differs from GameMaker");
+		assert_equals(case_run(function() { return compile_and_execute(@'var r = $80000000 div 2; return typeof(r) + ":" + string(r);'); }), "string:int64:1073741824", "GMLC differs from GameMaker");
 	});
 
 	addFact("(1 + 2) & 3 (constants) [GameMaker]", function() {

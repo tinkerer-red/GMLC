@@ -207,7 +207,14 @@
 				var _l = 0; repeat (array_length(passes)) {
 					passes[_l].record.applications++;
 				_l++}
-				if (optimization_occured) _changed = true;
+				if (optimization_occured) {
+					_changed = true;
+					// what the sweep removed leaves empty statements and blocks inside blocks
+					var _units = __units();
+					var _u = 0; repeat (array_length(_units)) {
+						__tidy(_units[_u].root);
+					_u++}
+				}
 			}
 			var _p = 0; repeat (array_length(_step.passes)) {
 				if (__apply(_step.passes[_p])) _changed = true;
@@ -1534,8 +1541,15 @@
 				case __GMLC_NodeKind_Conditional:{
 					return __foldConditional(_node_data);
 				break;}
+				case __GMLC_NodeKind_ExprStmt:{
+					// a call folded to its value does nothing, and a value on its own is not a statement GameMaker accepts
+					var _value = __constantValue(_node.expression);
+					if (_value[0]) && (!__keepsCode(_node.expression)) {
+						return new ASTEmpty(_node.span);
+					}
+				break;}
 			}
-			
+
 			return _node;
 		}
 		

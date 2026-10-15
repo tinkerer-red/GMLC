@@ -129,16 +129,17 @@ function __EnvironmentClass() constructor {
 	static callableFromIndex = function(_index) {
 		// A built-in function read as a value is a plain number (as in GameMaker), and any number is callable, so a
 		// call through a number may only reach a function this environment exposes.
-		var _key = string(_index);
+		// a function reference (method_get_index gives one) and its plain number are the same function
+		var _key = string(real(_index));
 		var _sym = envSymbols[$ __functionIndexNames[$ _key] ?? ""];
-		if (_sym == undefined) || (_sym.type != "envFunctions") || (_sym.raw != _index) {
+		if (_sym == undefined) || (_sym.type != "envFunctions") || is_method(_sym.raw) || (real(_sym.raw) != real(_index)) {
 			// rebuild: the symbols changed since the last lookup
 			__functionIndexNames = {};
 			var _names = struct_get_names(envSymbols);
 			var _i=0; repeat(array_length(_names)) {
 				var _entry = envSymbols[$ _names[_i]];
 				if (_entry[$ "type"] == "envFunctions") && (!is_method(_entry[$ "raw"])) && (is_callable(_entry[$ "raw"])) {
-					__functionIndexNames[$ string(_entry.raw)] = _names[_i];
+					__functionIndexNames[$ string(real(_entry.raw))] = _names[_i];
 				}
 			_i++}
 			_sym = envSymbols[$ __functionIndexNames[$ _key] ?? ""];

@@ -36,10 +36,21 @@
 		__hasRuns = false;   // whether the file has a macro use
 		__absorb = 0;        // how many `;` right after the last statement written it takes as its own
 		__useParens = false; // whether the tokens of the last macro use found whole are in parentheses of their own
+		// with lines preserved: the source line of the next text, the output's current line, whether the next text on
+		// this line is set apart by a space, and whether something landed below its source line
+		__preserve = false;
+		__anchor = 1;
+		__outLine = 1;
+		__pendingSpace = false;
+		__moved = false;
 
 		#region jsDoc
 		/// @func    emit(_ast, _program)
-		/// @desc    The GML text of one file's tree.
+		/// @desc    The GML text of one file's tree. With GMLC_Env.preserve_lines every statement, expression, comment
+		///          and closing bracket is on the line it has in the source: text moves down to its line and never up,
+		///          things the source has on one line share it, and the file keeps its line count; when that cannot
+		///          hold (a comment written after its statement, text that would end past its line) the source comes
+		///          back as it is.
 		/// @self    GMLC_Emitter
 		/// @param   {Struct.ASTScript} _ast     : The lowered or optimized tree
 		/// @param   {Struct}           _program : The file's program record after preprocessing (file, tokens,
@@ -62,14 +73,30 @@
 			printed = 0;
 			__unclosed = false;
 			__absorb = 0;
+			__preserve = env.preserve_lines;
+			__anchor = 1;
+			__outLine = 1;
+			__pendingSpace = false;
+			__moved = false;
 			__collectPieces(_ast, _program);
 			__collectRuns(_program.tokens);
 			__countOrigins(_ast);
 
 			__list(_ast.body);
 			__flush(infinity);
+			if (__preserve) {
+				var _lines = array_length(file.lineStarts);
+				if (__moved) || (__outLine > _lines) {
+					__runs = {};
+					__counts = {};
+					__tokens = [];
+					pieces = [];
+					return file.source;
+				}
+				repeat (_lines - __outLine) buffer_write(out, buffer_u8, 10);
+			}
 			// a block comment that is never closed runs to the end of the file: a line break after it would join it
-			if (lineOpen) && !__unclosed buffer_write(out, buffer_text, "\n");
+			else if (lineOpen) && !__unclosed buffer_write(out, buffer_text, "\n");
 
 			buffer_write(out, buffer_u8, 0);
 			buffer_seek(out, buffer_seek_start, 0);
@@ -197,6 +224,7 @@
 			while (piece < _n) && (pieces[piece].start < _limit) {
 				var _p = pieces[piece++];
 				if (_p[$ "node"] != undefined) {
+					__anchorAt(_p.start, true);
 					if (canBlank) && __blankBetween(lastEnd, _p.start) __blankLine();
 					__startLine();
 					__enumText(_p.node);
@@ -207,7 +235,12 @@
 					continue;
 				}
 				var _text = __text(_p.start, _p.stop);
-				if (_p.comment) && (lineOpen) && (!lineComment) && (lastEnd > 0) && (__line(_p.start) == __line(lastEnd - 1)) {
+				if (__preserve) {
+					__anchorAt(_p.start, true);
+					__pendingSpace = lineOpen;
+					__writeAtLine(_text);
+				}
+				else if (_p.comment) && (lineOpen) && (!lineComment) && (lastEnd > 0) && (__line(_p.start) == __line(lastEnd - 1)) {
 					buffer_write(out, buffer_text, " " + _text);
 				}
 				else {
@@ -215,8 +248,13 @@
 					__startLine();
 					buffer_write(out, buffer_text, _text);
 				}
-				// a `//` comment, a macro or a region ends its line
-				lineComment = !_p.comment || (string_char_at(_text, 2) == "/");
+				// a `//` comment, a macro or a region ends its line (a pragma call too, unless lines are kept)
+				if (__preserve) {
+					lineComment = ((_p.comment) && (string_char_at(_text, 2) == "/")) || ((!_p.comment) && (string_char_at(_text, 1) == "#"));
+				}
+				else {
+					lineComment = !_p.comment || (string_char_at(_text, 2) == "/");
+				}
 				__unclosed = (_p.comment) && (string_char_at(_text, 2) == "*") && ((string_length(_text) < 4) || (string_copy(_text, string_length(_text) - 1, 2) != "*/"));
 				lastEnd = max(lastEnd, _p.stop);
 				canBlank = true;
@@ -440,6 +478,11 @@
 
 		// ends the current line and starts the next one at the current indentation
 		static __startLine = function() {
+			if (__preserve) {
+				// the next text goes on its own line only when the source has it there
+				__pendingSpace = lineOpen;
+				return;
+			}
 			if (lineOpen) buffer_write(out, buffer_text, "\n");
 			buffer_write(out, buffer_text, __indentText(indent));
 			lineOpen = true;
@@ -448,6 +491,7 @@
 
 		// an empty line
 		static __blankLine = function() {
+			if (__preserve) return;
 			if (lineOpen) buffer_write(out, buffer_text, "\n");
 			buffer_write(out, buffer_text, "\n");
 			lineOpen = false;
@@ -456,9 +500,49 @@
 
 		// text on the current line; after a `//` comment it goes on the next line
 		static __write = function(_text) {
+			if (__preserve) {
+				__writeAtLine(_text);
+				__unclosed = false;
+				return;
+			}
 			if (lineComment) __startLine();
 			buffer_write(out, buffer_text, _text);
 			__unclosed = false;
+		};
+
+		// with lines preserved: the next text belongs on the line of a source offset; a node whose line is already
+		// behind the output cannot keep it
+		static __anchorAt = function(_offset, _node) {
+			if (!__preserve) return;
+			var _line = __line(_offset);
+			if (_node) && (_line < __outLine) && (_offset > 0) __moved = true;
+			__anchor = _line;
+		};
+
+		// with lines preserved: text written on its anchor's line (line breaks first while the output is above it),
+		// after a space when it follows other text there, on the next line after a `//` comment
+		static __writeAtLine = function(_text) {
+			if (lineComment) && (__anchor <= __outLine) {
+				__anchor = __outLine + 1;
+				__moved = true;
+			}
+			var _at = buffer_tell(out);
+			if (__anchor > __outLine) {
+				while (_at > 0) && (buffer_peek(out, _at - 1, buffer_u8) == 32) _at--;
+				buffer_seek(out, buffer_seek_start, _at);
+				repeat (__anchor - __outLine) buffer_write(out, buffer_u8, 10);
+				__outLine = __anchor;
+				buffer_write(out, buffer_text, __indentText(indent));
+			}
+			else if (__pendingSpace) && (_at > 0) {
+				var _last = buffer_peek(out, _at - 1, buffer_u8);
+				if (_last != 32) && (_last != 10) buffer_write(out, buffer_u8, 32);
+			}
+			__pendingSpace = false;
+			lineComment = false;
+			lineOpen = true;
+			buffer_write(out, buffer_text, _text);
+			__outLine += string_count("\n", _text);
 		};
 		#endregion
 
@@ -478,6 +562,7 @@
 				__flush(_s.span.start);
 				if (canBlank) && __blankBetween(lastEnd, _s.span.start) __blankLine();
 				__startLine();
+				__anchorAt(_s.span.start, true);
 				__absorb = __statement(_s);
 				lastEnd = max(lastEnd, _s.span[$ "end"]);
 				canBlank = true;
@@ -499,6 +584,7 @@
 			__flush(_block.span[$ "end"]);
 			indent--;
 			if (printed != _before) __startLine();
+			__anchorAt(_block.span[$ "end"] - 1, false);
 			__write("}");
 			lastEnd = max(lastEnd, _block.span[$ "end"]);
 		};
@@ -663,6 +749,7 @@
 						__flush(_case.span.start);
 						if (canBlank) && __blankBetween(lastEnd, _case.span.start) __blankLine();
 						__startLine();
+						__anchorAt(_case.span.start, true);
 						if (_case.kind == __GMLC_NodeKind_Case) {
 							__write("case ");
 							__expr(_case.test);
@@ -693,6 +780,7 @@
 					__flush(_s.span[$ "end"]);
 					indent--;
 					if (printed != _before) __startLine();
+					__anchorAt(_s.span[$ "end"] - 1, false);
 					__write("}");
 				return 1;}
 				case __GMLC_NodeKind_Try: {
@@ -847,6 +935,7 @@
 		};
 
 		static __expr = function(_node) {
+			__anchorAt(_node.span.start, true);
 			if (__hasRuns) {
 				var _name = __macroName(_node);
 				if (_name != undefined) {
@@ -1063,6 +1152,7 @@
 			}
 			if (_broken) indent--;
 			canBlank = _blank;
+			if (_n > 0) __anchorAt(_close, false);
 			__write(_closeText);
 		};
 
@@ -1072,6 +1162,7 @@
 		};
 
 		static __entry = function(_entry) {
+			__anchorAt(_entry.span.start, true);
 			if (_entry.shorthand) {
 				__write(_entry.key);
 				return;

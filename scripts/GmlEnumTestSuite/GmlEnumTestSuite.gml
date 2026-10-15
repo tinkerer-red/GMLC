@@ -216,7 +216,7 @@ return r;'); }), "string:int64:9", "GMLC differs from GameMaker");
 	});
 	addFact("a member plus a number literal [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'enum CaseEnPlus { X = 4 }
-return typeof(CaseEnPlus.X + 1) + ":" + string(CaseEnPlus.X + 1);'); }), "string:number:5", "GMLC differs from GameMaker");
+return typeof(CaseEnPlus.X + 1) + ":" + string(CaseEnPlus.X + 1);'); }), "string:int64:5", "GMLC differs from GameMaker");
 	});
 
 	addFact("a member times a fractional literal [GameMaker]", function() {

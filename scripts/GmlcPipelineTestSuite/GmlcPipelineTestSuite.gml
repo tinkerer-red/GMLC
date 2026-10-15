@@ -106,6 +106,37 @@ function gmlc_pipeline_info(_info) {
 	return gmlc_pipeline_kind(_info) + " " + string(_info.parent_fn) + " | " + string(_info.facts.statement_count) + " " + string(_info.facts.node_count);
 }
 
+#region jsDoc
+/// @func    gmlc_pipeline_safe_message(_source)
+/// @desc    Compiles and runs a source under the SAFE tier, where `show_debug_message` is not exposed (and `array_sort` is); `{F}` in the
+///          source is that function's number. The message of the error it throws, "" when it throws none.
+/// @param   {String} _source : GML source
+/// @returns {String}
+#endregion
+function gmlc_pipeline_safe_message(_source) {
+	static __env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.SAFE).exposeFunctions({ "array_sort": array_sort });
+	if (__env.isFunction("show_debug_message")) return "show_debug_message is exposed under SAFE";
+	_source = string_replace_all(_source, "{F}", string(real(show_debug_message)));
+	try {
+		executeProgram(__env.compile(_source, "sandbox.gml"));
+	}
+	catch (_e) {
+		return gmlc_pipeline_message(_e);
+	}
+	return "";
+}
+
+// whether a message is the sandbox's refusal; any other message is shown so a failure says what happened
+function gmlc_pipeline_refused(_message) {
+	return (string_pos("not exposed", _message) > 0) ? true : _message;
+}
+
+// compiles and runs the lines of a source with the debug executors, under FULL; what it returns
+function gmlc_pipeline_debug_run(_lines) {
+	static __env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL).set_debug();
+	return executeProgram(__env.compile(string_join_ext("\n", _lines), "debug.gml"));
+}
+
 function GmlcPipelineTestSuite() : TestSuite() constructor {
 	
 	#region Names in a file
@@ -772,6 +803,193 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		var _info = _ast.functions[1];
 		assert_equals(string(_info.params) + string(_info.locals), "[ \"a\",\"b\" ][ \"c\",\"e\" ]", "wrong slots");
 		assert_equals(compile_and_execute("function rp_l2(a, b) { var c = 1; return a + b + c; }\nreturn rp_l2(1, 2);"), 4, "the slots do not run");
+	});
+	#endregion
+	
+	#region Sandbox: a function the environment does not expose is never reached
+	addFact("A call through the number of a function SAFE does not expose is refused [GMLC]", function() {
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("var _f = {F}; _f();")), true, "the call ran");
+	});
+	
+	addFact("A method of a function SAFE does not expose is refused [GMLC]", function() {
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("var _m = method(undefined, {F}); _m();")), true, "the method was made");
+	});
+	
+	addFact("A callback that is a function SAFE does not expose is refused [GMLC]", function() {
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("array_map([1], {F});")), true, "array_map called it");
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("script_execute({F});")), true, "script_execute called it");
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("script_execute_ext({F}, []);")), true, "script_execute_ext called it");
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("array_filter([1], {F});")), true, "array_filter called it");
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("array_create_ext(1, {F});")), true, "array_create_ext called it");
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("array_reduce([1, 2], {F});")), true, "array_reduce called it");
+	});
+	
+	addFact("An exposed function called through method_get_index runs [GMLC]", function() {
+		assert_equals(gmlc_pipeline_safe_message("var _i = method_get_index(method(undefined, abs)); if (_i(-2) != 2) throw \"wrong\";"), "", "abs through its index");
+	});
+	
+	addFact("An exposed function from method_get_index is a callback [GMLC]", function() {
+		assert_equals(gmlc_pipeline_safe_message("var _a = array_map([-1], method_get_index(method(undefined, abs))); if (_a[0] != 1) throw \"wrong\";"), "", "array_map refused it");
+	});
+	
+	addFact("An exposed function from method_get_index runs through script_execute [GMLC]", function() {
+		assert_equals(gmlc_pipeline_safe_message("if (script_execute(method_get_index(method(undefined, abs)), -3) != 3) throw \"wrong\";"), "", "script_execute refused it");
+	});
+	
+	addFact("array_sort with a sort function SAFE does not expose is refused [GMLC]", function() {
+		assert_equals(gmlc_pipeline_refused(gmlc_pipeline_safe_message("array_sort([2, 1], {F});")), true, "array_sort called it");
+	});
+	
+	addFact("array_sort with a Bool still sorts [GMLC]", function() {
+		assert_equals(gmlc_pipeline_safe_message("var _a = [2, 1]; array_sort(_a, true); if (_a[0] != 1) throw \"wrong\";"), "", "a Bool was refused");
+	});
+	
+	addFact("array_sort with a compiled sort function still sorts [GMLC]", function() {
+		assert_equals(gmlc_pipeline_safe_message("var _a = [1, 2]; array_sort(_a, function(_x, _y) { return _y - _x; }); if (_a[0] != 2) throw \"wrong\";"), "", "a compiled function was refused");
+	});
+	#endregion
+	
+	#region Run-time errors
+	addFact("A run-time error caught by GML code has GameMaker's fields [GMLC]", function() {
+		var _e = compile_and_execute(@'
+			try { var _s = {}; _s.f = 1; _s.f(); } catch (_e) { return _e; }
+		');
+		var _names = ["message", "longMessage", "script", "line", "stacktrace"];
+		var _i = 0; repeat (array_length(_names)) {
+			assert_true(struct_exists(_e, _names[_i]), _names[_i]);
+		_i++}
+		assert_true(is_array(_e.stacktrace), "stacktrace is not an array");
+	});
+	
+	addFact("A GMLC error caught by GML code has GameMaker's fields [GMLC]", function() {
+		var _e = gmlc_pipeline_debug_run(["try { var _n = -3; return _n * \"ab\"; } catch (_e) { return _e; }"]);
+		assert_equals(_e.message, "DoMul :: a string repeated a negative number of times", "message");
+		assert_equals(_e.line, 1, "line");
+		assert_true(string_pos("DoMul", _e.longMessage) > 0, "longMessage");
+	});
+	
+	addFact("The debug stack trace has the GML file and line of each frame [GMLC]", function() {
+		var _stack = gmlc_pipeline_debug_run([
+			"function rp_inner() {",
+			"	var _n = -3; return _n * \"ab\";",
+			"}",
+			"function rp_outer() {",
+			"	return rp_inner();",
+			"}",
+			"try { rp_outer(); } catch (_e) { return _e.stacktrace; }",
+		]);
+		assert_equals(string(_stack), string(["rp_inner (debug.gml:2)", "rp_outer (debug.gml:5)", "<script> (debug.gml:7)"]), "frames");
+	});
+	
+	addFact("A function with the release pragma is absent from the debug stack trace [GMLC]", function() {
+		var _stack = gmlc_pipeline_debug_run([
+			"function rp_inner2() {",
+			"	var _n = -3; return _n * \"ab\";",
+			"}",
+			"function rp_fast() {",
+			"	gml_pragma(\"gmlc_release_mode\");",
+			"	return rp_inner2();",
+			"}",
+			"try { rp_fast(); } catch (_e) { return _e.stacktrace; }",
+		]);
+		assert_equals(string(_stack), string(["rp_inner2 (debug.gml:2)", "<script> (debug.gml:8)"]), "frames");
+	});
+	
+	addFact("The debug executors throw where GameMaker's runner ends [GMLC]", function() {
+		assert_equals(gmlc_pipeline_debug_run(["try { var _s = \"ab\"; return -2 * _s; } catch (_e) { return _e.message; }"]), "DoMul :: a string repeated a negative number of times", "-2 * string");
+		assert_equals(gmlc_pipeline_debug_run(["try { var _z = int64(0); return 5 mod _z; } catch (_e) { return _e.message; }"]), "DoMod :: Divide by zero", "mod int64 0");
+		assert_equals(gmlc_pipeline_debug_run(["var _n = 3; return _n * \"ab\";"]), "ababab", "a positive count repeats");
+	});
+	
+	addFact("The release pragma runs nothing [GMLC]", function() {
+		assert_equals(compile_and_execute("function rp_p() { gml_pragma(\"gmlc_release_mode\"); return 4; }\nreturn rp_p();"), 4, "the pragma under the default environment");
+		assert_equals(gmlc_pipeline_safe_message("function rp_p2() { gml_pragma(\"gmlc_release_mode\"); return 4; }\nrp_p2();"), "", "the pragma under SAFE");
+	});
+	#endregion
+	
+	#region Object variables
+	// measured on VM and YYC (2024.14.4): a read takes the first instance, a write sets every instance, and `+=`
+	// reads the first and writes every one
+	addFact("object.variable with several instances [GameMaker]", function() {
+		var _r = (function() {
+			var _a = instance_create_depth(0, 0, 0, oEmpty);
+			var _b = instance_create_depth(0, 0, 0, oEmpty);
+			var _c = instance_create_depth(0, 0, 0, oEmpty);
+			_a.v = 1; _b.v = 2; _c.v = 3;
+			var _out = string(oEmpty.v);
+			oEmpty.v = 9;
+			_out += "|" + string(_a.v) + "," + string(_b.v) + "," + string(_c.v);
+			_a.v = 1; _b.v = 2; _c.v = 3;
+			oEmpty.v += 10;
+			_out += "|" + string(_a.v) + "," + string(_b.v) + "," + string(_c.v);
+			instance_destroy(_a); instance_destroy(_b); instance_destroy(_c);
+			return _out;
+		})();
+		assert_equals(_r, "1|9,9,9|11,11,11", "GameMaker no longer gives the measured result");
+	});
+	
+	addFact("object.variable with several instances [GMLC]", function() {
+		assert_equals(compile_and_execute(@'
+			var _a = instance_create_depth(0, 0, 0, oEmpty);
+			var _b = instance_create_depth(0, 0, 0, oEmpty);
+			var _c = instance_create_depth(0, 0, 0, oEmpty);
+			_a.v = 1; _b.v = 2; _c.v = 3;
+			var _out = string(oEmpty.v);
+			oEmpty.v = 9;
+			_out += "|" + string(_a.v) + "," + string(_b.v) + "," + string(_c.v);
+			_a.v = 1; _b.v = 2; _c.v = 3;
+			oEmpty.v += 10;
+			_out += "|" + string(_a.v) + "," + string(_b.v) + "," + string(_c.v);
+			instance_destroy(_a); instance_destroy(_b); instance_destroy(_c);
+			return _out;
+		'), "1|9,9,9|11,11,11", "GMLC differs from GameMaker");
+	});
+	addFact("++ on object.variable with several instances [GMLC]", function() {
+		assert_equals(compile_and_execute(@'
+			var _a = instance_create_depth(0, 0, 0, oEmpty);
+			var _b = instance_create_depth(0, 0, 0, oEmpty);
+			_a.v = 1; _b.v = 5;
+			var _r = oEmpty.v++;
+			var _out = string(_r) + "|" + string(_a.v) + "," + string(_b.v);
+			instance_destroy(_a); instance_destroy(_b);
+			return _out;
+		'), "1|2,2", "GMLC differs from GameMaker");
+	});
+
+	addFact("A write through a variable holding an object with several instances [GMLC]", function() {
+		assert_equals(compile_and_execute(@'
+			var _a = instance_create_depth(0, 0, 0, oEmpty);
+			var _b = instance_create_depth(0, 0, 0, oEmpty);
+			_a.v = 1; _b.v = 5;
+			var _o = oEmpty;
+			_o.v = 7;
+			var _out = string(_a.v) + "," + string(_b.v);
+			instance_destroy(_a); instance_destroy(_b);
+			return _out;
+		'), "7,7", "GMLC differs from GameMaker");
+	});
+	#endregion
+
+	#region Compiling step by step
+	addFact("A compile run step by step gives the same program as one call [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _src = "function rp_step(a) { return a * 2; }\nreturn rp_step(21);";
+		var _job = _env.compile_begin(_src, "steps.gml");
+		var _steps = 1;
+		while (_job.step()) _steps++;
+		assert_equals(_steps, 7, "one step per stage");
+		assert_equals(executeProgram(_job.program), executeProgram(_env.compile(_src, "one.gml")), "the programs differ");
+		assert_false(_job.step(), "a finished job steps again");
+	});
+
+	addFact("A stage's error is thrown by the step that runs it [GMLC]", function() {
+		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
+		var _job = _env.compile_begin("var _x = ;", "broken.gml");
+		var _thrown = false;
+		try { while (_job.step()) {} } catch (_e) { _thrown = true; }
+		assert_true(_thrown, "nothing was thrown");
+		assert_true(array_length(_env.diagnostics) > 0, "no diagnostics");
+		assert_false(_job.step(), "a failed job steps again");
 	});
 	#endregion
 }

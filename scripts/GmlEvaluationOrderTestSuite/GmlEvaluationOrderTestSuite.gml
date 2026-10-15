@@ -497,7 +497,7 @@ return case_log() + "=" + string(s.a.b);'); }), "string:V,T=1", "GMLC differs fr
 		assert_equals(case_run(function() { return compile_and_execute(@'case_log_reset();
 var arr = [1, 1];
 case_ev("T", arr)[case_ev("I", 1)] += case_ev("V", 5);
-return case_log() + "=" + string(arr);'); }), "string:I,T,V,I,T=[ 1,6 ]", "GMLC differs from GameMaker");
+return case_log() + "=" + string(arr);'); }), "string:T,I,V=[ 1,6 ]", "GMLC differs from GameMaker");
 	});
 
 	addFact("arr[i][j] += v [GameMaker]", function() {
@@ -517,7 +517,7 @@ return case_log() + "=" + string(arr);'); }), "string:I,J,V=[ [ 1,1 ],[ 6,1 ] ]"
 		assert_equals(case_run(function() { return compile_and_execute(@'case_log_reset();
 var s = { k: 1 };
 case_ev("T", s)[$ case_ev("K", "k")] += case_ev("V", 2);
-return case_log() + "=" + string(s.k);'); }), "string:K,T,V,K,T=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(s.k);'); }), "string:T,K,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("t[? k] += v [GameMaker]", function() {
@@ -530,7 +530,7 @@ m[? "k"] = 1;
 case_ev("T", m)[? case_ev("K", "k")] += case_ev("V", 2);
 var _r = m[? "k"];
 ds_map_destroy(m);
-return case_log() + "=" + string(_r);'); }), "string:K,T,V,K,T=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(_r);'); }), "string:T,K,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("t[| i] += v [GameMaker]", function() {
@@ -543,7 +543,7 @@ ds_list_add(l, 1, 1);
 case_ev("T", l)[| case_ev("I", 1)] += case_ev("V", 2);
 var _r = l[| 1];
 ds_list_destroy(l);
-return case_log() + "=" + string(_r);'); }), "string:I,T,V,I,T=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(_r);'); }), "string:T,I,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("t[# x, y] += v [GameMaker]", function() {
@@ -556,7 +556,7 @@ ds_grid_clear(g, 1);
 case_ev("T", g)[# case_ev("X", 1), case_ev("Y", 0)] += case_ev("V", 2);
 var _r = g[# 1, 0];
 ds_grid_destroy(g);
-return case_log() + "=" + string(_r);'); }), "string:Y,X,T,V,Y,X,T=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(_r);'); }), "string:T,X,Y,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("t.a.b += v [GameMaker]", function() {
@@ -700,7 +700,7 @@ return case_log() + "=" + string(_r);'); }), "string:I,J=3", "GMLC differs from 
 		assert_equals(case_run(function() { return compile_and_execute(@'case_log_reset();
 var s = { k: 1 };
 s[$ case_ev("K", "k")] += case_ev("V", 2);
-return case_log() + "=" + string(s.k);'); }), "string:K,V,K=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(s.k);'); }), "string:K,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("m[? k] += v on a variable [GameMaker]", function() {
@@ -713,7 +713,7 @@ m[? "k"] = 1;
 m[? case_ev("K", "k")] += case_ev("V", 2);
 var _r = m[? "k"];
 ds_map_destroy(m);
-return case_log() + "=" + string(_r);'); }), "string:K,V,K=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(_r);'); }), "string:K,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("g[# x, y] += v on a variable [GameMaker]", function() {
@@ -726,7 +726,7 @@ ds_grid_clear(g, 1);
 g[# case_ev("X", 1), case_ev("Y", 0)] += case_ev("V", 2);
 var _r = g[# 1, 0];
 ds_grid_destroy(g);
-return case_log() + "=" + string(_r);'); }), "string:Y,X,V,Y,X=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(_r);'); }), "string:X,Y,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("l[| i] += v on a variable [GameMaker]", function() {
@@ -739,7 +739,7 @@ ds_list_add(l, 1, 1);
 l[| case_ev("I", 1)] += case_ev("V", 2);
 var _r = l[| 1];
 ds_list_destroy(l);
-return case_log() + "=" + string(_r);'); }), "string:I,V,I=3", "GMLC differs from GameMaker");
+return case_log() + "=" + string(_r);'); }), "string:I,V=3", "GMLC differs from GameMaker");
 	});
 
 	addFact("t.arr[i] += v [GameMaker]", function() {

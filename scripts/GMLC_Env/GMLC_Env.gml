@@ -15,6 +15,9 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	// on: constants that fail when they run (`real("ab")`, `chr(65.5)`) are warnings and fail at run time, as test code
 	// that expects the failure needs; off: they are compile errors
 	test_mode = false;
+	// on: programs compiled from now on run the debug executors (each error carries the GML file and line of every
+	// compiled frame; an operation that would end GameMaker's runner throws); off: the fast executors
+	debug = false;
 	// the static struct of every struct literal compiled in this environment, in place of GameMaker's shared one
 	__structLiteralStatics = {};
 	
@@ -156,67 +159,67 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			set: method(undefined, function(value){ parentNode.arguments = value; }),
 		},
 		"argument0":{
-			get: method(undefined, function(){ return parentNode.arguments[0]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (0 < array_length(_a)) ? _a[0] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[0] = value; }),
 		},
 		"argument1":{
-			get: method(undefined, function(){ return parentNode.arguments[1]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (1 < array_length(_a)) ? _a[1] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[1] = value; }),
 		},
 		"argument2":{
-			get: method(undefined, function(){ return parentNode.arguments[2]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (2 < array_length(_a)) ? _a[2] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[2] = value; }),
 		},
 		"argument3":{
-			get: method(undefined, function(){ return parentNode.arguments[3]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (3 < array_length(_a)) ? _a[3] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[3] = value; }),
 		},
 		"argument4":{
-			get: method(undefined, function(){ return parentNode.arguments[4]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (4 < array_length(_a)) ? _a[4] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[4] = value; }),
 		},
 		"argument5":{
-			get: method(undefined, function(){ return parentNode.arguments[5]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (5 < array_length(_a)) ? _a[5] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[5] = value; }),
 		},
 		"argument6":{
-			get: method(undefined, function(){ return parentNode.arguments[6]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (6 < array_length(_a)) ? _a[6] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[6] = value; }),
 		},
 		"argument7":{
-			get: method(undefined, function(){ return parentNode.arguments[7]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (7 < array_length(_a)) ? _a[7] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[7] = value; }),
 		},
 		"argument8":{
-			get: method(undefined, function(){ return parentNode.arguments[8]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (8 < array_length(_a)) ? _a[8] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[8] = value; }),
 		},
 		"argument9":{
-			get: method(undefined, function(){ return parentNode.arguments[9]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (9 < array_length(_a)) ? _a[9] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[9] = value; }),
 		},
 		"argument10":{
-			get: method(undefined, function(){ return parentNode.arguments[10]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (10 < array_length(_a)) ? _a[10] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[10] = value; }),
 		},
 		"argument11":{
-			get: method(undefined, function(){ return parentNode.arguments[11]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (11 < array_length(_a)) ? _a[11] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[11] = value; }),
 		},
 		"argument12":{
-			get: method(undefined, function(){ return parentNode.arguments[12]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (12 < array_length(_a)) ? _a[12] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[12] = value; }),
 		},
 		"argument13":{
-			get: method(undefined, function(){ return parentNode.arguments[13]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (13 < array_length(_a)) ? _a[13] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[13] = value; }),
 		},
 		"argument14":{
-			get: method(undefined, function(){ return parentNode.arguments[14]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (14 < array_length(_a)) ? _a[14] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[14] = value; }),
 		},
 		"argument15":{
-			get: method(undefined, function(){ return parentNode.arguments[15]; }),
+			get: method(undefined, function(){ var _a = parentNode.arguments; return (15 < array_length(_a)) ? _a[15] : undefined; }),
 			set: method(undefined, function(value){ parentNode.arguments[15] = value; }),
 		},
 		"argument_count":{
@@ -794,6 +797,23 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	}
 	
 	#region jsDoc
+	/// @func    compile_begin()
+	/// @desc    Starts a compile that runs one stage per call of the job's step(), for a host that spreads a compile
+	///          over frames: `var _job = env.compile_begin(src, "a.gml"); ... if (!_job.step()) run(_job.program);`.
+	///          Gives the same program as compile(); a stage's error is thrown by the step that runs it, with the
+	///          diagnostics in `diagnostics`. One job at a time per environment.
+	/// @self    GMLC_Env
+	/// @param   {String} sourceCode : Source text to compile
+	/// @param   {String} [name]     : Name of the file, for positions
+	/// @param   {String} [kind]     : "script" (default) or "event", as for compile
+	/// @returns {Struct.GMLC_CompileJob}
+	#endregion
+	static compile_begin = function(_sourceCode = "", _name = "", _kind = "script") {
+		diagnostics = [];
+		return new GMLC_CompileJob(self, _sourceCode, _name, _kind, true, false);
+	}
+
+	#region jsDoc
 	/// @func    __compile_source()
 	/// @desc    The pipeline of one source text, gathering each stage's diagnostics into `diagnostics`; stops after
 	///          lowering when _compile is false, and gives the text of the emitter in place of a program when _emit
@@ -801,89 +821,88 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 	/// @ignore
 	#endregion
 	static __compile_source = function(_sourceCode, _name, _compile, _kind = "script", _emit = false) {
-		currentScriptName = __resolve_compile_source_name(_name);
-		
-		var _time = get_timer();
-		var _step_time = _time;
-		
-		var _sources = __newSourceTable();
-		sources = _sources;
-		__unitFile = array_length(_sources.files);
-		lexer.initialize(_sourceCode, currentScriptName, __unitFile);
-		_sources.add(lexer.program.file); // before lexing, so a lexer error has its file
-		var tokens = lexer.parseAll();
-		__gather(diagnostics, lexer);
-		tokens.sources = _sources;
-		if (__log_tokenizer_results) __gmlc_json_save("tokenizer.json", tokens)
-		if (__log_step_times) {
-			show_debug_message($"Tokenizer Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		
-		__preprocess([tokens], _sources, diagnostics);
-		var preprocessedTokens = tokens;
-		if (__log_pre_processer_results) __gmlc_json_save("pre_processor.json", preprocessedTokens)
-		if (__log_step_times) {
-			show_debug_message($"Pre Processor Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		
-		parser.initialize(preprocessedTokens, _kind);
-		var ast = parser.parseAll();
-		// the parser's warnings; its errors were thrown with every diagnostic of the file
-		__gather(diagnostics, parser);
-		ast.unitKind = _kind;
-		if (__log_parser_results) __gmlc_json_save("parser.json", ast)
-		if (__log_step_times) {
-			show_debug_message($"Parser Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		
-		resolver.initialize(ast, _sources);
-		var ast = resolver.parseAll();
-		__gather(diagnostics, resolver);
-		if (__log_step_times) {
-			show_debug_message($"Resolver Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		
-		lower.initialize(ast, _sources);
-		var ast = lower.parseAll();
-		__gather(diagnostics, lower);
-		__resolveEnums([ast], _sources, [diagnostics]);
-		if (__log_lower_results) __gmlc_json_save("lowered.json", ast)
-		if (__log_step_times) {
-			show_debug_message($"Lower Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		if (!_compile) return undefined;
-		if (_emit) {
-			// the lowered tree as it is, or the optimized one
-			if (should_optimize) ast = __optimize(ast, _sources, diagnostics);
-			return emitter.emit(ast, tokens);
-		}
-		
-		var ast = __optimize(ast, _sources, diagnostics);
-		if (__log_optimizer_results) __gmlc_json_save("optimizer.json", ast)
-		if (__log_step_times) {
-			show_debug_message($"{should_optimize ? "Optimizer" : "Constant folding"} Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		
-		var _global = getConstant("global");
-		var _globals = (is_struct(_global)) ? _global.value : {};
-		compiler.initialize(ast, _globals, _sources);
-		var program = compiler.parseAll();
-		if (__log_compiler_results) __gmlc_json_save("compiled.json", ast)
-		if (__log_step_times) {
-			show_debug_message($"Compile Time took : {(get_timer() - _step_time)/1000}ms")
-			_step_time = get_timer();
-		}
-		
-		
-		return program;
+		var _job = new GMLC_CompileJob(self, _sourceCode, _name, _kind, _compile, _emit);
+		while (__compile_step(_job)) {}
+		return _job.program;
 	}
-	
+
+	#region jsDoc
+	/// @func    __compile_step()
+	/// @desc    Runs the next stage of a compile job; whether stages remain.
+	/// @ignore
+	#endregion
+	static __compile_step = function(_job) {
+		var _step_time = get_timer();
+		var _sources = _job.sources;
+		var _stage = _job.stage++;
+		switch (_stage) {
+			case 0: {
+				currentScriptName = __resolve_compile_source_name(_job.name);
+				_sources = __newSourceTable();
+				_job.sources = _sources;
+				sources = _sources;
+				__unitFile = array_length(_sources.files);
+				lexer.initialize(_job.source, currentScriptName, __unitFile);
+				_sources.add(lexer.program.file); // before lexing, so a lexer error has its file
+				_job.tokens = lexer.parseAll();
+				__gather(diagnostics, lexer);
+				_job.tokens.sources = _sources;
+				if (__log_tokenizer_results) __gmlc_json_save("tokenizer.json", _job.tokens)
+				if (__log_step_times) show_debug_message($"Tokenizer Time took : {(get_timer() - _step_time)/1000}ms")
+			break;}
+			case 1: {
+				__preprocess([_job.tokens], _sources, diagnostics);
+				if (__log_pre_processer_results) __gmlc_json_save("pre_processor.json", _job.tokens)
+				if (__log_step_times) show_debug_message($"Pre Processor Time took : {(get_timer() - _step_time)/1000}ms")
+			break;}
+			case 2: {
+				parser.initialize(_job.tokens, _job.kind);
+				_job.ast = parser.parseAll();
+				// the parser's warnings; its errors were thrown with every diagnostic of the file
+				__gather(diagnostics, parser);
+				_job.ast.unitKind = _job.kind;
+				if (__log_parser_results) __gmlc_json_save("parser.json", _job.ast)
+				if (__log_step_times) show_debug_message($"Parser Time took : {(get_timer() - _step_time)/1000}ms")
+			break;}
+			case 3: {
+				resolver.initialize(_job.ast, _sources);
+				_job.ast = resolver.parseAll();
+				__gather(diagnostics, resolver);
+				if (__log_step_times) show_debug_message($"Resolver Time took : {(get_timer() - _step_time)/1000}ms")
+			break;}
+			case 4: {
+				lower.initialize(_job.ast, _sources);
+				_job.ast = lower.parseAll();
+				__gather(diagnostics, lower);
+				__resolveEnums([_job.ast], _sources, [diagnostics]);
+				if (__log_lower_results) __gmlc_json_save("lowered.json", _job.ast)
+				if (__log_step_times) show_debug_message($"Lower Time took : {(get_timer() - _step_time)/1000}ms")
+				if (!_job.compile) return false;
+			break;}
+			case 5: {
+				if (_job.emit) {
+					// the lowered tree as it is, or the optimized one
+					if (should_optimize) _job.ast = __optimize(_job.ast, _sources, diagnostics);
+					_job.program = emitter.emit(_job.ast, _job.tokens);
+					return false;
+				}
+				_job.ast = __optimize(_job.ast, _sources, diagnostics);
+				if (__log_optimizer_results) __gmlc_json_save("optimizer.json", _job.ast)
+				if (__log_step_times) show_debug_message($"{should_optimize ? "Optimizer" : "Constant folding"} Time took : {(get_timer() - _step_time)/1000}ms")
+			break;}
+			case 6: {
+				var _global = getConstant("global");
+				var _globals = (is_struct(_global)) ? _global.value : {};
+				compiler.initialize(_job.ast, _globals, _sources);
+				_job.program = compiler.parseAll();
+				if (__log_compiler_results) __gmlc_json_save("compiled.json", _job.ast)
+				if (__log_step_times) show_debug_message($"Compile Time took : {(get_timer() - _step_time)/1000}ms")
+				return false;
+			}
+		}
+		return true;
+	}
+
 	#region jsDoc
 	/// @func    __gather()
 	/// @desc    Adds a stage's diagnostics to a list.
@@ -1064,6 +1083,19 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 			if (array_contains(extensions, _registry.order[_i])) array_push(_ordered, _registry.order[_i]);
 		_i++}
 		extensions = _ordered;
+	};
+	
+	#region jsDoc
+	/// @func    set_debug()
+	/// @desc    Switches the debug executors on or off for the programs compiled from now on. A function whose body has
+	///          `gml_pragma("gmlc_release_mode")` always runs the fast ones.
+	/// @self    GMLC_Env
+	/// @param   {Bool} [_on] : Whether debug executors are used (default true)
+	/// @returns {Struct.GMLC_Env}
+	#endregion
+	static set_debug = function(_on=true) {
+		debug = _on;
+		return self;
 	};
 	
 	#region jsDoc
@@ -1852,6 +1884,48 @@ function GMLC_Env() : __EnvironmentClass() constructor {
 }
 
 #region jsDoc
+/// @func    GMLC_CompileJob(_env, _source, _name, _kind, _compile, _emit)
+/// @desc    A compile that runs one stage per step() (GMLC_Env.compile_begin). `program` holds the compiled program
+///          once step() has returned false.
+/// @param   {Struct.GMLC_Env} _env     : The environment that compiles
+/// @param   {String}          _source  : Source text
+/// @param   {String}          _name    : Name of the file
+/// @param   {String}          _kind    : "script" or "event"
+/// @param   {Bool}            _compile : false: stop after lowering
+/// @param   {Bool}            _emit    : true: `program` is the emitted text
+#endregion
+function GMLC_CompileJob(_env, _source, _name, _kind, _compile, _emit) constructor {
+	env = _env;
+	source = _source;
+	name = _name;
+	kind = _kind;
+	compile = _compile;
+	emit = _emit;
+	stage = 0;
+	done = false;
+	sources = undefined;
+	tokens = undefined;
+	ast = undefined;
+	program = undefined;
+
+	// runs the next stage; whether more remain (false once `program` is ready, or after a stage threw)
+	static step = function() {
+		if (done) return false;
+		try {
+			done = !env.__compile_step(self);
+		}
+		catch (_e) {
+			done = true;
+			var _error = env.__withDiagnostics(_e, env.diagnostics);
+			env.diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(env.diagnostics, env.sources));
+			throw _error;
+		}
+		if (done) env.diagnostics = GMLC_SortDiagnostics(GMLC_SuppressDiagnostics(env.diagnostics, env.sources));
+		return !done;
+	}
+}
+
+#region jsDoc
 /// GMLC_EXPOSURE
 /// @desc    Exposure tiers that control symbol visibility and function availability within the GMLC environment:
 ///          NONE, SAFE, MODERATE, ALL, FULL, NATIVE, __SIZE__.
@@ -2068,3 +2142,4 @@ static __EventNumber = {
 	"ev_audio_playback_ended": 80,
 	"ev_system_event": 75,
 }
+

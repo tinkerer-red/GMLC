@@ -88,10 +88,8 @@
 						        array_resize(backupLocalsWrittenTo, _local_offset)
 
 #macro __GMLC_RESET_LOCALS	if (localCount) {\
-								array_resize(locals, 0);\
-								array_resize(localsWrittenTo, 0);\
-								array_resize(locals, localCount);\
-								array_resize(localsWrittenTo, localCount);\
+								array_copy(locals, 0, blankLocals, 0, localCount);\
+								array_copy(localsWrittenTo, 0, blankLocalsWrittenTo, 0, localCount);\
 							}
 #endregion
 
@@ -251,6 +249,7 @@ function __GMLCcompileProgram(_node, _globalsStruct, _env=undefined, _sources=un
 	_output.rootNode = _output;
 	_output.env = _env; // calls through a plain function number are checked against what it exposes
 	_output.sources = _sources; // the compile's files: node spans give the lines of errors
+	_output.debug = (_env != undefined) && (_env[$ "debug"] == true); // debug executors (see __GMLCdebugFrame)
 	_output.globals = _globalsStruct; // these are optional inputs for future use with compiling a full project folder.
 	_output.scopeStack = ["Global"]; // how a function expression is bound where it appears (see __GMLCcompileFunctionExpr)
 	_output.functions = _node.functions; // what the resolver found about each function (its locals), by fn_id
@@ -456,6 +455,29 @@ function __GMLCexecuteFunction() {
 	
 	return _return;
 }
+// __GMLCexecuteFunction for a call node: the arguments come as an array, copied once
+function __GMLCexecuteFunctionWithArray(_args) {
+	__GMLC_DEFAULT_SELF_AND_OTHER
+	array_push(global.__gmlc_active_functions, self);
+	var _count = array_length(_args);
+	var _arg_count = max(_count, argumentCount);
+	if (recursionCount++) {
+		__GMLC_STASH_LOCALS
+		__GMLC_STASH_ARGUMENTS
+	}
+	prevArgCount = _arg_count;
+	array_resize(arguments, _count);
+	array_copy(arguments, 0, _args, 0, _count);
+	argumentsDefault();
+	__GMLC_INIT_STATICS
+
+	program();
+	var _return = returnValue;
+
+	__GMLC_POST_FUNC
+
+	return _return;
+}
 function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, undefined, "__GMLCcompileFunction", "<Missing Error Message>", _node.span);
 	_output[$ "__@@is_gmlc_function@@__"] = true;
@@ -468,6 +490,7 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	_output.isScriptBody = (_node.kind == __GMLC_NodeKind_Script);
 	// an object event's top-level functions become methods of the instance
 	_output.isEventBody = _output.isScriptBody && (_node[$ "unitKind"] == "event");
+	__GMLCdebugFrame(_rootNode, _output, _node, (_output.isScriptBody) ? _node : _node.body);
 	var _params = _node[$ "params"] ?? [];
 	
 	//this assists with converting locals from struct accessors to an array write
@@ -476,6 +499,8 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	var _i = _locals.count;
 	_output.localCount = _i;
 	_output.locals = array_create(_i, undefined);
+	_output.blankLocals = array_create(_i, undefined); // copied over the locals when a call returns
+	_output.blankLocalsWrittenTo = array_create(_i, false);
 	_output.localsWrittenTo = array_create(_i, false); //remember if we ever wrote to those locals, this is used to throw errors incase we are reading from an unwritten local
 	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
 	_output.backupLocalsWrittenTo = [];//if the function is recursive stash the locals back into this array, to<->from
@@ -502,7 +527,8 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	_output.returnValue = undefined;
 	_output.flowMask = FLOW_MASK.EMPTY;
-	
+	// what a call node uses: the arguments as the call node's array, without spreading them (see GMLC_CALL_KIND)
+	_output.invokeWithArray = __vanilla_method(_output, __GMLCexecuteFunctionWithArray);
 	
 	return __vanilla_method(_output, __GMLCexecuteFunction)
 }
@@ -573,6 +599,7 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	_output[$ "__@@is_gmlc_function@@__"] = true;
 	
 	_output.parentNode = _output;
+	__GMLCdebugFrame(_rootNode, _output, _node, _node.body);
 	
 	//parent constructor
 	_output.hasParentConstructor = false;
@@ -587,6 +614,8 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 	var _i = _locals.count;
 	_output.localCount = _i;
 	_output.locals = array_create(_i, undefined);
+	_output.blankLocals = array_create(_i, undefined); // copied over the locals when a call returns
+	_output.blankLocalsWrittenTo = array_create(_i, false);
 	_output.localsWrittenTo = array_create(_i, false); //remember if we ever wrote to those locals, this is used to throw errors incase we are reading from an unwritten local
 	_output.backupLocals = [];//if the function is recursive stash the locals back into this array, to<->from
 	_output.backupLocalsWrittenTo = [];//if the function is recursive stash the locals back into this array, to<->from
@@ -899,11 +928,84 @@ function __GMLCcompileStatements(_rootNode, _parentNode, _statements, _out) {
 				}
 			break;}
 			default: {
-				array_push(_out, __GMLCcompileExpression(_rootNode, _parentNode, _statement));
+				if (__GMLCisReleasePragma(_statement)) break;
+				var _compiled = __GMLCcompileExpression(_rootNode, _parentNode, _statement);
+				array_push(_out, (_parentNode[$ "debug"] == true) ? __GMLCdebugStatement(_rootNode, _parentNode, _statement, _compiled) : _compiled);
 			break;}
 		}
 	_i++}
 }
+
+#region Debug executors
+#region jsDoc
+/// @func    __GMLCdebugFrame(_rootNode, _output, _node, _body)
+/// @desc    Sets up a function node for the debug executors: on when the program is compiled in debug and the
+///          function's own body has no `gml_pragma("gmlc_release_mode")`, with its name and file for stack traces.
+#endregion
+function __GMLCdebugFrame(_rootNode, _output, _node, _body) {
+	_output.debug = _rootNode.debug;
+	if (!_output.debug) return;
+	var _statements = (_body == undefined) ? [] : (_body[$ "body"] ?? []);
+	var _i = 0; repeat (array_length(_statements)) {
+		if (__GMLCisReleasePragma(_statements[_i])) {
+			_output.debug = false;
+			return;
+		}
+	_i++}
+	var _at = __gmlc_node_position({ span: _node.span, rootNode: _rootNode });
+	_output.debugName = _node[$ "name"] ?? ((_node.kind == __GMLC_NodeKind_Script) ? "<script>" : "<anonymous>");
+	_output.debugFile = (_at != undefined) ? _at.fileName : "";
+	_output.debugLine = (_at != undefined) ? _at.line : 0;
+}
+// `gml_pragma("gmlc_release_mode")` as a statement: run with the fast executors; nothing at run time
+function __GMLCisReleasePragma(_statement) {
+	if (_statement.kind == __GMLC_NodeKind_ExprStmt) _statement = _statement.expression;
+	if (_statement.kind != __GMLC_NodeKind_Call) || (_statement.callee.kind != __GMLC_NodeKind_Identifier) return false;
+	if (_statement.callee.name != "gml_pragma") || (array_length(_statement.args) != 1) return false;
+	var _arg = _statement.args[0];
+	return (_arg.kind == __GMLC_NodeKind_Literal) && (_arg.value == "gmlc_release_mode");
+}
+// a statement of a debug function: the function's frame knows its line before it runs
+function __GMLCdebugStatement(_rootNode, _parentNode, _statement, _compiled) {
+	var _at = __gmlc_node_position({ span: _statement.span, rootNode: _rootNode });
+	return __vanilla_method({ parentNode: _parentNode, statement: _compiled, line: (_at != undefined) ? _at.line : 0 }, __GMLCexecuteDebugStatement);
+}
+function __GMLCexecuteDebugStatement() {
+	parentNode.debugLine = line;
+	statement();
+}
+#region jsDoc
+/// @func    __GMLCdebugStacktrace()
+/// @desc    The compiled frames running now, innermost first, as "name (file:line)"; frames of fast functions are
+///          left out. Empty when no debug function runs.
+/// @returns {Array<String>}
+#endregion
+function __GMLCdebugStacktrace() {
+	var _stack = global.__gmlc_active_functions;
+	var _out = [];
+	var _i = array_length(_stack) - 1; repeat (array_length(_stack)) {
+		var _f = _stack[_i];
+		if (_f[$ "debugName"] != undefined) array_push(_out, $"{_f.debugName} ({_f.debugFile}:{_f.debugLine})");
+	_i--}
+	return _out;
+}
+// `*` where GameMaker's runner ends: a string repeated a negative number of times
+function __GMLCexecuteOpMultiplyDebug() {
+	var _a = left();
+	var _b = right();
+	if (is_string(_a) && is_numeric(_b) && _b < 0) || (is_string(_b) && is_numeric(_a) && _a < 0) {
+		throw_gmlc_error("DoMul :: a string repeated a negative number of times");
+	}
+	return _a * _b;
+}
+// `mod` where GameMaker's runner ends: an int64 zero divisor
+function __GMLCexecuteOpModDebug() {
+	var _a = left();
+	var _b = right();
+	if (is_int64(_b) && _b == 0) throw_gmlc_error("DoMod :: Divide by zero");
+	return _a mod _b;
+}
+#endregion
 #region jsDoc
 /// @func    __GMLCblockOf(_rootNode, _parentNode, _node, _compiled)
 /// @desc    The compiled statements as one: nothing, the only one, or a block that runs them in order.
@@ -920,7 +1022,59 @@ function __GMLCblockOf(_rootNode, _parentNode, _node, _compiled) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBlockStatement", "<Missing Error Message>", _node.span);
 	_output.blockStatements = _compiled;
 	_output.size = _size;
-	return __vanilla_method(_output, __GMLCexecuteBlockStatement);
+	return __vanilla_method(_output, __GMLCcontainsJump(_node) ? __GMLCexecuteBlockStatement : __GMLCexecuteBlockStatementPlain);
+}
+// a block with no break, continue, return or exit in it: nothing to check between its statements
+function __GMLCexecuteBlockStatementPlain() {
+	var i = 0;
+	repeat(size) {
+		blockStatements[i]();
+	i++;}
+}
+#region jsDoc
+/// @func    __GMLCcontainsJump(_node)
+/// @desc    Whether a statement has a break, continue, return or exit in it (not counting the functions declared in
+///          it), which the executors of its blocks and loops must look for; kept on the node once found.
+/// @param   {Struct} _node : A node
+/// @returns {Bool}
+#endregion
+function __GMLCcontainsJump(_node) {
+	if (!is_struct(_node)) return false;
+	var _known = _node[$ "__gmlcJump"];
+	if (_known != undefined) return _known;
+	var _found = false;
+	switch (_node[$ "kind"]) {
+		case __GMLC_NodeKind_Break:
+		case __GMLC_NodeKind_Continue:
+		case __GMLC_NodeKind_Return:
+		case __GMLC_NodeKind_Exit: {
+			_found = true;
+		break;}
+		case __GMLC_NodeKind_FunctionExpr:
+		case __GMLC_NodeKind_FunctionDecl:
+		case __GMLC_NodeKind_ConstructorDecl: {
+		break;}
+		default: {
+			var _names = _node[$ "childFields"] ?? [];
+			var _i = 0; repeat (array_length(_names)) {
+				var _value = _node[$ _names[_i]];
+				if (is_array(_value)) {
+					var _j = 0; repeat (array_length(_value)) {
+						if (is_struct(_value[_j])) && __GMLCcontainsJump(_value[_j]) {
+							_found = true;
+							break;
+						}
+					_j++}
+				}
+				else if (is_struct(_value)) && __GMLCcontainsJump(_value) {
+					_found = true;
+				}
+				if (_found) break;
+			_i++}
+		break;}
+	}
+	_node[$ "__gmlcJump"] = _found;
+	return _found;
 }
 
 #endregion
@@ -998,7 +1152,7 @@ function __GMLCcompileRepeat(_rootNode, _parentNode, _node) {
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.count);
 	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.body);
     
-    return __vanilla_method(_output, __GMLCexecuteRepeat);
+    return __vanilla_method(_output, __GMLCcontainsJump(_node.body) ? __GMLCexecuteRepeat : __GMLCexecuteRepeatPlain);
 }
 
 #region //{
@@ -1031,7 +1185,7 @@ function __GMLCcompileWhile(_rootNode, _parentNode, _node) {
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.test);
 	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.body);
     
-    return __vanilla_method(_output, __GMLCexecuteWhile);
+    return __vanilla_method(_output, __GMLCcontainsJump(_node.body) ? __GMLCexecuteWhile : __GMLCexecuteWhilePlain);
 }
 
 #region //{
@@ -1065,7 +1219,7 @@ function __GMLCcompileDoUntil(_rootNode, _parentNode, _node) {
 	_output.condition = __GMLCcompileExpression(_rootNode, _parentNode, _node.test);
 	_output.blockStatement = __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.body);
     
-    return __vanilla_method(_output, __GMLCexecuteDoUntil);
+    return __vanilla_method(_output, __GMLCcontainsJump(_node.body) ? __GMLCexecuteDoUntil : __GMLCexecuteDoUntilPlain);
 }
 
 #region //{
@@ -1121,7 +1275,29 @@ function __GMLCcompileFor(_rootNode, _parentNode, _node) {
 	_output.operation      = (_node.update == undefined) ? function(){}            : __GMLCcompileBlockStatement(_rootNode, _parentNode, new ASTBlock(_node.update.span, [_node.update]));
 	_output.blockStatement = (_node.body   == undefined) ? function(){}            : __GMLCcompileBlockStatement(_rootNode, _parentNode, _node.body);
     
-	return __vanilla_method(_output, __GMLCexecuteFor);
+	return __vanilla_method(_output, __GMLCcontainsJump(_node.body) ? __GMLCexecuteFor : __GMLCexecuteForPlain);
+}
+// the loops of a body with no break, continue, return or exit in it
+function __GMLCexecuteForPlain() {
+	for (assignment(); condition(); operation()) {
+		blockStatement();
+	}
+}
+function __GMLCexecuteRepeatPlain() {
+	repeat (condition()) {
+		blockStatement();
+	}
+}
+function __GMLCexecuteWhilePlain() {
+	while (condition()) {
+		blockStatement();
+	}
+}
+function __GMLCexecuteDoUntilPlain() {
+	do {
+		blockStatement();
+	}
+	until condition()
 }
 
 #region //{
@@ -1605,9 +1781,13 @@ function __GMLCexecuteCallMethodExpression() {
 		// the kind of function is checked once per callee: the checks cost more than the call itself
 		if (_func != lastFunc) {
 			lastKind = __GMLCcallKind(_func);
+			lastCallable = (lastKind == GMLC_CALL_KIND.FUNCTION) ? method_get_self(_func).invokeWithArray : _func;
 			lastFunc = _func;
 		}
 		switch (lastKind) {
+			case GMLC_CALL_KIND.FUNCTION: {
+				_return = lastCallable(arguments);
+			break;}
 			case GMLC_CALL_KIND.GMLC: {
 				_return = method_call(_func, arguments);
 			break;}
@@ -1694,6 +1874,11 @@ function __GMLCcallbackArgs(_name) {
 	static __cache = {};
 	if (struct_exists(__cache, _name)) return __cache[$ _name];
 	
+	// GmlSpec types array_sort's sort function as Any (it also takes a Bool)
+	if (_name == "array_sort") {
+		__cache[$ _name] = [[1, true]];
+		return __cache[$ _name];
+	}
 	var _result = undefined;
 	var _entry = __GmlSpec()[$ _name];
 	if (_entry != undefined) && (_entry.type == "envFunctions") {
@@ -1731,7 +1916,7 @@ function __GMLCcheckCallbackArgs(_node) {
 		if (_index < array_length(_args)) {
 			var _value = _args[_index];
 			// a negative number where the parameter also takes a Real is a "none" value (-1), not a function
-			if (!is_method(_value)) && (is_callable(_value)) && !(_list[_i][1] && is_numeric(_value) && _value < 0) {
+			if (!is_method(_value)) && !is_bool(_value) && (is_callable(_value)) && !(_list[_i][1] && is_numeric(_value) && _value < 0) {
 				__GMLCcallableFromIndex(_node.rootNode, _value);
 			}
 		}
@@ -1788,7 +1973,7 @@ function __GMLCexecuteCallExpression() {
 			_callable = __GMLCcallableFromIndex(rootNode, _func);
 		}
 		lastKind = __GMLCcallKind(_callable);
-		lastCallable = _callable;
+		lastCallable = (lastKind == GMLC_CALL_KIND.FUNCTION) ? method_get_self(_callable).invokeWithArray : _callable;
 		lastFunc = _func;
 	}
 	_func = lastCallable;
@@ -1797,6 +1982,9 @@ function __GMLCexecuteCallExpression() {
 	// script_execute and method_call still run a constructor's body on self
 	var _directConstructor = false;
 	switch (lastKind) {
+		case GMLC_CALL_KIND.FUNCTION: {
+			_return = _func(arguments);
+		break;}
 		case GMLC_CALL_KIND.GMLC: {
 			_return = method_call(_func, arguments);
 		break;}
@@ -2114,7 +2302,22 @@ function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBinaryExpression", "<Missing Error Message>", _node.span);
 	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
-    
+
+	// a constant on the right is read from the node, not called
+	if (_node.right.kind == __GMLC_NodeKind_Literal) {
+		_output.value = _node.right.value;
+		switch (_node.op) {
+			case "==":  return __vanilla_method(_output, __GMLCexecuteOpEqualsEqualsConst);
+			case "!=":  return __vanilla_method(_output, __GMLCexecuteOpNotEqualsConst);
+			case "<":   return __vanilla_method(_output, __GMLCexecuteOpLessConst);
+			case "<=":  return __vanilla_method(_output, __GMLCexecuteOpLessEqualsConst);
+			case ">":   return __vanilla_method(_output, __GMLCexecuteOpGreaterConst);
+			case ">=":  return __vanilla_method(_output, __GMLCexecuteOpGreaterEqualsConst);
+			case "+":   return __vanilla_method(_output, __GMLCexecuteOpPlusConst);
+			case "-":   return __vanilla_method(_output, __GMLCexecuteOpMinusConst);
+		}
+	}
+
     switch (_node.op) {
 		case "==":  return __vanilla_method(_output, __GMLCexecuteOpEqualsEquals     );
 		case "!=":  return __vanilla_method(_output, __GMLCexecuteOpNotEquals        );
@@ -2124,9 +2327,9 @@ function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
 		case ">=":  return __vanilla_method(_output, __GMLCexecuteOpGreaterEquals    );
 		case "+":   return __vanilla_method(_output, __GMLCexecuteOpPlus             );
 		case "-":   return __vanilla_method(_output, __GMLCexecuteOpMinus            );
-		case "*":   return __vanilla_method(_output, __GMLCexecuteOpMultiply         );
+		case "*":   return __vanilla_method(_output, (_parentNode[$ "debug"] == true) ? __GMLCexecuteOpMultiplyDebug : __GMLCexecuteOpMultiply);
 		case "/":   return __vanilla_method(_output, __GMLCexecuteOpDivide           );
-		case "mod": return __vanilla_method(_output, __GMLCexecuteOpMod              );
+		case "mod": return __vanilla_method(_output, (_parentNode[$ "debug"] == true) ? __GMLCexecuteOpModDebug : __GMLCexecuteOpMod);
 		case "div": return __vanilla_method(_output, __GMLCexecuteOpDiv              );
 		case "|":   return __vanilla_method(_output, __GMLCexecuteOpBitwiseOR        );
 		case "^":   return __vanilla_method(_output, __GMLCexecuteOpBitwiseXOR       );
@@ -2136,6 +2339,31 @@ function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
 	}
 }
 #region Binary Expressions
+// the right operand is a constant (`value`)
+function __GMLCexecuteOpEqualsEqualsConst() {
+	return left() == value;
+}
+function __GMLCexecuteOpNotEqualsConst() {
+	return left() != value;
+}
+function __GMLCexecuteOpLessConst() {
+	return left() < value;
+}
+function __GMLCexecuteOpLessEqualsConst() {
+	return left() <= value;
+}
+function __GMLCexecuteOpGreaterConst() {
+	return left() > value;
+}
+function __GMLCexecuteOpGreaterEqualsConst() {
+	return left() >= value;
+}
+function __GMLCexecuteOpPlusConst() {
+	return left() + value;
+}
+function __GMLCexecuteOpMinusConst() {
+	return left() - value;
+}
 #region Equality Ops
 function __GMLCexecuteOpEqualsEquals() {
     return left() == right();
@@ -2662,7 +2890,8 @@ function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightEx
 #region Call kinds
 // what a call reaches, kept on the call node for its last callee
 enum GMLC_CALL_KIND {
-	GMLC,              // a compiled function or a GMLC method: it runs through its own executor
+	GMLC,              // a GMLC method or program: it runs through its own executor
+	FUNCTION,          // a compiled function: its node takes the call's argument array (invokeWithArray)
 	CONSTRUCTOR,       // a compiled constructor called without new
 	BOUND_CONSTRUCTOR, // a compiled constructor bound with method(), called without new
 	NATIVE,            // a GameMaker function or method
@@ -2671,7 +2900,10 @@ enum GMLC_CALL_KIND {
 function __GMLCcallKind(_func) {
 	if (is_gmlc_constructor(_func)) return GMLC_CALL_KIND.CONSTRUCTOR;
 	if (is_gmlc_method(_func)) return is_gmlc_constructor(method_get_self(_func).func) ? GMLC_CALL_KIND.BOUND_CONSTRUCTOR : GMLC_CALL_KIND.GMLC;
-	if (is_gmlc_program(_func)) return GMLC_CALL_KIND.GMLC;
+	if (is_gmlc_program(_func)) {
+		var _node = method_get_self(_func);
+		return (_node[$ "invokeWithArray"] != undefined) ? GMLC_CALL_KIND.FUNCTION : GMLC_CALL_KIND.GMLC;
+	}
 	return GMLC_CALL_KIND.NATIVE;
 }
 #endregion

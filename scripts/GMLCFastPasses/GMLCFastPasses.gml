@@ -61,8 +61,10 @@ function __GMLCexecuteGetPropertyVarStatic() {
 //    key: <expression>
 //}
 #endregion
+// the get and set functions are called from here, so they run with this executor's self, not the key's
 function __GMLCexecuteGetPropertyUnique() {
-	return key.get()
+	var _get = key.get;
+	return _get();
 }
 #endregion
 
@@ -114,7 +116,8 @@ function __GMLCexecuteSetPropertyVarStatic() {
 //}
 #endregion
 function __GMLCexecuteSetPropertyUnique() {
-	key.set(expression());
+	var _set = key.set;
+	_set(expression());
 }
 #endregion
 
@@ -507,6 +510,11 @@ function __GMLCexecuteStructDotAccSet(){
 	var _value = expression();
 	var _target = target();
 	
+	if (!is_struct(_target)) && __GMLCisObject(_target) {
+		__GMLCsetObjectVariable(_target, key, _value);
+		return;
+	}
+	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
 	}
@@ -548,6 +556,11 @@ function __GMLCexecuteStructDotAccSet(){
 #endregion
 function __GMLCexecuteCompoundDot(){
 	var _target = target();
+	if (!is_struct(_target)) && __GMLCisObject(_target) {
+		var _current = _target[$ key];
+		__GMLCsetObjectVariable(_target, key, (apply == undefined) ? (_current ?? right()) : apply(_current, right()));
+		return;
+	}
 	var _owner = __GMLCdotOwner(_target, key, self);
 	if (apply == undefined) {
 		_owner[$ key] ??= right();
@@ -634,6 +647,21 @@ function __GMLCdotOwner(_target, _key, _node) {
 	}
 	var _at = __gmlc_node_position(_node);
 	throw_gmlc_error($"Variable <{typeof(_target)}>.{_key} not set before reading it.", _at.line, _at.lineString, _at.column, _at.fileName)
+}
+#region jsDoc
+/// @func    __GMLCisObject(_value)
+/// @desc    Whether a value before a dot is an object (an object asset or its number), whose variable a write sets
+///          on every instance, as GameMaker does; an instance or struct is not.
+/// @param   {Any} _value : The value before the dot
+/// @returns {Bool}
+#endregion
+function __GMLCisObject(_value) {
+	return (is_handle(_value) || is_numeric(_value)) && (_value >= 0) && object_exists(_value);
+}
+// a write to `object.variable`: every instance of the object, as GameMaker's own `object.variable = value` (a write
+// through a key held in a variable, `_o[$ _k] = value`, sets only the first instance in GameMaker)
+function __GMLCsetObjectVariable(_object, _key, _value) {
+	with (_object) self[$ _key] = _value;
 }
 function __GMLCcompoundPlus(_a, _b)       { return _a + _b; }
 function __GMLCcompoundMinus(_a, _b)      { return _a - _b; }
@@ -761,23 +789,31 @@ function __GMLCexecuteUpdatePropertyStaticMinusMinusPostfix() {
 #endregion
 #region Unique
 function __GMLCexecuteUpdatePropertyUniquePlusPlusPrefix() {
-	var _val = key.get() + 1;
-	key.set(_val);
+	var _get = key.get;
+	var _set = key.set;
+	var _val = _get() + 1;
+	_set(_val);
 	return _val;
 }
 function __GMLCexecuteUpdatePropertyUniquePlusPlusPostfix() {
-	var _val = key.get();
-	key.set(_val + 1);
+	var _get = key.get;
+	var _set = key.set;
+	var _val = _get();
+	_set(_val + 1);
 	return _val;
 }
 function __GMLCexecuteUpdatePropertyUniqueMinusMinusPrefix() {
-	var _val = key.get() - 1;
-	key.set(_val);
+	var _get = key.get;
+	var _set = key.set;
+	var _val = _get() - 1;
+	_set(_val);
 	return _val;
 }
 function __GMLCexecuteUpdatePropertyUniqueMinusMinusPostfix() {
-    var _val = key.get();
-	key.set(_val - 1);
+	var _get = key.get;
+	var _set = key.set;
+	var _val = _get();
+	_set(_val - 1);
 	return _val;
 }
 #endregion
@@ -872,6 +908,13 @@ function __GMLCcompileUpdateStruct(_rootNode, _parentNode, _node) { return __GML
 function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	var _target = target();
 	
+	if (!is_struct(_target)) && __GMLCisObject(_target) {
+		var _old = _target[$ key];
+		var _new = _old + 1;
+		__GMLCsetObjectVariable(_target, key, _new);
+		return _new;
+	}
+	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
 	}
@@ -895,6 +938,13 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 }
 function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	var _target = target();
+	
+	if (!is_struct(_target)) && __GMLCisObject(_target) {
+		var _old = _target[$ key];
+		var _new = _old + 1;
+		__GMLCsetObjectVariable(_target, key, _new);
+		return _old;
+	}
 	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
@@ -922,6 +972,13 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	var _target = target();
 	
+	if (!is_struct(_target)) && __GMLCisObject(_target) {
+		var _old = _target[$ key];
+		var _new = _old - 1;
+		__GMLCsetObjectVariable(_target, key, _new);
+		return _new;
+	}
+	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
 	}
@@ -945,6 +1002,13 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 }
 function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	var _target = target();
+	
+	if (!is_struct(_target)) && __GMLCisObject(_target) {
+		var _old = _target[$ key];
+		var _new = _old - 1;
+		__GMLCsetObjectVariable(_target, key, _new);
+		return _old;
+	}
 	
 	if (is_gmlc_function(_target)) {
 		_target = __gmlc_static_get(_target)
