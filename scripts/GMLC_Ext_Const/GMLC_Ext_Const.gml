@@ -1,17 +1,15 @@
-#region Extension: const
-// `const NAME = value`: a local constant of the enclosing function (or of the file's body), not seen by the functions
-// inside it except a `closure`, which sees the locals around it. When the value is a number or string literal (a sign allowed), every read of the name in that function
-// becomes the literal and the declaration goes; otherwise the declaration is the `var` it was parsed as. Assigning to
-// the name, `++`/`--` on it, or declaring it again in the same function is GMLC2012.
-
 #region jsDoc
 /// @func    GMLC_Ext_Const()
-/// @desc    The `const` extension.
+/// @desc    `const NAME = value`: a local constant. A literal value replaces every read and the declaration goes;
+///          any other value stays the `var` it was parsed as.
 /// @returns {Struct.GMLC_Ext_Const}
 #endregion
 function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
+	#region Config
 	static statementWords = ["const"];
+	#endregion
 	
+	#region Public
 	#region jsDoc
 	/// @func    parseStatement(_parser)
 	/// @desc    `const NAME = value`, parsed as a `var` declaration the rewrite then treats as a constant. `const` not
@@ -21,20 +19,19 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 	/// @returns {Struct.ASTNode|Undefined}
 	#endregion
 	static parseStatement = function(_parser) {
-		var _next = _parser.peek();
+		var _next = _parser.peekToken();
 		if (_next == undefined) || (_next.type != __GMLC_TokenType_Identifier) return undefined;
-		var _first = _parser.currentToken;
-		_parser.advance(); // const
-		var _declFirst = _parser.currentToken;
+		var _first = _parser.current_token;
+		_parser.nextToken();
+		var _declFirst = _parser.current_token;
 		var _target = _parser.__parseName("a constant name");
 		if (!_parser.isOperator("=")) _parser.__fail("GMLC1032", _target.span, [_target.name]);
-		_parser.advance();
+		_parser.nextToken();
 		var _init = _parser.parseExpression();
 		var _decl = _parser.finish(new ASTVarDecl(undefined, _target, _init), _declFirst);
 		var _node = _parser.finish(new ASTVarDeclList(undefined, [_decl]), _first);
-		var _state = _parser.extensionState[$ name];
-		if (!struct_exists(_state, "decls")) _state.decls = [];
-		array_push(_state.decls, _node);
+		_node.__extension = name;
+		_parser.extension_state[$ name].used = true;
 		return _node;
 	};
 	
@@ -47,19 +44,25 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 	/// @param   {Struct}                   _state  : What parseStatement recorded
 	#endregion
 	static rewrite = function(_script, _parser, _state) {
-		var _decls = _state[$ "decls"];
-		if (_decls == undefined) return;
-		var _closures = _parser.extensionState[$ "closure"];
-		_closures = (_closures != undefined) ? (_closures[$ "functions"] ?? []) : [];
-		__function(_script, _parser, _decls, _closures, undefined);
+		if (_state[$ "used"] == undefined) return;
+		__function(_script, _parser, undefined);
 	};
+	#endregion
 	
-	// the constants of one function (or the file's body), then the functions inside it; a closure also has the
-	// constants of the function around it that its own names do not hide
-	static __function = function(_function, _parser, _decls, _closures, _outer) {
-		var _scope = { constants: {}, others: {}, parser: _parser, decls: _decls, closures: _closures };
+	#region Private
+	#region jsDoc
+	/// @func    __function(_function, _parser, _outer)
+	/// @desc    Replaces the constants of one function (or the file's body), then those of the functions inside it. A
+	///          closure also sees the outer function's constants its own names do not hide.
+	/// @self    GMLC_Ext_Const
+	/// @param   {Struct.ASTNode}           _function : The function, or the Script
+	/// @param   {Struct.GMLC_Gen_2_Parser} _parser   : The parser
+	/// @param   {Struct}                   [_outer]  : The outer constants, for a closure
+	#endregion
+	static __function = function(_function, _parser, _outer) {
+		var _scope = { constants: {}, others: {}, parser: _parser };
 		if (_outer != undefined) {
-			var _own = __GMLC_ExtLocals(_function);
+			var _own = __gmlc_ext_locals(_function);
 			var _names = struct_get_names(_outer);
 			var _n = 0; repeat (array_length(_names)) {
 				if (!struct_exists(_own, _names[_n])) _scope.constants[$ _names[_n]] = _outer[$ _names[_n]];
@@ -72,7 +75,6 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 		var _body = (_function.kind == __GMLC_NodeKind_Script) ? _function : _function.body;
 		__collect(_body, _scope);
 		__replace(_body, undefined, undefined, undefined, _scope);
-		// the file's enum values read the constants of the file's body
 		if (_function.kind == __GMLC_NodeKind_Script) {
 			var _e = 0; repeat (array_length(_function.enums)) {
 				var _members = _function.enums[_e].members;
@@ -83,11 +85,18 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 		}
 	};
 	
-	// the constants of a function and its other declared names, the functions inside it left out
+	#region jsDoc
+	/// @func    __collect(_node, _scope)
+	/// @desc    Records the constants and the other locals a function's body declares, nested functions left out.
+	///          A name declared both ways gets GMLC2012.
+	/// @self    GMLC_Ext_Const
+	/// @param   {Struct.ASTNode} _node  : The node
+	/// @param   {Struct}         _scope : The function's constants and other names
+	#endregion
 	static __collect = function(_node, _scope) {
-		if (__GMLC_ExtIsFunction(_node)) return;
+		if (__gmlc_ext_is_function(_node)) return;
 		if (_node.kind == __GMLC_NodeKind_VarDeclList) {
-			var _isConst = array_contains(_scope.decls, _node);
+			var _isConst = (_node[$ "__extension"] == name);
 			var _d = 0; repeat (array_length(_node.declarations)) {
 				var _decl = _node.declarations[_d];
 				var _name = _decl.target.name;
@@ -109,11 +118,20 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 		_c++}
 	};
 	
-	// reads of literal constants become the literal, literal declarations go, changes to a constant are reported
+	#region jsDoc
+	/// @func    __replace(_node, _parent, _field, _index, _scope)
+	/// @desc    Puts literal constants in place of their reads under a node, drops the declarations of literal
+	///          constants and reports writes to constants; a function inside gets its own scope.
+	/// @self    GMLC_Ext_Const
+	/// @param   {Struct.ASTNode} _node   : The node
+	/// @param   {Struct.ASTNode} _parent : Its parent
+	/// @param   {String}         _field  : The parent's field
+	/// @param   {Real}           _index  : The index in that field, undefined for a single node
+	/// @param   {Struct}         _scope  : The function's constants and other names
+	#endregion
 	static __replace = function(_node, _parent, _field, _index, _scope) {
-		if (__GMLC_ExtIsFunction(_node)) {
-			var _isClosure = array_contains(_scope.closures, _node);
-			__function(_node, _scope.parser, _scope.decls, _scope.closures, _isClosure ? _scope.constants : undefined);
+		if (__gmlc_ext_is_function(_node)) {
+			__function(_node, _scope.parser, (_node[$ "__extension"] == "closure") ? _scope.constants : undefined);
 			return;
 		}
 		switch (_node.kind) {
@@ -121,25 +139,20 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 				if (!struct_exists(_scope.constants, _node.name)) return;
 				var _literal = _scope.constants[$ _node.name];
 				if (_literal == undefined) return;
-				var _copy = __copyLiteral(_literal, _node.span);
 				// `{N}` would now have no name to read: write the key out
 				if (_parent.kind == __GMLC_NodeKind_StructEntry) _parent.shorthand = false;
-				if (_index != undefined) {
-					_parent[$ _field][_index] = _copy;
-				}
-				else {
-					_parent[$ _field] = _copy;
-				}
+				__gmlc_ext_set_child(_parent, _field, _index, __gmlc_ext_copy_literal(_literal, _node.span));
 			return;}
-			case __GMLC_NodeKind_Assign: {
-				__checkChange(_node.target, _scope);
-			break;}
+			case __GMLC_NodeKind_Assign:
 			case __GMLC_NodeKind_Update: {
-				__checkChange(_node[$ "argument"], _scope);
+				var _target = (_node.kind == __GMLC_NodeKind_Assign) ? _node.target : _node[$ "argument"];
+				if (_target.kind == __GMLC_NodeKind_Identifier) && struct_exists(_scope.constants, _target.name) {
+					_scope.parser.__report("GMLC2012", _target.span, [_target.name]);
+				}
 			break;}
 			case __GMLC_NodeKind_VarDeclList: {
 				// a constant's own name is a declaration, not a read
-				if (array_contains(_scope.decls, _node)) {
+				if (_node[$ "__extension"] == name) {
 					var _d = 0; repeat (array_length(_node.declarations)) {
 						var _init = _node.declarations[_d].init;
 						if (_init != undefined) __replace(_init, _node.declarations[_d], "init", undefined, _scope);
@@ -153,8 +166,12 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 			var _key = _fields[_f];
 			var _value = _node[$ _key];
 			if (is_array(_value)) {
-				if (__GMLC_ExtIsStatementList(_node, _key)) {
-					_value = __dropLiteralDecls(_value, _scope);
+				if (__gmlc_ext_is_statement_list(_node, _key)) {
+					var _kept = [];
+					var _s = 0; repeat (array_length(_value)) {
+						if (_value[_s][$ "__extension"] != name) || !__isLiteral(_value[_s].declarations[0].init) array_push(_kept, _value[_s]);
+					_s++}
+					_value = _kept;
 					_node[$ _key] = _value;
 				}
 				var _c = 0; repeat (array_length(_value)) {
@@ -167,23 +184,13 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 		_f++}
 	};
 	
-	// a statement list without the declarations of literal constants
-	static __dropLiteralDecls = function(_list, _scope) {
-		var _out = [];
-		var _i = 0; repeat (array_length(_list)) {
-			var _s = _list[_i];
-			if (!array_contains(_scope.decls, _s)) || !__isLiteral(_s.declarations[0].init) array_push(_out, _s);
-		_i++}
-		return _out;
-	};
-	
-	static __checkChange = function(_target, _scope) {
-		if (_target.kind == __GMLC_NodeKind_Identifier) && struct_exists(_scope.constants, _target.name) {
-			_scope.parser.__report("GMLC2012", _target.span, [_target.name]);
-		}
-	};
-	
-	// a number or string literal, with a sign allowed before a number
+	#region jsDoc
+	/// @func    __isLiteral(_node)
+	/// @desc    Whether a value is a literal other than `undefined`, or a signed number literal.
+	/// @self    GMLC_Ext_Const
+	/// @param   {Struct.ASTNode} _node : The value, undefined for none
+	/// @returns {Bool}
+	#endregion
 	static __isLiteral = function(_node) {
 		if (_node == undefined) return false;
 		if (_node.kind == __GMLC_NodeKind_Unary) && ((_node.op == "-") || (_node.op == "+")) {
@@ -192,10 +199,5 @@ function GMLC_Ext_Const() : GMLC_Extension("const") constructor {
 		}
 		return (_node.kind == __GMLC_NodeKind_Literal) && (_node.ty != "undefined");
 	};
-	
-	static __copyLiteral = function(_node, _span) {
-		if (_node.kind == __GMLC_NodeKind_Unary) return new ASTUnary(_span, _node.op, __copyLiteral(_node[$ "argument"], _span));
-		return new ASTLiteral(_span, _node.ty, _node.lexeme, _node.value);
-	};
+	#endregion
 }
-#endregion

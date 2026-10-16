@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_1_PreProcessor",
   "parent":{
-    "name":"Preprocessor",
-    "path":"folders/GMLC/Preprocessor.yy",
+    "name":"Parsers",
+    "path":"folders/GMLC/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

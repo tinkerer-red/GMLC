@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__ExistingFunctions",
   "parent":{
-    "name":"Spec",
-    "path":"folders/GMLC/Spec.yy",
+    "name":"Deprecated",
+    "path":"folders/Deprecated.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

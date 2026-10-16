@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Gen_6_Emitter",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Gen_6_Emitter",
+  "parent":{
+    "name":"Parsers",
+    "path":"folders/GMLC/Parsers.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

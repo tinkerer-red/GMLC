@@ -55,7 +55,7 @@ function gmlc_pipeline_nodes(_node, _kind, _out = []) {
 /// @returns {String}
 #endregion
 function gmlc_pipeline_codes(_diagnostics) {
-	var _list = GMLC_SortDiagnostics(_diagnostics ?? []);
+	var _list = __gmlc_sort_diagnostics(_diagnostics ?? []);
 	var _codes = array_create(array_length(_list));
 	var _i = 0; repeat (array_length(_list)) {
 		_codes[_i] = _list[_i].code;
@@ -357,12 +357,12 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		assert_equals(_pragmas[1].target, undefined, "the pragma at the end of a block targets something");
 	});
 	
-	addFact("A @NoOp pragma covers the whole next line and no more [GMLC]", function() {
+	addFact("A @NoOp pragma covers exactly the next statement [GMLC]", function() {
 		var _r = ast_json_round_trip("var a = 1, b = 0, c = 0;\n// @NoOp\na = 2; b = 3;\nc = 4;\n");
 		var _target = _r.tree.pragmas[0].target;
 		assert_equals(_target.start, _r.tree.body[1].span.start, "the target does not start at `a = 2;`");
-		assert_equals(_target[$ "end"], _r.tree.body[2].span[$ "end"], "the target does not end with `b = 3;`");
-		assert_true(_r.tree.body[3].span.start >= _target[$ "end"], "the target reaches the line after");
+		assert_equals(_target[$ "end"], _r.tree.body[1].span[$ "end"], "the target does not end with `a = 2;`");
+		assert_true(_r.tree.body[2].span.start >= _target[$ "end"], "the target reaches `b = 3;`");
 	});
 	
 	addFact("A @NoOp pragma above a function covers its whole body [GMLC]", function() {
@@ -373,13 +373,19 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		assert_equals(_target[$ "end"], _function.span[$ "end"], "the target does not cover the function's body");
 	});
 	
-	addFact("gml_pragma(\"@NoOp\") as a statement is the @NoOp pragma and leaves no call [GMLC]", function() {
-		var _r = ast_json_round_trip("var a = 1;\ngml_pragma(\"@NoOp\");\na = 2; a = 3;\na = 4;\n");
+	addFact("gml_pragma(\"@NoOp\") in a function is the @NoOp pragma of that function and leaves no call [GMLC]", function() {
+		var _r = ast_json_round_trip("function rp_noop_g() {\n\tgml_pragma(\"@NoOp\");\n\treturn 1 + 2;\n}\nvar a = 4;\n");
 		var _pragmas = _r.tree.pragmas;
 		assert_equals(array_length(_pragmas), 1, "the statement did not become one pragma");
-		assert_equals(array_length(_r.tree.body), 4, "the call was kept as a statement");
-		assert_equals(_pragmas[0].target.start, _r.tree.body[1].span.start, "the pragma does not target the next line");
-		assert_equals(_pragmas[0].target[$ "end"], _r.tree.body[2].span[$ "end"], "the pragma does not cover the whole next line");
+		assert_equals(array_length(_r.tree.body[0].body.body), 1, "the call was kept as a statement");
+		assert_equals(_pragmas[0].target.start, _r.tree.body[0].span.start, "the pragma does not target its function");
+		assert_equals(_pragmas[0].target[$ "end"], _r.tree.body[0].span[$ "end"], "the pragma does not cover its whole function");
+	});
+
+	addFact("gml_pragma(\"@NoOp\") outside every function targets nothing [GMLC]", function() {
+		var _r = ast_json_round_trip("gml_pragma(\"@NoOp\");\nvar a = 1 + 2;\n");
+		assert_equals(array_length(_r.tree.pragmas), 1, "the statement did not become one pragma");
+		assert_equals(_r.tree.pragmas[0].target, undefined, "the pragma targets code outside a function");
 	});
 	
 	addFact("gml_pragma(\"@NoOp\") as the body of an if, or another gml_pragma, stays a call [GMLC]", function() {
@@ -659,7 +665,7 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 		// call arguments are evaluated right to left: check first, then read its sources
 		var _list = _env.check("var a = 1;\nvar a = 2;", "text.gml");
-		var _text = GMLC_DiagnosticsToText(_list, _env.sources);
+		var _text = gmlc_diagnostics_to_text(_list, _env.sources);
 		assert_true(string_pos("warning[GMLC2005]: a is already declared with var in this function", _text) > 0, _text);
 		assert_true(string_pos("text.gml:2:5", _text) > 0, _text);
 		assert_true(string_pos("    ^", _text) > 0, _text);
@@ -669,17 +675,17 @@ function GmlcPipelineTestSuite() : TestSuite() constructor {
 	addFact("The JSON form is the diagnostics stage [GMLC]", function() {
 		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 		var _list = _env.check("var a = 1;\nvar a = 2;", "json.gml");
-		var _json = GMLC_DiagnosticsToJson(_list, _env.sources);
+		var _json = gmlc_diagnostics_to_json(_list, _env.sources);
 		assert_true(string_pos("\"stage\":\"diagnostics\"", _json) > 0, _json);
 		assert_true(string_pos("{\"code\":\"GMLC2005\",\"feather_code\":\"GM2044\",\"severity\":\"warning\"", _json) > 0, _json);
 	});
 	
 	addFact("A message argument that looks like a placeholder is kept as written [GMLC]", function() {
 		var _d = new GMLC_Diagnostic("GMLC1002", new GMLC_Span(0, 0, 0), ["{1}", "x"]);
-		assert_equals(GMLC_DiagnosticMessage(_d), "expected {1}, found x", "wrong message");
+		assert_equals(__gmlc_diagnostic_message(_d), "expected {1}, found x", "wrong message");
 	});
 	
-	addFact("An unclosed bracket is labelled where it opens [GMLC]", function() {
+	addFact("An unclosed bracket is labeled where it opens [GMLC]", function() {
 		var _env = new GMLC_Env().set_exposure(GMLC_EXPOSURE.FULL);
 		var _list = _env.check("var a = [1, 2;");
 		assert_equals(_list[0].code, "GMLC1016", "wrong code");

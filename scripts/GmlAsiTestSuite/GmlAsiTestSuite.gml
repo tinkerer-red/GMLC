@@ -1,4 +1,4 @@
-// Generated from measured GameMaker behaviour; do not edit by hand.
+// Generated from measured GameMaker behavior; do not edit by hand.
 // Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-07.
 function GmlAsiTestSuite() : TestSuite() constructor {
 

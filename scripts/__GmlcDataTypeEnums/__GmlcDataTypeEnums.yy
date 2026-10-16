@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__GmlcDataTypeEnums",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__GmlcDataTypeEnums",
+  "parent":{
+    "name":"Data",
+    "path":"folders/GMLC/Data.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

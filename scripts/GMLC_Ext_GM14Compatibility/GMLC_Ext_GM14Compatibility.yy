@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Ext_GM14Compatibility",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Ext_GM14Compatibility",
+  "parent":{
+    "name":"GM14",
+    "path":"folders/GMLC/Extensions/GM14.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

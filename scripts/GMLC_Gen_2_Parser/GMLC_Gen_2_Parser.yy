@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_2_Parser",
   "parent":{
-    "name":"Parser",
-    "path":"folders/GMLC/Parser.yy",
+    "name":"Parsers",
+    "path":"folders/GMLC/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

@@ -1,4 +1,4 @@
-// Helpers of the GameMaker behaviour suites. Generated; do not edit by hand.
+// Helpers of the GameMaker behavior suites. Generated; do not edit by hand.
 global.__case_log = [];
 
 /// Clears the evaluation log.

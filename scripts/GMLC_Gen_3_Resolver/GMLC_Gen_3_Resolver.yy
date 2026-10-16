@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_3_Resolver",
   "parent":{
-    "name":"Sema",
-    "path":"folders/GMLC/Sema.yy",
+    "name":"Parsers",
+    "path":"folders/GMLC/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

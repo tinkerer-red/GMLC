@@ -1,30 +1,35 @@
-// GMLC type system v1, part 1: the lattice as canonical type strings, and the readers of the signature database's
-// type text and of JSDoc and Feather annotations.
-//
-// A type is a union of atoms, printed by one grammar: members sorted by rank and then by text, duplicates removed, a
-// member another member contains removed (`Int|Double` is `Double`, `Bool|Real` is `Real`, `Enum.Dir|Int64` is
-// `Int64`), more than 8 members `Unknown`, and any union holding `Unknown` or `Any` that element (`Any` first).
+// types as canonical type strings, and the readers of the signature database's type text and of JSDoc and Feather
+// annotations.
+// a type is a union of atoms: members sorted by rank and then by text, duplicates removed, a member another member
+// contains removed (`Int|Double` is `Double`, `Bool|Real` is `Real`, `Enum.Dir|Int64` is `Int64`), more than 8
+// members `Unknown`, and any union holding `Unknown` or `Any` that element (`Any` first).
 
 #macro __GMLC_TYPE_UNION_CAP 8
 
+#region Type strings
 #region jsDoc
-/// @func    GMLC_TypeString(_text, _mode)
+/// @func    gmlc_type_string(_text, _mode)
 /// @desc    The canonical string of type text, or undefined when it does not parse (GMLC3201 for an annotation).
 /// @param   {String} _text : Type text
 /// @param   {String} _mode : "spec-param" or "spec-return" (the signature database), or "jsdoc"
 /// @returns {String}
 #endregion
-function GMLC_TypeString(_text, _mode) {
+function gmlc_type_string(_text, _mode) {
 	// raw: inside the generic argument of Id, where a bare name is an object or asset name kept as written
 	var _r = { text: _text, pos: 1, len: string_length(_text), mode: _mode, raw: false };
 	var _members = __gmlc_type_union(_r);
 	if (_members == undefined) return undefined;
 	__gmlc_type_skip(_r);
 	if (_r.pos <= _r.len) return undefined;
-	return __gmlc_type_normalise(_members);
+	return __gmlc_type_normalize(_members);
 }
 
-// the rank of an atom: its place in the grammar's atom list
+#region jsDoc
+/// @func    __gmlc_type_rank(_atom)
+/// @desc    The place of an atom in a union: Never first, Any last.
+/// @param   {String} _atom : The atom
+/// @returns {Real}
+#endregion
 function __gmlc_type_rank(_atom) {
 	switch (_atom) {
 		case "Never": return 0;
@@ -47,7 +52,13 @@ function __gmlc_type_rank(_atom) {
 	return 18;
 }
 
-// whether one atom holds every value of another
+#region jsDoc
+/// @func    __gmlc_type_contains(_outer, _inner)
+/// @desc    Whether one atom holds another, so a union keeps only the outer one (`Real` holds `Int`).
+/// @param   {String} _outer : The atom that may hold
+/// @param   {String} _inner : The atom that may be held
+/// @returns {Bool}
+#endregion
 function __gmlc_type_contains(_outer, _inner) {
 	switch (_outer) {
 		case "Real":
@@ -62,8 +73,14 @@ function __gmlc_type_contains(_outer, _inner) {
 	return false;
 }
 
-// the canonical text of a union of atoms
-function __gmlc_type_normalise(_members) {
+#region jsDoc
+/// @func    __gmlc_type_normalize(_members)
+/// @desc    The canonical string of a union's atoms: sorted, duplicates and held atoms removed, Unknown above 8
+///          members.
+/// @param   {Array<String>} _members : The atoms
+/// @returns {String}
+#endregion
+function __gmlc_type_normalize(_members) {
 	if (array_contains(_members, "Any")) return "Any";
 	if (array_contains(_members, "Unknown")) return "Unknown";
 	var _list = [];
@@ -92,7 +109,13 @@ function __gmlc_type_normalise(_members) {
 	return string_join_ext("|", _kept);
 }
 
-// byte order of two strings: negative, zero or positive
+#region jsDoc
+/// @func    __gmlc_type_bytes_compare(_a, _b)
+/// @desc    Compares two strings byte by byte: negative, zero or positive.
+/// @param   {String} _a : A string
+/// @param   {String} _b : A string
+/// @returns {Real}
+#endregion
 function __gmlc_type_bytes_compare(_a, _b) {
 	var _n = min(string_byte_length(_a), string_byte_length(_b));
 	var _i = 1; repeat (_n) {
@@ -102,6 +125,11 @@ function __gmlc_type_bytes_compare(_a, _b) {
 	return string_byte_length(_a) - string_byte_length(_b);
 }
 
+#region jsDoc
+/// @func    __gmlc_type_skip(_r)
+/// @desc    Moves the reader past blanks.
+/// @param   {Struct} _r : The reader, {text, pos, len, mode, raw}
+#endregion
 function __gmlc_type_skip(_r) {
 	while (_r.pos <= _r.len) {
 		var _c = string_char_at(_r.text, _r.pos);
@@ -110,11 +138,13 @@ function __gmlc_type_skip(_r) {
 	}
 }
 
-function __gmlc_type_peek(_r) {
-	__gmlc_type_skip(_r);
-	return (_r.pos <= _r.len) ? string_char_at(_r.text, _r.pos) : "";
-}
-
+#region jsDoc
+/// @func    __gmlc_type_eat(_r, _s)
+/// @desc    Moves the reader past _s, after blanks, when the text goes on with it.
+/// @param   {Struct} _r : The reader, {text, pos, len, mode, raw}
+/// @param   {String} _s : The expected text
+/// @returns {Bool}
+#endregion
 function __gmlc_type_eat(_r, _s) {
 	__gmlc_type_skip(_r);
 	if (string_copy(_r.text, _r.pos, string_length(_s)) == _s) {
@@ -124,11 +154,15 @@ function __gmlc_type_eat(_r, _s) {
 	return false;
 }
 
-// members separated by | or ,
-function __gmlc_type_union(_r) {
+#region jsDoc
+/// @func    __gmlc_type_union(_r, [_commas])
+/// @desc    Members separated by |, or by , too unless _commas is false (a comma ends a parameter or return
+///          type).
+#endregion
+function __gmlc_type_union(_r, _commas = true) {
 	var _out = __gmlc_type_member(_r);
 	if (_out == undefined) return undefined;
-	while (__gmlc_type_eat(_r, "|") || __gmlc_type_eat(_r, ",")) {
+	while (__gmlc_type_eat(_r, "|") || (_commas && __gmlc_type_eat(_r, ","))) {
 		var _more = __gmlc_type_member(_r);
 		if (_more == undefined) return undefined;
 		_out = array_concat(_out, _more);
@@ -136,7 +170,12 @@ function __gmlc_type_union(_r) {
 	return _out;
 }
 
-// a dotted name: letters, digits and _, parts separated by .
+#region jsDoc
+/// @func    __gmlc_type_name(_r)
+/// @desc    Reads a dotted name (`Id.Instance`); undefined when there is none.
+/// @param   {Struct} _r : The reader, {text, pos, len, mode, raw}
+/// @returns {String}
+#endregion
 function __gmlc_type_name(_r) {
 	__gmlc_type_skip(_r);
 	var _start = _r.pos;
@@ -153,7 +192,13 @@ function __gmlc_type_name(_r) {
 	return string_copy(_r.text, _start, _r.pos - _start);
 }
 
-// one member: a bracketed union, or a name with its specifier and generic argument
+#region jsDoc
+/// @func    __gmlc_type_member(_r)
+/// @desc    Reads one member of a union, a bracketed union or a name with its generic argument, as atoms; undefined
+///          when it does not parse.
+/// @param   {Struct} _r : The reader, {text, pos, len, mode, raw}
+/// @returns {Array<String>}
+#endregion
 function __gmlc_type_member(_r) {
 	if (__gmlc_type_eat(_r, "[")) {
 		var _inner = __gmlc_type_union(_r);
@@ -168,7 +213,8 @@ function __gmlc_type_member(_r) {
 	var _lower = string_lower(_base);
 	// a generic argument: <T>, or [T] as the signature database writes it
 	var _arg = undefined;
-	var _next = __gmlc_type_peek(_r);
+	__gmlc_type_skip(_r);
+	var _next = (_r.pos <= _r.len) ? string_char_at(_r.text, _r.pos) : "";
 	if (_next == "<") || ((_next == "[") && ((_lower == "array") || (_lower == "id"))) {
 		var _close = (_next == "<") ? ">" : "]";
 		_r.pos++;
@@ -177,7 +223,7 @@ function __gmlc_type_member(_r) {
 		var _inner = __gmlc_type_union(_r);
 		_r.raw = _raw;
 		if (_inner == undefined) || (!__gmlc_type_eat(_r, _close)) return undefined;
-		_arg = __gmlc_type_normalise(_inner);
+		_arg = __gmlc_type_normalize(_inner);
 	}
 	if (_lower == "function") || (_lower == "method") {
 		var _fn = __gmlc_type_function(_r);
@@ -200,7 +246,7 @@ function __gmlc_type_member(_r) {
 			var _element = _arg;
 			if (_element == undefined) {
 				if (_spec != undefined) {
-					_element = GMLC_TypeString(_spec, _r.mode);
+					_element = gmlc_type_string(_spec, _r.mode);
 					if (_element == undefined) return undefined;
 				}
 				else _element = "Any";
@@ -241,16 +287,19 @@ function __gmlc_type_member(_r) {
 	return [_atom];
 }
 
-// Function(params)->T after its name; a bare Function takes anything and returns Unknown
+#region jsDoc
+/// @func    __gmlc_type_function(_r)
+/// @desc    Function(params)->T after its name; a bare Function takes anything and returns Unknown.
+#endregion
 function __gmlc_type_function(_r) {
 	if (!__gmlc_type_eat(_r, "(")) return "Function(...Any)->Unknown";
 	var _params = [];
 	if (!__gmlc_type_eat(_r, ")")) {
 		while (true) {
 			var _rest = __gmlc_type_eat(_r, "...");
-			var _members = __gmlc_type_param(_r);
+			var _members = __gmlc_type_union(_r, false);
 			if (_members == undefined) return undefined;
-			var _t = __gmlc_type_normalise(_members);
+			var _t = __gmlc_type_normalize(_members);
 			var _optional = __gmlc_type_eat(_r, "?");
 			array_push(_params, (_rest ? "..." : "") + _t + (_optional ? "?" : ""));
 			if (__gmlc_type_eat(_r, ")")) break;
@@ -259,27 +308,21 @@ function __gmlc_type_function(_r) {
 	}
 	var _ret = "Unknown";
 	if (__gmlc_type_eat(_r, "->")) {
-		var _members = __gmlc_type_param(_r);
+		var _members = __gmlc_type_union(_r, false);
 		if (_members == undefined) return undefined;
-		_ret = __gmlc_type_normalise(_members);
+		_ret = __gmlc_type_normalize(_members);
 	}
 	return "Function(" + string_join_ext(",", _params) + ")->" + _ret;
 }
-
-// a parameter or return type: members separated by | only (a comma ends the parameter)
-function __gmlc_type_param(_r) {
-	var _out = __gmlc_type_member(_r);
-	if (_out == undefined) return undefined;
-	while (__gmlc_type_eat(_r, "|")) {
-		var _more = __gmlc_type_member(_r);
-		if (_more == undefined) return undefined;
-		_out = array_concat(_out, _more);
-	}
-	return _out;
-}
+#endregion
 
 #region Joins
-// the members of a canonical type string: its parts at the top level of |
+#region jsDoc
+/// @func    __gmlc_type_members(_type)
+/// @desc    The atoms of a canonical type string, split at its outer `|`.
+/// @param   {String} _type : The type
+/// @returns {Array<String>}
+#endregion
 function __gmlc_type_members(_type) {
 	var _out = [];
 	var _depth = 0;
@@ -300,32 +343,35 @@ function __gmlc_type_members(_type) {
 }
 
 #region jsDoc
-/// @func    GMLC_TypeJoin(_a, _b)
-/// @desc    The union of two canonical type strings, normalised.
+/// @func    gmlc_type_join(_a, _b)
+/// @desc    The union of two canonical type strings, normalized.
 /// @param   {String} _a : A type
 /// @param   {String} _b : A type
 /// @returns {String}
 #endregion
-function GMLC_TypeJoin(_a, _b) {
+function gmlc_type_join(_a, _b) {
 	if (_a == "Never") return _b;
 	if (_b == "Never") return _a;
-	return __gmlc_type_normalise(array_concat(__gmlc_type_members(_a), __gmlc_type_members(_b)));
+	return __gmlc_type_normalize(array_concat(__gmlc_type_members(_a), __gmlc_type_members(_b)));
 }
 
-// a type without one atom (Never when nothing is left); Unknown and Any keep it
+#region jsDoc
+/// @func    __gmlc_type_remove(_type, _atom)
+/// @desc    A type without one atom (Never when nothing is left); Unknown and Any keep it.
+#endregion
 function __gmlc_type_remove(_type, _atom) {
 	var _members = __gmlc_type_members(_type);
 	var _kept = [];
 	var _i = 0; repeat (array_length(_members)) {
 		if (_members[_i] != _atom) array_push(_kept, _members[_i]);
 	_i++}
-	return __gmlc_type_normalise(_kept);
+	return __gmlc_type_normalize(_kept);
 }
 #endregion
 
 #region Flow typing
 #region jsDoc
-/// @func    GMLC_TypeFacts(_ast, _sources)
+/// @func    gmlc_type_facts(_ast, _sources)
 /// @desc    Assignment-based flow typing of a lowered script: per function, the facts of its `var` locals and
 ///          parameters where it ends, and its return type, each with its provenance (`annotated` when a JSDoc
 ///          `@param` type took part, else `proven`). Calls of the script's own functions use their return types, the
@@ -334,11 +380,10 @@ function __gmlc_type_remove(_type, _atom) {
 /// @param   {Struct.GMLC_SourceTable} _sources : Its files, for the JSDoc comments above functions
 /// @returns {Struct} {functions: [{fn_id, name, returns, returns_provenance, locals: [{name, type, provenance, assigned}]}]}
 #endregion
-function GMLC_TypeFacts(_ast, _sources) {
+function gmlc_type_facts(_ast, _sources) {
 	var _units = [{ fn_id: 0, params: [], body: _ast.body, node: undefined }];
 	__gmlc_analysis_units(_ast, _units);
 	array_sort(_units, function(_a, _b) { return _a.fn_id - _b.fn_id; });
-	// the script's functions by name
 	var _named = {};
 	var _u = 0; repeat (array_length(_units)) {
 		var _node = _units[_u].node;
@@ -364,28 +409,40 @@ function GMLC_TypeFacts(_ast, _sources) {
 	return { functions: _out };
 }
 
-// built-in name to the canonical return type the signature database gives, made once
+#region jsDoc
+/// @func    __gmlc_type_builtins()
+/// @desc    Built-in function name to its canonical return type, from the signature database; made once.
+/// @returns {Struct}
+#endregion
 function __gmlc_type_builtins() {
 	static __map = undefined;
 	if (__map == undefined) {
 		__map = {};
-		var _functions = __GmlSpecData().functions;
+		var _functions = __GmlcDataSpec().functions;
 		var _i = 0; repeat (array_length(_functions)) {
 			var _f = _functions[_i];
 			var _rt = _f[$ "returnType"] ?? "";
-			__map[$ _f.name] = (_rt == "") ? "Unknown" : (GMLC_TypeString(_rt, "spec-return") ?? "Unknown");
+			__map[$ _f.name] = (_rt == "") ? "Unknown" : (gmlc_type_string(_rt, "spec-return") ?? "Unknown");
 		_i++}
 	}
 	return __map;
 }
 
-// a JSDoc line without the spaces, tabs and line breaks around it
+#region jsDoc
+/// @func    __gmlc_type_trim(_text)
+/// @desc    The text without blanks at either end.
+/// @param   {String} _text : The text
+/// @returns {String}
+#endregion
 function __gmlc_type_trim(_text) {
 	static __blanks = [" ", "\t", "\r", "\n"];
 	return string_trim(_text, __blanks);
 }
 
-// the JSDoc @param types above a function: name to {type, optional}
+#region jsDoc
+/// @func    __gmlc_type_jsdoc(_node, _sources)
+/// @desc    The JSDoc @param types above a function: name to {type, optional}.
+#endregion
 function __gmlc_type_jsdoc(_node, _sources) {
 	var _out = {};
 	if (_node == undefined) || (_sources == undefined) || (_node.span.file >= array_length(_sources.files)) return _out;
@@ -422,7 +479,7 @@ function __gmlc_type_jsdoc(_node, _sources) {
 				if (_eq > 0) _name = string_copy(_name, 1, _eq - 1);
 			}
 			if (_type != undefined) && (_name != "") {
-				var _canonical = GMLC_TypeString(_type, "jsdoc");
+				var _canonical = gmlc_type_string(_type, "jsdoc");
 				if (_canonical != undefined) _out[$ _name] = { type: _canonical, optional: _optional };
 			}
 		}
@@ -430,7 +487,15 @@ function __gmlc_type_jsdoc(_node, _sources) {
 	return _out;
 }
 
-// one function's facts
+#region jsDoc
+/// @func    __gmlc_type_function_facts(_unit, _name, _sources, _cx)
+/// @desc    The flow facts of one function: its locals' facts where it ends and its return type.
+/// @param   {Struct}                  _unit    : The function, {fn_id, params, body, node}
+/// @param   {String}                  _name    : Its name
+/// @param   {Struct.GMLC_SourceTable} _sources : The files, for its JSDoc
+/// @param   {Struct}                  _cx      : {named, returns, builtins} of the script
+/// @returns {Struct} {fn_id, name, returns, returns_provenance, locals}
+#endregion
 function __gmlc_type_function_facts(_unit, _name, _sources, _cx) {
 	var _g = __gmlc_cfg_build(_unit);
 	var _n = array_length(_g.nodes);
@@ -445,7 +510,6 @@ function __gmlc_type_function_facts(_unit, _name, _sources, _cx) {
 		var _s = 0; repeat (array_length(_node.succ)) { array_push(_preds[_node.succ[_s]], _i); _s++ }
 		_s = 0; repeat (array_length(_node.exc)) { array_push(_excPreds[_node.exc[_s]], _i); _s++ }
 	_i++}
-	// the parameters, typed by their JSDoc
 	var _jsdoc = __gmlc_type_jsdoc(_unit.node, _sources);
 	var _start = {};
 	var _p = 0; repeat (array_length(_unit.params)) {
@@ -453,7 +517,7 @@ function __gmlc_type_function_facts(_unit, _name, _sources, _cx) {
 		if (__gmlc_is_local(_param)) {
 			var _doc = _jsdoc[$ _param.name];
 			if (_doc != undefined) {
-				_start[$ _param.name] = { type: _doc.optional ? GMLC_TypeJoin(_doc.type, "Undefined") : _doc.type, provenance: "annotated", assigned: "yes" };
+				_start[$ _param.name] = { type: _doc.optional ? gmlc_type_join(_doc.type, "Undefined") : _doc.type, provenance: "annotated", assigned: "yes" };
 			}
 			else _start[$ _param.name] = { type: "Unknown", provenance: "proven", assigned: "yes" };
 		}
@@ -511,10 +575,10 @@ function __gmlc_type_function_facts(_unit, _name, _sources, _cx) {
 		var _stmt = _node.stmt;
 		if (_node.kind == "Return") && (_stmt.argument != undefined) {
 			var _t = __gmlc_type_of(_stmt.argument, __gmlc_type_copy(_in[_preds[1][_q]]), _cx);
-			_returns = GMLC_TypeJoin(_returns, _t.type);
+			_returns = gmlc_type_join(_returns, _t.type);
 			if (_t.provenance == "annotated") _provenance = "annotated";
 		}
-		else if (_node.kind != "Throw") _returns = GMLC_TypeJoin(_returns, "Undefined");
+		else if (_node.kind != "Throw") _returns = gmlc_type_join(_returns, "Undefined");
 	_q++}
 	var _locals = [];
 	var _end = _in[1];
@@ -527,6 +591,12 @@ function __gmlc_type_function_facts(_unit, _name, _sources, _cx) {
 	return { fn_id: _unit.fn_id, name: _name, returns: _returns, returns_provenance: _provenance, locals: _locals };
 }
 
+#region jsDoc
+/// @func    __gmlc_type_copy(_state)
+/// @desc    A copy of a state, each fact copied.
+/// @param   {Struct} _state : Local name to {type, provenance, assigned}
+/// @returns {Struct}
+#endregion
 function __gmlc_type_copy(_state) {
 	var _out = {};
 	var _names = struct_get_names(_state);
@@ -537,7 +607,10 @@ function __gmlc_type_copy(_state) {
 	return _out;
 }
 
-// two states joined where control meets: a fact on one side only may be unassigned
+#region jsDoc
+/// @func    __gmlc_type_merge(_a, _b)
+/// @desc    Two states joined where control meets: a fact on one side only may be unassigned.
+#endregion
 function __gmlc_type_merge(_a, _b) {
 	var _names = array_concat(struct_get_names(_a), struct_get_names(_b));
 	var _out = {};
@@ -548,8 +621,8 @@ function __gmlc_type_merge(_a, _b) {
 			var _y = _b[$ _name];
 			if (_x != undefined) && (_y != undefined) {
 				_out[$ _name] = {
-					type: GMLC_TypeJoin(_x.type, _y.type),
-					provenance: ((_x.provenance == "annotated") || (_y.provenance == "annotated")) ? "annotated" : "proven",
+					type: gmlc_type_join(_x.type, _y.type),
+					provenance: __gmlc_type_prov(_x, _y),
 					assigned: ((_x.assigned == "yes") && (_y.assigned == "yes")) ? "yes" : "maybe",
 				};
 			}
@@ -562,6 +635,13 @@ function __gmlc_type_merge(_a, _b) {
 	return _out;
 }
 
+#region jsDoc
+/// @func    __gmlc_type_same(_a, _b)
+/// @desc    Whether two states hold the same facts.
+/// @param   {Struct} _a : A state
+/// @param   {Struct} _b : A state
+/// @returns {Bool}
+#endregion
 function __gmlc_type_same(_a, _b) {
 	var _names = struct_get_names(_a);
 	if (array_length(_names) != array_length(struct_get_names(_b))) return false;
@@ -573,7 +653,10 @@ function __gmlc_type_same(_a, _b) {
 	return true;
 }
 
-// a write of a local into the state; _maybe when it may not happen
+#region jsDoc
+/// @func    __gmlc_type_set(_state, _name, _t, _maybe)
+/// @desc    A write of a local into the state; _maybe when it may not happen.
+#endregion
 function __gmlc_type_set(_state, _name, _t, _maybe) {
 	var _old = _state[$ _name];
 	if (!_maybe) || (_old == undefined) {
@@ -581,13 +664,16 @@ function __gmlc_type_set(_state, _name, _t, _maybe) {
 		return;
 	}
 	_state[$ _name] = {
-		type: GMLC_TypeJoin(_old.type, _t.type),
-		provenance: ((_old.provenance == "annotated") || (_t.provenance == "annotated")) ? "annotated" : "proven",
+		type: gmlc_type_join(_old.type, _t.type),
+		provenance: __gmlc_type_prov(_old, _t),
 		assigned: _old.assigned,
 	};
 }
 
-// what a node does to the state: the writes of the expressions it evaluates itself
+#region jsDoc
+/// @func    __gmlc_type_node(_node, _state, _cx)
+/// @desc    What a node does to the state: the writes of the expressions it evaluates itself.
+#endregion
 function __gmlc_type_node(_node, _state, _cx) {
 	var _stmt = _node.stmt;
 	if (_stmt == undefined) return;
@@ -614,7 +700,10 @@ function __gmlc_type_node(_node, _state, _cx) {
 	__gmlc_type_walk(_stmt, _state, _cx, false);
 }
 
-// the writes of locals in an expression or a simple statement, in evaluation order
+#region jsDoc
+/// @func    __gmlc_type_walk(_node, _state, _cx, _maybe)
+/// @desc    The writes of locals in an expression or a simple statement, in evaluation order.
+#endregion
 function __gmlc_type_walk(_node, _state, _cx, _maybe) {
 	if (_node == undefined) return;
 	switch (_node.kind) {
@@ -635,7 +724,7 @@ function __gmlc_type_walk(_node, _state, _cx, _maybe) {
 				var _v = __gmlc_type_of(_node.value, _state, _cx);
 				var _t;
 				if (_node.op == "=") _t = _v;
-				else if (_node.op == "??=") _t = { type: GMLC_TypeJoin(__gmlc_type_remove(_cur.type, "Undefined"), _v.type), provenance: __gmlc_type_prov(_cur, _v) };
+				else if (_node.op == "??=") _t = { type: gmlc_type_join(__gmlc_type_remove(_cur.type, "Undefined"), _v.type), provenance: __gmlc_type_prov(_cur, _v) };
 				else _t = { type: __gmlc_type_binary(string_copy(_node.op, 1, string_length(_node.op) - 1), _cur.type, _v.type), provenance: __gmlc_type_prov(_cur, _v) };
 				__gmlc_type_set(_state, _node.target.name, _t, _conditional);
 				return;
@@ -670,11 +759,26 @@ function __gmlc_type_walk(_node, _state, _cx, _maybe) {
 	_i++}
 }
 
+#region jsDoc
+/// @func    __gmlc_type_prov(_a, _b)
+/// @desc    The provenance of a fact made from two: annotated when either one is.
+/// @param   {Struct} _a : A fact
+/// @param   {Struct} _b : A fact
+/// @returns {String}
+#endregion
 function __gmlc_type_prov(_a, _b) {
 	return ((_a.provenance == "annotated") || (_b.provenance == "annotated")) ? "annotated" : "proven";
 }
 
-// the result type of an arithmetic or comparison operator on two types
+#region jsDoc
+/// @func    __gmlc_type_binary(_op, _a, _b)
+/// @desc    The type of a binary operation: Bool for a comparison, a number type for two numbers, String for `+` of
+///          two strings, else Unknown.
+/// @param   {String} _op : The operator
+/// @param   {String} _a  : The left type
+/// @param   {String} _b  : The right type
+/// @returns {String}
+#endregion
 function __gmlc_type_binary(_op, _a, _b) {
 	switch (_op) {
 		case "==": case "!=": case "<": case "<=": case ">": case ">=": return "Bool";
@@ -690,13 +794,16 @@ function __gmlc_type_binary(_op, _a, _b) {
 	return "Unknown";
 }
 
-// the type of an expression in a state: {type, provenance}
+#region jsDoc
+/// @func    __gmlc_type_of(_node, _state, _cx)
+/// @desc    The type of an expression in a state.
+#endregion
 function __gmlc_type_of(_node, _state, _cx) {
 	if (_node == undefined) return { type: "Unknown", provenance: "proven" };
 	switch (_node.kind) {
 		case __GMLC_NodeKind_Literal:
 			switch (_node.ty) {
-				case "real": case "colour":
+				case "real": case "color":
 					var _v = _node.value;
 					return { type: (is_real(_v) && __gmlc_is_whole(_v)) ? "Int" : "Double", provenance: "proven" };
 				case "int64":
@@ -736,19 +843,19 @@ function __gmlc_type_of(_node, _state, _cx) {
 		case __GMLC_NodeKind_Conditional: {
 			var _a = __gmlc_type_of(_node.consequent, _state, _cx);
 			var _b = __gmlc_type_of(_node.alternate, _state, _cx);
-			return { type: GMLC_TypeJoin(_a.type, _b.type), provenance: __gmlc_type_prov(_a, _b) };
+			return { type: gmlc_type_join(_a.type, _b.type), provenance: __gmlc_type_prov(_a, _b) };
 		}
 		case __GMLC_NodeKind_Nullish: {
 			var _a = __gmlc_type_of(_node.left, _state, _cx);
 			var _b = __gmlc_type_of(_node.right, _state, _cx);
-			return { type: GMLC_TypeJoin(__gmlc_type_remove(_a.type, "Undefined"), _b.type), provenance: __gmlc_type_prov(_a, _b) };
+			return { type: gmlc_type_join(__gmlc_type_remove(_a.type, "Undefined"), _b.type), provenance: __gmlc_type_prov(_a, _b) };
 		}
 		case __GMLC_NodeKind_ArrayLiteral: {
 			var _t = "Never";
 			var _prov = { provenance: "proven" };
 			var _i = 0; repeat (array_length(_node.elements)) {
 				var _e = __gmlc_type_of(_node.elements[_i], _state, _cx);
-				_t = GMLC_TypeJoin(_t, _e.type);
+				_t = gmlc_type_join(_t, _e.type);
 				_prov = { provenance: __gmlc_type_prov(_prov, _e) };
 			_i++}
 			return { type: "Array<" + ((_t == "Never") ? "Any" : _t) + ">", provenance: _prov.provenance };

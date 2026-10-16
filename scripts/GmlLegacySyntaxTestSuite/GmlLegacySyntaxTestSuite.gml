@@ -1,4 +1,4 @@
-// Generated from measured GameMaker behaviour; do not edit by hand.
+// Generated from measured GameMaker behavior; do not edit by hand.
 // Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-06.
 function GmlLegacySyntaxTestSuite() : TestSuite() constructor {
 
@@ -82,10 +82,10 @@ if (a = 1) return "equal";
 return "not equal";'); }), "string:equal", "GMLC differs from GameMaker");
 	});
 
-	addFact("= in a var initialiser after a comparison operand [GameMaker]", function() {
+	addFact("= in a var initializer after a comparison operand [GameMaker]", function() {
 		assert_equals(case_run(case_legacy_syntax_single_eq_in_expression), "bool:1", "GameMaker no longer gives the measured result");
 	});
-	addFact("= in a var initialiser after a comparison operand [GMLC]", function() {
+	addFact("= in a var initializer after a comparison operand [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'var a = 1;
 var b = (a = 1);
 return b;'); }), "bool:1", "GMLC differs from GameMaker");

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_FastPasses",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_FastPasses",
+  "parent":{
+    "name":"_Internal",
+    "path":"folders/GMLC/Parsers/_Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

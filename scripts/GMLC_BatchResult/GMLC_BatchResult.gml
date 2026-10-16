@@ -6,8 +6,11 @@
 #endregion
 function GMLC_BatchResult() constructor {
 
+	#region Init
 	entries = [];
+	#endregion
 
+	#region Public
 	#region jsDoc
 	/// @func    add()
 	/// @desc    Appends a compile result entry.
@@ -70,5 +73,6 @@ function GMLC_BatchResult() constructor {
 		_i++;}
 		return _failures;
 	}
+	#endregion
 
 }

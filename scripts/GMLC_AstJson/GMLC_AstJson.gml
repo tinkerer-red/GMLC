@@ -1,26 +1,21 @@
-#region AST JSON
-// The JSON form of a syntax tree, for dumps and for trees made outside GMLC. A dump is an envelope:
-//   {"stage": "parsed", "contract_version": 1, "files": [{"id", "name", "project", "text"}...], "root": <node>}
-// Every node is an object with "kind", "span", its kind's fields in order, then "origin"; records (Span, Symbol,
-// Origin, Diagnostic, ...) are objects with their fields in order. Integers and int64 values are JSON numbers
-// (GameMaker reads one above 2^53 back as an int64), reals keep the digits that read back to the same double, and the
-// reals JSON has no number for are the strings "nan", "inf", "-inf". The files carry their text, so a program compiled
-// from a dump still gives the line of an error.
-// Reading is one json_parse whose filter turns each object into its constructor and each value into its contract
-// type; anything the contract does not have is an error.
+// the JSON form of a syntax tree, for dumps and for trees made outside GMLC:
+//   {"stage": "parsed", "contract_version": 2, "files": [{"id", "name", "project", "text"}...], "root": <node>}
+// the files carry their text, so a program compiled from a dump still gives the line of an error.
+// GameMaker's json_parse reads an integer above 2^53 back as an int64; JSON has no nan or infinities, so they are
+// the strings "nan", "inf", "-inf".
 
 #region jsDoc
-/// @func    GMLC_AstContractVersion()
+/// @func    gmlc_ast_contract_version()
 /// @desc    The version of the node table that dumps are written in; a reader refuses any other.
 /// @returns {Real}
 #endregion
-function GMLC_AstContractVersion() {
-	return 1;
+function gmlc_ast_contract_version() {
+	return 2;
 }
 
 #region Writer
 #region jsDoc
-/// @func    GMLC_AstToJson(_ast, _sources, [_stage], [_pretty])
+/// @func    gmlc_ast_to_json(_ast, _sources, [_stage], [_pretty])
 /// @desc    The JSON dump of a tree: the envelope with the stage, the contract version, the files of the compile and
 ///          the tree.
 /// @param   {Struct.ASTNode}          _ast      : The tree
@@ -29,45 +24,49 @@ function GMLC_AstContractVersion() {
 /// @param   {Bool}                    [_pretty] : Indent the output for reading
 /// @returns {String}
 #endregion
-function GMLC_AstToJson(_ast, _sources, _stage = "parsed", _pretty = false) {
+function gmlc_ast_to_json(_ast, _sources, _stage = "parsed", _pretty = false) {
 	var _w = { buffer: buffer_create(4096, buffer_grow, 1), pretty: _pretty, depth: 0 };
-	__GMLC_jsonOpen(_w, "{");
-	__GMLC_jsonKey(_w, "stage", true);
-	__GMLC_jsonText(_w, json_stringify(_stage));
-	__GMLC_jsonKey(_w, "contract_version", false);
-	__GMLC_jsonText(_w, string(GMLC_AstContractVersion()));
-	__GMLC_jsonKey(_w, "files", false);
-	__GMLC_jsonOpen(_w, "[");
+	__gmlc_json_open(_w, "{");
+	__gmlc_json_key(_w, "stage", true);
+	__gmlc_json_text(_w, json_stringify(_stage));
+	__gmlc_json_key(_w, "contract_version", false);
+	__gmlc_json_text(_w, string(gmlc_ast_contract_version()));
+	__gmlc_json_key(_w, "files", false);
+	__gmlc_json_open(_w, "[");
 	var _files = (_sources != undefined) ? _sources.files : [];
 	var _first = true;
 	var _i = 0; repeat (array_length(_files)) {
 		var _file = _files[_i];
 		if (_file != undefined) {
-			__GMLC_jsonItem(_w, _first);
+			__gmlc_json_item(_w, _first);
 			_first = false;
-			__GMLC_jsonOpen(_w, "{");
-			__GMLC_jsonKey(_w, "id", true);
-			__GMLC_jsonText(_w, string(_file.fileId));
-			__GMLC_jsonKey(_w, "name", false);
-			__GMLC_jsonText(_w, json_stringify(_file.name));
-			__GMLC_jsonKey(_w, "project", false);
-			__GMLC_jsonText(_w, (_file.project == undefined) ? "null" : json_stringify(_file.project));
-			__GMLC_jsonKey(_w, "text", false);
-			__GMLC_jsonText(_w, json_stringify(_file.source));
-			__GMLC_jsonClose(_w, "}");
+			__gmlc_json_open(_w, "{");
+			__gmlc_json_key(_w, "id", true);
+			__gmlc_json_text(_w, string(_file.file_id));
+			__gmlc_json_key(_w, "name", false);
+			__gmlc_json_text(_w, json_stringify(_file.name));
+			__gmlc_json_key(_w, "project", false);
+			__gmlc_json_text(_w, (_file.project == undefined) ? "null" : json_stringify(_file.project));
+			__gmlc_json_key(_w, "text", false);
+			__gmlc_json_text(_w, json_stringify(_file.source));
+			__gmlc_json_close(_w, "}");
 		}
 	_i++}
-	__GMLC_jsonClose(_w, "]");
-	__GMLC_jsonKey(_w, "root", false);
-	__GMLC_jsonValue(_w, _ast);
-	__GMLC_jsonClose(_w, "}");
+	__gmlc_json_close(_w, "]");
+	__gmlc_json_key(_w, "root", false);
+	__gmlc_json_value(_w, _ast);
+	__gmlc_json_close(_w, "}");
 	
-	// bytes of a file that are not UTF-8 (the lexer reported GMLC0001) are written as U+FFFD, so the dump is UTF-8
+	// bytes that are not UTF-8 are written as U+FFFD, so the dump is UTF-8
 	var _lossy = false;
 	_i = 0; repeat (array_length(_files)) {
-		if (_files[_i][$ "invalidUtf8"] == true) _lossy = true;
+		if (_files[_i][$ "invalid_utf8"] == true) _lossy = true;
 	_i++}
-	if (_lossy) __GMLC_jsonReplaceInvalidUtf8(_w);
+	if (_lossy) {
+		var _out = __gmlc_lossy_utf8_buffer(_w.buffer, buffer_tell(_w.buffer));
+		buffer_delete(_w.buffer);
+		_w.buffer = _out;
+	}
 	buffer_write(_w.buffer, buffer_u8, 0);
 	buffer_seek(_w.buffer, buffer_seek_start, 0);
 	var _text = buffer_read(_w.buffer, buffer_string);
@@ -75,31 +74,39 @@ function GMLC_AstToJson(_ast, _sources, _stage = "parsed", _pretty = false) {
 	return _text;
 }
 
-// a node: kind, span, the kind's fields in order, origin
-function __GMLC_jsonNode(_w, _node) {
-	__GMLC_jsonOpen(_w, "{");
-	__GMLC_jsonKey(_w, "kind", true);
-	__GMLC_jsonText(_w, json_stringify(_node.kindName));
-	__GMLC_jsonKey(_w, "span", false);
-	__GMLC_jsonValue(_w, _node.span);
+#region jsDoc
+/// @func    __gmlc_json_node(_w, _node)
+/// @desc    A node in its field order: kind, span, the kind's fields, origin.
+#endregion
+function __gmlc_json_node(_w, _node) {
+	__gmlc_json_open(_w, "{");
+	__gmlc_json_key(_w, "kind", true);
+	__gmlc_json_text(_w, json_stringify(_node.kindName));
+	__gmlc_json_key(_w, "span", false);
+	__gmlc_json_value(_w, _node.span);
 	var _fields = _node.fields;
 	var _i = 0; repeat (array_length(_fields)) {
 		var _field = _fields[_i];
-		__GMLC_jsonKey(_w, _field, false);
+		__gmlc_json_key(_w, _field, false);
 		if (_field == "value") && (_node.kind == __GMLC_NodeKind_Literal) {
-			__GMLC_jsonText(_w, __GMLC_jsonLiteralValue(_node.ty, _node.value));
+			__gmlc_json_text(_w, __gmlc_json_literal_value(_node.ty, _node.value));
 		}
 		else {
-			__GMLC_jsonValue(_w, _node[$ _field]);
+			__gmlc_json_value(_w, _node[$ _field]);
 		}
 	_i++}
-	__GMLC_jsonKey(_w, "origin", false);
-	__GMLC_jsonValue(_w, _node.origin);
-	__GMLC_jsonClose(_w, "}");
+	__gmlc_json_key(_w, "origin", false);
+	__gmlc_json_value(_w, _node.origin);
+	__gmlc_json_close(_w, "}");
 }
 
-// the fields of a record in order, by its constructor
-function __GMLC_jsonRecordFields(_record) {
+#region jsDoc
+/// @func    __gmlc_json_record_fields(_record)
+/// @desc    The fields of a contract record (span, symbol, origin, ...) in their written order.
+/// @param   {Struct} _record : The record
+/// @returns {Array<String>}
+#endregion
+function __gmlc_json_record_fields(_record) {
 	static __span = ["file", "start", "end"];
 	static __symbol = ["kind", "name", "slot"];
 	static __origin = ["kind", "name", "member", "config", "def_span", "use_span"];
@@ -125,41 +132,47 @@ function __GMLC_jsonRecordFields(_record) {
 	__gmlc_internal_error($"a {instanceof(_record)} struct is not a record of the AST contract");
 }
 
-function __GMLC_jsonValue(_w, _value) {
+#region jsDoc
+/// @func    __gmlc_json_value(_w, _value)
+/// @desc    Writes any value of a dump: null, bool, string, number, array, node, token or record.
+/// @param   {Struct} _w     : The writer, {buffer, pretty, depth}
+/// @param   {Any}    _value : The value
+#endregion
+function __gmlc_json_value(_w, _value) {
 	if (is_undefined(_value)) {
-		__GMLC_jsonText(_w, "null");
+		__gmlc_json_text(_w, "null");
 	}
 	else if (is_bool(_value)) {
-		__GMLC_jsonText(_w, _value ? "true" : "false");
+		__gmlc_json_text(_w, _value ? "true" : "false");
 	}
 	else if (is_string(_value)) {
-		__GMLC_jsonText(_w, json_stringify(_value));
+		__gmlc_json_text(_w, json_stringify(_value));
 	}
 	else if (is_numeric(_value)) {
-		__GMLC_jsonText(_w, __GMLC_jsonNumber(_value));
+		__gmlc_json_text(_w, __gmlc_json_number(_value));
 	}
 	else if (is_array(_value)) {
-		__GMLC_jsonOpen(_w, "[");
+		__gmlc_json_open(_w, "[");
 		var _i = 0; repeat (array_length(_value)) {
-			__GMLC_jsonItem(_w, _i == 0);
-			__GMLC_jsonValue(_w, _value[_i]);
+			__gmlc_json_item(_w, _i == 0);
+			__gmlc_json_value(_w, _value[_i]);
 		_i++}
-		__GMLC_jsonClose(_w, "]");
+		__gmlc_json_close(_w, "]");
 	}
 	else if (is_instanceof(_value, ASTNode)) {
-		__GMLC_jsonNode(_w, _value);
+		__gmlc_json_node(_w, _value);
 	}
 	else if (is_instanceof(_value, __GMLC_create_token)) {
-		__GMLC_jsonToken(_w, _value);
+		__gmlc_json_token(_w, _value);
 	}
 	else if (is_struct(_value)) {
-		var _fields = __GMLC_jsonRecordFields(_value);
-		__GMLC_jsonOpen(_w, "{");
+		var _fields = __gmlc_json_record_fields(_value);
+		__gmlc_json_open(_w, "{");
 		var _i = 0; repeat (array_length(_fields)) {
-			__GMLC_jsonKey(_w, _fields[_i], _i == 0);
-			__GMLC_jsonValue(_w, _value[$ _fields[_i]]);
+			__gmlc_json_key(_w, _fields[_i], _i == 0);
+			__gmlc_json_value(_w, _value[$ _fields[_i]]);
 		_i++}
-		__GMLC_jsonClose(_w, "}");
+		__gmlc_json_close(_w, "}");
 	}
 	else {
 		__gmlc_internal_error($"a {typeof(_value)} cannot be written to an AST dump");
@@ -167,14 +180,14 @@ function __GMLC_jsonValue(_w, _value) {
 }
 
 #region jsDoc
-/// @func    __GMLC_jsonToken(_w, _token)
+/// @func    __gmlc_json_token(_w, _token)
 /// @desc    A token as the contract's Token record: kind (its name), span, text, ty (numbers only), value and origin.
-///          The value is the token's meaning where its kind has one (keyword, canonical operator, number, cooked
+///          The value is the token's meaning where its kind has one (keyword, canonical operator, number, unescaped
 ///          string, region word), null otherwise.
 /// @param   {Struct} _w     : The writer
 /// @param   {Struct} _token : The token
 #endregion
-function __GMLC_jsonToken(_w, _token) {
+function __gmlc_json_token(_w, _token) {
 	static __kinds = ["Eof", "Illegal", "Newline", "Comment", "Region", "Backslash", "MacroDirective", "Identifier", "Keyword",
 		"Number", "String", "TemplateFull", "TemplateHead", "TemplateMiddle", "TemplateTail", "Op"];
 	var _kind = _token.kind;
@@ -183,7 +196,7 @@ function __GMLC_jsonToken(_w, _token) {
 	switch (_kind) {
 		case __GMLC_TokenKind_Number: {
 			_ty = _token[$ "ty"] ?? (is_int64(_token.value) ? "int64" : "real");
-			_value = __GMLC_jsonLiteralValue(_ty, _token.value);
+			_value = __gmlc_json_literal_value(_ty, _token.value);
 		break;}
 		case __GMLC_TokenKind_Keyword:
 		case __GMLC_TokenKind_Op:
@@ -196,30 +209,30 @@ function __GMLC_jsonToken(_w, _token) {
 			_value = json_stringify(_token.value);
 		break;}
 	}
-	__GMLC_jsonOpen(_w, "{");
-	__GMLC_jsonKey(_w, "kind", true);
-	__GMLC_jsonText(_w, json_stringify(__kinds[_kind]));
-	__GMLC_jsonKey(_w, "span", false);
-	__GMLC_jsonValue(_w, new GMLC_Span(_token.file, _token.start, _token[$ "end"]));
-	__GMLC_jsonKey(_w, "text", false);
-	__GMLC_jsonText(_w, json_stringify(_token.name));
-	__GMLC_jsonKey(_w, "ty", false);
-	__GMLC_jsonText(_w, (_ty == undefined) ? "null" : json_stringify(_ty));
-	__GMLC_jsonKey(_w, "value", false);
-	__GMLC_jsonText(_w, _value);
-	__GMLC_jsonKey(_w, "origin", false);
-	__GMLC_jsonValue(_w, _token[$ "origin"]);
-	__GMLC_jsonClose(_w, "}");
+	__gmlc_json_open(_w, "{");
+	__gmlc_json_key(_w, "kind", true);
+	__gmlc_json_text(_w, json_stringify(__kinds[_kind]));
+	__gmlc_json_key(_w, "span", false);
+	__gmlc_json_value(_w, new GMLC_Span(_token.file, _token.start, _token[$ "end"]));
+	__gmlc_json_key(_w, "text", false);
+	__gmlc_json_text(_w, json_stringify(_token.name));
+	__gmlc_json_key(_w, "ty", false);
+	__gmlc_json_text(_w, (_ty == undefined) ? "null" : json_stringify(_ty));
+	__gmlc_json_key(_w, "value", false);
+	__gmlc_json_text(_w, _value);
+	__gmlc_json_key(_w, "origin", false);
+	__gmlc_json_value(_w, _token[$ "origin"]);
+	__gmlc_json_close(_w, "}");
 }
 
 #region jsDoc
-/// @func    __GMLC_jsonNumber(_value)
+/// @func    __gmlc_json_number(_value)
 /// @desc    A number as JSON: an int64 or a whole real by its digits, any other real with the digits that read back to
 ///          the same double; NaN and the infinities as the strings "nan", "inf" and "-inf", -0 as -0.0.
 /// @param   {Real|Int64} _value : The number
 /// @returns {String}
 #endregion
-function __GMLC_jsonNumber(_value) {
+function __gmlc_json_number(_value) {
 	if (is_int64(_value)) return string(_value);
 	if (is_nan(_value)) return "\"nan\"";
 	if (is_infinity(_value)) return (_value > 0) ? "\"inf\"" : "\"-inf\"";
@@ -229,18 +242,18 @@ function __GMLC_jsonNumber(_value) {
 }
 
 #region jsDoc
-/// @func    __GMLC_jsonLiteralValue(_ty, _value)
-/// @desc    The JSON of a Literal's value by its type: int64, colour and real as numbers (see __GMLC_jsonNumber), strings,
+/// @func    __gmlc_json_literal_value(_ty, _value)
+/// @desc    The JSON of a Literal's value by its type: int64, color and real as numbers, strings,
 ///          bools and undefined as JSON.
 /// @param   {String} _ty    : The literal's type
 /// @param   {Any}    _value : The value
 /// @returns {String}
 #endregion
-function __GMLC_jsonLiteralValue(_ty, _value) {
+function __gmlc_json_literal_value(_ty, _value) {
 	switch (_ty) {
 		case "int64":
-		case "colour": return string(int64(_value));
-		case "real": return __GMLC_jsonNumber(real(_value));
+		case "color": return string(int64(_value));
+		case "real": return __gmlc_json_number(real(_value));
 		case "string": return json_stringify(_value);
 		case "bool": return _value ? "true" : "false";
 		case "undefined": return "null";
@@ -248,19 +261,17 @@ function __GMLC_jsonLiteralValue(_ty, _value) {
 	__gmlc_internal_error($"unknown literal type {_ty}");
 }
 
-// output: text, objects and arrays, keys and items, indented when pretty
-function __GMLC_jsonReplaceInvalidUtf8(_w) {
-	var _out = __GMLC_lossyUtf8Buffer(_w.buffer, buffer_tell(_w.buffer));
-	buffer_delete(_w.buffer);
-	_w.buffer = _out;
-}
-
-// a text with U+FFFD for each byte that is not part of a valid UTF-8 sequence
-function __GMLC_lossyUtf8(_text) {
+#region jsDoc
+/// @func    __gmlc_lossy_utf8(_text)
+/// @desc    The text with each byte that does not start a valid UTF-8 sequence replaced by U+FFFD.
+/// @param   {String} _text : The text
+/// @returns {String}
+#endregion
+function __gmlc_lossy_utf8(_text) {
 	var _size = string_byte_length(_text);
 	var _in = buffer_create(_size + 1, buffer_fixed, 1);
 	buffer_write(_in, buffer_text, _text);
-	var _out = __GMLC_lossyUtf8Buffer(_in, _size);
+	var _out = __gmlc_lossy_utf8_buffer(_in, _size);
 	buffer_delete(_in);
 	buffer_write(_out, buffer_u8, 0);
 	buffer_seek(_out, buffer_seek_start, 0);
@@ -269,13 +280,16 @@ function __GMLC_lossyUtf8(_text) {
 	return _result;
 }
 
-// a new buffer holding the first _size bytes of _in with every byte that does not start a valid UTF-8 sequence
-// replaced by U+FFFD (EF BF BD), written up to its end
-function __GMLC_lossyUtf8Buffer(_in, _size) {
+#region jsDoc
+/// @func    __gmlc_lossy_utf8_buffer(_in, _size)
+/// @desc    A new buffer: the first _size bytes of _in, each byte that does not start a valid UTF-8
+///          sequence written as U+FFFD.
+#endregion
+function __gmlc_lossy_utf8_buffer(_in, _size) {
 	var _out = buffer_create(_size + 16, buffer_grow, 1);
 	var _p = 0;
 	while (_p < _size) {
-		var _n = __GMLC_utf8Length(_in, _p, _size);
+		var _n = __gmlc_utf8_length(_in, _p, _size);
 		if (_n == 0) {
 			buffer_write(_out, buffer_u8, 0xEF);
 			buffer_write(_out, buffer_u8, 0xBF);
@@ -291,8 +305,12 @@ function __GMLC_lossyUtf8Buffer(_in, _size) {
 	return _out;
 }
 
-// the length of the valid UTF-8 sequence at a byte (shortest form, at most U+10FFFF, no surrogate), 0 when none
-function __GMLC_utf8Length(_buffer, _p, _size) {
+#region jsDoc
+/// @func    __gmlc_utf8_length(_buffer, _p, _size)
+/// @desc    The length of the valid UTF-8 sequence at a byte (shortest form, at most U+10FFFF, no
+///          surrogate), 0 when none.
+#endregion
+function __gmlc_utf8_length(_buffer, _p, _size) {
 	var _b = buffer_peek(_buffer, _p, buffer_u8);
 	if (_b < 0x80) return 1;
 	var _n = (_b >= 0xF0) ? 4 : ((_b >= 0xE0) ? 3 : ((_b >= 0xC0) ? 2 : 0));
@@ -308,27 +326,68 @@ function __GMLC_utf8Length(_buffer, _p, _size) {
 	return _n;
 }
 
-function __GMLC_jsonText(_w, _text) {
+#region jsDoc
+/// @func    __gmlc_json_text(_w, _text)
+/// @desc    Writes text as it is.
+/// @param   {Struct} _w    : The writer, {buffer, pretty, depth}
+/// @param   {String} _text : The text
+#endregion
+function __gmlc_json_text(_w, _text) {
 	buffer_write(_w.buffer, buffer_text, _text);
 }
-function __GMLC_jsonOpen(_w, _bracket) {
+
+#region jsDoc
+/// @func    __gmlc_json_open(_w, _bracket)
+/// @desc    Writes an opening bracket and goes one level deeper.
+/// @param   {Struct} _w       : The writer, {buffer, pretty, depth}
+/// @param   {String} _bracket : `{` or `[`
+#endregion
+function __gmlc_json_open(_w, _bracket) {
 	buffer_write(_w.buffer, buffer_text, _bracket);
 	_w.depth++;
 }
-function __GMLC_jsonClose(_w, _bracket) {
+
+#region jsDoc
+/// @func    __gmlc_json_close(_w, _bracket)
+/// @desc    Goes one level back and writes a closing bracket, on a new line when pretty.
+/// @param   {Struct} _w       : The writer, {buffer, pretty, depth}
+/// @param   {String} _bracket : `}` or `]`
+#endregion
+function __gmlc_json_close(_w, _bracket) {
 	_w.depth--;
-	if (_w.pretty) __GMLC_jsonNewline(_w);
+	if (_w.pretty) __gmlc_json_newline(_w);
 	buffer_write(_w.buffer, buffer_text, _bracket);
 }
-function __GMLC_jsonKey(_w, _key, _first) {
-	__GMLC_jsonItem(_w, _first);
+
+#region jsDoc
+/// @func    __gmlc_json_key(_w, _key, _first)
+/// @desc    Writes an object's key, after a comma unless it is the first.
+/// @param   {Struct} _w     : The writer, {buffer, pretty, depth}
+/// @param   {String} _key   : The key
+/// @param   {Bool}   _first : Whether it is the object's first key
+#endregion
+function __gmlc_json_key(_w, _key, _first) {
+	__gmlc_json_item(_w, _first);
 	buffer_write(_w.buffer, buffer_text, "\"" + _key + (_w.pretty ? "\": " : "\":"));
 }
-function __GMLC_jsonItem(_w, _first) {
+
+#region jsDoc
+/// @func    __gmlc_json_item(_w, _first)
+/// @desc    Starts an item: the comma unless it is the first, then its new line when pretty.
+/// @param   {Struct} _w     : The writer, {buffer, pretty, depth}
+/// @param   {Bool}   _first : Whether it is the first item
+#endregion
+function __gmlc_json_item(_w, _first) {
 	if (!_first) buffer_write(_w.buffer, buffer_text, ",");
-	if (_w.pretty) __GMLC_jsonNewline(_w);
+	if (_w.pretty) __gmlc_json_newline(_w);
 }
-function __GMLC_jsonNewline(_w) {
+
+#region jsDoc
+/// @func    __gmlc_json_newline(_w)
+/// @desc    Writes a new line and the indent of the current depth.
+/// @param   {Struct} _w : The writer, {buffer, pretty, depth}
+#endregion
+function __gmlc_json_newline(_w) {
 	buffer_write(_w.buffer, buffer_u8, 10);
 	repeat (_w.depth) buffer_write(_w.buffer, buffer_text, "  ");
 }
@@ -336,21 +395,20 @@ function __GMLC_jsonNewline(_w) {
 
 #region Reader
 #region jsDoc
-/// @func    GMLC_AstFromJson(_text)
-/// @desc    Reads a dump written with GMLC_AstToJson: the envelope with the tree (an array of trees for a batch of
-///          files) made of node constructors and the files as a source table. Throws when the contract version differs or the dump has anything the contract
-///          does not.
+/// @func    gmlc_ast_from_json(_text)
+/// @desc    Reads a dump written with gmlc_ast_to_json: the envelope with the tree (an array of trees for a batch of
+///          files) made of node constructors and the files as a source table. Throws when the contract version
+///          differs or the dump has anything the contract does not.
 /// @param   {String} _text : The JSON
 /// @returns {Struct} {stage, sources, root}
 #endregion
-function GMLC_AstFromJson(_text) {
+function gmlc_ast_from_json(_text) {
 	// the filter must be a method: json_parse ignores a plain function
-	static __filter = __vanilla_method(undefined, __GMLC_astJsonFilter);
+	static __filter = __vanilla_method(undefined, __gmlc_ast_json_filter);
 	var _envelope = json_parse(_text, __filter, true);
-	if (_envelope[$ "contract_version"] != GMLC_AstContractVersion()) {
-		__gmlc_internal_error($"the AST dump has contract version {_envelope[$ "contract_version"]}, GMLC reads {GMLC_AstContractVersion()}");
+	if (_envelope[$ "contract_version"] != gmlc_ast_contract_version()) {
+		__gmlc_internal_error($"the AST dump has contract version {_envelope[$ "contract_version"]}, GMLC reads {gmlc_ast_contract_version()}");
 	}
-	// one tree, or one per file of a batch
 	var _root = _envelope[$ "root"];
 	var _trees = is_array(_root) ? _root : [_root];
 	var _t = 0; repeat (array_length(_trees)) {
@@ -368,7 +426,7 @@ function GMLC_AstFromJson(_text) {
 }
 
 #region jsDoc
-/// @func    __GMLC_astJsonFilter(_key, _value)
+/// @func    __gmlc_ast_json_filter(_key, _value)
 /// @desc    The json_parse filter of the reader. A record is known by the field that holds it (`span`, `symbol`,
 ///          `origin`, `regions`, ...); any other object with a "kind" is a node, built by its kind's constructor with
 ///          all of its fields; values are converted to their contract type. Every other value is kept.
@@ -376,11 +434,11 @@ function GMLC_AstFromJson(_text) {
 /// @param   {Any} _value : The value, its children already read
 /// @returns {Any}
 #endregion
-function __GMLC_astJsonFilter(_key, _value) {
+function __gmlc_ast_json_filter(_key, _value) {
 	switch (_key) {
 		case "span":
 		case "def_span":
-		case "use_span": return __GMLC_jsonReadSpan(_value);
+		case "use_span": return __gmlc_json_read_span(_value);
 		case "symbol": {
 			if (_value == undefined) return undefined;
 			return new GMLC_Symbol(_value.kind, _value.name, (_value[$ "slot"] != undefined) ? real(_value.slot) : undefined);
@@ -399,7 +457,7 @@ function __GMLC_astJsonFilter(_key, _value) {
 		case "pragmas": {
 			var _i = 0; repeat (array_length(_value)) {
 				var _p = _value[_i];
-				_value[_i] = new GMLC_Pragma(_p.pragma, _p.span, __GMLC_jsonReadSpan(_p[$ "target"]));
+				_value[_i] = new GMLC_Pragma(_p.pragma, _p.span, __gmlc_json_read_span(_p[$ "target"]));
 			_i++}
 			return _value;
 		}
@@ -432,8 +490,8 @@ function __GMLC_astJsonFilter(_key, _value) {
 	var _kind = _value[$ "kind"];
 	if (!is_string(_kind)) return _value;
 	
-	var _kinds = __GMLC_NodeKinds();
-	var _index = __gmlc_struct_get(_kinds.byName, _kind);
+	var _kinds = __gmlc_node_kinds();
+	var _index = __gmlc_struct_get(_kinds.by_name, _kind);
 	if (_index == undefined) {
 		__gmlc_internal_error($"the AST dump has a node of unknown kind {_kind}");
 	}
@@ -454,7 +512,7 @@ function __GMLC_astJsonFilter(_key, _value) {
 	
 	switch (_node.kind) {
 		case __GMLC_NodeKind_Literal: {
-			_node.value = __GMLC_jsonReadLiteralValue(_node.ty, _value.value);
+			_node.value = __gmlc_json_read_literal_value(_node.ty, _value.value);
 		break;}
 		case __GMLC_NodeKind_EnumMember: {
 			if (_node.value != undefined) _node.value = int64(_node.value);
@@ -468,17 +526,26 @@ function __GMLC_astJsonFilter(_key, _value) {
 	return _node;
 }
 
-// a span, its numbers as reals
-function __GMLC_jsonReadSpan(_value) {
+#region jsDoc
+/// @func    __gmlc_json_read_span(_value)
+/// @desc    A span read from a dump; undefined for null.
+/// @param   {Struct} _value : The parsed span, {file, start, end}
+/// @returns {Struct.GMLC_Span}
+#endregion
+function __gmlc_json_read_span(_value) {
 	if (_value == undefined) return undefined;
 	return new GMLC_Span(real(_value.file), real(_value.start), real(_value[$ "end"]));
 }
 
-// a Literal's value as its type (int64 from the number json_parse gives, whatever its size)
-function __GMLC_jsonReadLiteralValue(_ty, _value) {
+#region jsDoc
+/// @func    __gmlc_json_read_literal_value(_ty, _value)
+/// @desc    A Literal's value as its type; an int64 is made from the number json_parse gives, whatever
+///          its size.
+#endregion
+function __gmlc_json_read_literal_value(_ty, _value) {
 	switch (_ty) {
 		case "int64":  return int64(_value);
-		case "colour": return real(_value);
+		case "color": return real(_value);
 		case "real": {
 			if (is_string(_value)) {
 				switch (_value) {
@@ -494,5 +561,4 @@ function __GMLC_jsonReadLiteralValue(_ty, _value) {
 	}
 	return _value;
 }
-#endregion
 #endregion

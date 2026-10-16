@@ -1,14 +1,11 @@
-#region Extension: macro-params
-// `#macro NAME(A, B) body`: a name directly followed by `(` takes parameters. A use `NAME(x, y)` becomes the body
-// with each parameter name (not after a `.`) replaced by its argument's tokens, then expands as usual; a use without
-// `(` stays a name. Without the extension, GameMaker's meaning holds: a body starting with `(A, B)`.
-
 #region jsDoc
 /// @func    GMLC_Ext_MacroParams()
-/// @desc    The `macro-params` extension.
+/// @desc    `#macro NAME(A, B) body`: a `(` right after the name starts a parameter list. Without the extension
+///          GameMaker reads `(A, B)` as the start of the body.
 /// @returns {Struct.GMLC_Ext_MacroParams}
 #endregion
 function GMLC_Ext_MacroParams() : GMLC_Extension("macro-params") constructor {
+	#region Public
 	#region jsDoc
 	/// @func    collectMacro(_pre, _tokens, _i, _nameToken)
 	/// @desc    Reads the parameter list right after a macro's name. Returns undefined when the name is not directly
@@ -30,28 +27,20 @@ function GMLC_Ext_MacroParams() : GMLC_Extension("macro-params") constructor {
 			_j++;
 		}
 		else {
-			while (true) {
-				if (_j >= _n) || (_tokens[_j].kind != __GMLC_TokenKind_Identifier) || array_contains(_params, _tokens[_j].value) {
-					_ok = false;
-					break;
-				}
+			do {
+				_ok = (_j < _n) && (_tokens[_j].kind == __GMLC_TokenKind_Identifier) && !array_contains(_params, _tokens[_j].value);
+				if (!_ok) break;
 				array_push(_params, _tokens[_j].value);
 				_j++;
-				if (_j < _n) && (_tokens[_j].value == ",") {
-					_j++;
-					continue;
-				}
-				if (_j < _n) && (_tokens[_j].value == ")") {
-					_j++;
-					break;
-				}
-				_ok = false;
-				break;
+				var _comma = (_j < _n) && (_tokens[_j].value == ",");
+				if (_comma) _j++;
 			}
+			until (!_comma);
+			_ok = _ok && (_j < _n) && (_tokens[_j].value == ")");
+			if (_ok) _j++;
 		}
 		if (!_ok) {
 			_pre.__report("GMLC0319", _nameToken, [_nameToken.name]);
-			// the rest of the line is taken as the body, so the file goes on from the next line
 			while (_j < _n) && (_tokens[_j].kind != __GMLC_TokenKind_Newline) _j++;
 		}
 		return { params: _params, next: _j };
@@ -79,7 +68,6 @@ function GMLC_Ext_MacroParams() : GMLC_Extension("macro-params") constructor {
 			return _i + 1;
 		}
 		
-		// the arguments: tokens split at commas outside brackets, up to the `)` that closes the list
 		var _args = [];
 		var _current = [];
 		var _level = 0;
@@ -116,8 +104,7 @@ function GMLC_Ext_MacroParams() : GMLC_Extension("macro-params") constructor {
 			return _j + 1;
 		}
 		
-		// the body with each parameter replaced by its argument's tokens
-		var _body = _def.body;
+		var _body = _def.tokens;
 		var _filled = [];
 		var _b = 0; repeat (array_length(_body)) {
 			var _t = _body[_b];
@@ -133,5 +120,5 @@ function GMLC_Ext_MacroParams() : GMLC_Extension("macro-params") constructor {
 		_pre.__emitTokens(_batch, _use, _def, _filled, _depth, _out);
 		return _j + 1;
 	};
+	#endregion
 }
-#endregion

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_AstNodes",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_AstNodes",
+  "parent":{
+    "name":"_Internal",
+    "path":"folders/GMLC/Parsers/_Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

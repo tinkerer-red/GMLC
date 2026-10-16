@@ -50,4 +50,4 @@ Only the `GMLC` folder is part of the library. The rest of the project is for de
 ## Known limitations
 
 - Runtime errors in compiled code are thrown as plain GML exceptions and do not yet match GameMaker's error format.
-- `GM14Compatibility` is the only third-party script left in the library folder.
+- `GMLC_Ext_GM14Compatibility` is the only third-party script left in the library folder.

@@ -6,7 +6,7 @@
   "name":"GmlMethodBindingTestSuite",
   "parent":{
     "name":"Behaviour",
-    "path":"folders/Tests/Behaviour.yy",
+    "path":"folders/Tests/Behavior.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

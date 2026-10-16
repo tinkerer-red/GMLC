@@ -1,4 +1,4 @@
-// Generated from measured GameMaker behaviour; do not edit by hand.
+// Generated from measured GameMaker behavior; do not edit by hand.
 // Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-06.
 function GmlCompileVerdictTestSuite() : TestSuite() constructor {
 
@@ -131,10 +131,10 @@ var a = 2;
 return a;'); }), "number:2", "GMLC differs from GameMaker");
 	});
 
-	addFact("a static initialised from a local of the same function [GameMaker]", function() {
+	addFact("a static initialized from a local of the same function [GameMaker]", function() {
 		assert_equals(case_run(case_compile_verdicts_static_reads_local), "error", "GameMaker no longer gives the measured result");
 	});
-	addFact("a static initialised from a local of the same function [GMLC]", function() {
+	addFact("a static initialized from a local of the same function [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'var f = function() { var t = 5; static s = t; return s; };
 return f();'); }), "error", "GMLC differs from GameMaker");
 	});

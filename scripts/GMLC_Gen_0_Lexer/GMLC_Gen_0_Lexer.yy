@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_0_Lexer",
   "parent":{
-    "name":"Lexer",
-    "path":"folders/GMLC/Lexer.yy",
+    "name":"Parsers",
+    "path":"folders/GMLC/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

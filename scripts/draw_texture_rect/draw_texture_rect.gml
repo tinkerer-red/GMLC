@@ -7,7 +7,7 @@
 function draw_texture_rect(_rect, _uvs, _colour = c_white, _alpha = 1.0) {	
 	// Begin drawing primitive
 	draw_primitive_begin(pr_trianglestrip);
-	// Draw a vertex at each of the corners of the rect, with the specified colour and alpha values
+	// Draw a vertex at each of the corners of the rect, with the specified color and alpha values
 	draw_vertex_texture_color(rect.left, rect.top, _uvs[0], _uvs[1], c_white, 1);
 	draw_vertex_texture_color(rect.right, rect.top, _uvs[2], _uvs[1], c_white, 1);
 	draw_vertex_texture_color(rect.left, rect.bottom, _uvs[0], _uvs[3], c_white, 1);

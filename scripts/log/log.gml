@@ -65,9 +65,9 @@ function __reStruct(_struct) {
 			
 			
 				//skip these from printing
-				if (_name == "errorMessage")
-				|| (_name == "rootNode")
-				|| (_name == "parentNode") {
+				if (_name == "error_message")
+				|| (_name == "root_node")
+				|| (_name == "parent_node") {
 					_i++
 					continue;
 				}

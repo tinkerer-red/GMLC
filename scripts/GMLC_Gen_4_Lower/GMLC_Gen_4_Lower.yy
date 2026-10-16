@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Gen_4_Lower",
   "parent":{
-    "name":"Lower",
-    "path":"folders/GMLC/Lower.yy",
+    "name":"Parsers",
+    "path":"folders/GMLC/Parsers.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

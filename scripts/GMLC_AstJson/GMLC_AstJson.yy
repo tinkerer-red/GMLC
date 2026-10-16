@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_AstJson",
   "parent":{
-    "name":"Util",
-    "path":"folders/GMLC/Util.yy",
+    "name":"_Internal",
+    "path":"folders/GMLC/Parsers/_Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

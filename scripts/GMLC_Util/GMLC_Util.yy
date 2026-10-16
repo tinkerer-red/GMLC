@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Util",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Util",
+  "parent":{
+    "name":"GMLC",
+    "path":"folders/GMLC.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

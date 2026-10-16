@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"__DeprocatedVariables",
   "parent":{
-    "name":"__Deprocated",
-    "path":"folders/GMLC/Internal/LookupTables/__Deprocated.yy",
+    "name":"Deprecated",
+    "path":"folders/Deprecated.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

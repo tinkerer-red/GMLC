@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Types",
   "parent":{
-    "name":"Types",
-    "path":"folders/GMLC/Sema/Types.yy",
+    "name":"_Internal",
+    "path":"folders/GMLC/Parsers/_Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

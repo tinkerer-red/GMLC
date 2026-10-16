@@ -1,26 +1,26 @@
-#region PreProcessor.gml
-// For a batch of files: `collect` reads each file's #macro and enum definitions, regions and @NoOp pragmas; one
-// `merge` builds the batch's definitions (the configuration chain picks each macro); `expand` replaces every macro
-// use with fresh tokens. Enum references stay as written for lowering. The only environment it reads is whether
-// `nameof` is exposed and which language extensions are on.
-
+#region jsDoc
+/// @func    GMLC_Gen_1_PreProcessor(_env)
+/// @desc    Collects each file of a batch, merges the batch's definitions once, then expands each file.
+/// @param   {Struct.GMLC_Env} _env : The environment
+/// @returns {Struct.GMLC_Gen_1_PreProcessor}
+#endregion
 function GMLC_Gen_1_PreProcessor(_env) constructor {
 	#region Config
-	static maxMacroDepth = 64;          // macro uses nested deeper than this are an error
-	static maxExpandedTokens = 8000000; // the most tokens one file may grow to by macro expansion
+	static maxMacroDepth = 64;
+	static maxExpandedTokens = 8000000;
 	#endregion
 
+	#region Init
 	env = _env;
 	diagnostics = [];
-	sources = undefined; // the compile's GMLC_SourceTable, for the positions of errors
-	
+	sources = undefined;
+	#endregion
+
 	#region Public
 	#region jsDoc
 	/// @func    collect(_program)
-	/// @desc    Reads one file's lexer tokens: #macro definitions, enum declarations, regions and `@NoOp` pragmas go
-	///          to tables, comments are kept by position only, line breaks are dropped, everything else stays in the
-	///          stream in order.
-	///          Problems go to `diagnostics`; the caller stops after every file of the batch is collected.
+	/// @desc    Reads one file's macros, enums, regions, pragmas and comment positions; the other tokens stay in
+	///          `stream`. Problems go to `diagnostics`.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct} _program : The lexer's program record (`tokens`)
 	/// @returns {Struct} The file's definitions: {program, stream, macros, enums, regions, pragmas, comments}
@@ -30,6 +30,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _unit = { program: _program, stream: [], macros: [], enums: [], regions: [], pragmas: [], comments: [] };
 		var _tokens = _program.tokens;
 		var _n = array_length(_tokens);
+		var _last = -1;
 		var _i = 0;
 		while (_i < _n) {
 			var _t = _tokens[_i];
@@ -40,27 +41,30 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				case __GMLC_TokenKind_Newline:
 					break;
 				case __GMLC_TokenKind_Comment:
-					array_push(_unit.comments, __span(_t)); // where the comment is, for the emitter
+					array_push(_unit.comments, __span(_t));
 					if (__isNoOpPragma(_t.name)) {
-						// the parser fills `target` with the span of the first statement after it
+						// the parser fills in its target statement
 						array_push(_unit.pragmas, new GMLC_Pragma("NoOp", __span(_t), undefined));
 					}
 					break;
 				case __GMLC_TokenKind_Region:
-					array_push(_unit.regions, new GMLC_Region(__span(_t), (_t.value == "endregion"), __regionTitle(_t.name)));
+					//apparently endregion can also have a closer title. who knew!
+					var _title = string_trim(string_delete(_t.name, 1, string_length(_t.value) + 1));
+					array_push(_unit.regions, new GMLC_Region(__span(_t), (_t.value == "endregion"), _title));
 					break;
 				case __GMLC_TokenKind_Backslash:
 					__report("GMLC0308", _t);
 					break;
 				case __GMLC_TokenKind_Identifier: {
-					// `gml_pragma("@NoOp");` as a statement is the pragma too (GMLC only; GameMaker refuses it)
-					var _end = (_t.name == "gml_pragma") ? __noOpPragmaCall(_tokens, _i, _unit.stream) : -1;
+					// `gml_pragma("@NoOp");` as a statement is the pragma too; GameMaker itself refuses it
+					var _end = (_t.name == "gml_pragma") ? __noOpPragmaCall(_tokens, _i, _last) : -1;
 					if (_end >= 0) {
-						array_push(_unit.pragmas, new GMLC_Pragma("NoOp", new GMLC_Span(_t[$ "file"], _t.start, _tokens[_end - 1][$ "end"]), undefined));
+						array_push(_unit.pragmas, new GMLC_Pragma("NoOp", new GMLC_Span(_t.file, _t.start, _tokens[_end - 1][$ "end"]), undefined));
 						_i = _end;
 						continue;
 					}
 					array_push(_unit.stream, _t);
+					_last = _i;
 				break;}
 				case __GMLC_TokenKind_Keyword:
 					if (_t.value == "enum") && __startsEnum(_tokens, _i) {
@@ -68,24 +72,25 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 						continue;
 					}
 					array_push(_unit.stream, _t);
+					_last = _i;
 					break;
 				default:
 					array_push(_unit.stream, _t);
+					_last = _i;
 					break;
 			}
 			_i++;
 		}
 		return _unit;
 	};
-	
+
 	#region jsDoc
 	/// @func    hostMacro(_name, _program)
-	/// @desc    The definition of a macro the host exposes: its value lexed on its own, comments, line breaks and
-	///          backslashes left out (a value may span lines). It has configuration Default.
+	/// @desc    A macro the host exposes, in configuration Default; its value may span lines.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {String} _name    : The macro's name
 	/// @param   {Struct} _program : The lexer's program record of the value
-	/// @returns {Struct} The definition, as collect makes them
+	/// @returns {Struct.ASTMacroDecl}
 	#endregion
 	static hostMacro = function(_name, _program) {
 		var _body = [];
@@ -96,21 +101,21 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				array_push(_body, _tokens[_i]);
 			}
 		_i++}
-		var _at = new __GMLC_create_token(__GMLC_TokenType_Identifier, _name, _name, _program.file.fileId, 0, 0);
-		_at.kind = __GMLC_TokenKind_Identifier;
+		var _at = new __GMLC_create_token(__GMLC_TokenType_Identifier, _name, _name, _program.file.file_id, 0, 0, __GMLC_TokenKind_Identifier);
 		var _end = (array_length(_tokens) > 0) ? _tokens[array_length(_tokens) - 1][$ "end"] : 0;
-		return {
-			name: _name, config: undefined, body: _body, token: _at,
-			span: new GMLC_Span(_at.file, 0, _end), text: _program.file.text(0, _end),
-		};
+		var _macro = new ASTMacroDecl(new GMLC_Span(_at.file, 0, _end), _name, undefined, _program.file.textBetween(0, _end));
+		// working fields of the preprocessor; a dump writes only the node's own fields
+		_macro.tokens = _body;
+		_macro.token = _at;
+		_macro.params = [];
+		_macro.extension = undefined;
+		return _macro;
 	};
-	
+
 	#region jsDoc
 	/// @func    merge(_units, _configChain)
-	/// @desc    Builds the batch's definitions from the units in order (the exposed macros first). Macros are keyed by
-	///          configuration and name: a second definition of a key is an error, and for each name the definition
-	///          whose configuration comes first in the chain is the active one. A macro cycle is an error. Enum names
-	///          are batch-global; their values are given in lowering. Throws the first error.
+	/// @desc    Builds the batch's macros and enums. For each macro name the definition whose configuration comes
+	///          first in the chain is active. Throws on duplicates and macro cycles.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Array<Struct>} _units       : Results of collect, in batch order
 	/// @param   {Array<String>} _configChain : The active configuration and its ancestors, ending with "Default"
@@ -118,9 +123,8 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	#endregion
 	static merge = function(_units, _configChain) {
 		diagnostics = [];
-		var _batch = { keys: {}, active: {}, names: [], cyclic: {}, enums: {}, enumNames: [] };
-		
-		// definitions by (configuration, name), first one kept
+		var _batch = { keys: {}, active: {}, names: [], cyclic: {}, enums: {}, enum_names: [] };
+
 		var _u = 0; repeat (array_length(_units)) {
 			var _macros = _units[_u].macros;
 			var _m = 0; repeat (array_length(_macros)) {
@@ -142,12 +146,11 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 				else {
 					_batch.enums[$ _enum.name] = _enum;
-					array_push(_batch.enumNames, _enum.name);
+					array_push(_batch.enum_names, _enum.name);
 				}
 			_e++}
 		_u++}
-		
-		// the active definition of each name: the first configuration of the chain that defines it
+
 		var _u = 0; repeat (array_length(_units)) {
 			var _macros = _units[_u].macros;
 			var _m = 0; repeat (array_length(_macros)) {
@@ -164,17 +167,16 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 			_m++}
 		_u++}
-		
+
 		__findCycles(_batch);
-		__throwErrors();
+		if (__gmlc_has_errors(diagnostics)) __gmlc_throw_diagnostics(diagnostics, sources);
 		return _batch;
 	};
-	
+
 	#region jsDoc
 	/// @func    expand(_unit, _batch)
-	/// @desc    Writes the unit's tokens with every active macro use replaced by copies of its body (nested uses too);
-	///          `Enum.Member` references stay, checked against the batch's enums. `nameof(...)` becomes the written
-	///          name when the environment exposes `nameof`. Problems go to `diagnostics`.
+	/// @desc    Replaces every macro use with copies of its body; `nameof(...)` becomes a string when the environment
+	///          exposes `nameof`. Enum references stay as written for lowering. Problems go to `diagnostics`.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct} _unit  : A result of collect
 	/// @param   {Struct} _batch : The result of merge
@@ -186,41 +188,46 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _stream = _unit.stream;
 		var _nameof = env.isFunction("nameof");
 		var _n = array_length(_stream);
+		var _run = 0;
 		var _i = 0;
-		var _run = 0; // the plain tokens from here up to _i move together (__moveRun)
-		while (_i < _n) {
+		while (_i < _n) && (array_length(_withMacros) <= maxExpandedTokens) {
 			var _t = _stream[_i];
-			if (_t.kind == __GMLC_TokenKind_Identifier) {
-				// a macro named nameof replaces the operator, as in GameMaker
-				if (_nameof) && (_t.value == "nameof") && !__gmlc_struct_has(_batch.active, "nameof") && (_i + 1 < _n) && (_stream[_i + 1].kind == __GMLC_TokenKind_Op) && (_stream[_i + 1].value == "(") {
-					if (!__moveRun(_withMacros, _stream, _run, _i)) break;
-					_i = __nameof(_stream, _i, _withMacros);
-					_run = _i;
-					continue;
+			if (_t.kind != __GMLC_TokenKind_Identifier) {
+				_i++;
+				continue;
+			}
+			// a macro named nameof replaces the operator, as in GameMaker
+			var _isNameof = (_nameof) && (_t.value == "nameof") && !__gmlc_struct_has(_batch.active, "nameof") && (_i + 1 < _n) && (_stream[_i + 1].kind == __GMLC_TokenKind_Op) && (_stream[_i + 1].value == "(");
+			if (!_isNameof) && !__isExpandable(_batch, _t.value) {
+				_i++;
+				continue;
+			}
+			array_copy(_withMacros, array_length(_withMacros), _stream, _run, _i - _run);
+			if (_isNameof) {
+				_i = __nameof(_stream, _i, _withMacros);
+			}
+			else {
+				var _def = _batch.active[$ _t.value];
+				if (_def.extension != undefined) {
+					_i = _def.extension.expandMacro(self, _batch, _stream, _i, _def, 1, _withMacros, _t);
 				}
-				if (__isExpandable(_batch, _t.value)) {
-					if (!__moveRun(_withMacros, _stream, _run, _i)) break;
-					var _def = _batch.active[$ _t.value];
-					if (_def[$ "extension"] != undefined) {
-						_i = _def.extension.expandMacro(self, _batch, _stream, _i, _def, 1, _withMacros, _t);
-						_run = _i;
-						continue;
-					}
-					__emitExpansion(_batch, _t, _def, 1, _withMacros);
+				else {
+					__emitTokens(_batch, _t, _def, _def.tokens, 1, _withMacros);
 					_i++;
-					_run = _i;
-					continue;
 				}
 			}
-			_i++;
+			_run = _i;
 		}
-		if (_i >= _n) __moveRun(_withMacros, _stream, _run, _n);
-		
+		if (array_length(_withMacros) <= maxExpandedTokens) array_copy(_withMacros, array_length(_withMacros), _stream, _run, _n - _run);
+		if (array_length(_withMacros) > maxExpandedTokens) {
+			array_resize(_withMacros, maxExpandedTokens + 1);
+			__report("GMLC0306", _withMacros[maxExpandedTokens]);
+		}
+
 		var _program = _unit.program;
 		__checkEnumRefs(_batch, _withMacros);
 		_program.tokens = _withMacros;
-		
-		// each member's value with its macros expanded, for the parser
+
 		var _e = 0; repeat (array_length(_unit.enums)) {
 			var _enum = _unit.enums[_e];
 			var _m = 0; repeat (array_length(_enum.members)) {
@@ -235,28 +242,13 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		_program.comments = _unit.comments;
 		return _program;
 	};
-
-	// the plain tokens _stream[_from.._to) appended to _out in one copy; false when that passes the most tokens a file
-	// may grow to, reported at the first token past it (each plain token counts as it is written)
-	static __moveRun = function(_out, _stream, _from, _to) {
-		if (_to <= _from) return true;
-		var _before = array_length(_out);
-		array_copy(_out, _before, _stream, _from, _to - _from);
-		if (array_length(_out) > maxExpandedTokens) {
-			array_resize(_out, max(_before, maxExpandedTokens) + 1);
-			__report("GMLC0306", _out[array_length(_out) - 1]);
-			return false;
-		}
-		return true;
-	};
 	#endregion
-	
+
+	#region Private
 	#region Collect
 	#region jsDoc
 	/// @func    __collectMacro(_tokens, _i, _unit)
-	/// @desc    Reads `#macro [Config:]NAME body` starting at the directive. The body runs to the first line break
-	///          not continued by a backslash; comments are left out of its tokens and kept in its text. Records the
-	///          definition in the unit.
+	/// @desc    Reads `#macro [Config:]NAME body`; the body runs to the first line break not continued by a backslash.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Array<Struct>} _tokens : The file's lexer tokens
 	/// @param   {Real}          _i      : Index of the #macro directive
@@ -271,22 +263,21 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			__report("GMLC0301", _directive);
 			return _i;
 		}
-		var _nameToken = _tokens[_i];
+		var _nameToken = _tokens[_i]; // Assuming next token is the macro name
 		var _config = undefined;
 		// `Config:NAME`, written without spaces
 		if (_i + 2 < _n) && (_tokens[_i + 1].kind == __GMLC_TokenKind_Op) && (_tokens[_i + 1].value == ":") && (_tokens[_i + 1].start == _nameToken.end)
-		&& (_tokens[_i + 2].start == _tokens[_i + 1].end) && __isWordText(_tokens[_i + 2].name) {
+		&& (_tokens[_i + 2].start == _tokens[_i + 1].end) && __isWord(_tokens[_i + 2]) {
 			_config = _nameToken.name;
 			_nameToken = _tokens[_i + 2];
 			_i += 2;
 		}
-		if (!__isWordText(_nameToken.name)) {
+		if (!__isWord(_nameToken)) {
 			__report("GMLC0302", _nameToken, [_nameToken.name]);
 		}
 		_i++;
-		
-		// a language extension may take the definition (a parameter list right after the name)
-		var _params = undefined;
+
+		var _params = [];
 		var _owner = undefined;
 		var _extensions = env.extensions;
 		var _x = 0; repeat (array_length(_extensions)) {
@@ -301,13 +292,14 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 			}
 		_x++}
-		
+
 		var _body = [];
 		var _textStart = (_i < _n) && (_tokens[_i].kind != __GMLC_TokenKind_Newline) ? _tokens[_i].start : _nameToken[$ "end"];
 		var _textEnd = _nameToken[$ "end"];
 		while (_i < _n) {
 			var _t = _tokens[_i];
-			if (_t.kind == __GMLC_TokenKind_Newline) break;
+			// Check for line break not preceded by a backslash escape
+			if (_t.kind == __GMLC_TokenKind_Newline) break;  // End of macro body
 			_textEnd = _t[$ "end"];
 			if (_t.kind == __GMLC_TokenKind_Comment) {
 				if (string_pos("\n", _t.name) > 0) {
@@ -315,8 +307,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 			}
 			else if (_t.kind == __GMLC_TokenKind_Backslash) {
-				// only comments and more backslashes may follow (`;\\` continues, as in GameMaker), then the line break
-				// that the body continues past
+				// only comments and more backslashes may follow, as in GameMaker (`;\\` continues)
 				_i++;
 				while (_i < _n) && (_tokens[_i].kind != __GMLC_TokenKind_Newline) {
 					if (_tokens[_i].kind != __GMLC_TokenKind_Comment) && (_tokens[_i].kind != __GMLC_TokenKind_Backslash) {
@@ -335,19 +326,18 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		if (_last >= 0) && (_body[_last].kind == __GMLC_TokenKind_Op) && (_body[_last].value == ";") {
 			__report("GMLC0304", _body[_last], [_nameToken.name]);
 		}
-		array_push(_unit.macros, {
-			name: _nameToken.name, config: _config, body: _body, token: _nameToken,
-			span: new GMLC_Span(_directive.file, _directive.start, _textEnd),
-			text: _unit.program.file.text(_textStart, _textEnd),
-			params: _params, extension: _owner,
-		});
+		var _macro = new ASTMacroDecl(new GMLC_Span(_directive.file, _directive.start, _textEnd), _nameToken.name, _config, _unit.program.file.textBetween(_textStart, _textEnd));
+		_macro.tokens = _body;
+		_macro.token = _nameToken;
+		_macro.params = _params;
+		_macro.extension = _owner;
+		array_push(_unit.macros, _macro);
 		return _i;
 	};
-	
+
 	#region jsDoc
 	/// @func    __startsEnum(_tokens, _i)
-	/// @desc    Whether the `enum` keyword at _i starts a declaration: a name, then `{`, line breaks and comments
-	///          allowed between them.
+	/// @desc    Whether the `enum` keyword at _i is followed by a name and `{`.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Array<Struct>} _tokens : The file's lexer tokens
 	/// @param   {Real}          _i      : Index of the `enum` keyword
@@ -359,12 +349,10 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _k = __nextSignificant(_tokens, _j + 1);
 		return (_k >= 0) && (_tokens[_k].kind == __GMLC_TokenKind_Op) && (_tokens[_k].value == "{");
 	};
-	
+
 	#region jsDoc
 	/// @func    __collectEnum(_tokens, _i, _unit)
-	/// @desc    Reads `enum Name { member [= value], ... }` starting at `enum`. Members are separated by commas at
-	///          bracket depth 0; a member's value is every token up to that comma or the closing brace. The
-	///          semicolons right after the declaration are dropped. Records the declaration in the unit.
+	/// @desc    Reads `enum Name { member [= value], ... }` and the semicolons after it.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Array<Struct>} _tokens : The file's lexer tokens
 	/// @param   {Real}          _i      : Index of the `enum` keyword
@@ -375,10 +363,12 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _n = array_length(_tokens);
 		var _j = __nextSignificant(_tokens, _i + 1);
 		var _nameToken = _tokens[_j];
-		var _enum = { name: _nameToken.name, token: _nameToken, members: [], memberIndex: {}, span: undefined };
+		var _enum = new ASTEnumDecl(undefined, _nameToken.name, []);
+		_enum.token = _nameToken;
+		_enum.member_index = {};
 		var _enumStart = _tokens[_i].start;
-		_i = __nextSignificant(_tokens, _j + 1) + 1; // past `{`
-		
+		_i = __nextSignificant(_tokens, _j + 1) + 1;
+
 		while (true) {
 			_i = __nextSignificant(_tokens, _i);
 			if (_i < 0) {
@@ -387,13 +377,14 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			}
 			var _t = _tokens[_i];
 			if (_t.kind == __GMLC_TokenKind_Op) && (_t.value == "}") break;
-			
+
+			//apparently it can be any stream of text! how fun! so keywords, unique identifiers, doesnt matter! ffs...
 			var _member = _t;
-			var _good = __isWordText(_member.name);
+			var _good = __isWord(_member);
 			if (!_good) __report("GMLC0310", _member, [_member.name]);
 			_i++;
-			
-			// the value: every token up to the comma or closing brace at depth 0
+
+			// Check for = to see if a value is assigned
 			var _init = undefined;
 			var _k = __nextSignificant(_tokens, _i);
 			if (_good) && (_k >= 0) && (_tokens[_k].kind == __GMLC_TokenKind_Op) && (_tokens[_k].value == "=") {
@@ -420,23 +411,25 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				_i++;
 			}
 			if (_good) {
-				if (__gmlc_struct_has(_enum.memberIndex, _member.name)) {
+				if (__gmlc_struct_has(_enum.member_index, _member.name)) {
 					__report("GMLC0312", _member, [_enum.name, _member.name]);
 				}
 				else {
-					_enum.memberIndex[$ _member.name] = array_length(_enum.members);
-					array_push(_enum.members, {
-						name: _member.name, token: _member, init: _init, value: undefined,
-						span: new GMLC_Span(_member.file, _member.start, _memberEnd),
-					});
+					// Add member to the list
+					_enum.member_index[$ _member.name] = array_length(_enum.members);
+					var _node = new ASTEnumMember(new GMLC_Span(_member.file, _member.start, _memberEnd), _member.name, undefined, (_init != undefined));
+					_node.value_tokens = _init;
+					_node.expanded = undefined; // value_tokens with their macros expanded, set by expand
+					array_push(_enum.members, _node);
 				}
 			}
+			// Handle commas between enum members
 			if (_i < _n) && (_tokens[_i].kind == __GMLC_TokenKind_Op) && (_tokens[_i].value == ",") _i++;
 		}
 		_enum.span = new GMLC_Span(_nameToken.file, _enumStart, _tokens[_i][$ "end"]);
-		_i++; // past `}`
-		
-		// frequently people put ; after the closing brace
+		_i++;
+
+		//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 		while (true) {
 			var _k = __nextSignificant(_tokens, _i);
 			if (_k < 0) || (_tokens[_k].kind != __GMLC_TokenKind_Op) || (_tokens[_k].value != ";") break;
@@ -445,84 +438,73 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		array_push(_unit.enums, _enum);
 		return _i;
 	};
-	
+
 	#region jsDoc
 	/// @func    __isNoOpPragma(_text)
-	/// @desc    Whether a comment is the `@NoOp` pragma: a line comment whose text after `//` or `///` and optional
-	///          spaces starts with the word `@NoOp`.
+	/// @desc    Whether a comment is the pragma `// @NoOp`: `//` or `///`, one space, an optional `@`, then `NoOp` or
+	///          `noop` and a non-word character or the end; or exactly `/* NoOp */` with the same word forms.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {String} _text : The comment's source text
 	/// @returns {Bool}
 	#endregion
 	static __isNoOpPragma = function(_text) {
-		if (string_copy(_text, 1, 2) != "//") return false;
+		var _open = string_copy(_text, 1, 2);
+		if (_open == "/*") {
+			return (_text == "/* @NoOp */") || (_text == "/* NoOp */") || (_text == "/* @noop */") || (_text == "/* noop */");
+		}
+		if (_open != "//") return false;
 		var _p = 3;
-		var _len = string_length(_text);
 		if (string_char_at(_text, _p) == "/") _p++;
-		while (_p <= _len) && ((string_char_at(_text, _p) == " ") || (string_char_at(_text, _p) == "\t")) _p++;
-		if (string_copy(_text, _p, 5) != "@NoOp") return false;
-		return (_p + 5 > _len) || !__char_is_alphanumeric(ord(string_char_at(_text, _p + 5)));
+		if (string_char_at(_text, _p) != " ") return false;
+		_p++;
+		if (string_char_at(_text, _p) == "@") _p++;
+		var _word = string_copy(_text, _p, 4);
+		if (_word != "NoOp") && (_word != "noop") return false;
+		return (_p + 4 > string_length(_text)) || !__char_is_alphanumeric(ord(string_char_at(_text, _p + 4)));
 	};
-	
+
 	#region jsDoc
-	/// @func    __noOpPragmaCall(_tokens, _i, _stream)
-	/// @desc    At `gml_pragma`: when the tokens are the statement `gml_pragma("@NoOp")` with an optional `;`, the index
-	///          after it, else -1. It is a statement when it starts the file or follows `;`, `{` or `}`, or follows a
-	///          line break after anything but `)`, `else` or `do` (whose statement it would be).
+	/// @func    __noOpPragmaCall(_tokens, _i, _last)
+	/// @desc    The index after the statement `gml_pragma("@NoOp");` at _i (the string `@NoOp`, `NoOp`, `@noop` or
+	///          `noop`), else -1.
+	///          After a line break it is a statement unless it follows `)`, `else` or `do`, whose body it would be.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Array<Struct>} _tokens : The file's tokens
 	/// @param   {Real}          _i      : The index of `gml_pragma`
-	/// @param   {Array<Struct>} _stream : The tokens kept so far
+	/// @param   {Real}          _last   : The index of the last token kept in the stream, -1 for none
 	/// @returns {Real}
 	#endregion
-	static __noOpPragmaCall = function(_tokens, _i, _stream) {
-		var _count = array_length(_stream);
-		if (_count > 0) {
-			var _prev = _stream[_count - 1];
+	static __noOpPragmaCall = function(_tokens, _i, _last) {
+		if (_last >= 0) {
+			var _prev = _tokens[_last];
 			var _v = ((_prev.kind == __GMLC_TokenKind_Op) || (_prev.kind == __GMLC_TokenKind_Keyword)) ? _prev.value : "";
 			var _closes = (_v == ";") || (_v == "{") || (_v == "}");
 			if (!_closes) {
 				var _broken = false;
-				var _j = _i - 1;
-				while (_j >= 0) && (_tokens[_j] != _prev) {
+				var _j = _last + 1; repeat (_i - _last - 1) {
 					if (_tokens[_j].kind == __GMLC_TokenKind_Newline) _broken = true;
-					_j--;
-				}
+				_j++}
 				if (!_broken) || (_v == ")") || (_v == "else") || (_v == "do") return -1;
 			}
 		}
 		var _open = __nextSignificant(_tokens, _i + 1);
 		if (_open < 0) || (_tokens[_open].kind != __GMLC_TokenKind_Op) || (_tokens[_open].value != "(") return -1;
 		var _text = __nextSignificant(_tokens, _open + 1);
-		if (_text < 0) || (_tokens[_text].kind != __GMLC_TokenKind_String) || (_tokens[_text].value != "@NoOp") return -1;
+		if (_text < 0) || (_tokens[_text].kind != __GMLC_TokenKind_String) return -1;
+		var _value = _tokens[_text].value;
+		if (_value != "@NoOp") && (_value != "NoOp") && (_value != "@noop") && (_value != "noop") return -1;
 		var _close = __nextSignificant(_tokens, _text + 1);
 		if (_close < 0) || (_tokens[_close].kind != __GMLC_TokenKind_Op) || (_tokens[_close].value != ")") return -1;
 		var _after = __nextSignificant(_tokens, _close + 1);
 		if (_after >= 0) && (_tokens[_after].kind == __GMLC_TokenKind_Op) && (_tokens[_after].value == ";") return _after + 1;
 		return _close + 1;
 	};
-	
-	#region jsDoc
-	/// @func    __regionTitle(_text)
-	/// @desc    The title of a `#region` line: the text after the directive word, trimmed.
-	/// @self    GMLC_Gen_1_PreProcessor
-	/// @param   {String} _text : The region token's source text
-	/// @returns {String}
 	#endregion
-	static __regionTitle = function(_text) {
-		var _p = 2;
-		var _len = string_length(_text);
-		while (_p <= _len) && __char_is_alphanumeric(ord(string_char_at(_text, _p))) _p++;
-		return string_trim(string_copy(_text, _p, _len - _p + 1));
-	};
-	#endregion
-	
+
 	#region Merge
 	#region jsDoc
 	/// @func    __findCycles(_batch)
-	/// @desc    Searches the macro graph (each active macro to the active macros its body names) depth first, names
-	///          in byte order. Each cycle is reported once, at the first macro of the cycle, with its path; every
-	///          macro on a cycle is marked cyclic.
+	/// @desc    Reports each macro cycle once, in name order, and marks its macros cyclic.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct} _batch : The batch being merged
 	#endregion
@@ -535,19 +517,27 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			if ((__gmlc_struct_get(_state, _names[_i]) ?? 0) == 0) __visitMacro(_batch, _names[_i], _state, _path);
 		_i++}
 	};
+
+	#region jsDoc
+	/// @func    __visitMacro(_batch, _name, _state, _path)
+	/// @desc    Walks the macros a macro's value uses, depth first; reaching a macro on the current path reports
+	///          the cycle and marks its macros cyclic.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {Struct}        _batch : The batch being merged
+	/// @param   {String}        _name  : The macro
+	/// @param   {Struct}        _state : Name to 1 (on the current path) or 2 (done)
+	/// @param   {Array<String>} _path  : The macros on the current path
+	#endregion
 	static __visitMacro = function(_batch, _name, _state, _path) {
 		_state[$ _name] = 1;
 		array_push(_path, _name);
 		var _def = _batch.active[$ _name];
-		var _body = _def.body;
-		var _params = _def[$ "params"] ?? [];
+		var _body = _def.tokens;
 		var _b = 0; repeat (array_length(_body)) {
 			var _t = _body[_b];
-			// a parameter of the macro is not a use of a macro of that name
-			if (_t.kind == __GMLC_TokenKind_Identifier) && __gmlc_struct_has(_batch.active, _t.value) && !array_contains(_params, _t.value) {
+			if (_t.kind == __GMLC_TokenKind_Identifier) && __gmlc_struct_has(_batch.active, _t.value) && !array_contains(_def.params, _t.value) {
 				var _s = __gmlc_struct_get(_state, _t.value) ?? 0;
 				if (_s == 1) {
-					// a cycle: the part of the path from that name on
 					var _from = array_get_index(_path, _t.value);
 					var _cycle = [];
 					array_copy(_cycle, 0, _path, _from, array_length(_path) - _from);
@@ -563,9 +553,8 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		array_pop(_path);
 		_state[$ _name] = 2;
 	};
-	
 	#endregion
-	
+
 	#region Expand
 	#region jsDoc
 	/// @func    __isExpandable(_batch, _name)
@@ -578,26 +567,11 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	static __isExpandable = function(_batch, _name) {
 		return __gmlc_struct_has(_batch.active, _name) && !__gmlc_struct_has(_batch.cyclic, _name);
 	};
-	
-	#region jsDoc
-	/// @func    __emitExpansion(_batch, _use, _def, _depth, _out)
-	/// @desc    Appends copies of a macro's body to _out, expanding the macros it names, up to depth 64.
-	/// @self    GMLC_Gen_1_PreProcessor
-	/// @param   {Struct}        _batch : The merged batch
-	/// @param   {Struct}        _use   : The token of the outermost use
-	/// @param   {Struct}        _def   : The macro definition
-	/// @param   {Real}          _depth : Nesting depth, 1 for a use in the file
-	/// @param   {Array<Struct>} _out   : Tokens written so far
-	#endregion
-	static __emitExpansion = function(_batch, _use, _def, _depth, _out) {
-		__emitTokens(_batch, _use, _def, _def.body, _depth, _out);
-	};
-	
+
 	#region jsDoc
 	/// @func    __emitTokens(_batch, _use, _def, _tokens, _depth, _out)
-	/// @desc    Appends copies of the tokens a macro's use stands for (its body, or the body with its arguments put in),
-	///          with the macro's origin, expanding the macros they name, up to depth 64. A language extension that
-	///          expands a macro of its own calls it with the tokens it made.
+	/// @desc    Appends copies of a macro use's tokens with the macro's origin, expanding nested uses up to
+	///          maxMacroDepth. Language extensions call it with the tokens they made.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct}        _batch  : The merged batch
 	/// @param   {Struct}        _use    : The token of the outermost use
@@ -618,57 +592,60 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			var _t = _tokens[_b];
 			if (_t.kind == __GMLC_TokenKind_Identifier) && __isExpandable(_batch, _t.value) {
 				var _inner = _batch.active[$ _t.value];
-				if (_inner[$ "extension"] != undefined) {
+				if (_inner.extension != undefined) {
 					_b = _inner.extension.expandMacro(self, _batch, _tokens, _b, _inner, _depth + 1, _out, _use);
 					continue;
 				}
-				__emitExpansion(_batch, _use, _inner, _depth + 1, _out);
+				__emitTokens(_batch, _use, _inner, _inner.tokens, _depth + 1, _out);
 			}
 			else {
-				array_push(_out, __copyToken(_t, _t.type, _t.value, _origin));
+				// a copy: tokens are never modified once made
+				var _copy = new __GMLC_create_token(_t.type, _t.name, _t.value, _t.file, _t.start, _t[$ "end"], _t.kind, _t.ty);
+				_copy.origin = _origin;
+				array_push(_out, _copy);
 			}
 			_b++;
 		}
 	};
-	
+
 	#region jsDoc
 	/// @func    __checkEnumRefs(_batch, _tokens)
-	/// @desc    Reports every `Enum.Member` of a batch enum (not itself after a `.`) whose enum has no such member. The
-	///          references stay as they are written: lowering gives them their values once every stage has seen them.
+	/// @desc    Reports every `Enum.Member` whose enum has no such member. The references stay as written for lowering.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct}        _batch  : The merged batch
 	/// @param   {Array<Struct>} _tokens : Tokens after macro expansion
 	#endregion
 	static __checkEnumRefs = function(_batch, _tokens) {
-		if (array_length(_batch.enumNames) == 0) return;
+		if (array_length(_batch.enum_names) == 0) return;
 		var _n = array_length(_tokens);
 		var _i = 0; repeat (_n) {
 			var _t = _tokens[_i];
 			if (_t.kind == __GMLC_TokenKind_Identifier) && __gmlc_struct_has(_batch.enums, _t.value)
-			&& (_i + 2 < _n) && (_tokens[_i + 1].kind == __GMLC_TokenKind_Op) && (_tokens[_i + 1].value == ".") && __isWordText(_tokens[_i + 2].name)
+			&& (_i + 2 < _n) && (_tokens[_i + 1].kind == __GMLC_TokenKind_Op) && (_tokens[_i + 1].value == ".") && __isWord(_tokens[_i + 2])
 			&& ((_i == 0) || (_tokens[_i - 1].kind != __GMLC_TokenKind_Op) || (_tokens[_i - 1].value != ".")) {
-				if (!__gmlc_struct_has(_batch.enums[$ _t.value].memberIndex, _tokens[_i + 2].name)) {
+				if (!__gmlc_struct_has(_batch.enums[$ _t.value].member_index, _tokens[_i + 2].name)) {
 					__report("GMLC0314", _tokens[_i + 2], [_t.value, _tokens[_i + 2].name]);
 				}
 			}
 		_i++}
 	};
-	
+
 	#region jsDoc
 	/// @func    __expandValue(_batch, _member)
-	/// @desc    The tokens of an enum member's value with the macros it uses expanded, its enum references checked.
+	/// @desc    An enum member's value with its macros expanded.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Struct} _batch  : The merged batch
-	/// @param   {Struct} _member : The member, as __collectEnum records it
+	/// @param   {Struct} _member : The member
 	/// @returns {Array<Struct>|Undefined} undefined for a member without a value
 	#endregion
 	static __expandValue = function(_batch, _member) {
-		if (_member.init == undefined) return undefined;
+		if (_member.value_tokens == undefined) return undefined;
 		var _expanded = [];
-		var _b = 0; repeat (array_length(_member.init)) {
-			var _t = _member.init[_b];
+		var _b = 0; repeat (array_length(_member.value_tokens)) {
+			var _t = _member.value_tokens[_b];
 			if (_t.kind == __GMLC_TokenKind_Identifier) && __isExpandable(_batch, _t.value) {
-				__emitExpansion(_batch, _t, _batch.active[$ _t.value], 1, _expanded);
+				var _def = _batch.active[$ _t.value];
+				__emitTokens(_batch, _t, _def, _def.tokens, 1, _expanded);
 			}
 			else {
 				array_push(_expanded, _t);
@@ -677,11 +654,10 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		__checkEnumRefs(_batch, _expanded);
 		return _expanded;
 	};
-	
+
 	#region jsDoc
 	/// @func    __nameof(_stream, _i, _out)
-	/// @desc    `nameof(<name>)` becomes a String token holding the tokens inside the parentheses joined as written
-	///          (`nameof(E.m)` is "E.m"); nothing inside is expanded.
+	/// @desc    `nameof(E.m)` becomes the string "E.m"; nothing inside is expanded.
 	/// @self    GMLC_Gen_1_PreProcessor
 	/// @param   {Array<Struct>} _stream : The unit's stream
 	/// @param   {Real}          _i      : Index of `nameof`
@@ -709,31 +685,32 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			array_push(_out, _stream[_i]);
 			return _i + 1;
 		}
-		var _string = __copyToken(_stream[_i], __GMLC_TokenType_String, _text, undefined, __GMLC_TokenKind_String, "nameof(" + _text + ")");
-		_string[$ "end"] = _stream[_j][$ "end"];
-		_string.ty = "string";
-		array_push(_out, _string);
+		var _at = _stream[_i];
+		array_push(_out, new __GMLC_create_token(__GMLC_TokenType_String, "nameof(" + _text + ")", _text, _at.file, _at.start, _stream[_j][$ "end"], __GMLC_TokenKind_String, "string"));
 		return _j + 1;
 	};
 	#endregion
-	
+
 	#region Tokens and diagnostics
 	#region jsDoc
-	/// @func    __copyToken(_t, _type, _value, _origin, [_kind], [_name])
-	/// @desc    A new token with the position of _t (tokens are never modified once made).
+	/// @func    __span(_t)
+	/// @desc    The span of a token.
 	/// @self    GMLC_Gen_1_PreProcessor
-	/// @returns {Struct}
+	/// @param   {Struct} _t : The token
+	/// @returns {Struct.GMLC_Span}
 	#endregion
-	static __copyToken = function(_t, _type, _value, _origin, _kind = undefined, _name = undefined) {
-		var _c = new __GMLC_create_token(_type, _name ?? _t.name, _value, _t.file, _t.start, _t[$ "end"]);
-		_c.kind = _kind ?? _t.kind;
-		_c.ty = _t[$ "ty"];
-		_c.origin = _origin;
-		return _c;
-	};
 	static __span = function(_t) {
-		return new GMLC_Span(_t[$ "file"], _t.start, _t[$ "end"]);
+		return new GMLC_Span(_t.file, _t.start, _t[$ "end"]);
 	};
+
+	#region jsDoc
+	/// @func    __nextSignificant(_tokens, _i)
+	/// @desc    The index of the first token at or after _i that is not a line break or a comment, -1 for none.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {Array<Struct>} _tokens : The tokens
+	/// @param   {Real}          _i      : The index to start at
+	/// @returns {Real}
+	#endregion
 	static __nextSignificant = function(_tokens, _i) {
 		var _n = array_length(_tokens);
 		while (_i < _n) {
@@ -743,31 +720,38 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		}
 		return -1;
 	};
-	static __isWordText = function(_s) {
-		var _len = string_length(_s);
-		if (_len == 0) || !__char_is_alphabetic(ord(string_char_at(_s, 1))) return false;
-		var _p = 2; repeat (_len - 1) {
-			if (!__char_is_alphanumeric(ord(string_char_at(_s, _p)))) return false;
-		_p++}
-		return true;
+
+	#region jsDoc
+	/// @func    __isWord(_t)
+	/// @desc    Whether a token is a word: an identifier, a keyword or an alias operator such as `and`.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {Struct} _t : The token
+	/// @returns {Bool}
+	#endregion
+	static __isWord = function(_t) {
+		switch (_t.kind) {
+			case __GMLC_TokenKind_Identifier:
+			case __GMLC_TokenKind_Keyword:
+				return true;
+			case __GMLC_TokenKind_Op:
+				// `and`, `div`, ... arrive as operators
+				return __char_is_alphabetic(string_byte_at(_t.name, 1));
+		}
+		return false;
 	};
-	
-	// a problem at a token; its severity is the catalogue's
+
+	#region jsDoc
+	/// @func    __report(_code, _at, [_args], [_messageId])
+	/// @desc    Records a diagnostic at a token.
+	/// @self    GMLC_Gen_1_PreProcessor
+	/// @param   {String}        _code        : The code
+	/// @param   {Struct}        _at          : The token
+	/// @param   {Array<String>} [_args]      : The values the message's template takes
+	/// @param   {String}        [_messageId] : The code, or the code and a variant key
+	#endregion
 	static __report = function(_code, _at, _args = undefined, _messageId = _code) {
 		array_push(diagnostics, new GMLC_Diagnostic(_code, new GMLC_Span(_at.file, _at.start, _at[$ "end"]), _args, _messageId));
 	};
-	static __errorCount = function() {
-		var _count = 0;
-		var _i = 0; repeat (array_length(diagnostics)) {
-			if (diagnostics[_i].severity == "error") _count++;
-		_i++}
-		return _count;
-	};
-	static __throwErrors = function() {
-		if (__gmlc_has_errors(diagnostics)) __gmlc_throw_diagnostics(diagnostics, sources);
-	};
 	#endregion
-	}
-	
 	#endregion
-		
+}

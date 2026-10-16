@@ -5,8 +5,8 @@
   "isDnD":false,
   "name":"GMLC_Diagnostics",
   "parent":{
-    "name":"Driver",
-    "path":"folders/GMLC/Driver.yy",
+    "name":"Internal",
+    "path":"folders/GMLC/Internal.yy",
   },
   "resourceType":"GMScript",
   "resourceVersion":"2.0",

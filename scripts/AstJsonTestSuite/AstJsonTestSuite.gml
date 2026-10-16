@@ -25,9 +25,9 @@ function ast_json_round_trip(_source, _stage = "resolved") {
 		_ast = _env.lower.parseAll();
 		_env.lower.resolveEnums([_ast], _sources);
 	}
-	var _json = GMLC_AstToJson(_ast, _sources, _stage);
-	var _tree = GMLC_AstFromJson(_json).root;
-	return { env: _env, json: _json, again: GMLC_AstToJson(_tree, _sources, _stage), tree: _tree };
+	var _json = gmlc_ast_to_json(_ast, _sources, _stage);
+	var _tree = gmlc_ast_from_json(_json).root;
+	return { env: _env, json: _json, again: gmlc_ast_to_json(_tree, _sources, _stage), tree: _tree };
 }
 
 function AstJsonTestSuite() : TestSuite() constructor {
@@ -147,7 +147,7 @@ function AstJsonTestSuite() : TestSuite() constructor {
 			#endregion
 		');
 		assert_equals(_r.again, _r.json, "the JSON read back and written again differs");
-		var _names = __GMLC_NodeKinds().names;
+		var _names = __gmlc_node_kinds().names;
 		var _i = 0; repeat (array_length(_names)) {
 			// Nameof is folded by the preprocessor
 			if (_names[_i] != "Nameof") {
@@ -163,7 +163,7 @@ function AstJsonTestSuite() : TestSuite() constructor {
 		var _values = [NaN, infinity, -infinity, -0, 0.1 + 0.2, power(10, 300)];
 		var _i = 0; repeat (array_length(_values)) {
 			var _literal = new ASTLiteral(new GMLC_Span(0, 0, 0), "real", "x", _values[_i]);
-			var _back = GMLC_AstFromJson(GMLC_AstToJson(_literal, undefined)).root.value;
+			var _back = gmlc_ast_from_json(gmlc_ast_to_json(_literal, undefined)).root.value;
 			var _same = (is_nan(_values[_i]) && is_nan(_back)) || ((_back == _values[_i]) && (sign(1 / _back) == sign(1 / _values[_i])));
 			assert_true(_same, $"real {_i} read back as {_back}");
 		_i++}
@@ -172,14 +172,14 @@ function AstJsonTestSuite() : TestSuite() constructor {
 	addFact("A dump with another contract version, an unknown kind or a missing field is refused", function() {
 		var _json = ast_json_round_trip("return 1;").json;
 		var _broken = [
-			string_replace(_json, "\"contract_version\":1", "\"contract_version\":2"),
+			string_replace(_json, $"\"contract_version\":{gmlc_ast_contract_version()}", $"\"contract_version\":{gmlc_ast_contract_version() + 1}"),
 			string_replace(_json, "\"kind\":\"Literal\"", "\"kind\":\"Literally\""),
 			string_replace(_json, ",\"lexeme\":\"1\"", ""),
 		];
 		var _i = 0; repeat (array_length(_broken)) {
 			var _message = "";
 			try {
-				GMLC_AstFromJson(_broken[_i]);
+				gmlc_ast_from_json(_broken[_i]);
 			}
 			catch (_e) {
 				_message = is_struct(_e) ? string(_e[$ "message"]) : string(_e);

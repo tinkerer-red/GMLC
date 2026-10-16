@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_EnvironmentClass",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_EnvironmentClass",
+  "parent":{
+    "name":"Internal",
+    "path":"folders/GMLC/Internal.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
