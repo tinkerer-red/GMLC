@@ -1,5 +1,4 @@
-// Generated from measured GameMaker behavior; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-05.
+// Expected results recorded from GameMaker 2024.14.4.268 (VM); do not edit by hand.
 function GmlMacroTestSuite() : TestSuite() constructor {
 
 	// the same macro defined twice in one file: GameMaker 2024.14.4.268 refuses to compile this:

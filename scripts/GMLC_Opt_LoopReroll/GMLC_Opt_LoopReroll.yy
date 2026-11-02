@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Opt_LoopReroll",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Opt_LoopReroll",
+  "parent":{
+    "name":"Target",
+    "path":"folders/GMLC/Parsers/Optimizers/Target.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

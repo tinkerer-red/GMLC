@@ -19,6 +19,7 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 	global_names = {};
 	function_nodes = {};
 	enum_names = {};
+	asset_names = {};
 	next_function_id = 0;
 	__shared = {};
 	__collecting_event = false;
@@ -45,6 +46,7 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 		global_names = _g.names;
 		function_nodes = _g.nodes;
 		enum_names = _g.enums;
+		asset_names = _g.assets;
 	};
 	
 	#region jsDoc
@@ -65,7 +67,21 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 			__collectTop(_asts[_i]);
 		_i++}
 		__collecting_event = false;
-		return { names: global_names, nodes: function_nodes, enums: enum_names };
+		return { names: global_names, nodes: function_nodes, enums: enum_names, assets: {} };
+	};
+	
+	#region jsDoc
+	/// @func    addAssets(_globals, _names)
+	/// @desc    Adds a project's asset names (objects, sprites, scripts, ...) to a batch's global names: a name no
+	///          function, static or global name of the batch takes resolves as `Asset`.
+	/// @self    GMLC_Gen_3_Resolver
+	/// @param   {Struct}        _globals : The batch's global names (collectGlobals)
+	/// @param   {Array<String>} _names   : The asset names
+	#endregion
+	static addAssets = function(_globals, _names) {
+		var _i = 0; repeat (array_length(_names)) {
+			_globals.assets[$ _names[_i]] = true;
+		_i++}
 	};
 	
 	#region jsDoc
@@ -87,6 +103,9 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 			var _m = 0; repeat (array_length(_members)) {
 				if (_members[_m].init != undefined) __resolve(_members[_m].init, _body);
 			_m++}
+		_i++}
+		_i = 0; repeat (array_length(ast.body)) {
+			__voidResults(ast.body[_i], true);
 		_i++}
 		
 		var _functions = array_create(array_length(frames), undefined);
@@ -385,7 +404,7 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 				var _a = 0; repeat (array_length(_args)) {
 					__resolve(_args[_a], _frame);
 				_a++}
-
+				
 				if (_callee.kind != __GMLC_NodeKind_Identifier) return;
 				switch (_callee.symbol.kind) {
 					case "BuiltinFunction": {
@@ -448,8 +467,8 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 	
 	#region jsDoc
 	/// @func    __lookup(_identifier, _frame)
-	/// @desc    The symbol of a name used in a function: first match of local, static, global name, exposed function or
-	///          constant, exposed variable, instance variable.
+	/// @desc    The symbol of a name used in a function: first match of local, static, global name, asset, exposed
+	///          function or constant, exposed variable, instance variable.
 	/// @self    GMLC_Gen_3_Resolver
 	/// @returns {Struct.GMLC_Symbol}
 	#endregion
@@ -464,6 +483,7 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 			?? __gmlc_struct_get(_frame.statics, _name)
 			?? __gmlc_struct_get(global_names, _name);
 		if (_symbol != undefined) return _symbol;
+		if (__gmlc_struct_has(asset_names, _name)) return __symbol("Asset", _name);
 		
 		var _entry = __gmlc_struct_get(env.env_symbols, _name);
 		if (_entry != undefined) {
@@ -635,6 +655,42 @@ function GMLC_Gen_3_Resolver(_env) constructor {
 				if (__gmlc_struct_has(function_nodes, _target.name)) _target.symbol = __symbol("Self", _target.name);
 			break;}
 		}
+	};
+	
+	#region jsDoc
+	/// @func    __voidResults(_node, _used)
+	/// @desc    Reports each call of a built-in that returns nothing whose result is used as a value:
+	///          anything but an expression statement's own call.
+	/// @self    GMLC_Gen_3_Resolver
+	/// @param   {Struct.ASTNode} _node : The node
+	/// @param   {Bool}           _used : Whether its value is used
+	#endregion
+	static __voidResults = function(_node, _used) {
+		switch (_node.kind) {
+			case __GMLC_NodeKind_ExprStmt:
+				__voidResults(_node.expression, false);
+				return;
+			case __GMLC_NodeKind_Call:
+				var _callee = _node.callee;
+				if (_used) && (_callee.kind == __GMLC_NodeKind_Identifier) && (_callee.symbol != undefined) && (_callee.symbol.kind == "BuiltinFunction") {
+					var _builtins = __gmlc_type_builtins();
+					if (_builtins[$ _callee.name] == "Undefined") __report("GMLC3017", _node, [_callee.name]);
+				}
+				__voidResults(_callee, true);
+				var _a = 0; repeat (array_length(_node.args)) {
+					__voidResults(_node.args[_a], true);
+				_a++}
+				return;
+		}
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) __voidResults(_child, true);
+			_i++}
+		_field_index++}
 	};
 	
 	#region jsDoc

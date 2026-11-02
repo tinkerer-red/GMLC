@@ -1,5 +1,4 @@
-// Generated from measured GameMaker behavior; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-04.
+// Expected results recorded from GameMaker 2024.14.4.268 (VM); do not edit by hand.
 function GmlUnicodeAndBytesTestSuite() : TestSuite() constructor {
 
 	addFact("string_length of one emoji [GameMaker]", function() {

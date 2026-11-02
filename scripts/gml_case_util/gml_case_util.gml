@@ -1,5 +1,9 @@
 // Helpers of the GameMaker behavior suites. Generated; do not edit by hand.
 global.__case_log = [];
+// what `self` is in a script's top-level code (script-top-level-self)
+global.__case_top_self_is_global = (self == global);
+global.__case_top_self_type = typeof(self);
+__case_top_variable = 7;
 
 /// Clears the evaluation log.
 function case_log_reset() {

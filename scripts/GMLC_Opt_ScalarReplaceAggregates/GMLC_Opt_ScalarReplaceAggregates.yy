@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Opt_ScalarReplaceAggregates",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Opt_ScalarReplaceAggregates",
+  "parent":{
+    "name":"Program",
+    "path":"folders/GMLC/Parsers/Optimizers/Program.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

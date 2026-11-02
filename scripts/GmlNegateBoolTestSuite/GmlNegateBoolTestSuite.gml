@@ -1,5 +1,4 @@
-// Generated from measured GameMaker behavior; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-07.
+// Expected results recorded from GameMaker 2024.14.4.268 (VM); do not edit by hand.
 function GmlNegateBoolTestSuite() : TestSuite() constructor {
 
 	addFact("(-x) + 0 with x = true [GameMaker]", function() {

@@ -5,7 +5,7 @@
   "isDnD":false,
   "name":"GmlLegacySyntaxTestSuite",
   "parent":{
-    "name":"Behaviour",
+    "name":"Behavior",
     "path":"folders/Tests/Behavior.yy",
   },
   "resourceType":"GMScript",

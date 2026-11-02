@@ -22,13 +22,17 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	sources = undefined;
 	no_op_targets = [];
 	has_no_op_targets = false;
+	has_int64 = false; // the file holds an int64 YYC knows while compiling: passes are checked against the YYC int64 rule
+	__constant_propagate_constants = {}; // constant-propagate: the locals of the list it sweeps that a literal sets (the YYC operand rule)
 	optimization_occured = false; //used so all optimizers can register if a change has occured and we should re attempt optimizers
 	mode = GMLC_OPTIMIZE.ALL;
+	back_end = "gml"; // the back end the tree goes to: "gml" (the GML text emitter; "gml-vm" when env.emit_for_vm) or "runtime" (the closure compiler)
 	diagnostics = [];
 	passes = [];
 	fixpoint_cap = 8;
+	schedule_cap = 4; // the whole schedule repeats until a run changes nothing, at most this many runs
 	folds_constants = false;
-	registry = {};
+	registry = {}; // passes that take the place of the known passes of the same name
 	steps = [];
 	statistics = undefined;
 	preserve_lines = false;
@@ -36,9 +40,17 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	__records = [];
 	__undo = [];
 	__notes = [];
-	__temp_next = {};
+	__local_types_set = false; // whether the types of the file's locals were found this run (__gmlc_opt_set_local_types)
+	__pass_cx = undefined; // the context every pass application gets (__apply)
+	__temporary_next = {};
+	__temporaries_made = {};
+	__temporary_names = {}; // the temporary names the files of `__temporary_names_sources` use (__temporaryTaken)
+	__temporary_names_sources = undefined;
+	__temporary_names_count = 0;
 	__enum_values = false; // an enum member's value is never printed: any real is kept
 	__failing = [];
+	var _registry = __gmlc_optimizer_pass_registry();
+	__fold = _registry[$ "constant-fold"].sweep; // the folding sweep, also used by the walks that fold alone
 	#endregion
 	
 	#region Public
@@ -78,9 +90,11 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			}
 		_i++}
 		has_no_op_targets = (array_length(no_op_targets) > 0);
+		has_int64 = __gmlc_opt_has_static_int64(_ast);
 		preserve_lines = env.preserve_lines;
 		statistics = undefined;
-		__temp_next = {};
+		__temporary_next = {};
+		__temporaries_made = {};
 		var _calls = [];
 		__epsilonCalls(_ast, _calls);
 		_i = 0; repeat (array_length(_calls)) {
@@ -135,11 +149,26 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	static newTemporary = function(_cx) {
 		var _fn = _cx.unit.fn_id;
 		var _key = string(_fn);
-		var _n = __temp_next[$ _key] ?? 0;
-		__temp_next[$ _key] = _n + 1;
+		var _n = __temporary_next[$ _key] ?? 0;
+		// a name the program already uses is never taken, nor renamed later
+		while (__temporaryTaken("__gmlc_t" + string(_n))) _n++;
+		__temporary_next[$ _key] = _n + 1;
 		var _name = "__gmlc_t" + string(_n);
+		__temporaries_made[$ _name] = true;
 		array_push(_cx.new_locals, _name);
 		return _name;
+	};
+	
+	#region jsDoc
+	/// @func    forgetLocal(_cx, _name)
+	/// @desc    Tells the optimizer that a pass changed what a local holds: the type the facts know for that name is
+	///          dropped.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct} _cx   : The pass context
+	/// @param   {String} _name : The local
+	#endregion
+	static forgetLocal = function(_cx, _name) {
+		if (!array_contains(_cx.new_locals, _name)) array_push(_cx.new_locals, _name);
 	};
 	
 	#region jsDoc
@@ -162,7 +191,10 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		var _holder = new ASTExprStmt(_node.span, _node);
 		var _enumValues0 = __enum_values;
 		__enum_values = true;
+		// an enum member's value takes the macros as they stand
+		var _saved_macros = __gmlc_opt_set_opaque_macros(true, {});
 		__walk(_holder);
+		__gmlc_opt_set_opaque_macros(_saved_macros.folds, _saved_macros.scoped);
 		__enum_values = _enumValues0;
 		mode = _mode0;
 		sources = _sources0;
@@ -226,48 +258,82 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	#region Private
 	#region Pass Schedule
 	#region jsDoc
+	/// @func    outputName()
+	/// @desc    The output the tree goes to: GML source for YYC or the VM, or the closure compiler on the runtime that
+	///          runs it.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @returns {String}
+	#endregion
+	static outputName = function() {
+		if (back_end == "runtime") return code_is_compiled() ? "gml-runtime-yyc" : "gml-runtime-vm";
+		return env.emit_for_vm ? "gml-source-vm" : "gml-source-yyc";
+	};
+	
+	#region jsDoc
 	/// @func    __schedulePasses()
 	/// @desc    The passes of the schedule this optimizer implements, in schedule order; constant folding alone in
-	///          a compile without should_optimize.
+	///          a compile without should_optimize, and an analysis that only reports only when statistics are
+	///          collected.
 	/// @self    GMLC_Gen_5_Optimizer
 	#endregion
 	static __schedulePasses = function() {
 		var _data = __GmlcDataPasses();
 		fixpoint_cap = _data.fixpoint_cap;
+		schedule_cap = _data.schedule_cap;
 		passes = [];
 		steps = [];
 		__records = [];
 		folds_constants = false;
-		var _entries = {};
-		var _i = 0; repeat (array_length(_data.passes)) {
-			_entries[$ _data.passes[_i].name] = _data.passes[_i];
-		_i++}
+		// the output's profile: GML source is built with YYC unless it is built for the VM
+		var _output = outputName();
+		var _profile = undefined;
+		var _o = 0; repeat (array_length(_data.outputs)) {
+			if (_data.outputs[_o].name == _output) _profile = _data.outputs[_o];
+		_o++}
+		// the catalog by name, and one counter struct every pass shares while statistics are not collected
+		static __entries = undefined;
+		static __uncounted = undefined;
+		if (__entries == undefined) {
+			__entries = {};
+			__uncounted = {};
+			var _p = 0; repeat (array_length(_data.passes)) {
+				var _pass = _data.passes[_p];
+				__entries[$ _pass.name] = _pass;
+				var _k = 0; repeat (array_length(_pass.stats)) {
+					__uncounted[$ _pass.stats[_k]] = 0;
+				_k++}
+			_p++}
+		}
+		var _entries = __entries;
+		var _counted = env.collect_statistics;
+		var _registry = __gmlc_optimizer_pass_registry();
 		var _recorded = {};
 		var _schedule = _data.schedule;
 		var _s = 0; repeat (array_length(_schedule)) {
 			var _names = _schedule[_s].passes;
 			var _step = { kind: _schedule[_s].step, names: string_join_ext(",", _names), legacy: [], passes: [] };
-			_i = 0; repeat (array_length(_names)) {
+			var _i = 0; repeat (array_length(_names)) {
 				var _name = _names[_i];
 				var _entry = _entries[$ _name];
 				if (_entry != undefined) && ((mode == GMLC_OPTIMIZE.ALL) || (_name == "constant-fold"))
-				&& ((!preserve_lines) || (_entry.preserve_lines != "disabled")) {
-					var _run = undefined;
-					switch (_name) {
-						case "constant-fold":        _run = method(self, constantFolding);     break;
-						case "constant-propagate":   _run = method(self, constantPropagation); break;
-						case "dead-code":            _run = method(self, eliminateDeadCode);   break;
-						case "library-call-rewrite": _run = method(self, strengthReduction);   break;
-					}
-					var _managed = registry[$ _name];
+				&& ((!preserve_lines) || (_entry.preserve_lines != "disabled"))
+				&& ((_entry.layer != "target") || ((_profile != undefined) && (array_contains(_profile.run, _name))))
+				&& ((_profile == undefined) || (!array_contains(_profile.refuse, _name)))
+				&& ((_entry.kind != "analysis") || (_counted)) {
+					var _known = _registry[$ _name];
+					var _run = (_known != undefined) ? _known.sweep : undefined;
+					var _managed = registry[$ _name] ?? _known;
 					if (_run != undefined) || (_managed != undefined) {
 						var _record = _recorded[$ _name];
 						if (_record == undefined) {
-							var _stats = {};
-							var _k = 0; repeat (array_length(_entry.stats)) {
-								_stats[$ _entry.stats[_k]] = 0;
-							_k++}
-							_record = { name: _name, applications: 0, changed_functions: 0, stats: _stats, keys: _entry.stats };
+							var _stats = __uncounted;
+							if (_counted) {
+								_stats = {};
+								var _k = 0; repeat (array_length(_entry.stats)) {
+									_stats[$ _entry.stats[_k]] = 0;
+								_k++}
+							}
+							_record = { name: _name, applications: 0, changed_functions: 0, stats: _stats, keys: _counted ? _entry.stats : [] };
 							_recorded[$ _name] = _record;
 							array_push(__records, _record);
 						}
@@ -289,11 +355,15 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	/// @func    __runSchedule()
 	/// @desc    Runs the scheduled steps in order. A `fixpoint` step repeats until no pass changes anything or
 	///          fixpoint_cap rounds have run; it is skipped when the same group reached its fixed point and nothing
-	///          changed since. `once` and `each` steps apply each pass once.
+	///          changed since. `once` and `each` steps apply each pass once. The whole schedule runs again while a
+	///          run changes anything, at most schedule_cap runs, so a later pass never leaves work for an earlier one.
 	/// @self    GMLC_Gen_5_Optimizer
 	#endregion
 	static __runSchedule = function() {
 		__notes = [];
+		// the types a local holds are facts about the values it takes, which no pass changes: they are found once a
+		// run (a pass's new locals are new names, of unknown type)
+		__local_types_set = false;
 		var _r = 0; repeat (array_length(__records)) {
 			var _record = __records[_r];
 			_record.applications = 0;
@@ -305,41 +375,57 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		var _rounds = 0;
 		var _reached = true;
 		var _converged = undefined;
-		var _s = 0; repeat (array_length(steps)) {
-			var _step = steps[_s];
-			if (_step.kind == "fixpoint") {
-				if (_converged != _step.names) {
-					var _n = 0;
-					var _changed = false;
-					do {
-						_changed = __round(_step);
-						_n++;
-					}
-					until (!_changed) || (_n >= fixpoint_cap);
-					_rounds += _n;
-					if (_changed) {
-						_reached = false;
-						_converged = undefined;
-						array_push(__notes, new GMLC_Diagnostic("GMLC4002", ast.span, [fileName(), string(_n)]));
-					}
-					else {
-						_converged = _step.names;
+		var _runs = 0;
+		var _any = false;
+		do {
+			// only the last run's notes stand: an earlier run that hit the cap is finished by the next one
+			__notes = [];
+			_reached = true;
+			_any = false;
+			var _s = 0; repeat (array_length(steps)) {
+				var _step = steps[_s];
+				if (_step.kind == "fixpoint") {
+					if (_converged != _step.names) {
+						var _n = 0;
+						var _changed = false;
+						do {
+							_changed = __round(_step);
+							if (_changed) _any = true;
+							_n++;
+						}
+						until (!_changed) || (_n >= fixpoint_cap);
+						_rounds += _n;
+						if (_changed) {
+							_reached = false;
+							_converged = undefined;
+							array_push(__notes, new GMLC_Diagnostic("GMLC4002", ast.span, [fileName(), string(_n)]));
+						}
+						else {
+							_converged = _step.names;
+						}
 					}
 				}
-			}
-			else {
-				var _p = 0; repeat (array_length(_step.passes)) {
-					if (__apply(_step.passes[_p])) _converged = undefined;
-				_p++}
-			}
-		_s++}
+				else {
+					var _p = 0; repeat (array_length(_step.passes)) {
+						if (__apply(_step.passes[_p])) {
+							_converged = undefined;
+							_any = true;
+						}
+					_p++}
+				}
+			_s++}
+			_runs++;
+		}
+		until (!_any) || (_runs >= schedule_cap);
 		__renumberTemporaries();
-		var _passes = array_create(array_length(__records));
-		_r = 0; repeat (array_length(__records)) {
-			var _record = __records[_r];
-			_passes[_r] = { name: _record.name, applications: _record.applications, changed_functions: _record.changed_functions, stats: variable_clone(_record.stats, 0) };
-		_r++}
-		statistics = { unit: fileName(), rounds: _rounds, fixpoint_reached: _reached, passes: _passes };
+		if (env.collect_statistics) {
+			var _passes = array_create(array_length(__records));
+			_r = 0; repeat (array_length(__records)) {
+				var _record = __records[_r];
+				_passes[_r] = { name: _record.name, applications: _record.applications, changed_functions: _record.changed_functions, stats: variable_clone(_record.stats, 0) };
+			_r++}
+			statistics = { unit: fileName(), rounds: _rounds, fixpoint_reached: _reached, passes: _passes };
+		}
 		array_copy(diagnostics, array_length(diagnostics), __notes, 0, array_length(__notes));
 		__notes = [];
 	};
@@ -367,6 +453,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 				var _u = 0; repeat (array_length(_units)) {
 					__tidy(_units[_u].root);
 				_u++}
+				__gmlc_opt_refresh_argument_facts(ast);
 			}
 		}
 		var _p = 0; repeat (array_length(_step.passes)) {
@@ -388,9 +475,10 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		var _changed = false;
 		var _record = _pass.record;
 		var _done = -1;
+		var _units = undefined;
 		while (true) {
-			// the functions are found again after each one, in fn_id order: a change may move or drop them
-			var _units = __units();
+			// the functions are found again after a pass changes one, in fn_id order: a change may move or drop them
+			_units ??= __units();
 			var _unit = undefined;
 			var _u = 0; repeat (array_length(_units)) {
 				if (_units[_u].fn_id > _done) {
@@ -404,10 +492,37 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			_record.applications++;
 			__undo = [];
 			var _root = _unit.root;
+			var _int64 = has_int64 ? __gmlc_opt_int64_positions(_root) : undefined;
+			var _bare = __bareStatements(_root);
+			// the uses of macros that depend on the configuration: a pass may remove them, not move or copy them
+			var _opaque = undefined;
+			if (!env.foldsConfigMacros()) && (array_length(struct_get_names(env.__scoped_macros)) > 0) {
+				_opaque = {};
+				__opaqueUses(_root, _opaque);
+			}
 			// inside a struct literal `self` is the new struct
 			var _optimizer = self;
-			var _cx = { stats: _record.stats, unit: _unit, optimizer: _optimizer, script: ast, sources: sources, env: env, new_locals: [] };
+			// one context for every application, every field set again: a struct and two arrays an application made garbage
+			__pass_cx ??= { new_locals: [], nested_locals: [] };
+			var _cx = __pass_cx;
+			_cx.stats = _record.stats;
+			_cx.unit = _unit;
+			_cx.optimizer = _optimizer;
+			_cx.script = ast;
+			_cx.sources = sources;
+			_cx.env = env;
+			array_resize(_cx.new_locals, 0);
+			array_resize(_cx.nested_locals, 0);
+			_cx.preserve_lines = preserve_lines;
+			_cx.epsilon_set = epsilon_set;
+			_cx.condition = false;
+			_cx.assigned = undefined;
+			_cx.flags = undefined;
 			var _did = false;
+			if (!__local_types_set) {
+				__gmlc_opt_set_local_types(__gmlc_opt_local_types(ast, sources, env.__batch));
+				__local_types_set = true;
+			}
 			try {
 				switch (_pass.granularity) {
 					case "function": {
@@ -426,7 +541,37 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 				__rollback();
 				_unit.root = _root;
 				_did = false;
+				_units = undefined;
 				array_push(__notes, new GMLC_Diagnostic("GMLC4001", _root.span, [_pass.name, _unit.name]));
+			}
+			if (_did) _units = undefined;
+			// GameMaker refuses a statement that is only an operator or a value, whatever pass made it
+			if (_did) && (__bareStatements(_unit.root) > _bare) {
+				__rollback();
+				_unit.root = _root;
+				_did = false;
+			}
+			if (_did) && (_opaque != undefined) {
+				var _after = {};
+				__opaqueUses(_unit.root, _after);
+				var _keys = struct_get_names(_after);
+				var _k = 0; repeat (array_length(_keys)) {
+					if ((_opaque[$ _keys[_k]] ?? 0) < _after[$ _keys[_k]]) {
+						__rollback();
+						_unit.root = _root;
+						_did = false;
+						break;
+					}
+				_k++}
+			}
+			if (_did) && (_int64 != undefined) {
+				// the VM gives a real for a whole-number local next to an int64 where the literal keeps the int64
+				var _now = __gmlc_opt_int64_positions(_unit.root);
+				if (_now.beside != _int64.beside) {
+					__rollback();
+					_unit.root = _root;
+					_did = false;
+				}
 			}
 			if (_did) && (preserve_lines) {
 				var _lines = { line: 0, kept: true };
@@ -442,6 +587,8 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 				__tidy(_unit.root);
 				_record.changed_functions++;
 				_changed = true;
+				// a new local may take a name another function's local has: the name's type is no longer known
+				__gmlc_opt_forget_local_types(_cx.new_locals);
 				// the temporaries the pass made become locals of the function only when its result is kept
 				if (_unit.fn_id < array_length(ast.functions)) && (ast.functions[_unit.fn_id] != undefined) {
 					var _locals = ast.functions[_unit.fn_id].locals;
@@ -449,6 +596,14 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 						if (!array_contains(_locals, _cx.new_locals[_l])) array_push(_locals, _cx.new_locals[_l]);
 					_l++}
 				}
+				// and those it made inside other functions of the unit ({fn_id, name}), of those functions
+				var _n = 0; repeat (array_length(_cx.nested_locals)) {
+					var _nested = _cx.nested_locals[_n];
+					if (_nested.fn_id < array_length(ast.functions)) && (ast.functions[_nested.fn_id] != undefined) && (!array_contains(ast.functions[_nested.fn_id].locals, _nested.name)) {
+						array_push(ast.functions[_nested.fn_id].locals, _nested.name);
+					}
+				_n++}
+				__gmlc_opt_refresh_argument_facts(ast);
 			}
 		}
 		__undo = [];
@@ -518,7 +673,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	static __units = function() {
 		var _out = [{ fn_id: 0, name: fileName(), root: ast, holder: undefined, key: undefined, index: undefined }];
 		__collectUnits(ast, _out);
-		array_sort(_out, function(_a, _b) { return _a.fn_id - _b.fn_id; });
+		array_sort(_out, __gmlc_compare_fn_id);
 		return _out;
 	};
 	
@@ -530,17 +685,37 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	/// @param   {Array<Struct>}  _out  : The units
 	#endregion
 	static __collectUnits = function(_node, _out) {
-		var _slots = _node.childSlots();
-		var _i = 0; repeat (array_length(_slots)) {
-			var _slot = _slots[_i];
-			var _child = _slot.node;
-			if (__isFunctionNode(_child)) {
-				var _info = (_child[$ "fn_id"] != undefined) && (_child.fn_id < array_length(ast.functions)) ? ast.functions[_child.fn_id] : undefined;
-				var _name = (_info != undefined) && (_info.name != undefined) ? _info.name : "a function";
-				array_push(_out, { fn_id: _child[$ "fn_id"] ?? array_length(_out), name: _name, root: _child, holder: _slot.parent, key: _slot.key, index: _slot.index });
+		var _fields = _node.childFields;
+		var _f = 0; repeat (array_length(_fields)) {
+			var _key = _fields[_f];
+			var _value = _node[$ _key];
+			if (is_array(_value)) {
+				var _j = 0; repeat (array_length(_value)) {
+					if (_value[_j] != undefined) __collectUnit(_node, _key, _j, _value[_j], _out);
+				_j++}
 			}
-			__collectUnits(_child, _out);
-		_i++}
+			else if (_value != undefined) {
+				__collectUnit(_node, _key, undefined, _value, _out);
+			}
+		_f++}
+	};
+	#region jsDoc
+	/// @func    __collectUnit(_parent, _key, _index, _child, _out)
+	/// @desc    Adds a child to a list of units when it is a function node, then the function nodes under it.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct.ASTNode}  _parent : The node that holds it
+	/// @param   {String}          _key    : The field
+	/// @param   {Real|Undefined}  _index  : The array index, undefined for a field that holds one node
+	/// @param   {Struct.ASTNode}  _child  : The child
+	/// @param   {Array<Struct>}   _out    : The units
+	#endregion
+	static __collectUnit = function(_parent, _key, _index, _child, _out) {
+		if (__isFunctionNode(_child)) {
+			var _info = (_child[$ "fn_id"] != undefined) && (_child.fn_id < array_length(ast.functions)) ? ast.functions[_child.fn_id] : undefined;
+			var _name = (_info != undefined) && (_info.name != undefined) ? _info.name : "a function";
+			array_push(_out, { fn_id: _child[$ "fn_id"] ?? array_length(_out), name: _name, root: _child, holder: _parent, key: _key, index: _index });
+		}
+		__collectUnits(_child, _out);
 	};
 	
 	#region jsDoc
@@ -580,24 +755,112 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	static __eachExpression = function(_node, _pass, _cx, _isRoot) {
 		if (!_isRoot) && (__isFunctionNode(_node)) return false;
 		var _changed = false;
-		var _slots = _node.childSlots();
-		var _i = 0; repeat (array_length(_slots)) {
-			var _slot = _slots[_i];
-			var _child = _slot.node;
-			if (__eachExpression(_child, _pass, _cx, false)) _changed = true;
-			// the child may have been replaced inside: read it again from its slot
-			_child = (_slot.index == undefined) ? _node[$ _slot.key] : _node[$ _slot.key][_slot.index];
-			var _kind = _child.kind;
-			var _isExpression = (_kind >= __GMLC_NodeKind_Assign) && (_kind <= __GMLC_NodeKind_Nameof) && (_kind != __GMLC_NodeKind_StructEntry);
-			if (_isExpression) && ((!has_no_op_targets) || (!__isNoOp(_child))) {
-				var _new = _pass.run(_child, _cx);
-				if (_new != undefined) {
-					__set(_node, _slot.key, _slot.index, _new);
-					_changed = true;
-				}
+		// each array's length is taken before its children run, as the slots would have it
+		var _fields = _node.childFields;
+		var _f = 0; repeat (array_length(_fields)) {
+			var _key = _fields[_f];
+			var _value = _node[$ _key];
+			if (is_array(_value)) {
+				var _j = 0; repeat (array_length(_value)) {
+					if (_j < array_length(_value)) && (_value[_j] != undefined) && (__eachExpressionSlot(_node, _key, _j, _value[_j], _pass, _cx)) _changed = true;
+				_j++}
 			}
-		_i++}
+			else if (_value != undefined) {
+				if (__eachExpressionSlot(_node, _key, undefined, _value, _pass, _cx)) _changed = true;
+			}
+		_f++}
 		return _changed;
+	};
+	#region jsDoc
+	/// @func    __eachExpressionSlot(_node, _key, _index, _child, _pass, _cx)
+	/// @desc    Runs an expression pass on one child of a node and the expressions inside it, inner ones first.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct.ASTNode} _node  : The parent
+	/// @param   {String}         _key   : The field that holds the child
+	/// @param   {Real|Undefined} _index : The array index, undefined for a field that holds one node
+	/// @param   {Struct.ASTNode} _child : The child
+	/// @param   {Struct}         _pass  : The pass
+	/// @param   {Struct}         _cx    : The pass context
+	/// @returns {Bool} Whether anything changed
+	#endregion
+	static __eachExpressionSlot = function(_node, _key, _index, _child, _pass, _cx) {
+		var _changed = __eachExpression(_child, _pass, _cx, false);
+		// the child may have been replaced inside: read it again from its slot
+		_child = (_index == undefined) ? _node[$ _key] : _node[$ _key][_index];
+		var _kind = _child.kind;
+		var _isExpression = (_kind >= __GMLC_NodeKind_Assign) && (_kind <= __GMLC_NodeKind_Nameof) && (_kind != __GMLC_NodeKind_StructEntry);
+		if (_isExpression) && ((!has_no_op_targets) || (!__isNoOp(_child))) {
+			__slotContext(_node, _key, _cx);
+			var _new = _pass.run(_child, _cx);
+			// GameMaker refuses a statement that is only an operator or a value
+			if (_new != undefined) && (_node.kind == __GMLC_NodeKind_ExprStmt) && (!__isStatementExpression(_new)) _new = undefined;
+			if (_new != undefined) {
+				__set(_node, _key, _index, _new);
+				_changed = true;
+			}
+		}
+		return _changed;
+	};
+	
+	#region jsDoc
+	/// @func    __slotContext(_node, _key, _cx)
+	/// @desc    Sets in the pass context what the expression in a slot is used for: `condition` when it is only
+	///          asked whether it is true (the test of `if`, `while`, `do until`, `for` and `?:`, an operand of `&&`,
+	///          `||` and `!`), and `assigned` to the `var` local it is the value of (`var a = expr;` or `a = expr;`),
+	///          undefined when none.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct.ASTNode} _node : The parent
+	/// @param   {String}         _key  : The field of the parent that holds the expression
+	/// @param   {Struct}         _cx   : The pass context
+	#endregion
+	static __slotContext = function(_node, _key, _cx) {
+		_cx.condition = false;
+		_cx.assigned = undefined;
+		switch (_node.kind) {
+			case __GMLC_NodeKind_If: case __GMLC_NodeKind_While: case __GMLC_NodeKind_DoUntil: case __GMLC_NodeKind_For: case __GMLC_NodeKind_Conditional: _cx.condition = (_key == "test"); break;
+			case __GMLC_NodeKind_Logical: _cx.condition = (_node.op == "&&") || (_node.op == "||"); break;
+			case __GMLC_NodeKind_Unary: _cx.condition = (_node.op == "!"); break;
+			case __GMLC_NodeKind_VarDecl: if (_key == "init") && (__gmlc_opt_is_local(_node.target)) _cx.assigned = _node.target.name; break;
+			case __GMLC_NodeKind_Assign: if (_key == "value") && (_node.op == "=") && (__gmlc_opt_is_local(_node.target)) _cx.assigned = _node.target.name; break;
+		}
+	};
+	
+	#region jsDoc
+	/// @func    __bareStatements(_node)
+	/// @desc    Counts the expression statements under a node whose expression may not stand as a statement.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct.ASTNode} _node : The node
+	/// @returns {Real}
+	#endregion
+	static __bareStatements = function(_node) {
+		var _n = ((_node.kind == __GMLC_NodeKind_ExprStmt) && (!__isStatementExpression(_node.expression))) ? 1 : 0;
+		var _fields = _node.childFields;
+		var _f = 0; repeat (array_length(_fields)) {
+			var _value = _node[$ _fields[_f]];
+			if (is_array(_value)) {
+				var _j = 0; repeat (array_length(_value)) {
+					if (_value[_j] != undefined) _n += __bareStatements(_value[_j]);
+				_j++}
+			}
+			else if (_value != undefined) {
+				_n += __bareStatements(_value);
+			}
+		_f++}
+		return _n;
+	};
+	
+	#region jsDoc
+	/// @func    __isStatementExpression(_node)
+	/// @desc    Whether an expression may stand as a statement: a call, a method call, `new`, an assignment, `++` or
+	///          `--`.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct.ASTNode} _node : The expression
+	/// @returns {Bool}
+	#endregion
+	static __isStatementExpression = function(_node) {
+		var _kind = _node.kind;
+		return (_kind == __GMLC_NodeKind_Call) || (_kind == __GMLC_NodeKind_MethodCall) || (_kind == __GMLC_NodeKind_New)
+			|| (_kind == __GMLC_NodeKind_Assign) || (_kind == __GMLC_NodeKind_Update);
 	};
 	
 	#region jsDoc
@@ -629,11 +892,19 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 				_changed = true;
 			}
 		}
-		var _slots = _node.childSlots();
-		var _i = 0; repeat (array_length(_slots)) {
-			var _slot = _slots[_i];
-			if (__eachBlock(_slot.node, _node, _slot.key, _slot.index, _pass, _cx, false)) _changed = true;
-		_i++}
+		var _fields = _node.childFields;
+		var _f = 0; repeat (array_length(_fields)) {
+			var _field = _fields[_f];
+			var _value = _node[$ _field];
+			if (is_array(_value)) {
+				var _j = 0; repeat (array_length(_value)) {
+					if (_j < array_length(_value)) && (_value[_j] != undefined) && (__eachBlock(_value[_j], _node, _field, _j, _pass, _cx, false)) _changed = true;
+				_j++}
+			}
+			else if (_value != undefined) {
+				if (__eachBlock(_value, _node, _field, undefined, _pass, _cx, false)) _changed = true;
+			}
+		_f++}
 		return _changed;
 	};
 	
@@ -656,10 +927,17 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			}
 			_state.line = _line;
 		}
-		var _children = _node.children();
-		var _i = 0; repeat (array_length(_children)) {
-			__linesFrom(_children[_i], _state, false);
-		_i++}
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) {
+					__linesFrom(_child, _state, false);
+				}
+			_i++}
+		_field_index++}
 	};
 	
 	#region jsDoc
@@ -702,7 +980,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	/// @self    GMLC_Gen_5_Optimizer
 	#endregion
 	static __renumberTemporaries = function() {
-		if (struct_names_count(__temp_next) == 0) return;
+		if (struct_names_count(__temporary_next) == 0) return;
 		var _units = __units();
 		var _u = 0; repeat (array_length(_units)) {
 			var _unit = _units[_u];
@@ -715,18 +993,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 				var _i = 0; repeat (array_length(_found)) {
 					var _name = _found[_i].name;
 					if (_map[$ _name] == undefined) {
-						while (true) {
-							var _candidate = "__gmlc_t" + string(_n);
-							var _taken = struct_exists(env.env_symbols, _candidate);
-							if (!_taken) && (sources != undefined) {
-								var _f = 0; repeat (array_length(sources.files)) {
-									var _file = sources.files[_f];
-									if (_file != undefined) && (string_pos(_candidate, _file.source) > 0) _taken = true;
-								_f++}
-							}
-							if (!_taken) break;
-							_n++;
-						}
+						while (__temporaryTaken("__gmlc_t" + string(_n))) _n++;
 						_map[$ _name] = "__gmlc_t" + string(_n);
 						_n++;
 					}
@@ -750,8 +1017,27 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	};
 	
 	#region jsDoc
+	/// @func    __temporaryTaken(_name)
+	/// @desc    Whether a temporary's name already appears in a file of the compile or the environment knows it.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {String} _name : The name
+	/// @returns {Bool}
+	#endregion
+	static __temporaryTaken = function(_name) {
+		if (struct_exists(env.env_symbols, _name)) return true;
+		if (sources == undefined) return false;
+		// the names in the files are found again only when the table or its file count changed
+		if (__temporary_names_sources != sources) || (__temporary_names_count != array_length(sources.files)) {
+			__temporary_names_sources = sources;
+			__temporary_names_count = array_length(sources.files);
+			__temporary_names = __gmlc_temporary_names(sources);
+		}
+		return struct_exists(__temporary_names, _name);
+	};
+	
+	#region jsDoc
 	/// @func    __temporaryNodes(_node, _found, _isRoot)
-	/// @desc    Collects the identifiers of a function that name a temporary, in source order.
+	/// @desc    Collects the identifiers of a function that name a temporary this run made, in source order.
 	/// @self    GMLC_Gen_5_Optimizer
 	/// @param   {Struct.ASTNode}              _node   : The node
 	/// @param   {Array<Struct.ASTIdentifier>} _found  : The identifiers
@@ -759,13 +1045,20 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	#endregion
 	static __temporaryNodes = function(_node, _found, _isRoot) {
 		if (!_isRoot) && (__isFunctionNode(_node)) return;
-		if (_node.kind == __GMLC_NodeKind_Identifier) && (string_starts_with(_node.name, "__gmlc_t")) && (!array_contains(_found, _node)) {
+		if (_node.kind == __GMLC_NodeKind_Identifier) && (struct_exists(__temporaries_made, _node.name)) && (!array_contains(_found, _node)) {
 			array_push(_found, _node);
 		}
-		var _children = _node.children();
-		var _i = 0; repeat (array_length(_children)) {
-			__temporaryNodes(_children[_i], _found, false);
-		_i++}
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) {
+					__temporaryNodes(_child, _found, false);
+				}
+			_i++}
+		_field_index++}
 	};
 	#endregion
 	#region Tree Walks
@@ -822,7 +1115,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			
 			var _p = 0; repeat (array_length(passes)) {
 				var _pass = passes[_p];
-				_node_data.node = _pass.run(_node_data);
+				_node_data.node = _pass.run(_node_data, self);
 				if (_pass.name == "constant-fold") && (array_length(__failing) > 0) __dropFailing(_start_node, _node_data.node);
 			_p++}
 			
@@ -879,7 +1172,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		var _start = undefined;
 		while (_data.node != _start) {
 			_start = _data.node;
-			_data.node = constantFolding(_data);
+			_data.node = __fold(_data, self);
 			if (array_length(__failing) > 0) __dropFailing(_start, _data.node);
 		}
 		return _data.node;
@@ -894,6 +1187,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	static __foldGuarded = function(_holder) {
 		foldBegin();
 		global.__gmlc_fold.epsilon = epsilon_set;
+		var _saved_macros = (_holder == undefined) ? __gmlc_opt_set_opaque_macros(env.foldsConfigMacros(), env.__scoped_macros) : undefined;
 		var _done = false;
 		while (!_done) {
 			try {
@@ -904,6 +1198,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 				foldCaught(_e);
 			}
 		}
+		if (_saved_macros != undefined) __gmlc_opt_set_opaque_macros(_saved_macros.folds, _saved_macros.scoped);
 		foldEnd();
 	};
 	
@@ -925,7 +1220,10 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			if (folds_constants) ast = __foldWalk(ast, undefined, undefined, undefined);
 		}
 		else if (array_length(steps) > 0) {
+			__gmlc_opt_set_field_types(env.__batch.fields, env.__batch.structs_open);
 			__runSchedule();
+			__gmlc_opt_set_field_types({}, false);
+			__gmlc_opt_set_local_types({});
 		}
 	};
 	
@@ -953,7 +1251,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		_i++}
 		if (_slot == undefined) return _node;
 		var _data = { node: _node, parent: _slot.parent, key: _slot.key, index: _slot.index };
-		var _folded = constantFolding(_data);
+		var _folded = __fold(_data, self);
 		if (_folded != _node) optimization_occured = true;
 		return _folded;
 	};
@@ -971,10 +1269,63 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			array_push(_out, _node);
 			return;
 		}
-		var _children = _node.children();
-		var _i = 0; repeat (array_length(_children)) {
-			__epsilonCalls(_children[_i], _out);
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) {
+					__epsilonCalls(_child, _out);
+				}
+			_i++}
+		_field_index++}
+	};
+	
+	#region jsDoc
+	/// @func    __opaqueUses(_node, _out)
+	/// @desc    Counts the nodes under a node that come from a macro use that must stay a name, by the use and the
+	///          span the node stands at. A node a pass moved or copied has another count or span: the emitter could
+	///          no longer print the name.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Struct.ASTNode} _node : The tree
+	/// @param   {Struct}         _out  : The counts by key
+	#endregion
+	static __opaqueUses = function(_node, _out) {
+		if (__gmlc_opt_is_opaque(_node)) {
+			var _span = _node.span;
+			var _key = string(_node.origin.use_span.start) + ":" + string(_span.file) + ":" + string(_span.start) + ":" + string(_span.end);
+			_out[$ _key] = (_out[$ _key] ?? 0) + 1;
+		}
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) {
+					__opaqueUses(_child, _out);
+				}
+			_i++}
+		_field_index++}
+	};
+	
+	#region jsDoc
+	/// @func    scopedMacros(_asts)
+	/// @desc    The names of the macros that have a definition with a `Config:` prefix in any file of a batch.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @param   {Array<Struct.ASTNode>} _asts : The files' trees
+	/// @returns {Struct} The names as keys
+	#endregion
+	static scopedMacros = function(_asts) {
+		var _out = {};
+		var _i = 0; repeat (array_length(_asts)) {
+			var _macros = _asts[_i].macros;
+			var _m = 0; repeat (array_length(_macros)) {
+				if (_macros[_m].config != undefined) _out[$ _macros[_m].name] = true;
+			_m++}
 		_i++}
+		return _out;
 	};
 	
 	#region jsDoc
@@ -1035,10 +1386,17 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	static __containsNoOp = function(_node) {
 		if (!has_no_op_targets) return false;
 		if (__isNoOp(_node)) return true;
-		var _children = _node.children();
-		var _i = 0; repeat (array_length(_children)) {
-			if (__containsNoOp(_children[_i])) return true;
-		_i++}
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) {
+					if (__containsNoOp(_child)) return true;
+				}
+			_i++}
+		_field_index++}
 		return false;
 	};
 	
@@ -1054,6 +1412,17 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	};
 	
 	#region jsDoc
+	/// @func    __keepsStatements(_node)
+	/// @desc    Whether statements a fold would drop have to stay: code __keepsCode keeps, or a declaration: a `var` in
+	///          a dead branch or loop still makes the name a local for the code after it.
+	/// @self    GMLC_Gen_5_Optimizer
+	/// @returns {Bool}
+	#endregion
+	static __keepsStatements = function(_node) {
+		return __keepsCode(_node) || __gmlc_opt_declares(_node);
+	};
+	
+	#region jsDoc
 	/// @func    __referencesAsset(_node)
 	/// @desc    Whether a node or anything inside it names an asset.
 	/// @self    GMLC_Gen_5_Optimizer
@@ -1065,10 +1434,17 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			var _data = env.getConstant(_node.name);
 			if (_data != undefined) && (typeof(_data.value) == "ref") return true;
 		}
-		var _children = _node.children();
-		var _i = 0; repeat (array_length(_children)) {
-			if (__referencesAsset(_children[_i])) return true;
-		_i++}
+		var _child_fields = _node.childFields;
+		var _field_index = 0; repeat (array_length(_child_fields)) {
+			var _child_value = _node[$ _child_fields[_field_index]];
+			var _child_many = is_array(_child_value);
+			var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+				var _child = _child_many ? _child_value[_i] : _child_value;
+				if (_child != undefined) {
+					if (__referencesAsset(_child)) return true;
+				}
+			_i++}
+		_field_index++}
 		return false;
 	};
 	#endregion
@@ -1170,679 +1546,6 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	
 	#region Optimizers
 	
-	#region JSDocs
-	/// @function    constantPropagation(_node)
-	/// @description Propagates constants throughout the code, replacing occurrences of a constant with its value.
-	/// @param       {ASTNode}    _astNode    The AST node containing constants.
-	/// @return      {ASTNode}    _astNode    The optimized AST node with constants propagated.
-	#endregion
-	static constantPropagation = function(_node_data) {
-		var _node = _node_data.node;
-		
-		if (_node.kind != __GMLC_NodeKind_Block) && (_node.kind != __GMLC_NodeKind_Script) {
-			return _node;
-		}
-		
-		var _body = _node.body;
-		var _i = 0; repeat (array_length(_body)) {
-			var _statement = _body[_i];
-			
-			if (!__isNoOp(_statement)) {
-				if (_statement.kind == __GMLC_NodeKind_VarDeclList) {
-					var _declarations = _statement.declarations;
-					var _j = 0; repeat (array_length(_declarations)) {
-						var _declaration = _declarations[_j];
-						var _constant_data = __constantLocal(_declaration.target, _declaration.init);
-						if (_constant_data != undefined) {
-							if (!__propagateToList(_declarations, _j + 1, _constant_data)) {
-								__propagateToList(_body, _i + 1, _constant_data);
-							}
-						}
-					_j++}
-				}
-				else if (_statement.kind == __GMLC_NodeKind_ExprStmt)
-				&& (_statement.expression.kind == __GMLC_NodeKind_Assign)
-				&& (_statement.expression.op == "=")
-				{
-					var _assign = _statement.expression;
-					var _constant_data = __constantLocal(_assign.target, _assign.value);
-					if (_constant_data != undefined) {
-						__propagateToList(_body, _i + 1, _constant_data);
-					}
-				}
-			}
-		
-		_i++}
-		
-		return _node;
-	}
-	
-	#region jsDoc
-	/// @func    __constantLocal(_target, _value)
-	/// @desc    The constant a local takes when a literal is written to it, or undefined.
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _target : The written expression
-	/// @param   {Struct.ASTNode} _value  : The written value
-	/// @returns {Struct|Undefined} {slot, literal}
-	#endregion
-	static __constantLocal = function(_target, _value) {
-		if (_value == undefined) || (_value.kind != __GMLC_NodeKind_Literal) return undefined;
-		if (_target.kind != __GMLC_NodeKind_Identifier) || (_target.symbol == undefined) return undefined;
-		if (_target.symbol.kind != "Local") || (_target.symbol.slot == undefined) return undefined;
-		return {
-			slot : _target.symbol.slot,
-			literal : _value,
-		};
-	};
-	
-	#region jsDoc
-	/// @func    __isConstantLocal(_node, _constant_data)
-	/// @desc    Whether a node is the constant local.
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _node          : The node
-	/// @param   {Struct}         _constant_data : {slot, literal} of the local
-	/// @returns {Bool}
-	#endregion
-	static __isConstantLocal = function(_node, _constant_data) {
-		return (_node.kind == __GMLC_NodeKind_Identifier)
-			&& (_node.symbol != undefined)
-			&& (_node.symbol.kind == "Local")
-			&& (_node.symbol.slot == _constant_data.slot);
-	};
-	
-	#region jsDoc
-	/// @func    __rootIdentifier(_node)
-	/// @desc    The innermost object of an index chain (`a` of `a[0].b`).
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _node : The node
-	/// @returns {Struct.ASTNode}
-	#endregion
-	static __rootIdentifier = function(_node) {
-		while (_node.kind == __GMLC_NodeKind_Index) {
-			_node = _node.object;
-		}
-		return _node;
-	};
-	
-	#region jsDoc
-	/// @func    __propagateToList(_array, _from, _constant_data)
-	/// @desc    Propagates a constant local into the items of a list from an index on, until one writes the local.
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Array<Struct.ASTNode>} _array         : Statements or declarations
-	/// @param   {Real}                  _from          : First index
-	/// @param   {Struct}                _constant_data : {slot, literal} of the local
-	/// @returns {Bool} Whether propagation stopped
-	#endregion
-	static __propagateToList = function(_array, _from, _constant_data) {
-		var _i = _from; repeat (array_length(_array) - _from) {
-			var _return = __propagateConstants(_array[_i], _constant_data);
-			if (is_instanceof(_return, ASTNode)) {
-				_array[_i] = _return;
-			}
-			else if (_return == true) {
-				return true;
-			}
-		_i++}
-		return false;
-	};
-	
-	#region jsDoc
-	/// @func    __propagateConstants(_node, _constant_data)
-	/// @desc    Replaces reads of a constant local in a node by its literal, up to the first write of the local.
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _node          : The node
-	/// @param   {Struct}         _constant_data : {slot, literal} of the local
-	/// @returns {Struct.ASTNode|Bool} The node to put in its place, true when propagation must stop, false to go on
-	#endregion
-	static __propagateConstants = function(_node, _constant_data) {
-		if (__isNoOp(_node)) {
-			return __writesLocal(_node, _constant_data);
-		}
-		
-		switch (_node.kind) {
-			case __GMLC_NodeKind_Identifier: {
-				if (__isConstantLocal(_node, _constant_data)) {
-					var _literal = _constant_data.literal;
-					optimization_occured = true;
-					return new ASTLiteral(_node.span, _literal.ty, _literal.lexeme, _literal.value);
-				}
-
-				//safe to continue
-				return false;
-			break;}
-			
-			case __GMLC_NodeKind_Assign: {
-				if (__isConstantLocal(__rootIdentifier(_node.target), _constant_data)) {
-					//propigate to children incase the expression contains it's self and could be constant folded on additional optimize steps
-					// example :: xx = xx + 1;
-					if (!__writesLocal(_node.value, _constant_data)) {
-						var _return = __propagateConstants(_node.value, _constant_data);
-						if (is_instanceof(_return, ASTNode)) {
-							_node.value = _return;
-						}
-					}
-
-					/// should break propagation
-					return true;
-				}
-			break;}
-			
-			case __GMLC_NodeKind_VarDecl: {
-				//propigate to children incase the expression contains it's self and could be constant folded on additional optimize steps
-				// example :: var xx = xx + 1;
-				if (_node.init != undefined) {
-					if (__writesLocal(_node.init, _constant_data)) {
-						return true;
-					}
-					var _return = __propagateConstants(_node.init, _constant_data);
-					if (is_instanceof(_return, ASTNode)) {
-						_node.init = _return;
-					}
-				}
-				return __isConstantLocal(_node.target, _constant_data);
-			break;}
-			
-			case __GMLC_NodeKind_ExprStmt: {
-				var _return = __propagateConstants(_node.expression, _constant_data);
-				if (is_instanceof(_return, ASTNode)) {
-					_node.expression = _return;
-					return false;
-				}
-				return _return;
-			break;}
-			
-			// statements run in order, so propagation can go on up to the one that writes the local
-			case __GMLC_NodeKind_Block: {
-				return __propagateToChildren(_node, _constant_data);
-			break;}
-			
-			case __GMLC_NodeKind_FunctionDecl:
-			case __GMLC_NodeKind_ConstructorDecl:
-			case __GMLC_NodeKind_FunctionExpr: {
-				return false;
-			break;}
-			
-			// when the local is written inside, only the part that runs first is safe
-			case __GMLC_NodeKind_If:
-			case __GMLC_NodeKind_Switch:
-			case __GMLC_NodeKind_With:
-			case __GMLC_NodeKind_Repeat:
-			case __GMLC_NodeKind_For:
-			case __GMLC_NodeKind_While:
-			case __GMLC_NodeKind_DoUntil:
-			case __GMLC_NodeKind_Try: {
-				if (__writesLocal(_node, _constant_data)) {
-					var _key = undefined;
-					switch (_node.kind) {
-						case __GMLC_NodeKind_If:     _key = "test";         break;
-						case __GMLC_NodeKind_Switch: _key = "discriminant"; break;
-						case __GMLC_NodeKind_With:   _key = "target";       break;
-						case __GMLC_NodeKind_Repeat: _key = "count";        break;
-						case __GMLC_NodeKind_For:    _key = "init";         break;
-					}
-					if (_key != undefined) && (_node[$ _key] != undefined) && (!__writesLocal(_node[$ _key], _constant_data)) {
-						var _return = __propagateConstants(_node[$ _key], _constant_data);
-						if (is_instanceof(_return, ASTNode)) {
-							_node[$ _key] = _return;
-						}
-					}
-					return true;
-				}
-			break;}
-	    }
-		
-		// the order an expression reads and writes its parts in is not known: stop at any write
-		if (__writesLocal(_node, _constant_data)) {
-			return true;
-		}
-		
-		return __propagateToChildren(_node, _constant_data)
-	}
-	#region jsDoc
-	/// @func    __propagateToChildren(_node, _constant_data)
-	/// @desc    Propagates a constant local into a node's children in order, up to the first write.
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _node          : The node
-	/// @param   {Struct}         _constant_data : {slot, literal} of the local
-	/// @returns {Bool} Whether propagation stopped
-	#endregion
-	static __propagateToChildren = function(_node, _constant_data) {
-		var _children = _node.childSlots()
-		var _i=0; repeat(array_length(_children)) {
-			var _child_data = _children[_i]
-			var _child_node = _child_data.node
-			
-			// a local used where a literal would fold differently from the run time value keeps its name
-			if (_child_node.kind == __GMLC_NodeKind_Identifier)
-			&& (!__canReplaceIn(_node, _child_data.key))
-			{
-				_i++
-				continue;
-			}
-			
-			var _return = __propagateConstants(_child_node, _constant_data)
-			
-			if (is_instanceof(_return, ASTNode))
-			{
-				if (_child_data.index == undefined)
-				{
-					_node[$ _child_data.key] = _return;
-				}
-				else {
-					_node[$ _child_data.key][_child_data.index] = _return;
-				}
-			}
-			else if (_return == true) {
-				//inform parent we are done propigating
-				return true;
-			}
-		_i++}
-		
-		//it is still safe to continue propigating
-		return false;
-	}
-	
-	#region jsDoc
-	/// @func    __writesLocal(_node, _constant_data)
-	/// @desc    Whether a node writes the constant local (not counting nested functions).
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _node          : The node
-	/// @param   {Struct}         _constant_data : {slot, literal} of the local
-	/// @returns {Bool}
-	#endregion
-	static __writesLocal = function(_node, _constant_data) {
-		switch (_node.kind) {
-			case __GMLC_NodeKind_Assign: {
-				if (__isConstantLocal(__rootIdentifier(_node.target), _constant_data)) return true;
-			break;}
-			case __GMLC_NodeKind_Update: {
-				if (__isConstantLocal(__rootIdentifier(_node[$ "argument"]), _constant_data)) return true;
-			break;}
-			case __GMLC_NodeKind_Delete: {
-				if (__isConstantLocal(__rootIdentifier(_node.target), _constant_data)) return true;
-			break;}
-			case __GMLC_NodeKind_VarDecl: {
-				if (__isConstantLocal(_node.target, _constant_data)) return true;
-			break;}
-			case __GMLC_NodeKind_Try: {
-				if (_node.catch_param != undefined) && (__isConstantLocal(_node.catch_param, _constant_data)) return true;
-			break;}
-			case __GMLC_NodeKind_FunctionDecl:
-			case __GMLC_NodeKind_ConstructorDecl:
-			case __GMLC_NodeKind_FunctionExpr: {
-				return false;
-			break;}
-		}
-		
-		var _children = _node.children();
-		var _i=0; repeat(array_length(_children)) {
-			if (__writesLocal(_children[_i], _constant_data)) {
-				return true;
-			}
-		_i++}
-		
-		return false;
-	}
-	
-	#region JSDocs
-	/// @function    constantFolding(_node)
-	/// @description Performs constant folding by evaluating constant expressions at compile-time (e.g., `2 + 2` becomes `4`).
-	/// @param       {ASTNode}    _astNode    The AST node representing the expression.
-	/// @return      {ASTNode}    _astNode    The AST node with folded constants.
-	#endregion
-	static constantFolding = function(_node_data) {
-		var _node   = _node_data.node;
-		var _parent = _node_data.parent;
-		var _key    = _node_data.key;
-		var _index  = _node_data.index;
-	    
-		
-		switch (_node.kind) {
-			case __GMLC_NodeKind_Binary:
-			case __GMLC_NodeKind_Logical:{
-				var _folded = __foldOperator(_node);
-				if (_folded != undefined) {
-					return _folded;
-				}
-				
-				if (_node.kind == __GMLC_NodeKind_Logical)
-				&& ((_node.op == "&&") || (_node.op == "||"))
-				{
-					var _left = __constantValue(_node.left);
-					if (_left[0]) && (is_numeric(_left[1])) {
-						var _truthy = (_left[1]) ? true : false;
-						if (_truthy == (_node.op == "||"))
-						&& (!__keepsCode(_node.right))
-						&& (__keepsValue(_node_data))
-						{
-							return __literal(_truthy, _node.span);
-						}
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_Nullish:{
-				var _left = __constantValue(_node.left);
-				if (_left[0]) {
-					if (_left[1] == undefined) {
-						var _right = __constantValue(_node.right);
-						if ((!_right[0]) || (__keepsValue(_node_data))) && (!__selfIntoStructEntry(_node_data, _node.right)) {
-							return _node.right;
-						}
-					}
-					else if (!__keepsCode(_node.right)) && (__keepsValue(_node_data)) && (!__selfIntoStructEntry(_node_data, _node.left)) {
-						return _node.left;
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_Unary:{
-				if (_node.op == "+") {
-					// GameMaker's compiler compiles `+x` as `x`
-					var _argument = __constantValue(_node[$ "argument"]);
-					if (_argument[0]) && (__keepsValue(_node_data)) {
-						return _node[$ "argument"];
-					}
-				}
-				else {
-					var _folded = __foldOperator(_node);
-					if (_folded != undefined) {
-						return _folded;
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_Conditional:{
-				return __foldConditional(_node_data);
-			break;}
-			case __GMLC_NodeKind_Call:{
-				var _callee = __calleeFunction(_node);
-				if (_callee != undefined) {
-					switch (_callee) {
-						case choose:{
-							if (array_length(_node.args) == 1) {
-								var _argument = __constantValue(_node.args[0]);
-								if (!_argument[0]) || (__keepsValue(_node_data)) {
-									return _node.args[0];
-								}
-							}
-							
-						break;}
-						case sqrt:{
-							/// ==================================================
-							/// NOTE:
-							/// This is the only math operation that is affected by `math_set_epsilon`
-							/// avoid optimizing this at compile time
-							/// ==================================================
-							return _node
-						break;}
-						case string:{
-							//Remove these if the request for change has been approved
-							// This exists because of an oddity in the language
-							/// https://github.com/YoYoGames/GameMaker-Bugs/issues/8088
-							if (array_length(_node.args) < 1) {
-								/// Re add this if the oddity gets fixed
-								//throw_gmlc_error($"Argument count for string is incorrect!\nArgument Count : {array_length(_node.args)}\nline ({__line(_node)})")
-								
-								//this is also an odd variable as its different depending on the situation
-								/// https://github.com/YoYoGames/GameMaker-Bugs/issues/8090
-								return __literal("", _node.span);
-							}
-							if (__argumentsAreLiteral(_node.args)) {
-								return __build_literal_from_function_call_constant_folding(string, _node_data);
-							}
-							else if (_node.args[0].kind == __GMLC_NodeKind_Literal) {
-								var _arr = _node.args;
-								var _exec_arr = [_arr[0].value]; //the execution array
-								var _new_arr = []; // the new arg array
-								var _holder_index = 0;
-								var _changed = false;
-							
-								var _i=1; repeat(array_length(_arr)-1) {
-									var _sub_node = _arr[_i]
-									if (_sub_node.kind == __GMLC_NodeKind_Literal) {
-										_changed = true;
-										array_push(_exec_arr, _sub_node.value);
-									}
-									else {
-										array_push(_new_arr, _sub_node);
-										array_push(_exec_arr, $"\{{_holder_index}\}");
-										_holder_index++
-									}
-								_i+=1;}//end repeat loop
-							
-								if (_changed) {
-									array_insert(_new_arr, 0, __literal(script_execute_ext(string, _exec_arr), _node.span))
-									return new ASTCall(_node.span, _node.callee, _new_arr);
-								}
-							}
-						break;}
-						case string_concat:{
-							if (array_length(_node.args) < 1) {
-								return _node; // a wrong argument count is the resolver's error
-							}
-						
-							if (__argumentsAreLiteral(_node.args)) {
-								return __build_literal_from_function_call_constant_folding(string_concat, _node_data);
-							}
-							else {
-								var _arr = _node.args;
-								var _changed = false;
-						
-								var _i=0; repeat(array_length(_arr)-1) {
-									if (_arr[_i].kind == __GMLC_NodeKind_Literal)
-									&& (_arr[_i+1].kind == __GMLC_NodeKind_Literal) {
-										_changed = true;
-										
-										var _value = string_concat(_arr[_i].value, _arr[_i+1].value);
-										var _struct = __literal(_value, _arr[_i].span)
-										
-										array_delete(_arr, _i, 2)
-										array_insert(_arr, _i, _struct);
-										continue;
-									}
-								_i+=1;}//end repeat loop
-							
-								if (_changed) {
-									return new ASTCall(_node.span, _node.callee, _arr);
-								}
-							}
-						
-						break;}
-						case string_join:{
-							if (array_length(_node.args) < 1) {
-								return _node;
-							}
-						
-							if (__argumentsAreLiteral(_node.args)) {
-								return __build_literal_from_function_call_constant_folding(string_join, _node_data);
-							}
-							else if (_node.args[0].kind == __GMLC_NodeKind_Literal) { // delimiter is literal
-								var _arr = _node.args;
-								var _changed = false;
-								
-								var _i=1; repeat(array_length(_arr)-2) {
-									
-									if (_arr[_i].kind == __GMLC_NodeKind_Literal)
-									&& (_arr[_i+1].kind == __GMLC_NodeKind_Literal) {
-										_changed = true;
-										
-										var _value = string_join(_arr[0].value, _arr[_i].value, _arr[_i+1].value);
-										var _struct = __literal(_value, _arr[_i].span);
-										
-										array_delete(_arr, _i, 2)
-										array_insert(_arr, _i, _struct);
-										continue;
-									}
-									
-								_i+=1;}//end repeat loop
-							
-								if (_changed) {
-									return new ASTCall(_node.span, _node.callee, _arr);
-								}
-							}
-						
-						break;}
-						case chr:
-						case ansi_char:{
-							// a character code that is not a whole number the function can make is an error: GameMaker's
-							// compiler rounds `chr(65.5)` to "B" where its runtime cuts it to "A"
-							if (array_length(_node.args) != 1) return _node;
-							var _code = __constantValue(_node.args[0]);
-							if (!_code[0]) || (!is_numeric(_code[1])) break;
-							var _most = (_callee == chr) ? 0x10FFFF : 255;
-							if (!__gmlc_is_whole(_code[1])) || (_code[1] < 0) || (_code[1] > _most) {
-								__alwaysFails(_node, "GMLC4103", [_node.callee.name, string(_most), is_real(_code[1]) ? __gmlc_real_text(_code[1]) : string(_code[1])]);
-								return _node;
-							}
-							return __build_literal_from_function_call_constant_folding(_callee, _node_data);
-						break;}
-						case string_join_ext:{
-							// GameMaker gives "" for fewer than two arguments
-							/// https://github.com/YoYoGames/GameMaker-Bugs/issues/8088
-							if (array_length(_node.args) < 2) {
-								return __literal("", _node.span)
-							}
-							if (array_length(_node.args) > 4) {
-								return _node;
-							}
-							return __build_literal_from_function_call_constant_folding(string_join_ext, _node_data);
-						break;}
-						default:{
-							var _arity = env.foldableArity(_node.callee.name);
-							if (_arity == undefined) break;
-							var _count = array_length(_node.args);
-							if (_count < _arity[0]) || ((_arity[1] >= 0) && (_count > _arity[1])) {
-								return _node;
-							}
-							return __build_literal_from_function_call_constant_folding(_callee, _node_data);
-						break;}
-					}
-					//end switch
-				}
-			break;}
-			// Add more cases as needed for different _node types
-		}
-		
-		return _node;
-		
-	}
-	
-	#region JSDocs
-	/// @function    eliminateDeadCode(_node)
-	/// @description Removes code that is never executed, such as code following a `return` or `break` statement.
-	/// @param       {ASTNode}    _astNode    The AST node representing the block of code.
-	/// @return      {ASTNode}    _astNode    The AST node with unreachable code removed.
-	#endregion
-	static eliminateDeadCode = function(_node_data) {
-		var _node   = _node_data.node;
-		var _parent = _node_data.parent;
-		var _key    = _node_data.key;
-		var _index  = _node_data.index;
-	    
-		switch (_node.kind) {
-			case __GMLC_NodeKind_If:{
-				var _test = __constantValue(_node.test);
-				if (_test[0]) && (is_numeric(_test[1])) {
-					if (_test[1]) {
-						if (_node.alternate == undefined) || (!__keepsCode(_node.alternate)) {
-							return _node.consequent;
-						}
-					}
-					else if (!__keepsCode(_node.consequent)) {
-						if (_node.alternate != undefined) {
-							return _node.alternate;
-						}
-						else {
-							return new ASTEmpty(_node.span);
-						}
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_For:{
-				if (_node.test != undefined) {
-					var _test = __constantValue(_node.test);
-					if (_test[0]) && (is_numeric(_test[1])) && (!_test[1])
-					&& (!__keepsCode(_node.body)) && ((_node.update == undefined) || (!__keepsCode(_node.update)))
-					{
-						// the init still runs once
-						return _node.init ?? new ASTEmpty(_node.span);
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_While:{
-				if (_node.test != undefined) {
-					var _test = __constantValue(_node.test);
-					if (_test[0]) && (is_numeric(_test[1])) && (!_test[1]) && (!__keepsCode(_node.body)) {
-						return new ASTEmpty(_node.span);
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_Repeat:{
-				if (_node.count != undefined) {
-					var _count = __constantValue(_node.count);
-					if (_count[0]) && (is_numeric(_count[1])) && (_count[1] <= 0) && (!__keepsCode(_node.body)) {
-						return new ASTEmpty(_node.span);
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_DoUntil:{
-				/// There isnt really a way to optimizer this on the AST level, we can convert this into a breakable block statement on compile level, however if we want to re export as a string we dont want to mess with this on the AST optimization level.
-			break;}
-			case __GMLC_NodeKind_With:{
-				var _target = __constantValue(_node.target);
-				if (_target[0]) && (is_numeric(_target[1])) && (!__keepsCode(_node.body)) {
-					if (_target[1] == noone) {
-						return new ASTEmpty(_node.span);
-					}
-				}
-			break;}
-			case __GMLC_NodeKind_Switch:{
-				/// this was trash and doesnt account for inner statements breaking out, additionally it complicates break statements, and re exporting the code.
-			break;}
-			case __GMLC_NodeKind_Conditional:{
-				return __foldConditional(_node_data);
-			break;}
-			case __GMLC_NodeKind_ExprStmt:{
-				// a call folded to its value does nothing, and a value on its own is not a statement GameMaker accepts
-				var _value = __constantValue(_node.expression);
-				if (_value[0]) && (!__keepsCode(_node.expression)) {
-					return new ASTEmpty(_node.span);
-				}
-			break;}
-		}
-
-		return _node;
-	}
-	
-	#region JSDocs
-	/// @function    strengthReduction(_astNode)
-	/// @description Replaces existing functions with slightly optimized varients which prerform better for the specific task. IE: converting a value to a string is faster with `string_concat` then `string`, as `string` has several additional checks, and `string_concat` already converts a value to a string
-	/// @param       {ASTNode}    _astNode    The AST node representing a small code block.
-	/// @return      {ASTNode}    _astNode    The optimized AST node after peephole optimizations.
-	#endregion
-	static strengthReduction = function(_node_data) {
-		var _node   = _node_data.node;
-		var _parent = _node_data.parent;
-		var _key    = _node_data.key;
-		var _index  = _node_data.index;
-		
-		// GameMaker hashes a constant struct key itself, so `struct_get(s, "k")` is left as written
-		if (_node.kind == __GMLC_NodeKind_Call) {
-			switch (__calleeFunction(_node)) {
-				case string:{
-					// String with single argument is faster to use string_concat
-					if (array_length(_node.args) == 1) && (env.isFunction("string_concat")) {
-						var _arg = _node.args[0]
-						if (_arg.kind != __GMLC_NodeKind_Literal) {
-							return new ASTCall(_node.span, __builtin("string_concat", _node.span), _node.args);
-						}
-					}
-				break;}
-			}
-		}
-		
-		return _node;
-	};
-	
-	
 	
 	
 	#region JSDocs
@@ -1862,7 +1565,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	    //      After: Removed if it's known value is never a string.
 	    // 4. Return the optimized AST node.
 	}
-
+	
 	#region JSDocs
 	/// @function    simplifyIncrementExpressions(_node)
 	/// @description Simplifies expressions like `arr[0] = arr[0] + 1` to `arr[0]++` to save cycles and improve readability.
@@ -1879,7 +1582,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	    // 3. Handle both prefix and postfix cases, ensuring side effects are preserved.
 	    // 4. Return the updated AST node.
 	}
-
+	
 	#region JSDocs
 	/// @function    optimizeInfinityExpressions(_node)
 	/// @description Optimizes mathematical expressions involving `infinity`, as the results can be deduced without computation. 
@@ -2161,6 +1864,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 	/// @returns {Array} [true, value] for a literal or a built-in constant, else [false]
 	#endregion
 	static __constantValue = function(_node) {
+		if (__gmlc_opt_is_opaque(_node)) return [false];
 		if (_node.kind == __GMLC_NodeKind_Literal) {
 			return [true, _node.value];
 		}
@@ -2204,7 +1908,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		}
 		return true;
 	};
-
+	
 	#region jsDoc
 	/// @func    __alwaysFails(_node, _code, _args)
 	/// @desc    Records a constant that fails when the code runs (`real("ab")`): a compile error, or under
@@ -2264,27 +1968,6 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			if (!__failing[_i].dropped) array_push(diagnostics, __failing[_i].diagnostic);
 		_i++}
 		__failing = [];
-	};
-	
-	#region jsDoc
-	/// @func    __foldOperator(_node)
-	/// @desc    Folds an operator expression whose operands are known: its literal, or undefined.
-	/// @self    GMLC_Gen_5_Optimizer
-	/// @param   {Struct.ASTNode} _node : A Binary or Logical node
-	/// @returns {Struct.ASTNode|Undefined}
-	#endregion
-	static __foldOperator = function(_node) {
-		var _constant = __GMLCconstantValue(self, _node);
-		if (!_constant[0]) {
-			// constant operands that fail: reported where the operator is, not again for the operators around it
-			if (array_length(_constant) > 2) && (_constant[2] != undefined) && (_constant[3] == _node) __alwaysFails(_node, _constant[4] ? "GMLC4101" : "GMLC4102", [_constant[2]]);
-			return undefined;
-		}
-		var _value = _constant[1];
-		// `true || spr_x`: the operand the left decides is dropped, and with it the asset reference
-		if (__referencesAsset(_node)) return _node;
-
-		return __literal(_value, _node.span) ?? _node;
 	};
 	
 	#region jsDoc
@@ -2384,10 +2067,10 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		var _i=0; repeat(array_length(_arr)) {
 			_new_arr[_i] = _arr[_i].value;
 		_i+=1;}//end repeat loop
-
+		
 		// the project's Game Options decide how int64() converts a string
 		if (_script == int64) && (is_string(_new_arr[0])) return _node;
-
+		
 		if (_script == string_repeat) {
 			// a string_repeat whose length passes int32 fails whenever it runs
 			var _repeatFails = __gmlc_string_repeat_failure(_new_arr);
@@ -2401,7 +2084,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 			&& ((string_byte_length(_new_arr[0]) * _new_arr[1] > __GMLC_FOLD_STRING_LIMIT)
 			|| (_new_arr[1] < -2147483648) || (_new_arr[1] >= 2147483648)) return _node;
 		}
-
+		
 		// a text so long that it ends GameMaker's runner is not built at all
 		if (_script == string_format) && (!__gmlc_string_format_folds(_new_arr)) return _node;
 		
@@ -2415,7 +2098,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 		var _value = script_execute_ext(_script, _new_arr);
 		_fold.node = undefined;
 		if (_script == power) && (!__gmlc_power_folds(_new_arr[0], _new_arr[1], _value)) return _node;
-
+		
 		if (!is_string(_value)) && (!is_numeric(_value)) && (!is_undefined(_value)) return _node;
 		if (is_string(_value)) && (string_byte_length(_value) > __GMLC_FOLD_STRING_LIMIT) return _node;
 		// a literal holds UTF-8 text: `ansi_char(167)` stays a call
@@ -2443,7 +2126,7 @@ function GMLC_Gen_5_Optimizer(_env) constructor  {
 function gmlc_analyses(_ast) {
 	var _units = [{ fn_id: 0, params: [], body: _ast.body, node: undefined }];
 	__gmlc_analysis_units(_ast, _units);
-	array_sort(_units, function(_a, _b) { return _a.fn_id - _b.fn_id; });
+	array_sort(_units, __gmlc_compare_fn_id);
 	var _out = [];
 	var _u = 0; repeat (array_length(_units)) {
 		var _unit = _units[_u];
@@ -2461,19 +2144,25 @@ function gmlc_analyses(_ast) {
 /// @param   {Array<Struct>}  _out  : The units {fn_id, params, body, node}
 #endregion
 function __gmlc_analysis_units(_node, _out) {
-	var _children = _node.children();
-	var _i = 0; repeat (array_length(_children)) {
-		var _child = _children[_i];
-		var _kind = _child.kind;
-		if (_kind == __GMLC_NodeKind_FunctionDecl) || (_kind == __GMLC_NodeKind_ConstructorDecl) || (_kind == __GMLC_NodeKind_FunctionExpr) {
-			var _params = [];
-			var _p = 0; repeat (array_length(_child.params)) {
-				array_push(_params, _child.params[_p].target);
-			_p++}
-			array_push(_out, { fn_id: _child[$ "fn_id"] ?? (1000000 + array_length(_out)), params: _params, body: _child.body.body, node: _child });
-		}
-		__gmlc_analysis_units(_child, _out);
-	_i++}
+	var _child_fields = _node.childFields;
+	var _field_index = 0; repeat (array_length(_child_fields)) {
+		var _child_value = _node[$ _child_fields[_field_index]];
+		var _child_many = is_array(_child_value);
+		var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+			var _child = _child_many ? _child_value[_i] : _child_value;
+			if (_child != undefined) {
+				var _kind = _child.kind;
+				if (_kind == __GMLC_NodeKind_FunctionDecl) || (_kind == __GMLC_NodeKind_ConstructorDecl) || (_kind == __GMLC_NodeKind_FunctionExpr) {
+					var _params = [];
+					var _p = 0; repeat (array_length(_child.params)) {
+						array_push(_params, _child.params[_p].target);
+					_p++}
+					array_push(_out, { fn_id: _child[$ "fn_id"] ?? (1000000 + array_length(_out)), params: _params, body: _child.body.body, node: _child });
+				}
+				__gmlc_analysis_units(_child, _out);
+			}
+		_i++}
+	_field_index++}
 }
 
 #region jsDoc
@@ -2484,18 +2173,9 @@ function __gmlc_analysis_units(_node, _out) {
 /// @returns {Struct}
 #endregion
 function __gmlc_analyze(_unit, _name) {
-	var _g = __gmlc_cfg_build(_unit);
+	var _g = __gmlc_analysis_graph(_unit);
 	var _n = array_length(_g.nodes);
-	var _i = 0; repeat (_n) {
-		_g.events[_i] = [];
-	_i++}
-	var _p = 0; repeat (array_length(_unit.params)) {
-		__gmlc_event_def(_g, 0, _unit.params[_p]);
-		__gmlc_alias_pair(_g, _unit.params[_p], undefined);
-	_p++}
-	_i = 2; repeat (_n - 2) {
-		__gmlc_node_events(_g, _i);
-	_i++}
+	var _i;
 	var _nodes = [];
 	var _preds = array_create(_n);
 	var _excPreds = array_create(_n);
@@ -2532,7 +2212,7 @@ function __gmlc_analyze(_unit, _name) {
 				array_push(_list, _id);
 			}
 		_e++}
-		_gen[_i] = __gmlc_sorted_ids(_list);
+		_gen[_i] = __gmlc_sorted_set(_list);
 		_killed[_i] = _names;
 	_i++}
 	var _in = array_create(_n);
@@ -2547,18 +2227,18 @@ function __gmlc_analyze(_unit, _name) {
 		_i = 0; repeat (_n) {
 			var _set = [];
 			var _q = 0; repeat (array_length(_preds[_i])) {
-				_set = __gmlc_union_ids(_set, _outs[_preds[_i][_q]]);
+				_set = __gmlc_sorted_union(_set, _outs[_preds[_i][_q]]);
 			_q++}
 			// a statement that throws may have run any part of itself: what reaches it and what leaves it
 			_q = 0; repeat (array_length(_excPreds[_i])) {
 				var _from = _excPreds[_i][_q];
-				_set = __gmlc_union_ids(_set, __gmlc_union_ids(_in[_from], _outs[_from]));
+				_set = __gmlc_sorted_union(_set, __gmlc_sorted_union(_in[_from], _outs[_from]));
 			_q++}
 			var _kept = [];
 			var _d = 0; repeat (array_length(_set)) {
 				if (!array_contains(_killed[_i], _defs[_set[_d]].name)) array_push(_kept, _set[_d]);
 			_d++}
-			var _o = __gmlc_union_ids(_gen[_i], _kept);
+			var _o = __gmlc_sorted_union(_gen[_i], _kept);
 			if (!array_equals(_set, _in[_i])) || (!array_equals(_o, _outs[_i])) {
 				_in[_i] = _set;
 				_outs[_i] = _o;
@@ -2592,12 +2272,12 @@ function __gmlc_analyze(_unit, _name) {
 		_i = _n - 1; repeat (_n) {
 			var _node = _g.nodes[_i];
 			var _outSet = [];
-			var _s = 0; repeat (array_length(_node.succ)) { _outSet = __gmlc_union_names(_outSet, _live[_node.succ[_s]]); _s++ }
+			var _s = 0; repeat (array_length(_node.succ)) { _outSet = __gmlc_sorted_union(_outSet, _live[_node.succ[_s]]); _s++ }
 			// what a handler reads is live before the statement that may throw to it, whatever that statement writes
-			var _set = __gmlc_union_names([], _use[_i]);
-			_s = 0; repeat (array_length(_node.exc)) { _set = __gmlc_union_names(_set, _live[_node.exc[_s]]); _s++ }
+			var _set = __gmlc_sorted_union([], _use[_i]);
+			_s = 0; repeat (array_length(_node.exc)) { _set = __gmlc_sorted_union(_set, _live[_node.exc[_s]]); _s++ }
 			var _k = 0; repeat (array_length(_outSet)) {
-				if (!array_contains(_killed[_i], _outSet[_k])) _set = __gmlc_union_names(_set, [_outSet[_k]]);
+				if (!array_contains(_killed[_i], _outSet[_k])) _set = __gmlc_sorted_union(_set, [_outSet[_k]]);
 			_k++}
 			if (!array_equals(_set, _live[_i])) {
 				_live[_i] = _set;
@@ -2605,14 +2285,57 @@ function __gmlc_analyze(_unit, _name) {
 			}
 		_i--}
 	}
+	return { fn_id: _unit.fn_id, name: _name, nodes: _nodes, defs: _defs, reaching: _in, live: _live, alias: __gmlc_alias_classes(_g) };
+}
+
+#region jsDoc
+/// @func    __gmlc_analyze_alias(_unit)
+/// @desc    Only the alias classes of one function, as __gmlc_analyze gives them, without its reaching definitions
+///          and liveness.
+/// @param   {Struct} _unit : {fn_id, params, body, node}
+/// @returns {Array<Struct>} {name, sites} per local that may hold a reference, by name
+#endregion
+function __gmlc_analyze_alias(_unit) {
+	return __gmlc_alias_classes(__gmlc_analysis_graph(_unit));
+}
+
+#region jsDoc
+/// @func    __gmlc_analysis_graph(_unit)
+/// @desc    The control-flow graph of one function with the definitions and reads of each node and the alias pairs.
+/// @param   {Struct} _unit : {fn_id, params, body, node}
+/// @returns {Struct} {nodes, frames, tries, finals, events, pairs}
+#endregion
+function __gmlc_analysis_graph(_unit) {
+	var _g = __gmlc_cfg_build(_unit);
+	var _n = array_length(_g.nodes);
+	var _i = 0; repeat (_n) {
+		_g.events[_i] = [];
+	_i++}
+	var _p = 0; repeat (array_length(_unit.params)) {
+		__gmlc_event_def(_g, 0, _unit.params[_p]);
+		__gmlc_alias_pair(_g, _unit.params[_p], undefined);
+	_p++}
+	_i = 2; repeat (_n - 2) {
+		__gmlc_node_events(_g, _i);
+	_i++}
+	return _g;
+}
+
+#region jsDoc
+/// @func    __gmlc_alias_classes(_g)
+/// @desc    The allocation sites each local of a graph's alias pairs may hold, by name, locals with none left out.
+/// @param   {Struct} _g : The graph (__gmlc_analysis_graph)
+/// @returns {Array<Struct>} {name, sites}
+#endregion
+function __gmlc_alias_classes(_g) {
 	var _sites = {};
-	_changed = true;
+	var _changed = true;
 	while (_changed) {
 		_changed = false;
 		var _q = 0; repeat (array_length(_g.pairs)) {
 			var _pair = _g.pairs[_q];
 			var _now = _sites[$ _pair.name] ?? [];
-			var _add = __gmlc_union_names(_now, __gmlc_alias_sites(_pair.value, _sites));
+			var _add = __gmlc_sorted_union(_now, __gmlc_alias_sites(_pair.value, _sites));
 			if (!array_equals(_add, _now)) {
 				_sites[$ _pair.name] = _add;
 				_changed = true;
@@ -2625,7 +2348,7 @@ function __gmlc_analyze(_unit, _name) {
 	var _k = 0; repeat (array_length(_names)) {
 		if (array_length(_sites[$ _names[_k]]) > 0) array_push(_alias, { name: _names[_k], sites: _sites[$ _names[_k]] });
 	_k++}
-	return { fn_id: _unit.fn_id, name: _name, nodes: _nodes, defs: _defs, reaching: _in, live: _live, alias: _alias };
+	return _alias;
 }
 
 #region Control-Flow Graph
@@ -2644,8 +2367,8 @@ function __gmlc_cfg_build(_unit) {
 	__gmlc_cfg_link(_g, (_body.entry >= 0) ? _body.exits : [], _exit);
 	var _i = 0; repeat (array_length(_g.nodes)) {
 		var _node = _g.nodes[_i];
-		_node.succ = __gmlc_sorted_ids(_node.succ);
-		_node.exc = __gmlc_sorted_ids(_node.exc);
+		_node.succ = __gmlc_sorted_set(_node.succ);
+		_node.exc = __gmlc_sorted_set(_node.exc);
 	_i++}
 	return _g;
 }
@@ -2934,16 +2657,6 @@ function __gmlc_node_events(_g, _id) {
 }
 
 #region jsDoc
-/// @func    __gmlc_is_local(_node)
-/// @desc    Whether a node is an identifier that names a local.
-/// @param   {Struct.ASTNode} _node : The node
-/// @returns {Bool}
-#endregion
-function __gmlc_is_local(_node) {
-	return (_node != undefined) && (_node.kind == __GMLC_NodeKind_Identifier) && (_node.symbol != undefined) && (_node.symbol.kind == "Local");
-}
-
-#region jsDoc
 /// @func    __gmlc_event_def(_g, _id, _target, [_maybe])
 /// @desc    Records a write of a node's local target.
 /// @param   {Struct}         _g       : The graph
@@ -2952,7 +2665,7 @@ function __gmlc_is_local(_node) {
 /// @param   {Bool}           [_maybe] : The write may not happen (the right of && and ||, a branch of ?:, ??=)
 #endregion
 function __gmlc_event_def(_g, _id, _target, _maybe = false) {
-	if (__gmlc_is_local(_target)) array_push(_g.events[_id], { def: true, name: _target.name, maybe: _maybe });
+	if (__gmlc_opt_is_local(_target)) array_push(_g.events[_id], { def: true, name: _target.name, maybe: _maybe });
 }
 
 #region jsDoc
@@ -2963,7 +2676,7 @@ function __gmlc_event_def(_g, _id, _target, _maybe = false) {
 /// @param   {Struct.ASTNode} _value  : The value, undefined for a parameter
 #endregion
 function __gmlc_alias_pair(_g, _target, _value) {
-	if (__gmlc_is_local(_target)) array_push(_g.pairs, { name: _target.name, value: _value });
+	if (__gmlc_opt_is_local(_target)) array_push(_g.pairs, { name: _target.name, value: _value });
 }
 
 #region jsDoc
@@ -2980,7 +2693,7 @@ function __gmlc_walk_events(_g, _id, _node, _maybe = false) {
 		case __GMLC_NodeKind_FunctionExpr: case __GMLC_NodeKind_FunctionDecl: case __GMLC_NodeKind_ConstructorDecl:
 			return;
 		case __GMLC_NodeKind_Identifier:
-			if (__gmlc_is_local(_node)) array_push(_g.events[_id], { def: false, name: _node.name, maybe: _maybe });
+			if (__gmlc_opt_is_local(_node)) array_push(_g.events[_id], { def: false, name: _node.name, maybe: _maybe });
 			return;
 		case __GMLC_NodeKind_VarDecl:
 			__gmlc_walk_events(_g, _id, _node.init, _maybe);
@@ -2988,7 +2701,7 @@ function __gmlc_walk_events(_g, _id, _node, _maybe = false) {
 			__gmlc_alias_pair(_g, _node.target, _node.init);
 			return;
 		case __GMLC_NodeKind_Assign:
-			if (__gmlc_is_local(_node.target)) {
+			if (__gmlc_opt_is_local(_node.target)) {
 				if (_node.op != "=") __gmlc_walk_events(_g, _id, _node.target, _maybe);
 				__gmlc_walk_events(_g, _id, _node.value, _maybe || (_node.op == "??="));
 				__gmlc_event_def(_g, _id, _node.target, _maybe || (_node.op == "??="));
@@ -3016,10 +2729,17 @@ function __gmlc_walk_events(_g, _id, _node, _maybe = false) {
 			__gmlc_walk_events(_g, _id, _node.alternate, true);
 			return;
 	}
-	var _children = _node.children();
-	var _i = 0; repeat (array_length(_children)) {
-		__gmlc_walk_events(_g, _id, _children[_i], _maybe);
-	_i++}
+	var _child_fields = _node.childFields;
+	var _field_index = 0; repeat (array_length(_child_fields)) {
+		var _child_value = _node[$ _child_fields[_field_index]];
+		var _child_many = is_array(_child_value);
+		var _i = 0; repeat (_child_many ? array_length(_child_value) : 1) {
+			var _child = _child_many ? _child_value[_i] : _child_value;
+			if (_child != undefined) {
+				__gmlc_walk_events(_g, _id, _child, _maybe);
+			}
+		_i++}
+	_field_index++}
 }
 
 #region jsDoc
@@ -3041,12 +2761,12 @@ function __gmlc_alias_sites(_node, _sites) {
 			}
 			return ["unknown"];
 		case __GMLC_NodeKind_Identifier:
-			if (__gmlc_is_local(_node)) return _sites[$ _node.name] ?? [];
+			if (__gmlc_opt_is_local(_node)) return _sites[$ _node.name] ?? [];
 			return ["unknown"];
 		case __GMLC_NodeKind_Conditional:
-			return __gmlc_union_names(__gmlc_alias_sites(_node.consequent, _sites), __gmlc_alias_sites(_node.alternate, _sites));
+			return __gmlc_sorted_union(__gmlc_alias_sites(_node.consequent, _sites), __gmlc_alias_sites(_node.alternate, _sites));
 		case __GMLC_NodeKind_Nullish:
-			return __gmlc_union_names(__gmlc_alias_sites(_node.left, _sites), __gmlc_alias_sites(_node.right, _sites));
+			return __gmlc_sorted_union(__gmlc_alias_sites(_node.left, _sites), __gmlc_alias_sites(_node.right, _sites));
 		case __GMLC_NodeKind_Literal: case __GMLC_NodeKind_Binary: case __GMLC_NodeKind_Unary: case __GMLC_NodeKind_Update:
 		case __GMLC_NodeKind_Logical: case __GMLC_NodeKind_TemplateString: case __GMLC_NodeKind_FunctionExpr:
 			return [];
@@ -3057,46 +2777,51 @@ function __gmlc_alias_sites(_node, _sites) {
 
 #region Sets
 #region jsDoc
-/// @func    __gmlc_sorted_ids(_ids)
-/// @desc    The ids without repeats, in ascending order.
-/// @param   {Array<Real>} _ids : The ids
-/// @returns {Array<Real>}
+/// @func    __gmlc_sorted_set(_values)
+/// @desc    The values of an array, each once, sorted.
+/// @param   {Array<Real>|Array<String>} _values : The values
+/// @returns {Array}
 #endregion
-function __gmlc_sorted_ids(_ids) {
-	var _out = [];
-	var _i = 0; repeat (array_length(_ids)) {
-		if (!array_contains(_out, _ids[_i])) array_push(_out, _ids[_i]);
-	_i++}
+function __gmlc_sorted_set(_values) {
+	var _out = array_unique(_values);
 	array_sort(_out, true);
 	return _out;
 }
 
 #region jsDoc
-/// @func    __gmlc_union_ids(_a, _b)
-/// @desc    The sorted union of two id sets.
-/// @param   {Array<Real>} _a : A set
-/// @param   {Array<Real>} _b : A set
-/// @returns {Array<Real>}
+/// @func    __gmlc_sorted_union(_a, _b)
+/// @desc    The sorted union of two sets of ids or names.
+/// @param   {Array<Real>|Array<String>} _a : A set
+/// @param   {Array<Real>|Array<String>} _b : A set
+/// @returns {Array}
 #endregion
-function __gmlc_union_ids(_a, _b) {
-	return __gmlc_sorted_ids(array_concat(_a, _b));
+function __gmlc_sorted_union(_a, _b) {
+	return __gmlc_sorted_set(array_concat(_a, _b));
 }
+#endregion
+#endregion
 
 #region jsDoc
-/// @func    __gmlc_union_names(_a, _b)
-/// @desc    The sorted union of two name sets.
-/// @param   {Array<String>} _a : A set
-/// @param   {Array<String>} _b : A set
-/// @returns {Array<String>}
+/// @func    __gmlc_temporary_names(_sources)
+/// @desc    The names of the form `__gmlc_t<digits>` anywhere in the text of a compile's files, as keys.
+/// @param   {Struct.GMLC_SourceTable} _sources : The files
+/// @returns {Struct}
 #endregion
-function __gmlc_union_names(_a, _b) {
-	var _out = [];
-	var _all = array_concat(_a, _b);
-	var _i = 0; repeat (array_length(_all)) {
-		if (!array_contains(_out, _all[_i])) array_push(_out, _all[_i]);
-	_i++}
-	array_sort(_out, true);
-	return _out;
+function __gmlc_temporary_names(_sources) {
+	var _names = {};
+	var _f = 0; repeat (array_length(_sources.files)) {
+		var _file = _sources.files[_f];
+		if (_file != undefined) {
+			var _text = _file.source;
+			var _length = string_length(_text);
+			var _at = string_pos("__gmlc_t", _text);
+			while (_at > 0) {
+				var _end = _at + 8;
+				while (_end <= _length) && (string_digits(string_char_at(_text, _end)) != "") _end++;
+				if (_end > _at + 8) _names[$ string_copy(_text, _at, _end - _at)] = true;
+				_at = string_pos_ext("__gmlc_t", _text, _end - 1);
+			}
+		}
+	_f++}
+	return _names;
 }
-#endregion
-#endregion

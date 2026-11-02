@@ -11,8 +11,15 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 	#region Init
 	should_optimize = false;
 	preserve_lines = false;
+	emit_for_vm = false; // the emitted GML is built for the VM, not YYC: the passes that run slower on the VM do not run
+	infer_project = false; // compile_project also infers the project's parameter and field types and reports its type diagnostics: for an IDE, slower, never needed by the emitted code
+	copy_on_write = undefined; // the project's Copy on Write game option for arrays; undefined when unknown, which counts as on
 	__batch_epsilon = false; // a file of the batch calls math_set_epsilon
+	__batch = __gmlc_type_batch_empty(); // what the files of the batch tell each other's types (gmlc_type_batch)
+	__batch_project = false; // the batch is a whole project
+	__batch_external = []; // function names a resource calls by name
 	test_mode = false;
+	collect_statistics = false; // the optimizer records what each pass did (`optimizer.statistics`) and runs the analysis passes that only report
 	debug = false;
 	__struct_literal_statics = {}; // in place of GameMaker's static struct shared by every struct literal
 	
@@ -588,6 +595,9 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 	__unit_file = 0;
 	
 	config_chain = ["Default"]; // nearest configuration first
+	build_scoped = false; // the output belongs to one build, not to source any configuration compiles later
+	config_unknown = false; // the configuration is not known: `*`
+	__scoped_macros = {}; // the names of the macros that have a `Config:` definition in the batch, as keys
 	__host_unit = undefined;
 	__host_files = []; // always the first files of a compile's source table
 	
@@ -819,6 +829,17 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 	static enable_test_mode = function(_bool) {
 		test_mode = _bool;
 		return self;
+	}
+	
+	#region jsDoc
+	/// @func    foldsConfigMacros()
+	/// @desc    Whether the macros that depend on the configuration may fold: the configuration is known and the
+	///          output belongs to one build. Otherwise their uses stay opaque.
+	/// @self    GMLC_Env
+	/// @returns {Bool}
+	#endregion
+	static foldsConfigMacros = function() {
+		return build_scoped && !config_unknown;
 	}
 	
 	#region jsDoc
@@ -1323,7 +1344,7 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 		if (is_string(_fallback) && _fallback != "") return _fallback;
 		return __new_anonymous_script_name();
 	}
-
+	
 	#region jsDoc
 	/// @func    __compile_step()
 	/// @desc    Runs the next stage of a compile job; whether stages remain.
@@ -1371,7 +1392,8 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 				lower.initialize(_job.ast, _sources);
 				_job.ast = lower.parseAll();
 				__gather(diagnostics, lower);
-				var _error = __resolveEnums([_job.ast], _sources, [diagnostics])[0];
+				var _errors = __resolveEnums([_job.ast], _sources, [diagnostics]);
+				var _error = _errors[0];
 				if (_error != undefined) throw _error;
 				if (__log_lower_results) __gmlc_json_save("lowered.json", _job.ast)
 				if (__log_step_times) show_debug_message($"Lower Time took : {(get_timer() - _step_time)/1000}ms")
@@ -1379,7 +1401,7 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 			break;}
 			case 5: {
 				if (_job.emit) {
-					if (should_optimize) _job.ast = __optimize(_job.ast, _sources, diagnostics);
+					if (should_optimize) _job.ast = __optimize(_job.ast, _sources, diagnostics, "gml");
 					_job.program = emitter.emit(_job.ast, _job.tokens);
 					return false;
 				}
@@ -1411,12 +1433,14 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 	}
 	
 	#region jsDoc
-	/// @func    __optimize(_ast, _sources, _diagnostics)
-	/// @desc    Constant folding runs in every compile, the other optimizations only when should_optimize is on.
+	/// @func    __optimize(_ast, _sources, _diagnostics, [_back_end])
+	/// @desc    Constant folding runs in every compile, the other optimizations only when should_optimize is on; the
+	///          target passes run for the back end the tree goes to.
 	/// @ignore
 	#endregion
-	static __optimize = function(_ast, _sources, _diagnostics) {
+	static __optimize = function(_ast, _sources, _diagnostics, _back_end = "runtime") {
 		optimizer.mode = should_optimize ? GMLC_OPTIMIZE.ALL : GMLC_OPTIMIZE.FOLD;
+		optimizer.back_end = _back_end;
 		optimizer.initialize(_ast, _sources);
 		_ast = optimizer.parseAll();
 		__gatherOrThrow(_diagnostics, optimizer, _sources);
@@ -1465,11 +1489,11 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 		return _error;
 	}
 	#endregion
-
+	
 	#endregion
-
+	
 	#region Batch & Project Compilation
-
+	
 	#region jsDoc
 	/// @func    __lower_unit(_program, _log_name, _ast, _batchGlobals, _diagnostics)
 	/// @desc    Resolves and lowers one parsed file of a batch.
@@ -1695,12 +1719,7 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 			}
 		_i++}
 		var _errors = __resolveEnums(_lowered, _table, _lists);
-		// math_set_epsilon anywhere in the batch keeps every file's comparisons of reals unfolded
-		var _epsilon = [];
-		_i = 0; repeat (array_length(_lowered)) {
-			optimizer.__epsilonCalls(_lowered[_i], _epsilon);
-		_i++}
-		__batch_epsilon = (array_length(_epsilon) > 0);
+		__prepareBatch(_lowered, _table, __batch_project, __batch_external, _lists);
 		_i = 0; repeat (array_length(_owners)) {
 			if (_errors[_i] != undefined) _owners[_i].error = __withDiagnostics(_errors[_i], _owners[_i].diagnostics);
 		_i++}
@@ -1727,9 +1746,58 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 		_i++}
 		array_copy(diagnostics, array_length(diagnostics), _unrouted, 0, array_length(_unrouted));
 		diagnostics = __gmlc_sort_diagnostics(diagnostics);
-		__batch_epsilon = false;
+		__endBatch();
 		return _result;
 	}
+	
+	#region jsDoc
+	/// @func    __prepareBatch(_lowered, _sources, _project, _external, _lists)
+	/// @desc    Works out what the files of a batch tell each other before any of them is optimized: whether any calls
+	///          math_set_epsilon (then no file folds comparisons of reals), the macros with a definition per
+	///          configuration, and the types of the batch's functions (gmlc_type_batch). In a whole project a JSDoc
+	///          type that does not take what the project passes and a return type its JSDoc does not take are
+	///          warnings, an operation that always throws an error; each goes into the list of its file.
+	/// @self    GMLC_Env
+	/// @param   {Array<Struct.ASTScript>} _lowered  : The lowered scripts
+	/// @param   {Struct.GMLC_SourceTable} _sources  : Their files
+	/// @param   {Bool}                    _project  : Whether the batch is a whole project
+	/// @param   {Array<String>}           _external : Function names resources call by name
+	/// @param   {Array<Array>}            _lists    : The diagnostics list of each lowered script
+	#endregion
+	static __prepareBatch = function(_lowered, _sources, _project, _external, _lists) {
+		var _epsilon = [];
+		var _i = 0; repeat (array_length(_lowered)) {
+			optimizer.__epsilonCalls(_lowered[_i], _epsilon);
+		_i++}
+		__batch_epsilon = (array_length(_epsilon) > 0);
+		__scoped_macros = optimizer.scopedMacros(_lowered);
+		__batch = gmlc_type_batch(_lowered, _sources, _project, _external);
+		if (!_project) return;
+		var _found = [];
+		var _mismatches = gmlc_type_jsdoc_mismatches(_lowered, _sources, __batch);
+		_i = 0; repeat (array_length(_mismatches)) {
+			array_push(_found, { code: "GMLC3018", span: _mismatches[_i].span, args: _mismatches[_i].args });
+		_i++}
+		var _typed = gmlc_type_diagnostics(_lowered, _sources, __batch);
+		array_copy(_found, array_length(_found), _typed, 0, array_length(_typed));
+		_i = 0; repeat (array_length(_found)) {
+			var _d = _found[_i];
+			var _k = 0; repeat (array_length(_lowered)) {
+				if (_lowered[_k].span.file == _d.span.file) array_push(_lists[_k], new GMLC_Diagnostic(_d.code, _d.span, _d.args));
+			_k++}
+		_i++}
+	};
+	
+	#region jsDoc
+	/// @func    __endBatch()
+	/// @desc    Forgets what __prepareBatch worked out.
+	/// @self    GMLC_Env
+	#endregion
+	static __endBatch = function() {
+		__batch_epsilon = false;
+		__scoped_macros = {};
+		__batch = __gmlc_type_batch_empty();
+	};
 	
 	#region jsDoc
 	/// @func    compile_batch()
@@ -1838,6 +1906,31 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 	}
 
 	#region jsDoc
+	/// @func    __resourceCallNames(_text, _into, _seen)
+	/// @desc    Adds every string of a resource's .yy text that is an identifier and no key of the format: the names the
+	///          resource may call a function by.
+	/// @self    GMLC_Env
+	/// @param   {String}        _text : The .yy text
+	/// @param   {Array<String>} _into : Receives the names not in it yet
+	/// @param   {Struct}        _seen : The names in `_into`, as keys
+	/// @ignore
+	#endregion
+	static __resourceCallNames = function(_text, _into, _seen) {
+		var _parts = string_split(_text, "\"");
+		var _i = 1; repeat (array_length(_parts) div 2) {
+			var _part = _parts[_i];
+			if (_part != "") && (!struct_exists(_seen, _part)) {
+				var _bare = string_replace_all(_part, "_", "");
+				var _next = (_i + 1 < array_length(_parts)) ? string_trim_start(_parts[_i + 1]) : "";
+				if (string_digits(string_char_at(_part, 1)) == "") && (string_lettersdigits(_bare) == _bare) && (string_char_at(_next, 1) != ":") {
+					_seen[$ _part] = true;
+					array_push(_into, _part);
+				}
+			}
+		_i += 2}
+	}
+	
+	#region jsDoc
 	/// @func    compile_project()
 	/// @desc    Compiles an entire GMS2 project from its .yyp file content. All script and
 	///          object events are compiled together with a shared symbol pool so macros defined
@@ -1854,6 +1947,8 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 		var _resources = _yyp.resources;
 		var _count     = array_length(_resources);
 		var _entries   = []; // {source, name} for every code file in the project
+		var _external  = []; // function names a resource calls by name (sequence moments, broadcasts, ...)
+		var _external_seen = {};
 
 		// Enumerate resources; collect code files and register non-code assets as constants
 		var _i = 0; repeat(_count) {
@@ -1886,10 +1981,16 @@ function GMLC_Env() : GMLC_EnvironmentClass() constructor {
 				_sym[$ _yy.name] = 0;
 				exposeConstants(_sym);
 			}
+			if (infer_project) && (_type != "GMScript") __resourceCallNames(_yy_str, _external, _external_seen);
 		_i++;}
 
-		var _project = (variable_struct_exists(_yyp, "name") && is_string(_yyp.name)) ? _yyp.name : undefined;
-		return __compile_units(_entries, _project);
+		var _project = (struct_exists(_yyp, "name") && is_string(_yyp.name)) ? _yyp.name : undefined;
+		__batch_project = infer_project;
+		__batch_external = _external;
+		var _result = __compile_units(_entries, _project);
+		__batch_project = false;
+		__batch_external = [];
+		return _result;
 	}
 
 	#endregion
@@ -1922,7 +2023,7 @@ function GMLC_CompileJob(_env, _source, _name, _kind, _compile, _emit) construct
 	ast = undefined;
 	program = undefined;
 	#endregion
-
+	
 	#region Public
 	#region jsDoc
 	/// @func    step()

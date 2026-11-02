@@ -12,7 +12,8 @@
 #endregion
 function GMLC_Diagnostic(_code, _span, _args = undefined, _messageId = _code) constructor {
 	static __noArgs = []; // shared; args are never changed
-	var _entry = __GmlcDataMessages()[$ _code];
+	var _messages = __GmlcDataMessages();
+	var _entry = _messages[$ _code];
 	code = _code;
 	feather_code = _entry.feather_code;
 	severity = _entry.severity;
@@ -46,7 +47,8 @@ function GMLC_Label(_span, _messageId, _args) constructor {
 function __gmlc_diagnostic_message(_diagnostic) {
 	// a label has no code of its own: its message id starts with its diagnostic's
 	var _code = string_copy(_diagnostic.message_id, 1, 8);
-	var _entry = __GmlcDataMessages()[$ _code];
+	var _messages = __GmlcDataMessages();
+	var _entry = _messages[$ _code];
 	var _template = _entry.template;
 	if (_diagnostic.message_id != _code) {
 		var _variant = string_delete(_diagnostic.message_id, 1, 9);

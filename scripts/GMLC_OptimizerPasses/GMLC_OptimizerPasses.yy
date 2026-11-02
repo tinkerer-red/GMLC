@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_OptimizerPasses",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_OptimizerPasses",
+  "parent":{
+    "name":"Optimizers",
+    "path":"folders/GMLC/Parsers/Optimizers.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

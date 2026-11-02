@@ -7,7 +7,7 @@
 function GMLC_Gen_2_Parser(_env) constructor {
 	#region Config
 	static maxDepth = 256; // deeper nesting is an error, so deep code cannot exhaust the stack
-
+	
 	// tightest highest; `=` in an expression is equality
 	static __binaryTiers = {
 		"??": 1, "||": 2, "&&": 3, "^^": 4,
@@ -21,7 +21,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 
 	#region Init
 	env = _env; // only its switched-on extensions are read
-
+	
 	program = undefined;
 	tokens = [];
 	token_count = 0;
@@ -54,17 +54,17 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		diagnostics = [];
 		pragma_index = 0;
 		__initializeExtensions();
-
+		
 		var _file = _program.file;
 		script = new ASTScript(new GMLC_Span(_file.file_id, 0, _file.byteLength()));
 		script.unit_kind = _kind;
-
+		
 		script.macros = _program.macros;
 		script.enums = _program.enums;
 		script.regions = _program.regions;
 		script.pragmas = _program.pragmas;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseAll()
 	/// @desc    Parses the whole file and rewrites the extensions' constructs to plain GML. Throws when there is an
@@ -86,7 +86,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		if (__gmlc_has_errors(diagnostics)) __gmlc_throw_diagnostics(diagnostics, program[$ "sources"] ?? new GMLC_SourceTable(program.file));
 		return script;
 	};
-
+	
 	#region Tokens
 	#region jsDoc
 	/// @func    nextToken()
@@ -98,7 +98,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		token_index++;
 		current_token = (token_index < token_count) ? tokens[token_index] : undefined;
 	};
-
+	
 	#region jsDoc
 	/// @func    peekToken()
 	/// @desc    The token after the current one, undefined at the end.
@@ -108,7 +108,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static peekToken = function() {
 		return (token_index + 1 < token_count) ? tokens[token_index + 1] : undefined;
 	};
-
+	
 	#region jsDoc
 	/// @func    isPunctuation(_value)
 	/// @desc    Whether the current token is the punctuation _value.
@@ -119,7 +119,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static isPunctuation = function(_value) {
 		return (current_token != undefined) && (current_token.type == __GMLC_TokenType_Punctuation) && (current_token.value == _value);
 	};
-
+	
 	#region jsDoc
 	/// @func    isOperator(_value)
 	/// @desc    Whether the current token is the operator _value.
@@ -130,7 +130,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static isOperator = function(_value) {
 		return (current_token != undefined) && (current_token.type == __GMLC_TokenType_Operator) && (current_token.value == _value);
 	};
-
+	
 	#region jsDoc
 	/// @func    isKeyword(_value)
 	/// @desc    Whether the current token is the keyword _value.
@@ -141,7 +141,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static isKeyword = function(_value) {
 		return (current_token != undefined) && (current_token.type == __GMLC_TokenType_Keyword) && (current_token.value == _value);
 	};
-
+	
 	#region jsDoc
 	/// @func    expectToken(_type, _value, [_opener])
 	/// @desc    Takes the token _value of _type, or stops with GMLC1002.
@@ -159,7 +159,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		nextToken();
 	};
-
+	
 	#region jsDoc
 	/// @func    optionalToken(_type, _value)
 	/// @desc    Takes the current token when it is _value of _type.
@@ -175,7 +175,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return false;
 	};
-
+	
 	#region jsDoc
 	/// @func    finish(_node, _first)
 	/// @desc    Gives a node the span from its first token to the last token consumed, and the origin of its tokens when
@@ -208,7 +208,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		if (++depth > maxDepth) __fail("GMLC1030");
 		var _first = current_token;
 		var _statement;
-
+		
 		var _pragmas = script.pragmas;
 		var _firstPragma = pragma_index;
 		var _site = __site(_first);
@@ -279,7 +279,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		depth--;
 		return _statement;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseBlock()
 	/// @desc    Parses `{ statements }` (`begin` and `end` arrive as braces).
@@ -298,7 +298,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		nextToken(); // Consume the }
 		return finish(new ASTBlock(undefined, _body), _first); // Return a block statement containing all parsed statements
 	};
-
+	
 	#region jsDoc
 	/// @func    parseBody()
 	/// @desc    Parses the body of a statement: a block, or one statement wrapped in a block with its span.
@@ -312,7 +312,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		// If no {, its a single statement block
 		return new ASTBlock(_statement.span, [_statement], _statement.origin);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseExpressionStatement()
 	/// @desc    Parses an assignment or an expression statement. As in GameMaker, an expression statement must be
@@ -347,7 +347,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return finish(new ASTExprStmt(undefined, _expression), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseVariableDeclaration()
 	/// @desc    Parses `var` or `static` and its declarators. As in GameMaker, a keyword right after `var` ends an
@@ -383,7 +383,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			|| (current_token == undefined) || (current_token.type != __GMLC_TokenType_Identifier));
 		return finish(_isStatic ? new ASTStaticDecl(undefined, _declarations) : new ASTVarDeclList(undefined, _declarations), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseGlobalvar()
 	/// @desc    Parses `globalvar a, b`.
@@ -401,7 +401,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		until (!optionalToken(__GMLC_TokenType_Punctuation, ","));
 		return finish(new ASTGlobalVarDecl(undefined, _names), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseFunctionDeclaration()
 	/// @desc    Parses `function name(...) {}` at the start of a statement: a FunctionDecl, or a ConstructorDecl with
@@ -421,7 +421,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return finish(new ASTFunctionDecl(undefined, _name, _rest.params, _rest.body), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseFunctionRest()
 	/// @desc    Parses what follows the name of a function: parameters, an optional `: Parent(args)`, an optional
@@ -442,7 +442,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _body = parseBlock();
 		return { params: _params, parent: _parent, is_constructor: _isConstructor, body: _body };
 	};
-
+	
 	#region jsDoc
 	/// @func    parseArgumentDefaultList()
 	/// @desc    Parses `(a, b = 1)`: the parameters of a function.
@@ -467,7 +467,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		expectToken(__GMLC_TokenType_Punctuation, ")", _open);  // Close parameters list
 		return _params;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseIfStatement()
 	/// @desc    Parses `if test [then] body [else body]`.
@@ -487,7 +487,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return finish(new ASTIf(undefined, _test, _consequent, _alternate), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseForStatement()
 	/// @desc    Parses `for (init; test; update) body`; each part of the header may be empty.
@@ -527,7 +527,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _body = parseBody();
 		return finish(new ASTFor(undefined, _init, _test, _update, _body), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseHeader(_keyword)
 	/// @desc    Parses the expression after `if`, `while`, `repeat` or `with`. GameMaker reads `if (c) ++x;` as
@@ -547,7 +547,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return _expression;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseWhileStatement()
 	/// @desc    Parses `while test body`.
@@ -562,7 +562,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _body = parseBody();
 		return finish(new ASTWhile(undefined, _test, _body), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseRepeatStatement()
 	/// @desc    Parses `repeat count body`.
@@ -577,7 +577,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _body = parseBody();
 		return finish(new ASTRepeat(undefined, _count, _body), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseWithStatement()
 	/// @desc    Parses `with target body`.
@@ -592,7 +592,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _body = parseBody();
 		return finish(new ASTWith(undefined, _target, _body), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseDoUntilStatement()
 	/// @desc    Parses `do body until test`.
@@ -609,7 +609,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _test = parseExpression();
 		return finish(new ASTDoUntil(undefined, _body, _test), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseSwitchStatement()
 	/// @desc    Parses `switch value { case x: ... default: ... }`; a second `default` gets warning GMLC1008.
@@ -649,7 +649,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		nextToken();
 		return finish(new ASTSwitch(undefined, _discriminant, _cases), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseTryCatchStatement()
 	/// @desc    Parses `try body [catch (name) body] [finally body]`.
@@ -677,7 +677,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return finish(new ASTTry(undefined, _block, _catchParam, _catchBody, _finallyBody), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseReturnStatement()
 	/// @desc    Parses `return [value]`. There is no value when a `;`, a closing bracket, the end of the file
@@ -699,7 +699,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		if (!_ends) _argument = parseExpression(); // Parse the return expression if any
 		return finish(new ASTReturn(undefined, _argument), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseThrowExpression()
 	/// @desc    Parses `throw value`.
@@ -712,7 +712,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _argument = parseExpression();
 		return finish(new ASTThrow(undefined, _argument), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseDeleteStatement()
 	/// @desc    Parses `delete target`.
@@ -740,7 +740,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		depth--;
 		return _expression;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseConditionalExpression([_left], [_first])
 	/// @desc    Parses binary operators and an optional `test ? a : b`. While the nullish-chaining
@@ -767,7 +767,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _alternate = parseExpression(); // Parse the false branch
 		return finish(new ASTConditional(undefined, _test, _consequent, _alternate), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseBinary(_minTier, [_left], [_first])
 	/// @desc    Parses binary operators of tier _minTier or tighter, left to right: each operator takes as its right
@@ -795,7 +795,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return _expression;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseUnaryExpression()
 	/// @desc    Parses the prefix operators `!`, `-`, `+`, `~`, `++` and `--`, then a postfix expression.
@@ -826,7 +826,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return parsePostfixExpression();
 	};
-
+	
 	#region jsDoc
 	/// @func    parsePostfixExpression()
 	/// @desc    Parses a primary and its calls, accessors and `.name` steps; a postfix `++` or `--` ends the chain.
@@ -886,7 +886,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return _expression;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseArgumentInput()
 	/// @desc    Parses `(a, , b)`: the arguments of a call. A missing argument before a comma is an Empty node; a
@@ -915,7 +915,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		nextToken(); // Ensure ) and consume it
 		return _args;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseBracketAccessor(_object, _first)
 	/// @desc    Parses one accessor after an expression: `[i]`, `[i, j]`, `[@ i]`, `[@ i, j]`, `[| i]`, `[? k]`,
@@ -951,7 +951,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return finish(new ASTIndex(undefined, _accessor, _object, _keys, undefined), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parsePrimaryExpression()
 	/// @desc    Parses a literal, a name, a parenthesised expression, an array or struct literal, a template string, a
@@ -1003,7 +1003,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		__fail("GMLC1001", current_token, [current_token.name]);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseTemplate()
 	/// @desc    Parses `$"text {expression} text"`: the unescaped text parts and the expressions between them.
@@ -1041,7 +1041,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return finish(new ASTTemplateString(undefined, _strings, _exprs), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseArrayCreation()
 	/// @desc    Parses `[a, b]`; an element left out stops with GMLC1017.
@@ -1062,7 +1062,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		nextToken();
 		return finish(new ASTArrayLiteral(undefined, _elements), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseStructCreation()
 	/// @desc    Parses `{key: value, "key": value, name}`. As in GameMaker, a name or a number alone is shorthand:
@@ -1123,7 +1123,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		nextToken();
 		return finish(new ASTStructLiteral(undefined, _entries), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseFunctionExpr()
 	/// @desc    Parses `function [name](...) [: Parent(...)] [constructor] {}` in an expression.
@@ -1141,7 +1141,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _rest = parseFunctionRest();
 		return finish(new ASTFunctionExpr(undefined, _name, _rest.is_constructor, _rest.params, _rest.parent, _rest.body), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    parseNewExpression()
 	/// @desc    Parses `new Callee(args)`: the callee is a name or a parenthesised expression with `.name` and index
@@ -1209,7 +1209,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		token_index = token_count;
 		current_token = undefined;
 	};
-
+	
 	#region jsDoc
 	/// @func    __initializeExtensions()
 	/// @desc    Resets the extensions' state and indexes the words and operators their hooks start at.
@@ -1236,7 +1236,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			_w++}
 		_x++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __extensionStatement()
 	/// @desc    The statement a switched-on extension parses at a name that starts one, else undefined.
@@ -1248,7 +1248,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _extension = __gmlc_struct_get(__statement_hooks, current_token.value);
 		return (_extension != undefined) ? _extension.parseStatement(self) : undefined;
 	};
-
+	
 	#region jsDoc
 	/// @func    __startTokens(_tokens)
 	/// @desc    Starts reading a token array from its first token.
@@ -1277,7 +1277,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		if (!isPunctuation(",")) __fail("GMLC1016", current_token, [_closer, current_token.name], undefined, _open);
 		nextToken();  // Skip the comma
 	};
-
+	
 	#region jsDoc
 	/// @func    __report(_code, [_at], [_args], [_messageId], [_opener])
 	/// @desc    Records a diagnostic at a token or span; undefined is the end of the file.
@@ -1315,7 +1315,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		__report(_code, _at, _args, _messageId, _opener);
 		__gmlc_throw_diagnostics(diagnostics, program[$ "sources"] ?? new GMLC_SourceTable(program.file));
 	};
-
+	
 	#region jsDoc
 	/// @func    __site(_t)
 	/// @desc    Where a token counts in a span: at its use when a macro or an enum reference made it.
@@ -1327,7 +1327,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		var _origin = _t[$ "origin"];
 		return (_origin != undefined) ? _origin.use_span : _t;
 	};
-
+	
 	#region jsDoc
 	/// @func    __targetPragmas(_from, _to, _statement)
 	/// @desc    Targets the pragmas _from to _to - 1, written before this statement, at its whole span.
@@ -1344,7 +1344,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			script.pragmas[_p].target = _target;
 		_p++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __targetFunctionPragmas()
 	/// @desc    Targets each `gml_pragma("@NoOp")` at the function it stands in; outside every function it targets
@@ -1362,7 +1362,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 			}
 		_i++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __functionAround(_node, _span)
 	/// @desc    The innermost function node under _node whose span holds _span, or undefined.
@@ -1407,7 +1407,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		__fail("GMLC1004", _target.span, undefined, _update ? "GMLC1004.update" : "GMLC1004");
 	};
-
+	
 	#region jsDoc
 	/// @func    __parseName(_what, [_thenIsName])
 	/// @desc    Takes a name. Keywords are not names in GameMaker, except `then` when _thenIsName.
@@ -1426,7 +1426,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		nextToken();
 		return finish(new ASTIdentifier(undefined, _first.name), _first);
 	};
-
+	
 	#region jsDoc
 	/// @func    __parseCaseBody()
 	/// @desc    The statements of a `case` or `default` up to the next `case`, `default` or `}`.
@@ -1440,7 +1440,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		return _body;
 	};
-
+	
 	#region jsDoc
 	/// @func    __parseMemberName()
 	/// @desc    Takes the name after `.`: an identifier, a keyword or an alias word.
@@ -1466,7 +1466,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 		}
 		__fail("GMLC1002", current_token, ["a name after .", current_token.name]);
 	};
-
+	
 	#region jsDoc
 	/// @func    __isAliasWord(_t)
 	/// @desc    Whether an operator token is an alias word (`and`, `div`, ...), which arrive as operators.
@@ -1477,7 +1477,7 @@ function GMLC_Gen_2_Parser(_env) constructor {
 	static __isAliasWord = function(_t) {
 		return __char_is_alphabetic(string_ord_at(_t.name, 1));
 	};
-
+	
 	#region jsDoc
 	/// @func    __literal(_t)
 	/// @desc    A Literal node of a number or string token.

@@ -367,11 +367,11 @@ function constructor_call_ext(_constructor, _args = undefined, _offset = 0, _len
 	
 	var _struct = {};
 	var _self = self;
-
+	
 	if (is_method(_constructor)) {
 		_self = method_get_self(_constructor);
 	}
-
+	
 	/* 
 		Method scopes can have `undefined`, so this needs to be treated as such.
 		We are also doing a double with(), to be respectful of `other` scope rules. 
@@ -453,7 +453,7 @@ function is_gmlc_program(_program) {
 function is_gmlc_function(_program) {
 	if (is_method(_program)) {
 		var _func = method_get_index(_program)
-		if (_func == __GMLCexecuteFunction)
+		if (_func == __GMLCexecuteFunction) || (_func == __GMLCexecuteFunctionDirect)
 		|| (_func == static_get(__gmlc_method)[$ "__executeMethodFunction"]) {
 			return true;
 		}
@@ -569,7 +569,7 @@ function throw_gmlc_error(_err, _line=undefined, _lineString=undefined, _column=
 	if (_script == undefined) {
 		_script = (_env != undefined) ? (struct_get(_env, "current_script_name") ?? "") : "";
 	}
-
+	
 	// GameMaker's fields; the stack trace holds the compiled frames when debug executors run, else this line
 	var _stack = __GMLCdebugStacktrace();
 	if (array_length(_stack) == 0) _stack = [string(_script) + " (line " + string(_line) + ")"];
@@ -706,7 +706,7 @@ function __gmlc_json_parse_loose(_text) {
 #endregion
 function __gmlc_file_read_text(_filename) {
 	if (!file_exists(_filename)) return undefined;
-
+	
 	var _buffer = buffer_load(_filename);
 	var _text = undefined;
 	if (buffer_get_size(_buffer) > 0) {

@@ -5,7 +5,7 @@
   "isDnD":false,
   "name":"GmlSwitchLabelTestSuite",
   "parent":{
-    "name":"Behaviour",
+    "name":"Behavior",
     "path":"folders/Tests/Behavior.yy",
   },
   "resourceType":"GMScript",

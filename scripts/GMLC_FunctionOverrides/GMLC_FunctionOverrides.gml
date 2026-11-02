@@ -52,6 +52,7 @@ function __gmlc_method(_struct, _func) {
 		}
 		
 		array_resize(_argArr, 0)
+		__GMLC_RESET_DEFAULT_SELF_AND_OTHER
 		return _return;
 	}
 	#region jsDoc
@@ -116,6 +117,7 @@ function __gmlc_method(_struct, _func) {
 		}
 		
 		array_resize(_argArr, 0)
+		__GMLC_RESET_DEFAULT_SELF_AND_OTHER
 		return _return;
 	}
 	

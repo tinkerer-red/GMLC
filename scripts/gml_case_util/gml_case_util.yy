@@ -5,7 +5,7 @@
   "isDnD":false,
   "name":"gml_case_util",
   "parent":{
-    "name":"Behaviour",
+    "name":"Behavior",
     "path":"folders/Tests/Behavior.yy",
   },
   "resourceType":"GMScript",

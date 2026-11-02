@@ -77,7 +77,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		modes = [];
 		pos = 0;
 		after_dot = false;
-
+		
 		var _text = _source;
 		if (string_byte_length(_text) >= 3) && (string_byte_at(_text, 1) == 0xEF) && (string_byte_at(_text, 2) == 0xBB) && (string_byte_at(_text, 3) == 0xBF) {
 			_text = string_delete(_text, 1, 1);
@@ -90,11 +90,11 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			_text = string_replace_all(string_join_ext("\n", _lines), "\r", "\n");
 		}
 		len = string_byte_length(_text);
-
+		
 		if (buf != undefined) buffer_delete(buf);
 		buf = buffer_create(len + 1, buffer_fixed, 1);
 		buffer_write(buf, buffer_text, _text);
-
+		
 		program = new __GMLC_ProgramTokens(tokens, new GMLC_SourceFile(file_id, file_name, _text));
 		return self;
 	};
@@ -235,11 +235,11 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 				return __pushOp(_start, "[");
 			}
 		}
-
+		
 		if (__char_is_digit(_b)) return lexNumber(_start);
 		if (__char_is_alphabetic(_b)) return lexWord(_start);
 		if (_b < 128) return lexOperator(_start);
-
+		
 		var _cp = __decode(pos);
 		if (_cp < 0) {
 			pos++;
@@ -250,7 +250,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		return __illegal("GMLC0002", _start, [__gmlc_buffer_text(buf, _start, pos)]);
 	};
 	#endregion
-
+	
 	#region Words
 	#region jsDoc
 	/// @func    lexWord(_start)
@@ -270,7 +270,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		}
 		pos = _p;
 		var _word = __gmlc_buffer_text(buf, _start, pos);
-
+		
 		if (!after_dot) {
 			var _meaning = __words[$ _word];
 			if (is_string(_meaning)) return __pushOp(_start, _meaning);
@@ -279,7 +279,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		return __push(__GMLC_TokenKind_Identifier, __GMLC_TokenType_Identifier, _start, _word);
 	};
 	#endregion
-
+	
 	#region Directives
 	#region jsDoc
 	/// @func    lexDirective(_start)
@@ -293,7 +293,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		var _i = pos + 1;
 		while (_i < len) && (__char_is_alphanumeric(__byte(_i))) _i++;
 		var _word = __gmlc_buffer_text(buf, pos + 1, _i);
-
+		
 		if (_word == "macro") {
 			pos = _i;
 			return __push(__GMLC_TokenKind_MacroDirective, __GMLC_TokenType_Keyword, _start, "#macro");
@@ -302,7 +302,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			while (pos < len) && (__byte(pos) != 10) pos++;
 			return __push(__GMLC_TokenKind_Region, __GMLC_TokenType_Region, _start, _word);
 		}
-
+		
 		var _h = pos + 1;
 		while (_h < len) && (__char_is_hex(__byte(_h))) _h++;
 		if (_h > pos + 1) && (_h == _i) {
@@ -317,7 +317,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			pos = _h;
 			return __illegal("GMLC0005", _start);
 		}
-
+		
 		if (_word != "") {
 			while (pos < len) && (__byte(pos) != 10) pos++;
 			return __illegal("GMLC0003", _start, [_word]);
@@ -326,7 +326,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		return __illegal("GMLC0002", _start, ["#"]);
 	};
 	#endregion
-
+	
 	#region Numbers
 	#region jsDoc
 	/// @func    lexNumber(_start)
@@ -367,7 +367,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			while (pos < len) && (__char_is_alphanumeric(__byte(pos)) || __byte(pos) == ord(".")) pos++;
 			return __illegal("GMLC0006", _start, [__gmlc_buffer_text(buf, _start, pos)]);
 		}
-
+		
 		if (_radix != 10) {
 			if ((_radix == 16) && (_count > 16)) || ((_radix == 2) && (_count > 64)) {
 				return __illegal("GMLC0007", _start);
@@ -378,7 +378,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 			}
 			return __push(__GMLC_TokenKind_Number, __GMLC_TokenType_Number, _start, _v, "int64");
 		}
-
+		
 		var _text = string_replace_all(__gmlc_buffer_text(buf, _start, pos), "_", "");
 		var _point = string_pos(".", _text);
 		var _whole = (_dot) ? string_copy(_text, 1, _point - 1) : _text;
@@ -403,7 +403,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		return __push(__GMLC_TokenKind_Number, __GMLC_TokenType_Number, _start, real(_whole), "real");
 	};
 	#endregion
-
+	
 	#region Strings
 	#region jsDoc
 	/// @func    lexString(_start)
@@ -422,7 +422,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		}
 		return __push(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, __utf8Value(_start, _unescaped));
 	};
-
+	
 	#region jsDoc
 	/// @func    lexVerbatim(_start)
 	/// @desc    Lexes `@"..."` or `@'...'`: no escapes, may span lines, ends at the first matching quote.
@@ -450,7 +450,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		}
 		return __push(__GMLC_TokenKind_String, __GMLC_TokenType_String, _start, __utf8Value(_start, _value));
 	};
-
+	
 	#region jsDoc
 	/// @func    scanTemplateText(_start, _isStart)
 	/// @desc    Lexes the text part of a template string, after `$"` (_isStart) or after the `}` that ends an
@@ -549,7 +549,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		if (!_ended) _out += __gmlc_buffer_text(buf, _run, pos);
 		return _out;
 	};
-
+	
 	#region jsDoc
 	/// @func    __readEscape(_start)
 	/// @desc    Reads the escape after a backslash and returns the text it stands for: `x` takes exactly 2 hex
@@ -619,7 +619,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		pos += _l;
 		return _piece;
 	};
-
+	
 	#region jsDoc
 	/// @func    __escapeChar(_code)
 	/// @desc    chr(_code), but code 0 gives "" and ends the string (GameMaker strings stop at the first NUL).
@@ -635,7 +635,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 		return chr(_code);
 	};
 	#endregion
-
+	
 	#region Operators
 	#region jsDoc
 	/// @func    lexOperator(_start)
@@ -648,7 +648,7 @@ function GMLC_Gen_0_Lexer(_env) constructor {
 	static lexOperator = function(_start) {
 		var _c = __byte(pos);
 		var _n = __byte(pos + 1);
-
+		
 		var _op = undefined;
 		if (_n == ord("=")) {
 			switch (_c) {

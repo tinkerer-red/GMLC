@@ -1,5 +1,4 @@
-// Generated from measured GameMaker behavior; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-06.
+// Expected results recorded from GameMaker 2024.14.4.268 (VM); do not edit by hand.
 function GmlStatementTestSuite() : TestSuite() constructor {
 
 	addFact("default before the cases of a switch [GameMaker]", function() {

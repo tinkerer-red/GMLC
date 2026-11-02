@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Opt_AlgebraicSimplify",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Opt_AlgebraicSimplify",
+  "parent":{
+    "name":"Program",
+    "path":"folders/GMLC/Parsers/Optimizers/Program.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

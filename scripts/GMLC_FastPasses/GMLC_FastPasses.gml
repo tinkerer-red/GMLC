@@ -830,6 +830,9 @@ function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _ex
 
 #region Scope Updatters (++ and --)
 
+// YYC leaks memory when the value of `++` or `--` on an accessor is returned directly, so each executor updates
+// first and returns in a second statement
+
 #region Self
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertySelfPlusPlusPrefix()
@@ -837,7 +840,8 @@ function __GMLCcompileStructDotAccSet(_rootNode, _parentNode, _target, _key, _ex
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertySelfPlusPlusPrefix() {
-    return ++global.gmlc_self_instance[$ key];
+    ++global.gmlc_self_instance[$ key];
+    return global.gmlc_self_instance[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertySelfPlusPlusPostfix()
@@ -845,7 +849,9 @@ function __GMLCexecuteUpdatePropertySelfPlusPlusPrefix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertySelfPlusPlusPostfix() {
-	return global.gmlc_self_instance[$ key]++;
+	var _old = global.gmlc_self_instance[$ key];
+	global.gmlc_self_instance[$ key]++;
+	return _old;
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertySelfMinusMinusPrefix()
@@ -853,7 +859,8 @@ function __GMLCexecuteUpdatePropertySelfPlusPlusPostfix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertySelfMinusMinusPrefix() {
-    return --global.gmlc_self_instance[$ key];
+    --global.gmlc_self_instance[$ key];
+    return global.gmlc_self_instance[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertySelfMinusMinusPostfix()
@@ -861,7 +868,9 @@ function __GMLCexecuteUpdatePropertySelfMinusMinusPrefix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertySelfMinusMinusPostfix() {
-    return global.gmlc_self_instance[$ key]--;
+    var _old = global.gmlc_self_instance[$ key];
+    global.gmlc_self_instance[$ key]--;
+    return _old;
 }
 #endregion
 #region Global
@@ -871,7 +880,8 @@ function __GMLCexecuteUpdatePropertySelfMinusMinusPostfix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyGlobalPlusPlusPrefix() {
-    return ++root_node.globals[$ key];
+    ++root_node.globals[$ key];
+    return root_node.globals[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyGlobalPlusPlusPostfix()
@@ -879,7 +889,9 @@ function __GMLCexecuteUpdatePropertyGlobalPlusPlusPrefix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyGlobalPlusPlusPostfix() {
-    return root_node.globals[$ key]++;
+    var _old = root_node.globals[$ key];
+    root_node.globals[$ key]++;
+    return _old;
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyGlobalMinusMinusPrefix()
@@ -887,7 +899,8 @@ function __GMLCexecuteUpdatePropertyGlobalPlusPlusPostfix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyGlobalMinusMinusPrefix() {
-    return --root_node.globals[$ key];
+    --root_node.globals[$ key];
+    return root_node.globals[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix()
@@ -895,7 +908,9 @@ function __GMLCexecuteUpdatePropertyGlobalMinusMinusPrefix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix() {
-    return root_node.globals[$ key]--;
+    var _old = root_node.globals[$ key];
+    root_node.globals[$ key]--;
+    return _old;
 }
 #endregion
 #region Local
@@ -906,7 +921,8 @@ function __GMLCexecuteUpdatePropertyGlobalMinusMinusPostfix() {
 #endregion
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix() {
 	if (!locals_written_to[local_index]) throw_gmlc_error($"local variable {key}({local_index}) not set before reading it.")
-    return ++locals[local_index];
+    ++locals[local_index];
+    return locals[local_index];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix()
@@ -915,7 +931,9 @@ function __GMLCexecuteUpdatePropertyLocalPlusPlusPrefix() {
 #endregion
 function __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix() {
 	if (!locals_written_to[local_index]) throw_gmlc_error($"local variable {key}({local_index}) not set before reading it.")
-    return locals[local_index]++;
+    var _old = locals[local_index];
+    locals[local_index]++;
+    return _old;
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix()
@@ -924,7 +942,8 @@ function __GMLCexecuteUpdatePropertyLocalPlusPlusPostfix() {
 #endregion
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix() {
 	if (!locals_written_to[local_index]) throw_gmlc_error($"local variable {key}({local_index}) not set before reading it.")
-    return --locals[local_index];
+    --locals[local_index];
+    return locals[local_index];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix()
@@ -933,7 +952,9 @@ function __GMLCexecuteUpdatePropertyLocalMinusMinusPrefix() {
 #endregion
 function __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix() {
 	if (!locals_written_to[local_index]) throw_gmlc_error($"local variable {key}({local_index}) not set before reading it.")
-    return locals[local_index]--;
+    var _old = locals[local_index];
+    locals[local_index]--;
+    return _old;
 }
 #endregion
 #region Static
@@ -943,7 +964,8 @@ function __GMLCexecuteUpdatePropertyLocalMinusMinusPostfix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyStaticPlusPlusPrefix() {
-    return ++parent_node.statics[$ key];
+    ++parent_node.statics[$ key];
+    return parent_node.statics[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyStaticPlusPlusPostfix()
@@ -951,7 +973,9 @@ function __GMLCexecuteUpdatePropertyStaticPlusPlusPrefix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyStaticPlusPlusPostfix() {
-    return parent_node.statics[$ key]++;
+    var _old = parent_node.statics[$ key];
+    parent_node.statics[$ key]++;
+    return _old;
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyStaticMinusMinusPrefix()
@@ -959,7 +983,8 @@ function __GMLCexecuteUpdatePropertyStaticPlusPlusPostfix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyStaticMinusMinusPrefix() {
-    return --parent_node.statics[$ key];
+    --parent_node.statics[$ key];
+    return parent_node.statics[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdatePropertyStaticMinusMinusPostfix()
@@ -967,7 +992,9 @@ function __GMLCexecuteUpdatePropertyStaticMinusMinusPrefix() {
 /// @returns {Any}
 #endregion
 function __GMLCexecuteUpdatePropertyStaticMinusMinusPostfix() {
-    return parent_node.statics[$ key]--;
+    var _old = parent_node.statics[$ key];
+    parent_node.statics[$ key]--;
+    return _old;
 }
 #endregion
 #region Unique
@@ -1160,7 +1187,8 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPrefix() {
 	}
 	
 	__GMLC_FIND_OWNER
-	return ++_owner[$ key];
+	++_owner[$ key];
+	return _owner[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdateStructDotAccPlusPlusPostfix()
@@ -1177,7 +1205,9 @@ function __GMLCexecuteUpdateStructDotAccPlusPlusPostfix() {
 	}
 	
 	__GMLC_FIND_OWNER
-	return _owner[$ key]++;
+	var _old = _owner[$ key];
+	_owner[$ key]++;
+	return _old;
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdateStructDotAccMinusMinusPrefix()
@@ -1194,7 +1224,8 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPrefix() {
 	}
 	
 	__GMLC_FIND_OWNER
-	return --_owner[$ key];
+	--_owner[$ key];
+	return _owner[$ key];
 }
 #region jsDoc
 /// @func    __GMLCexecuteUpdateStructDotAccMinusMinusPostfix()
@@ -1211,7 +1242,9 @@ function __GMLCexecuteUpdateStructDotAccMinusMinusPostfix() {
 	}
 	
 	__GMLC_FIND_OWNER
-	return _owner[$ key]--;
+	var _old = _owner[$ key];
+	_owner[$ key]--;
+	return _old;
 }
 #region jsDoc
 /// @func    __GMLCcompileUpdateStructDotAcc(_rootNode, _parentNode, _node)

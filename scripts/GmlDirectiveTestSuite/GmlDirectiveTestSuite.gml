@@ -1,5 +1,4 @@
-// Generated from measured GameMaker behavior; do not edit by hand.
-// Expected values are what GameMaker 2024.14.4.268 (VM) did on 2026-10-05.
+// Expected results recorded from GameMaker 2024.14.4.268 (VM); do not edit by hand.
 function GmlDirectiveTestSuite() : TestSuite() constructor {
 
 	addFact("#region title containing # [GameMaker]", function() {
@@ -127,7 +126,7 @@ return a[0];'); }), "error", "GMLC accepts code GameMaker refuses");
 	});
 
 	addFact("[ #ff0000 ] (space after [) [GameMaker]", function() {
-		assert_equals(case_run(case_directives_array_colour_space), "number:255", "GameMaker no longer gives the measured result");
+		assert_equals(case_run(case_directives_array_color_space), "number:255", "GameMaker no longer gives the measured result");
 	});
 	addFact("[ #ff0000 ] (space after [) [GMLC]", function() {
 		assert_equals(case_run(function() { return compile_and_execute(@'var a = [ #ff0000 ];
@@ -385,7 +384,7 @@ ds_grid_destroy(g);
 return _r;
 }
 
-function case_directives_array_colour_space() {
+function case_directives_array_color_space() {
 var a = [ #ff0000 ];
 return a[0];
 }

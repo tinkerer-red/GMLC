@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Opt_FloorDivToDiv",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Opt_FloorDivToDiv",
+  "parent":{
+    "name":"Target",
+    "path":"folders/GMLC/Parsers/Optimizers/Target.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

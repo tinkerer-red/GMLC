@@ -83,7 +83,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		}
 		return _unit;
 	};
-
+	
 	#region jsDoc
 	/// @func    hostMacro(_name, _program)
 	/// @desc    A macro the host exposes, in configuration Default; its value may span lines.
@@ -111,7 +111,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		_macro.extension = undefined;
 		return _macro;
 	};
-
+	
 	#region jsDoc
 	/// @func    merge(_units, _configChain)
 	/// @desc    Builds the batch's macros and enums. For each macro name the definition whose configuration comes
@@ -124,7 +124,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	static merge = function(_units, _configChain) {
 		diagnostics = [];
 		var _batch = { keys: {}, active: {}, names: [], cyclic: {}, enums: {}, enum_names: [] };
-
+		
 		var _u = 0; repeat (array_length(_units)) {
 			var _macros = _units[_u].macros;
 			var _m = 0; repeat (array_length(_macros)) {
@@ -150,7 +150,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 			_e++}
 		_u++}
-
+		
 		var _u = 0; repeat (array_length(_units)) {
 			var _macros = _units[_u].macros;
 			var _m = 0; repeat (array_length(_macros)) {
@@ -167,12 +167,12 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 			_m++}
 		_u++}
-
+		
 		__findCycles(_batch);
 		if (__gmlc_has_errors(diagnostics)) __gmlc_throw_diagnostics(diagnostics, sources);
 		return _batch;
 	};
-
+	
 	#region jsDoc
 	/// @func    expand(_unit, _batch)
 	/// @desc    Replaces every macro use with copies of its body; `nameof(...)` becomes a string when the environment
@@ -223,11 +223,11 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			array_resize(_withMacros, maxExpandedTokens + 1);
 			__report("GMLC0306", _withMacros[maxExpandedTokens]);
 		}
-
+		
 		var _program = _unit.program;
 		__checkEnumRefs(_batch, _withMacros);
 		_program.tokens = _withMacros;
-
+		
 		var _e = 0; repeat (array_length(_unit.enums)) {
 			var _enum = _unit.enums[_e];
 			var _m = 0; repeat (array_length(_enum.members)) {
@@ -243,7 +243,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		return _program;
 	};
 	#endregion
-
+	
 	#region Private
 	#region Collect
 	#region jsDoc
@@ -276,7 +276,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			__report("GMLC0302", _nameToken, [_nameToken.name]);
 		}
 		_i++;
-
+		
 		var _params = [];
 		var _owner = undefined;
 		var _extensions = env.extensions;
@@ -292,7 +292,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 				}
 			}
 		_x++}
-
+		
 		var _body = [];
 		var _textStart = (_i < _n) && (_tokens[_i].kind != __GMLC_TokenKind_Newline) ? _tokens[_i].start : _nameToken[$ "end"];
 		var _textEnd = _nameToken[$ "end"];
@@ -334,7 +334,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		array_push(_unit.macros, _macro);
 		return _i;
 	};
-
+	
 	#region jsDoc
 	/// @func    __startsEnum(_tokens, _i)
 	/// @desc    Whether the `enum` keyword at _i is followed by a name and `{`.
@@ -349,7 +349,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		var _k = __nextSignificant(_tokens, _j + 1);
 		return (_k >= 0) && (_tokens[_k].kind == __GMLC_TokenKind_Op) && (_tokens[_k].value == "{");
 	};
-
+	
 	#region jsDoc
 	/// @func    __collectEnum(_tokens, _i, _unit)
 	/// @desc    Reads `enum Name { member [= value], ... }` and the semicolons after it.
@@ -368,7 +368,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		_enum.member_index = {};
 		var _enumStart = _tokens[_i].start;
 		_i = __nextSignificant(_tokens, _j + 1) + 1;
-
+		
 		while (true) {
 			_i = __nextSignificant(_tokens, _i);
 			if (_i < 0) {
@@ -377,13 +377,13 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			}
 			var _t = _tokens[_i];
 			if (_t.kind == __GMLC_TokenKind_Op) && (_t.value == "}") break;
-
+			
 			//apparently it can be any stream of text! how fun! so keywords, unique identifiers, doesnt matter! ffs...
 			var _member = _t;
 			var _good = __isWord(_member);
 			if (!_good) __report("GMLC0310", _member, [_member.name]);
 			_i++;
-
+			
 			// Check for = to see if a value is assigned
 			var _init = undefined;
 			var _k = __nextSignificant(_tokens, _i);
@@ -428,7 +428,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		}
 		_enum.span = new GMLC_Span(_nameToken.file, _enumStart, _tokens[_i][$ "end"]);
 		_i++;
-
+		
 		//frequently people will accidently include multiple ; at the end of their line, just ignore this.
 		while (true) {
 			var _k = __nextSignificant(_tokens, _i);
@@ -438,7 +438,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		array_push(_unit.enums, _enum);
 		return _i;
 	};
-
+	
 	#region jsDoc
 	/// @func    __isNoOpPragma(_text)
 	/// @desc    Whether a comment is the pragma `// @NoOp`: `//` or `///`, one space, an optional `@`, then `NoOp` or
@@ -462,7 +462,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		if (_word != "NoOp") && (_word != "noop") return false;
 		return (_p + 4 > string_length(_text)) || !__char_is_alphanumeric(ord(string_char_at(_text, _p + 4)));
 	};
-
+	
 	#region jsDoc
 	/// @func    __noOpPragmaCall(_tokens, _i, _last)
 	/// @desc    The index after the statement `gml_pragma("@NoOp");` at _i (the string `@NoOp`, `NoOp`, `@noop` or
@@ -500,7 +500,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		return _close + 1;
 	};
 	#endregion
-
+	
 	#region Merge
 	#region jsDoc
 	/// @func    __findCycles(_batch)
@@ -517,7 +517,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			if ((__gmlc_struct_get(_state, _names[_i]) ?? 0) == 0) __visitMacro(_batch, _names[_i], _state, _path);
 		_i++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __visitMacro(_batch, _name, _state, _path)
 	/// @desc    Walks the macros a macro's value uses, depth first; reaching a macro on the current path reports
@@ -554,7 +554,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		_state[$ _name] = 2;
 	};
 	#endregion
-
+	
 	#region Expand
 	#region jsDoc
 	/// @func    __isExpandable(_batch, _name)
@@ -567,7 +567,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	static __isExpandable = function(_batch, _name) {
 		return __gmlc_struct_has(_batch.active, _name) && !__gmlc_struct_has(_batch.cyclic, _name);
 	};
-
+	
 	#region jsDoc
 	/// @func    __emitTokens(_batch, _use, _def, _tokens, _depth, _out)
 	/// @desc    Appends copies of a macro use's tokens with the macro's origin, expanding nested uses up to
@@ -607,7 +607,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			_b++;
 		}
 	};
-
+	
 	#region jsDoc
 	/// @func    __checkEnumRefs(_batch, _tokens)
 	/// @desc    Reports every `Enum.Member` whose enum has no such member. The references stay as written for lowering.
@@ -629,7 +629,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 			}
 		_i++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __expandValue(_batch, _member)
 	/// @desc    An enum member's value with its macros expanded.
@@ -654,7 +654,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		__checkEnumRefs(_batch, _expanded);
 		return _expanded;
 	};
-
+	
 	#region jsDoc
 	/// @func    __nameof(_stream, _i, _out)
 	/// @desc    `nameof(E.m)` becomes the string "E.m"; nothing inside is expanded.
@@ -690,7 +690,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		return _j + 1;
 	};
 	#endregion
-
+	
 	#region Tokens and diagnostics
 	#region jsDoc
 	/// @func    __span(_t)
@@ -702,7 +702,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 	static __span = function(_t) {
 		return new GMLC_Span(_t.file, _t.start, _t[$ "end"]);
 	};
-
+	
 	#region jsDoc
 	/// @func    __nextSignificant(_tokens, _i)
 	/// @desc    The index of the first token at or after _i that is not a line break or a comment, -1 for none.
@@ -720,7 +720,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		}
 		return -1;
 	};
-
+	
 	#region jsDoc
 	/// @func    __isWord(_t)
 	/// @desc    Whether a token is a word: an identifier, a keyword or an alias operator such as `and`.
@@ -739,7 +739,7 @@ function GMLC_Gen_1_PreProcessor(_env) constructor {
 		}
 		return false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __report(_code, _at, [_args], [_messageId])
 	/// @desc    Records a diagnostic at a token.

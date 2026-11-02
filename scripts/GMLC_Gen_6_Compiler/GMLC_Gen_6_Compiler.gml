@@ -228,25 +228,31 @@ function __GMLCunwindTo(_depth) {
 #region jsDoc
 /// @func    executeProgram(_program)
 /// @desc    Runs a compiled program from outside any program, with the caller as self and other, and returns its result.
-///          An error leaves no compiled function or scope behind before it is thrown on.
+///          Self and other are put back when it ends, so a compiled function called later from outside runs on its
+///          caller. An error leaves no compiled function or scope behind before it is thrown on.
 /// @param   {Function} _program : A compiled program
 /// @returns {Any}
 #endregion
 function executeProgram(_program) {
 	//this function should never be called inside a prgroam, for that use `__executeProgram`
 	var _depth = array_length(global.__gmlc_active_functions);
+	var _prevSelf = global.gmlc_self_instance;
+	var _prevOther = global.gmlc_other_instance;
 	global.gmlc_self_instance = self;
     global.gmlc_other_instance = other;
 	
 	try {
-		return _program();
+		var _return = _program();
 	}
 	catch (_e) {
 		__GMLCunwindTo(_depth);
-		global.gmlc_self_instance = undefined;
-		global.gmlc_other_instance = undefined;
+		global.gmlc_self_instance = _prevSelf;
+		global.gmlc_other_instance = _prevOther;
 		throw _e;
 	}
+	global.gmlc_self_instance = _prevSelf;
+	global.gmlc_other_instance = _prevOther;
+	return _return;
 }
 #endregion
 
@@ -535,12 +541,72 @@ function __GMLCexecuteFunctionWithArray(_args) {
 	array_copy(arguments, 0, _args, 0, _count);
 	arguments_default();
 	__GMLC_INIT_STATICS
-
+	
 	program();
 	var _return = return_value;
-
+	
 	__GMLC_POST_FUNC
-
+	
+	return _return;
+}
+#region jsDoc
+/// @func    __GMLCexecuteFunctionDirect()
+/// @desc    Calls a compiled function whose parameters take the call's values directly: a function that reads its
+///          parameters only by name (no argument, argument_count or argumentN) and gives none a default
+///          (`direct_parameters`). Its arguments array stays empty, so a recursive call saves and puts back none.
+/// @returns {Any}
+#endregion
+function __GMLCexecuteFunctionDirect() {
+	__GMLC_DEFAULT_SELF_AND_OTHER
+	array_push(global.__gmlc_active_functions, self);
+	var _arg_count = 0;
+	if (recursion_count++) {
+		__GMLC_STASH_LOCALS
+		__GMLC_STASH_ARGUMENTS
+	}
+	previous_argument_count = 0;
+	var _slots = parameter_slots;
+	var _i = 0; repeat (arguments_length) {
+		locals[_slots[_i]] = (_i < argument_count) ? argument[_i] : undefined;
+		locals_written_to[_slots[_i]] = true;
+	_i++}
+	__GMLC_INIT_STATICS
+	
+	program();
+	var _return = return_value;
+	
+	__GMLC_POST_FUNC
+	
+	return _return;
+}
+#region jsDoc
+/// @func    __GMLCexecuteFunctionWithArrayDirect(_args)
+/// @desc    Calls a compiled function whose parameters take the call's values directly, with the values in an array.
+/// @param   {Array} _args : The call's arguments
+/// @returns {Any}
+#endregion
+function __GMLCexecuteFunctionWithArrayDirect(_args) {
+	__GMLC_DEFAULT_SELF_AND_OTHER
+	array_push(global.__gmlc_active_functions, self);
+	var _arg_count = 0;
+	if (recursion_count++) {
+		__GMLC_STASH_LOCALS
+		__GMLC_STASH_ARGUMENTS
+	}
+	previous_argument_count = 0;
+	var _count = array_length(_args);
+	var _slots = parameter_slots;
+	var _i = 0; repeat (arguments_length) {
+		locals[_slots[_i]] = (_i < _count) ? _args[_i] : undefined;
+		locals_written_to[_slots[_i]] = true;
+	_i++}
+	__GMLC_INIT_STATICS
+	
+	program();
+	var _return = return_value;
+	
+	__GMLC_POST_FUNC
+	
 	return _return;
 }
 #region jsDoc
@@ -599,9 +665,13 @@ function __GMLCcompileFunction(_rootNode, _parentNode, _node) {
 	
 	_output.return_value = undefined;
 	_output.flow_mask = FLOW_MASK.EMPTY;
-	_output.invoke_with_array = __vanilla_method(_output, __GMLCexecuteFunctionWithArray);
 	
-	return __vanilla_method(_output, __GMLCexecuteFunction)
+	var _facts = (_output.is_script_body) ? undefined : _rootNode.functions[_node.fn_id][$ "facts"];
+	var _direct = __GMLCdirectParameters(_output, _params, _facts);
+	_output.direct_parameters = _direct;
+	_output.invoke_with_array = __vanilla_method(_output, _direct ? __GMLCexecuteFunctionWithArrayDirect : __GMLCexecuteFunctionWithArray);
+	
+	return __vanilla_method(_output, _direct ? __GMLCexecuteFunctionDirect : __GMLCexecuteFunction)
 }
 
 #region jsDoc
@@ -770,7 +840,74 @@ function __GMLCcompileConstructor(_rootNode, _parentNode, _node) {
 		_i--}
 	}
 	
+	// `new` runs a constructor straight on the new struct when it has no parent and its parameters take the values directly
+	var _facts = (_node[$ "fn_id"] != undefined) ? _rootNode.functions[_node.fn_id][$ "facts"] : undefined;
+	var _direct = __GMLCdirectParameters(_output, _node.params, _facts) && (!_output.has_parent_constructor);
+	_output.new_direct = _direct ? __vanilla_method(_output, __GMLCexecuteConstructorNewDirect) : undefined;
+	
 	return __vanilla_method(_output, __GMLCexecuteConstructor)
+}
+
+#region jsDoc
+/// @func    __GMLCdirectParameters(_output, _params, _facts)
+/// @desc    Sets the local slot of each parameter (`parameter_slots`) and returns whether the parameters may take a
+///          call's values directly: nothing reads the arguments array or count and no parameter has a default.
+/// @param   {Struct}        _output : The compiled function
+/// @param   {Array<Struct>} _params : Its parameters
+/// @param   {Struct}        _facts  : What the function reads of its arguments, or undefined when it is not known
+/// @returns {Bool}
+#endregion
+function __GMLCdirectParameters(_output, _params, _facts) {
+	var _direct = (_facts != undefined) && (!_facts.uses_argument_array) && (!_facts.uses_argument_count) && (_facts.max_argument_index < 0);
+	var _slots = [];
+	var _list = method_get_self(_output.arguments_default).statements;
+	var _i = 0; repeat (array_length(_params)) {
+		if (_params[_i][$ "default"] != undefined) || (_list[_i].local_index == undefined) _direct = false;
+		array_push(_slots, _list[_i].local_index);
+	_i++}
+	_output.parameter_slots = _slots;
+	return _direct;
+}
+
+#region jsDoc
+/// @func    __GMLCexecuteConstructorNewDirect(_struct, _args)
+/// @desc    Runs a compiled constructor without a parent on the struct a `new` made, its parameters taking the values
+///          directly.
+/// @param   {Struct} _struct : The new struct
+/// @param   {Array}  _args   : The call's arguments
+#endregion
+function __GMLCexecuteConstructorNewDirect(_struct, _args) {
+	var _entered_on_this_function = false;
+	if (global.gmlc_other_instance == undefined) && (global.gmlc_self_instance == undefined) {
+		_entered_on_this_function = true;
+		global.gmlc_other_instance = (self[$ "root_node"] ? root_node[$ "globals"] : _struct) ?? _struct;
+		global.gmlc_self_instance = _struct;
+	}
+	var _pre_other = global.gmlc_other_instance;
+	var _pre_self = global.gmlc_self_instance;
+	global.gmlc_other_instance = _pre_self ?? root_node.globals;
+	global.gmlc_self_instance = _struct;
+	
+	array_push(global.__gmlc_active_functions, self);
+	var _arg_count = 0;
+	if (recursion_count++) {
+		__GMLC_STASH_LOCALS
+		__GMLC_STASH_ARGUMENTS
+	}
+	previous_argument_count = 0;
+	var _count = array_length(_args);
+	var _slots = parameter_slots;
+	var _i = 0; repeat (arguments_length) {
+		locals[_slots[_i]] = (_i < _count) ? _args[_i] : undefined;
+		locals_written_to[_slots[_i]] = true;
+	_i++}
+	__GMLC_INIT_STATICS
+	static_set(_struct, statics);
+	
+	program();
+	
+	__GMLC_RESET_SELF_AND_OTHER
+	__GMLC_POST_FUNC
 }
 
 #region jsDoc
@@ -1482,6 +1619,32 @@ function __GMLCexecuteSwitch() {
 	parent_node.flow_mask &= ~FLOW_MASK.BREAK;
 }
 #region jsDoc
+/// @func    __GMLCexecuteSwitchConstant()
+/// @desc    Runs a switch whose labels are all literals, compared as values.
+#endregion
+function __GMLCexecuteSwitchConstant() {
+    var _value = expression();
+	
+	var _start = default_index;
+	var _i=0; repeat(label_count) {
+		if (label_values[_i] == _value) {
+			_start = label_cases[_i];
+			break;
+		}
+	_i++}
+	if (_start < 0) return undefined;
+	
+	var _i=_start; repeat(size - _start) {
+		cases[_i].block_statement()
+		if (parent_node.flow_mask) {
+			if (parent_node.flow_mask & FLOW_MASK.RETURN) return undefined;
+			break;
+		}
+	_i++}
+	
+	parent_node.flow_mask &= ~FLOW_MASK.BREAK;
+}
+#region jsDoc
 /// @func    __GMLCcompileSwitch(_rootNode, _parentNode, _node)
 /// @desc    Compiles a switch: its value, its cases in source order and where `default` is.
 /// @param   {Struct} _rootNode   : The program node
@@ -1517,8 +1680,20 @@ function __GMLCcompileSwitch(_rootNode, _parentNode, _node) {
     
     _output.size = array_length(_output.cases);
     _output.label_count = array_length(_output.labels);
+	
+	// literal labels are read once here instead of called on every run
+	var _constant = true;
+	_output.label_values = array_create(_output.label_count);
+	var _i=0; repeat(_output.label_count) {
+		var _label = _output.labels[_i];
+		if (method_get_index(_label) != __GMLCexecuteLiteralExpression) {
+			_constant = false;
+			break;
+		}
+		_output.label_values[_i] = method_get_self(_label).value;
+	_i++}
     
-    return __vanilla_method(_output, __GMLCexecuteSwitch);
+    return __vanilla_method(_output, _constant ? __GMLCexecuteSwitchConstant : __GMLCexecuteSwitch);
 }
 #region jsDoc
 /// @func    __GMLCcompileCase(_rootNode, _parentNode, _node)
@@ -1719,11 +1894,16 @@ function __GMLCexecuteNewExpression() {
 			_callable = __GMLCcallableFromIndex(root_node, _func);
 		}
 		last_is_gmlc = is_gmlc_constructor(_callable);
+		last_new_direct = undefined;
+		if (last_is_gmlc) && (method_get_index(_callable) == __GMLCexecuteConstructor) {
+			var _constructor = method_get_self(_callable);
+			last_new_direct = _constructor[$ "new_direct"];
+		}
 		last_callable = _callable;
 		last_function = _func;
 	}
 	_func = last_callable;
-
+	
 	//mostly just used in recursion code
 	var _arg_count = max(argument_count, arguments_length)
 	
@@ -1743,7 +1923,11 @@ function __GMLCexecuteNewExpression() {
 	
 	// GMLC constructors need the program data as `other` (constructor_call_ext); native constructors get a real `new`
 	var _struct;
-	if (last_is_gmlc) {
+	if (last_new_direct != undefined) {
+		_struct = {};
+		last_new_direct(_struct, arguments);
+	}
+	else if (last_is_gmlc) {
 		_struct = {};
 		var _args = arguments;
 		with (method_get_self(_func) ?? self) with (_struct) {
@@ -1781,6 +1965,7 @@ function __GMLCcompileNewExpression(_rootNode, _parentNode, _node) {
 	_output.last_function = undefined;
 	_output.last_callable = undefined;
 	_output.last_is_gmlc = false;
+	_output.last_new_direct = undefined;
 	
 	var _argArr = _node.args;
 	_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _node.callee);
@@ -2044,7 +2229,7 @@ function __GMLCexecuteCallMethodExpression() {
 			_return = method_call(_callable, _args);
 		}
 	}
-
+	
 	// Restore scope
 	global.gmlc_other_instance = _prevOther;
 	global.gmlc_self_instance  = _prevSelf;
@@ -2085,7 +2270,7 @@ function __GMLCcompileCallMethodExpression(_rootNode, _parentNode, _node) {
 	_output.arguments       = array_create(_output.arguments_length);
 	_output.backup_arguments = [];
 	_output.argument_count_memory  = [];
-
+	
 	var _argArr = _node.args;
 	var _i=0; repeat(array_length(_argArr)) {
 		_output.argument_expressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
@@ -2117,7 +2302,8 @@ function __GMLCcallbackArgs(_name) {
 		return __cache[$ _name];
 	}
 	var _result = undefined;
-	var _entry = __gmlc_built_ins()[$ _name];
+	var _built_ins = __gmlc_built_ins();
+	var _entry = _built_ins[$ _name];
 	if (_entry != undefined) && (_entry.type == "envFunctions") {
 		var _params = _entry.feather.parameters;
 		var _i=0; repeat(array_length(_params)) {
@@ -2202,7 +2388,7 @@ function __GMLCexecuteCallExpression() {
 		arguments[_i] = argument_expressions[_i]();
 	_i--}
 	if (callback_arguments != undefined) __GMLCcheckCallbackArgs(self);
-
+	
 	var _func = callee();
 	// the kind of function is checked once per callee: the checks cost more than the call itself
 	if (_func != last_function) {
@@ -2219,7 +2405,7 @@ function __GMLCexecuteCallExpression() {
 		last_function = _func;
 	}
 	_func = last_callable;
-
+	
 	// a constructor called directly throws as in GameMaker, once the call's state is restored below;
 	// script_execute and method_call still run a constructor's body on self
 	var _directConstructor = false;
@@ -2250,7 +2436,7 @@ function __GMLCexecuteCallExpression() {
 			var _args = arguments;
 			var _prevOther = global.gmlc_other_instance;
 			var _prevSelf  = global.gmlc_self_instance;
-
+			
 			// a bound method runs on its own self; an unbound built-in keeps the caller's self, so a callback into
 			// compiled code (script_execute inside `with`) still sees the right instance
 			if (_self != undefined) {
@@ -2260,12 +2446,12 @@ function __GMLCexecuteCallExpression() {
 			with (_prevSelf) {
 				_return = method_call(_func, _args);
 			}
-
+			
 			global.gmlc_other_instance = _prevOther;
 			global.gmlc_self_instance  = _prevSelf;
 		break;}
 	}
-
+	
 	if (--recursion_count) {
         // Un-stash the arguments
 		__GMLC_UNSTASH_ARGUMENTS
@@ -2323,7 +2509,7 @@ function __GMLChashStructKey(_rootNode, _node) {
 		_name = "struct_set_from_hash";
 	}
 	if (_name == undefined) || (!_rootNode.env.isFunction(_name)) return _node;
-
+	
 	var _hash = variable_get_hash(_args[1].value);
 	var _hashed = array_create(_count);
 	array_copy(_hashed, 0, _args, 0, _count);
@@ -2332,6 +2518,84 @@ function __GMLChashStructKey(_rootNode, _node) {
 	_identifier.symbol = new GMLC_Symbol("BuiltinFunction", _name);
 	return new ASTCall(_node.span, _identifier, _hashed, _node.origin);
 }
+#region Pure built-in calls
+// A built-in that reads and changes nothing but its arguments (`pure` in the effects data) and takes no function runs
+// the same on any self: it is called straight with its arguments, evaluated right to left as GameMaker does, without
+// the argument array, the self and other kept, `with` and method_call of other calls
+#region jsDoc
+/// @func    __GMLCexecutePureCall0()
+/// @desc    Calls a pure built-in with no argument.
+/// @returns {Any}
+#endregion
+function __GMLCexecutePureCall0() {
+	return fn();
+}
+#region jsDoc
+/// @func    __GMLCexecutePureCall1()
+/// @desc    Calls a pure built-in with one argument.
+/// @returns {Any}
+#endregion
+function __GMLCexecutePureCall1() {
+	return fn(a0());
+}
+#region jsDoc
+/// @func    __GMLCexecutePureCall2()
+/// @desc    Calls a pure built-in with two arguments.
+/// @returns {Any}
+#endregion
+function __GMLCexecutePureCall2() {
+	var _1 = a1();
+	return fn(a0(), _1);
+}
+#region jsDoc
+/// @func    __GMLCexecutePureCall3()
+/// @desc    Calls a pure built-in with three arguments.
+/// @returns {Any}
+#endregion
+function __GMLCexecutePureCall3() {
+	var _2 = a2();
+	var _1 = a1();
+	return fn(a0(), _1, _2);
+}
+#region jsDoc
+/// @func    __GMLCexecutePureCall4()
+/// @desc    Calls a pure built-in with four arguments.
+/// @returns {Any}
+#endregion
+function __GMLCexecutePureCall4() {
+	var _3 = a3();
+	var _2 = a2();
+	var _1 = a1();
+	return fn(a0(), _1, _2, _3);
+}
+#region jsDoc
+/// @func    __GMLCcompilePureCall(_rootNode, _parentNode, _node)
+/// @desc    The executor of a call of a pure built-in that takes no function, with at most four arguments, or undefined
+///          for any other call.
+/// @param   {Struct} _rootNode   : The program node
+/// @param   {Struct} _parentNode : The enclosing function node
+/// @param   {Struct} _node       : A Call node whose callee is a built-in function's name
+/// @returns {Function|Undefined}
+#endregion
+function __GMLCcompilePureCall(_rootNode, _parentNode, _node) {
+	static __executors = [__GMLCexecutePureCall0, __GMLCexecutePureCall1, __GMLCexecutePureCall2, __GMLCexecutePureCall3, __GMLCexecutePureCall4];
+	var _name = _node.callee.name;
+	var _args = _node.args;
+	var _count = array_length(_args);
+	if (_count > 4) || (__gmlc_opt_call_class(_name) != "pure") || (__GMLCcallbackArgs(_name) != undefined) return undefined;
+	var _value = __GMLCidentifierValue(_rootNode, _node.callee);
+	// an environment's own version of a built-in (GMLC code, or anything not a plain built-in) takes the common path
+	if (is_method(_value)) || (!is_callable(_value)) return undefined;
+	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompilePureCall", "<Missing Error Message>", _node.span);
+	_output.fn = method(undefined, _value);
+	_output.a0 = (_count > 0) ? __GMLCcompileExpression(_rootNode, _parentNode, _args[0]) : undefined;
+	_output.a1 = (_count > 1) ? __GMLCcompileExpression(_rootNode, _parentNode, _args[1]) : undefined;
+	_output.a2 = (_count > 2) ? __GMLCcompileExpression(_rootNode, _parentNode, _args[2]) : undefined;
+	_output.a3 = (_count > 3) ? __GMLCcompileExpression(_rootNode, _parentNode, _args[3]) : undefined;
+	return __vanilla_method(_output, __executors[_count]);
+}
+#endregion
+
 #region jsDoc
 /// @func    __GMLCcompileCallExpression(_rootNode, _parentNode, _node)
 /// @desc    Compiles a call; a struct get or set with a constant key becomes its hashed form first.
@@ -2342,7 +2606,11 @@ function __GMLChashStructKey(_rootNode, _node) {
 #endregion
 function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	var _isBuiltin = (_node.callee.kind == __GMLC_NodeKind_Identifier) && (_node.callee.symbol != undefined) && (_node.callee.symbol.kind == "BuiltinFunction");
-	if (_isBuiltin) _node = __GMLChashStructKey(_rootNode, _node);
+	if (_isBuiltin) {
+		_node = __GMLChashStructKey(_rootNode, _node);
+		var _pure = __GMLCcompilePureCall(_rootNode, _parentNode, _node);
+		if (_pure != undefined) return _pure;
+	}
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileCallExpression", "<Missing Error Message>", _node.span);
 	_output.callee = __GMLCcompileCallee(_rootNode, _parentNode, _node.callee);
 	
@@ -2361,7 +2629,7 @@ function __GMLCcompileCallExpression(_rootNode, _parentNode, _node) {
 	_output.arguments = array_create(_output.arguments_length);
 	_output.backup_arguments = [];
 	_output.argument_count_memory = [];
-
+	
 	var _argArr = _node.args
 	var _i=0; repeat(array_length(_argArr)) {
 		_output.argument_expressions[_i] = __GMLCcompileExpression(_rootNode, _parentNode, _argArr[_i])
@@ -2475,6 +2743,20 @@ function __GMLCexecuteStructLiteral() {
 	return _struct;
 }
 #region jsDoc
+/// @func    __GMLCexecuteStructLiteralHashed()
+/// @desc    Builds the struct of a literal with distinct keys and no function or `self` values, writing each key by its
+///          hash.
+/// @returns {Struct}
+#endregion
+function __GMLCexecuteStructLiteralHashed() {
+	var _struct = {};
+	var _i = size - 1; repeat (size) {
+		struct_set_from_hash(_struct, hashes[_i], values[_i]());
+	_i--}
+	static_set(_struct, literal_statics);
+	return _struct;
+}
+#region jsDoc
 /// @func    __GMLCexecuteStructLiteralRepeatedKeys()
 /// @desc    Builds the struct of a literal that writes a key twice: values right to left, the last of a key kept.
 /// @returns {Struct}
@@ -2547,7 +2829,15 @@ function __GMLCcompileStructLiteral(_rootNode, _parentNode, _node) {
 		}
 	_i++}
 	array_pop(_rootNode.scope_stack);
-	return __vanilla_method(_output, _repeated ? __GMLCexecuteStructLiteralRepeatedKeys : __GMLCexecuteStructLiteral);
+	if (_repeated) return __vanilla_method(_output, __GMLCexecuteStructLiteralRepeatedKeys);
+	if (array_length(_output.bound) == 0) && (array_length(_output.self_keys) == 0) {
+		_output.hashes = array_create(_output.size);
+		var _i = 0; repeat (_output.size) {
+			_output.hashes[_i] = variable_get_hash(_output.keys[_i]);
+		_i++}
+		return __vanilla_method(_output, __GMLCexecuteStructLiteralHashed);
+	}
+	return __vanilla_method(_output, __GMLCexecuteStructLiteral);
 }
 
 #region //{
@@ -2720,7 +3010,7 @@ function __GMLCcompileBinaryExpression(_rootNode, _parentNode, _node) {
 	var _output = new __GMLC_Function(_rootNode, _parentNode, "__GMLCcompileBinaryExpression", "<Missing Error Message>", _node.span);
 	_output.left  = __GMLCcompileExpression(_rootNode, _parentNode, _node.left);
 	_output.right = __GMLCcompileExpression(_rootNode, _parentNode, _node.right);
-
+	
 	if (_node.right.kind == __GMLC_NodeKind_Literal) {
 		_output.value = _node.right.value;
 		switch (_node.op) {
@@ -3025,6 +3315,8 @@ function __GMLCfoldFailure(_node) {
 /// @returns {Array} [true, value]; [false] when not constant; [false, undefined, message, node, fatal] when it fails
 #endregion
 function __GMLCconstantValue(_rootNode, _node) {
+	// a macro that depends on the configuration is not known while compiling
+	if (__gmlc_opt_is_opaque(_node)) return [false];
 	var _v;
 	switch (_node.kind) {
 		case __GMLC_NodeKind_Identifier: {
@@ -3523,7 +3815,7 @@ function __GMLCscopeNode(_rootNode, _parentNode, _scope, _key, _span) {
 function __GMLCcompilePropertySet(_rootNode, _parentNode, _scope, _key, _rightExpression, _span){
 	var _output = __GMLCscopeNode(_rootNode, _parentNode, _scope, _key, _span);
 	_output.expression = __GMLCcompileExpression(_rootNode, _parentNode, _rightExpression);
-
+	
 	if (_scope == "Static") && (_key == "toString") return __vanilla_method(_output, __GMLCexecuteSetStaticToString);
 	return __vanilla_method(_output, __GMLCGetScopeSetter(_scope))
 }
@@ -3648,13 +3940,15 @@ function __GMLCidentifierValue(_rootNode, _identifier) {
 	// a function a language extension's rewrite calls is GMLC's own, whatever the environment exposes
 	var _origin = _identifier.origin;
 	if (_origin != undefined) && (_origin.kind == "extension") {
-		var _own = __gmlc_internal_functions()[$ _identifier.name];
+		var _internal_functions = __gmlc_internal_functions();
+		var _own = _internal_functions[$ _identifier.name];
 		if (_own != undefined) return _own;
 	}
 	var _env = _rootNode.env;
 	var _data = (_identifier.symbol.kind == "BuiltinConstant") ? _env.getConstant(_identifier.name) : _env.getFunction(_identifier.name);
 	if (_data == undefined) {
-		return __gmlc_internal_functions()[$ _identifier.name];
+		var _internal_functions = __gmlc_internal_functions();
+		return _internal_functions[$ _identifier.name];
 	}
 	return _data[$ "raw"] ?? _data.value;
 }

@@ -15,10 +15,10 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 	#region Config
 	static indentUnit = "    ";
 	#endregion
-
+	
 	#region Init
 	env = _env;
-
+	
 	out = buffer_create(1 << 16, buffer_grow, 1);
 	src = buffer_create(1, buffer_grow, 1);
 	file = undefined;
@@ -45,7 +45,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 	__pending_space = false;
 	__moved = false;
 	#endregion
-
+	
 	#region Public
 	#region jsDoc
 	/// @func    emit(_ast, _program)
@@ -80,7 +80,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		__moved = false;
 		__collectPieces(_ast, _program);
 		__collectRuns(_program.tokens, _ast);
-
+		
 		__writeStatements(_ast.body);
 		__writePieces(infinity);
 		if (__preserve) {
@@ -90,13 +90,13 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		// a block comment that is never closed runs to the end of the file: a line break after it would join it
 		else if (line_open) && !__unclosed buffer_write(out, buffer_text, "\n");
-
+		
 		buffer_write(out, buffer_u8, 0);
 		buffer_seek(out, buffer_seek_start, 0);
 		return buffer_read(out, buffer_string);
 	};
 	#endregion
-
+	
 	#region Private
 	#region Source
 	#region jsDoc
@@ -116,7 +116,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		buffer_poke(src, _end, buffer_u8, _keep);
 		return _text;
 	};
-
+	
 	#region jsDoc
 	/// @func    __lineOf(_offset)
 	/// @desc    The source line of a byte offset (clamped to the file).
@@ -127,7 +127,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 	static __lineOf = function(_offset) {
 		return file.lineOf(clamp(_offset, 0, src_length));
 	};
-
+	
 	#region jsDoc
 	/// @func    __blankBetween(_from, _to)
 	/// @desc    Whether an empty line lies between two source offsets.
@@ -153,7 +153,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		_l++}
 		return false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __breakBetween(_from, _to)
 	/// @desc    Whether two source offsets are on different lines.
@@ -167,7 +167,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		return __lineOf(_from) < __lineOf(_to);
 	};
 	#endregion
-
+	
 	#region Pieces copied from the source
 	#region jsDoc
 	/// @func    __collectPieces(_ast, _program)
@@ -220,7 +220,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		_i++}
 		pieces = _kept;
 	};
-
+	
 	#region jsDoc
 	/// @func    __writePieces(_limit)
 	/// @desc    Writes the pieces that start before an offset: on the line before when the source has them on the
@@ -281,7 +281,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 	};
 	#endregion
-
+	
 	#region Macro uses
 	#region jsDoc
 	/// @func    __collectRuns(_tokens, _ast)
@@ -326,12 +326,10 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 				__counts[$ _key] = (__counts[$ _key] ?? 0) + 1;
 			}
 			var _children = _node.children();
-			var _i = 0; repeat (array_length(_children)) {
-				array_push(_stack, _children[_i]);
-			_i++}
+			array_copy(_stack, array_length(_stack), _children, 0, array_length(_children));
 		}
 	};
-
+	
 	#region jsDoc
 	/// @func    __useOf(_node)
 	/// @desc    The offset of the macro use a node's first token came from, or -1: only single-token nodes have an
@@ -348,7 +346,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 			_node = _children[0];
 		}
 	};
-
+	
 	#region jsDoc
 	/// @func    __countFrom(_node, _use)
 	/// @desc    How many nodes of a subtree came from the macro use at _use, or -1 when one came from elsewhere; a
@@ -374,7 +372,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		_i++}
 		return _count;
 	};
-
+	
 	#region jsDoc
 	/// @func    __macroUse(_node, _expr, _statement)
 	/// @desc    Whether a node is the whole of a macro use, so the use can be written in its place: the expression
@@ -424,7 +422,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		__use_parentheses = _parens;
 		return _semicolon ? 2 : 1;
 	};
-
+	
 	#region jsDoc
 	/// @func    __macroName(_node)
 	/// @desc    The source text of the macro use a node is the whole of, or undefined.
@@ -437,7 +435,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		var _use = __useOf(_node);
 		return __sourceText(_use, __runs[$ string(_use)].stop);
 	};
-
+	
 	#region jsDoc
 	/// @func    __tokenText(_i)
 	/// @desc    The text of a token of the file.
@@ -448,7 +446,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 	static __tokenText = function(_i) {
 		return __tokens[_i].name;
 	};
-
+	
 	#region jsDoc
 	/// @func    __balanced(_first, _last)
 	/// @desc    Whether the brackets of a run of tokens open and close in pairs.
@@ -473,7 +471,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		_i++}
 		return (array_length(_open) == 0);
 	};
-
+	
 	#region jsDoc
 	/// @func    __firstText(_node)
 	/// @desc    The text of an expression's first token, or undefined for a kind it does not know.
@@ -502,7 +500,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		return undefined;
 	};
-
+	
 	#region jsDoc
 	/// @func    __lastText(_node)
 	/// @desc    The text of an expression's last token, or undefined for a kind it does not know.
@@ -527,7 +525,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		return undefined;
 	};
 	#endregion
-
+	
 	#region Lines
 	#region jsDoc
 	/// @func    __indentText(_level)
@@ -542,7 +540,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		return __indents[_level];
 	};
-
+	
 	#region jsDoc
 	/// @func    __startLine()
 	/// @desc    Starts a new output line at the current indentation; with preserve_lines it only notes that
@@ -560,7 +558,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		line_open = true;
 		line_comment = false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __blankLine()
 	/// @desc    Writes an empty line (nothing with preserve_lines).
@@ -573,7 +571,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		line_open = false;
 		line_comment = false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __write(_text)
 	/// @desc    Writes text, on a new line when the last text written ends its line.
@@ -590,7 +588,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		buffer_write(out, buffer_text, _text);
 		__unclosed = false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __anchorAt(_offset, _node)
 	/// @desc    With preserve_lines, the next text belongs on the line of a source offset; a node whose line is
@@ -605,7 +603,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		if (_node) && (_line < __out_line) && (_offset > 0) __moved = true;
 		__anchor = _line;
 	};
-
+	
 	#region jsDoc
 	/// @func    __writeAtLine(_text)
 	/// @desc    With preserve_lines, writes text on its source line, adding line breaks to reach it.
@@ -636,7 +634,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		__out_line += string_count("\n", _text);
 	};
 	#endregion
-
+	
 	#region Statements
 	#region jsDoc
 	/// @func    __writeStatements(_body)
@@ -666,7 +664,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 			__writePieces(_s.span[$ "end"]);
 		_i++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __writeBlock(_block)
 	/// @desc    Writes a block in braces with its statements indented.
@@ -687,7 +685,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		__write("}");
 		last_end = max(last_end, _block.span[$ "end"]);
 	};
-
+	
 	#region jsDoc
 	/// @func    __writeStatement(_s)
 	/// @desc    Writes a statement. The parser takes one `;` right after it as its own for each statement that ends
@@ -929,7 +927,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		return 0;
 	};
-
+	
 	#region jsDoc
 	/// @func    __piecesIn(_from, _to)
 	/// @desc    Whether a source piece not written yet starts between two offsets.
@@ -946,7 +944,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		_i++}
 		return false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __declarations(_list)
 	/// @desc    Writes the declarations of a `var` or `static` statement, separated by commas.
@@ -964,7 +962,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 			}
 		_i++}
 	};
-
+	
 	#region jsDoc
 	/// @func    __params(_params)
 	/// @desc    Writes a function's parameters and their defaults in parentheses.
@@ -984,7 +982,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		__write(")");
 	};
 	#endregion
-
+	
 	#region Expressions
 	#region jsDoc
 	/// @func    __isChain(_node)
@@ -1001,7 +999,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		return false;
 	};
-
+	
 	#region jsDoc
 	/// @func    __operand(_node, _parentGroup, _right)
 	/// @desc    Writes an operand of a binary, nullish or conditional expression: in parentheses when its
@@ -1020,7 +1018,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		__wrapped(_node, (_group != undefined) && ((_group != _parentGroup) || _right || (_parentGroup == "?:")));
 	};
-
+	
 	#region jsDoc
 	/// @func    __wrapped(_node, _wrap)
 	/// @desc    A node, in parentheses when _wrap is true; a macro use written as its name needs them too, unless
@@ -1039,7 +1037,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		__writeExpression(_node);
 		if (_wrap) __write(")");
 	};
-
+	
 	#region jsDoc
 	/// @func    __unaryOperand(_node)
 	/// @desc    Writes the operand of a unary or update operator, in parentheses unless it is a single item.
@@ -1060,7 +1058,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		__wrapped(_node, !_atom);
 	};
-
+	
 	#region jsDoc
 	/// @func    __chainObject(_node)
 	/// @desc    Writes the object before `.` or `[`, in parentheses unless it is a chain.
@@ -1070,7 +1068,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 	static __chainObject = function(_node) {
 		__wrapped(_node, !__isChain(_node));
 	};
-
+	
 	#region jsDoc
 	/// @func    __writeExpression(_node)
 	/// @desc    Writes an expression; a macro use as the macro's name and an enum value as `Enum.Member`.
@@ -1212,7 +1210,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 				throw "GMLC_Gen_6_Emitter: no form for a " + _node.kindName + " expression";
 		}
 	};
-
+	
 	#region jsDoc
 	/// @func    __opener(_node)
 	/// @desc    The opening bracket of an index expression, with its accessor.
@@ -1230,7 +1228,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		return __joinsBracket(_node.keys[0]) ? "[ " : "[";
 	};
-
+	
 	#region jsDoc
 	/// @func    __joinsBracket(_node)
 	/// @desc    Whether a node starts with `@`, `$`, `#`, `|` or `?`, which right after `[` would be read as an
@@ -1244,7 +1242,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		var _c = string_char_at(_first, 1);
 		return (_c == "@") || (_c == "$") || (_c == "#") || (_c == "|") || (_c == "?");
 	};
-
+	
 	#region jsDoc
 	/// @func    __writeItems(_items, _from, _close, _open, _closeText, _entries)
 	/// @desc    A bracketed list: arguments, array elements or struct entries. Where the source breaks the line
@@ -1312,7 +1310,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		if (_n > 0) __anchorAt(_close, false);
 		__write(_closeText);
 	};
-
+	
 	#region jsDoc
 	/// @func    __writeLiteral(_node)
 	/// @desc    Writes a literal as its source text; a string without one is written quoted and escaped.
@@ -1332,7 +1330,7 @@ function GMLC_Gen_6_Emitter(_env) constructor {
 		}
 		__write(_lexeme);
 	};
-
+	
 	#region jsDoc
 	/// @func    __escape(_text, _template)
 	/// @desc    Escapes text for a string literal, or for a template string.

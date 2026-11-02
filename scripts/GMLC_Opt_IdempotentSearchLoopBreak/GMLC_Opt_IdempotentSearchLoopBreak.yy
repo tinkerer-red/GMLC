@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"GMLC_Opt_IdempotentSearchLoopBreak",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"GMLC_Opt_IdempotentSearchLoopBreak",
+  "parent":{
+    "name":"Program",
+    "path":"folders/GMLC/Parsers/Optimizers/Program.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

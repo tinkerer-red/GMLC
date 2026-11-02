@@ -24,7 +24,7 @@ function GMLC_Gen_4_Lower(_env) constructor {
 	__script_name = undefined;
 	__member_spans = {};
 	#endregion
-
+	
 	#region Public
 	#region jsDoc
 	/// @func    initialize(_ast, [_sources])
@@ -47,7 +47,7 @@ function GMLC_Gen_4_Lower(_env) constructor {
 		__struct_count = 0;
 		__script_name = undefined;
 	};
-
+	
 	#region jsDoc
 	/// @func    parseAll()
 	/// @desc    Lowers the whole file: classifies and names its functions, counts their facts and replaces compile-time
@@ -265,7 +265,7 @@ function GMLC_Gen_4_Lower(_env) constructor {
 		&& struct_exists(_value, "compileTimeGet");
 	}
 	#endregion
-
+	
 	#region Private
 	#region Functions
 	#region jsDoc
@@ -394,7 +394,7 @@ function GMLC_Gen_4_Lower(_env) constructor {
 		__gm_chains[_inner.fn_id] = _own + "@" + (__gm_chains[_outer.fn_id] ?? __scriptNameOf());
 		__gm_names[_inner.fn_id] = "gml_Script_" + __gm_chains[_inner.fn_id];
 	};
-
+	
 	static __statementKinds = (function() {
 		var _kinds = array_create(__GMLC_NodeKind_SIZE, false);
 		var _list = [

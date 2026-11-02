@@ -5,7 +5,7 @@
   "isDnD":false,
   "name":"GmlStringEscapeTestSuite",
   "parent":{
-    "name":"Behaviour",
+    "name":"Behavior",
     "path":"folders/Tests/Behavior.yy",
   },
   "resourceType":"GMScript",

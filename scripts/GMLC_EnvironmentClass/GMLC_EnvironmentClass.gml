@@ -591,7 +591,7 @@ function GMLC_EnvironmentClass() constructor {
 			}
 		}
 		else if (is_string(keys)) {
-			struct_remove(map, key);
+			struct_remove(map, keys);
 		}
 	};
 	
